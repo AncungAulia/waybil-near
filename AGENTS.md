@@ -3,6 +3,11 @@
 Waybil pays freight carriers the moment a delivery is confirmed, financed by a
 lending pool on NEAR. Built for NEAR HACKATHON (deadline 2026-11-14 23:59 UTC).
 
+Roles (use these names in code, UI, and docs):
+**Shipper** (company that ships goods and pays the bill), **Driver** (truck owner who
+gets paid on arrival), **Warehouse** (receiver that confirms delivery),
+**Investor** (funds the pool), **Admin** (team multisig).
+
 Everything in this repo is written in **English**: code, comments, docs, commit
 messages, and PR descriptions.
 
@@ -16,6 +21,16 @@ messages, and PR descriptions.
 
 Stay inside your area. If a change must touch another area, say so in the PR
 and tell that owner.
+
+## Writing UI copy
+
+- Plain words a truck owner understands. No jargon or buzzwords in the UI:
+  avoid "on-chain", "multisig", "contract", "agent", "TEE", "attestation", "gasless".
+  Say "recorded", "team approval", "credit assistant", "private check", "proof".
+- Full, simple sentences (subject, verb, object). No colons or semicolons in UI text.
+- The middle dot (·) only joins short facts, for example "#1041 · Pak Budi · due Dec 11".
+  Anything with a verb or a money outcome is written as full sentences instead.
+- Links to the blockchain explorer read "See the record on NearBlocks ↗".
 
 ## Repo layout
 
@@ -65,7 +80,7 @@ Keep commits small, written in the imperative ("add", not "added").
   - `waybil.testnet` — admin / deployer
   - `usdc.waybil.testnet` — mock USDC
   - `app.waybil.testnet` — main contract
-  - `payer.`, `investor.`, `carrier.`, `consignee.waybil.testnet` — demo users
+  - `shipper.`, `investor.`, `driver.`, `warehouse.waybil.testnet` — demo users
 - Use NEAR account IDs everywhere. Never use 0x addresses.
 
 ## Secrets
