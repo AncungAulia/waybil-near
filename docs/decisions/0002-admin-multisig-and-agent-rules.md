@@ -11,7 +11,7 @@ building the contract, backend, and admin UI.
 
 ## Decision
 
-**Voting (2-of-3 team multisig, Sputnik DAO style)**
+**Voting (2 of 3 team members, inside the waybil contract, see 0004)**
 
 | Votes | Result |
 |---|---|
