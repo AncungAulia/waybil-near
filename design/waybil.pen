@@ -7119,16 +7119,6 @@
                                               "fontFamily": "$ds-font",
                                               "fontSize": 14,
                                               "fontWeight": "500"
-                                            },
-                                            {
-                                              "type": "icon",
-                                              "id": "i7moL",
-                                              "name": "Icon",
-                                              "width": 14,
-                                              "height": 14,
-                                              "icon": "arrow-up-right",
-                                              "library": "lucide",
-                                              "fill": "$ds-brand-deep"
                                             }
                                           ]
                                         }
@@ -7815,7 +7805,7 @@
                                                   "id": "bNpOZ",
                                                   "name": "Meta",
                                                   "fill": "$ds-muted",
-                                                  "content": "See the record on NearBlocks ↗",
+                                                  "content": "See the record on NearBlocks",
                                                   "fontFamily": "$ds-font",
                                                   "fontSize": 12,
                                                   "fontWeight": "normal"
@@ -11788,9 +11778,6 @@
                                       "descendants": {
                                         "URks0": {
                                           "fill": "$ds-ink"
-                                        },
-                                        "i7moL": {
-                                          "fill": "$ds-ink"
                                         }
                                       }
                                     },
@@ -12891,16 +12878,6 @@
                                               ],
                                               "alignItems": "center",
                                               "children": [
-                                                {
-                                                  "type": "icon",
-                                                  "id": "q6g4i",
-                                                  "name": "Icon",
-                                                  "width": 16,
-                                                  "height": 16,
-                                                  "icon": "arrow-up-right",
-                                                  "library": "lucide",
-                                                  "fill": "$ds-ink"
-                                                },
                                                 {
                                                   "type": "text",
                                                   "id": "h4fyyr",
@@ -14030,7 +14007,7 @@
                                           "content": "Waiting for confirmation"
                                         },
                                         "bNpOZ": {
-                                          "content": "See the record on NearBlocks ↗"
+                                          "content": "See the record on NearBlocks"
                                         }
                                       }
                                     },
@@ -147312,7 +147289,7 @@
                                               "content": "Bill paid"
                                             },
                                             "bNpOZ": {
-                                              "content": "See the record on NearBlocks ↗"
+                                              "content": "See the record on NearBlocks"
                                             }
                                           }
                                         }
@@ -148441,7 +148418,7 @@
                                               "content": "Bill paid"
                                             },
                                             "bNpOZ": {
-                                              "content": "See the record on NearBlocks ↗"
+                                              "content": "See the record on NearBlocks"
                                             }
                                           }
                                         }
@@ -149586,7 +149563,7 @@
                                               "content": "Bill paid"
                                             },
                                             "bNpOZ": {
-                                              "content": "See the record on NearBlocks ↗"
+                                              "content": "See the record on NearBlocks"
                                             }
                                           }
                                         }
@@ -155453,7 +155430,7 @@
                                           "content": "Report recorded on NEAR"
                                         },
                                         "bNpOZ": {
-                                          "content": "See the record on NearBlocks ↗"
+                                          "content": "See the record on NearBlocks"
                                         }
                                       }
                                     },
@@ -157012,7 +156989,7 @@
                                           "content": "Report recorded on NEAR"
                                         },
                                         "bNpOZ": {
-                                          "content": "See the record on NearBlocks ↗"
+                                          "content": "See the record on NearBlocks"
                                         }
                                       }
                                     },
@@ -158570,7 +158547,7 @@
                                           "content": "Report recorded on NEAR"
                                         },
                                         "bNpOZ": {
-                                          "content": "See the record on NearBlocks ↗"
+                                          "content": "See the record on NearBlocks"
                                         }
                                       }
                                     },
@@ -180681,7 +180658,7 @@
                                           "content": "Payment sent"
                                         },
                                         "bNpOZ": {
-                                          "content": "See the record on NearBlocks ↗"
+                                          "content": "See the record on NearBlocks"
                                         }
                                       }
                                     },
@@ -181042,7 +181019,7 @@
                                           "content": "Payment sent"
                                         },
                                         "bNpOZ": {
-                                          "content": "See the record on NearBlocks ↗"
+                                          "content": "See the record on NearBlocks"
                                         }
                                       }
                                     },
@@ -181413,7 +181390,7 @@
                                           "content": "Payment sent"
                                         },
                                         "bNpOZ": {
-                                          "content": "See the record on NearBlocks ↗"
+                                          "content": "See the record on NearBlocks"
                                         }
                                       }
                                     },
@@ -238344,7 +238321,7 @@
                                           "content": "Payment recorded on NEAR"
                                         },
                                         "bNpOZ": {
-                                          "content": "See the record on NearBlocks ↗"
+                                          "content": "See the record on NearBlocks"
                                         }
                                       }
                                     },
@@ -238479,7 +238456,7 @@
                                           "content": "Payment recorded on NEAR"
                                         },
                                         "bNpOZ": {
-                                          "content": "See the record on NearBlocks ↗"
+                                          "content": "See the record on NearBlocks"
                                         }
                                       }
                                     },
@@ -238621,7 +238598,7 @@
                                           "content": "Payment recorded on NEAR"
                                         },
                                         "bNpOZ": {
-                                          "content": "See the record on NearBlocks ↗"
+                                          "content": "See the record on NearBlocks"
                                         }
                                       }
                                     },
@@ -241926,7 +241903,7 @@
                                           "content": "Report recorded on NEAR"
                                         },
                                         "bNpOZ": {
-                                          "content": "See the record on NearBlocks ↗"
+                                          "content": "See the record on NearBlocks"
                                         }
                                       }
                                     },
@@ -242978,7 +242955,7 @@
                                           "content": "Report recorded on NEAR"
                                         },
                                         "bNpOZ": {
-                                          "content": "See the record on NearBlocks ↗"
+                                          "content": "See the record on NearBlocks"
                                         }
                                       }
                                     },
@@ -243972,7 +243949,7 @@
                                           "content": "Report recorded on NEAR"
                                         },
                                         "bNpOZ": {
-                                          "content": "See the record on NearBlocks ↗"
+                                          "content": "See the record on NearBlocks"
                                         }
                                       }
                                     },
@@ -244669,7 +244646,7 @@
                                               "justifyContent": "start",
                                               "descendants": {
                                                 "QGn3f": {
-                                                  "content": "See record ↗"
+                                                  "content": "See record"
                                                 },
                                                 "OW9B8": {
                                                   "icon": "arrow-up-right"
@@ -245399,7 +245376,7 @@
                                       "gap": 32,
                                       "descendants": {
                                         "QGn3f": {
-                                          "content": "See record ↗"
+                                          "content": "See record"
                                         },
                                         "OW9B8": {
                                           "icon": "arrow-up-right"
@@ -246064,7 +246041,7 @@
                                       "justifyContent": "space_between",
                                       "descendants": {
                                         "QGn3f": {
-                                          "content": "See record ↗"
+                                          "content": "See record"
                                         },
                                         "OW9B8": {
                                           "icon": "arrow-up-right"
@@ -278300,7 +278277,7 @@
                                           "content": "Deposit confirmed on NEAR"
                                         },
                                         "bNpOZ": {
-                                          "content": "See the record on NearBlocks ↗"
+                                          "content": "See the record on NearBlocks"
                                         }
                                       }
                                     },
@@ -278650,7 +278627,7 @@
                                           "content": "Deposit confirmed on NEAR"
                                         },
                                         "bNpOZ": {
-                                          "content": "See the record on NearBlocks ↗"
+                                          "content": "See the record on NearBlocks"
                                         }
                                       }
                                     },
@@ -279011,7 +278988,7 @@
                                           "content": "Deposit confirmed on NEAR"
                                         },
                                         "bNpOZ": {
-                                          "content": "See the record on NearBlocks ↗"
+                                          "content": "See the record on NearBlocks"
                                         }
                                       }
                                     },
@@ -282047,7 +282024,7 @@
                                   "content": "Withdrawal confirmed on NEAR"
                                 },
                                 "bNpOZ": {
-                                  "content": "See the record on NearBlocks ↗"
+                                  "content": "See the record on NearBlocks"
                                 }
                               }
                             }
@@ -282332,7 +282309,7 @@
                                           "content": "Withdrawal confirmed on NEAR"
                                         },
                                         "bNpOZ": {
-                                          "content": "See the record on NearBlocks ↗"
+                                          "content": "See the record on NearBlocks"
                                         }
                                       }
                                     },
@@ -282682,7 +282659,7 @@
                                           "content": "Withdrawal confirmed on NEAR"
                                         },
                                         "bNpOZ": {
-                                          "content": "See the record on NearBlocks ↗"
+                                          "content": "See the record on NearBlocks"
                                         }
                                       }
                                     },
@@ -283043,7 +283020,7 @@
                                           "content": "Withdrawal confirmed on NEAR"
                                         },
                                         "bNpOZ": {
-                                          "content": "See the record on NearBlocks ↗"
+                                          "content": "See the record on NearBlocks"
                                         }
                                       }
                                     },
@@ -311452,7 +311429,7 @@
                                           "content": "Arrival confirmed by Dewi"
                                         },
                                         "bNpOZ": {
-                                          "content": "See the record on NearBlocks ↗"
+                                          "content": "See the record on NearBlocks"
                                         }
                                       }
                                     },
@@ -311665,7 +311642,7 @@
                                           "content": "Arrival confirmed by Dewi"
                                         },
                                         "bNpOZ": {
-                                          "content": "See the record on NearBlocks ↗"
+                                          "content": "See the record on NearBlocks"
                                         }
                                       }
                                     },
@@ -311913,7 +311890,7 @@
                                           "content": "Arrival confirmed by Dewi"
                                         },
                                         "bNpOZ": {
-                                          "content": "See the record on NearBlocks ↗"
+                                          "content": "See the record on NearBlocks"
                                         }
                                       }
                                     },
@@ -314208,7 +314185,7 @@
                                           "content": "Report recorded on NEAR"
                                         },
                                         "bNpOZ": {
-                                          "content": "See the record on NearBlocks ↗"
+                                          "content": "See the record on NearBlocks"
                                         }
                                       }
                                     },
@@ -314421,7 +314398,7 @@
                                           "content": "Report recorded on NEAR"
                                         },
                                         "bNpOZ": {
-                                          "content": "See the record on NearBlocks ↗"
+                                          "content": "See the record on NearBlocks"
                                         }
                                       }
                                     },
@@ -314669,7 +314646,7 @@
                                           "content": "Report recorded on NEAR"
                                         },
                                         "bNpOZ": {
-                                          "content": "See the record on NearBlocks ↗"
+                                          "content": "See the record on NearBlocks"
                                         }
                                       }
                                     },
@@ -320252,10 +320229,10 @@
                                   "justifyContent": "space_between",
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -321596,10 +321573,10 @@
                                   "justifyContent": "space_between",
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -322903,10 +322880,10 @@
                                   "justifyContent": "space_between",
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -324405,10 +324382,10 @@
                                   "justifyContent": "space_between",
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -325740,10 +325717,10 @@
                                   "justifyContent": "space_between",
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -327038,10 +327015,10 @@
                                   "justifyContent": "space_between",
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -328529,10 +328506,10 @@
                                   "justifyContent": "space_between",
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -329341,10 +329318,10 @@
                                   "justifyContent": "space_between",
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -330115,10 +330092,10 @@
                                   "justifyContent": "space_between",
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -331079,10 +331056,10 @@
                                   "justifyContent": "space_between",
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -332759,10 +332736,10 @@
                                   "justifyContent": "space_between",
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -334402,10 +334379,10 @@
                                   "justifyContent": "space_between",
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -336250,10 +336227,10 @@
                                   "justifyContent": "space_between",
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -337660,10 +337637,10 @@
                                   "justifyContent": "space_between",
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -339033,10 +339010,10 @@
                                   "justifyContent": "space_between",
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -340601,10 +340578,10 @@
                                   "justifyContent": "space_between",
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -342011,10 +341988,10 @@
                                   "justifyContent": "space_between",
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -343384,10 +343361,10 @@
                                   "justifyContent": "space_between",
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -344952,10 +344929,10 @@
                                   "justifyContent": "space_between",
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -346365,10 +346342,10 @@
                                   "justifyContent": "space_between",
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -347741,10 +347718,10 @@
                                   "justifyContent": "space_between",
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -349355,10 +349332,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -350455,10 +350432,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -351643,10 +351620,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -353014,10 +352991,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -354130,10 +354107,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -355334,10 +355311,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -356749,10 +356726,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -357968,10 +357945,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -360503,10 +360480,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -361944,10 +361921,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -363349,10 +363326,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -364939,10 +364916,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -366492,10 +366469,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -368009,10 +367986,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -369710,10 +369687,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -370931,10 +370908,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -372363,10 +372340,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -373819,10 +373796,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -375239,10 +375216,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -376824,10 +376801,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -377998,10 +377975,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -379259,10 +379236,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -380702,10 +380679,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -381983,10 +381960,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -383474,10 +383451,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -384693,10 +384670,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -387257,10 +387234,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -388975,10 +388952,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -390657,10 +390634,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -392535,10 +392512,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -394258,10 +394235,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -395945,10 +395922,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -397840,10 +397817,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -399554,10 +399531,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -401252,10 +401229,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -403156,10 +403133,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -405004,10 +404981,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -406836,10 +406813,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -408874,10 +408851,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -410652,10 +410629,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -412414,10 +412391,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -414382,10 +414359,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -416156,10 +416133,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }
@@ -417914,10 +417891,10 @@
                                   "enabled": false,
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Open team wallet ↗"
+                                      "content": "Open team wallet"
                                     },
                                     "OW9B8": {
-                                      "icon": "external-link"
+                                      "icon": "arrow-up-right"
                                     }
                                   }
                                 }

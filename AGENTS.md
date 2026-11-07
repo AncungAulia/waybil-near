@@ -31,6 +31,8 @@ and tell that owner.
 - The middle dot (·) only joins short facts, for example "#1041 · Pak Budi · due Dec 11".
   Anything with a verb or a money outcome is written as full sentences instead.
 - Links to the blockchain explorer read "See the record on NearBlocks ↗".
+- Use one arrow per link. Plain text links end with "↗". Buttons and cards that already
+  show an arrow icon drop the "↗" from their label.
 
 ## Repo layout
 
