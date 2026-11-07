@@ -1,0 +1,35 @@
+# Rust
+target/
+**/*.rs.bk
+
+# Node
+node_modules/
+.next/
+out/
+dist/
+*.tsbuildinfo
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# NEAR local credentials
+.near-credentials/
+neardev/
+
+# Local tooling
+.impeccable/
+.claude/settings.local.json
+.vercel/
+
+# OS & editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
