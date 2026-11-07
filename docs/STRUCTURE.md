@@ -1,0 +1,167 @@
+# Waybil · Code structure
+
+Where code goes and how files are named. The system design lives in `docs/ARCHITECTURE.md`.
+When you add a folder that isn't listed here, add it here in the same PR.
+
+## Root
+
+```
+.
+├─ contracts/            Rust contracts (Cargo, not part of the pnpm workspace)
+├─ fe/                   Next.js app
+├─ be/                   Express API
+├─ packages/shared/      Types and helpers used by fe and be
+├─ scripts/              Testnet deploy and seed
+├─ design/               Pencil file, logo, shaders
+├─ docs/
+├─ package.json          Root scripts only (dev, build, lint, test)
+├─ pnpm-workspace.yaml   fe, be, packages/*
+├─ .editorconfig  .prettierrc.json  .gitattributes  .gitignore
+```
+
+## Frontend · `fe/`
+
+```
+fe/
+├─ public/
+│  ├─ brand/             logo, favicon, app icon (from design/logo)
+│  └─ illustrations/     role and empty-state art
+├─ src/
+│  ├─ app/                                Routes only. Pages stay thin and render a module screen.
+│  │  ├─ (marketing)/page.tsx             Landing page
+│  │  ├─ start/                           Sign in (A1–A5)
+│  │  ├─ onboarding/{shipper,driver,investor}/   (B, C, D, E)
+│  │  ├─ join/[code]/                     Invite links (F)
+│  │  ├─ shipper/                         Home (P1)
+│  │  │  ├─ shipments/  shipments/new/  shipments/[id]/   (P6, P2, P3)
+│  │  │  ├─ network/                      (P5)
+│  │  │  └─ credit/                       (P7)
+│  │  ├─ driver/                          Trips (K1)
+│  │  │  ├─ trips/[id]/  payouts/  companies/            (K2, K3)
+│  │  ├─ warehouse/                       Arrivals (W1)
+│  │  │  ├─ scan/  history/                               (W2, W3)
+│  │  ├─ pool/                            Investor (I1)
+│  │  │  ├─ deliveries/  deliveries/[id]/  history/       (I3)
+│  │  ├─ admin/                           Approvals (M1)
+│  │  │  ├─ shippers/  shippers/[account]/  pool/         (M2, M3)
+│  │  ├─ not-found.tsx  error.tsx  offline/               (X1–X5)
+│  │  └─ layout.tsx
+│  ├─ modules/                            One folder per role or feature
+│  │  ├─ shipper/  driver/  warehouse/  investor/  admin/  onboarding/  wallet/
+│  │  │  ├─ components/                   Screen parts for this module (PascalCase.tsx)
+│  │  │  ├─ hooks/                        useSomething.ts (data fetching, actions)
+│  │  │  ├─ data/                         Contract calls and API calls for this module
+│  │  │  └─ README.md                     Which screens (codes from the design) live here
+│  ├─ components/
+│  │  ├─ ui/                              shadcn/ui components, restyled to the design tokens
+│  │  ├─ layout/                          Navbar, BottomNav, PageHeader, Sheet, Dialog shells
+│  │  └─ elements/                        Shared Waybil pieces: StatusPill, ProofLink, Meter,
+│  │                                      HeroCard, MapView, QrCode, QrScanner, EmptyState
+│  ├─ lib/
+│  │  ├─ near.ts                          RPC, contract ids, view helpers
+│  │  ├─ wallet.ts                        near-connect setup and signing
+│  │  ├─ relay.ts                         Device key and signed delegate actions for Google users
+│  │  ├─ api.ts                           Fetch wrapper for the backend
+│  │  ├─ format.ts                        Money, dates, account names
+│  │  ├─ errors.ts                        Contract error codes to plain sentences
+│  │  └─ env.ts                           Typed public env (NEXT_PUBLIC_* only, no secrets)
+│  ├─ providers/                          AppProviders, AuthProvider, WalletProvider
+│  ├─ hooks/                              Hooks used by more than one module
+│  └─ styles/globals.css                  Tailwind and the ds-* tokens from the design
+├─ .env.example
+└─ package.json
+```
+
+Rules:
+- Pages in `src/app` only read params and render a screen from `src/modules`.
+- A module doesn't import from another module. Shared pieces move to `components/elements`
+  or `hooks`.
+- Use the design token names (`ds-brand`, `ds-ink`, `ds-canvas`) in Tailwind, never raw hex.
+- UI copy follows "Writing UI copy" in `AGENTS.md`.
+
+## Backend · `be/`
+
+```
+be/
+├─ src/
+│  ├─ index.ts                            Starts the server
+│  ├─ app.ts                              Express app, middlewares, routes
+│  ├─ config/env.ts                       Reads and checks env (zod)
+│  ├─ middlewares/
+│  │  ├─ auth.ts                          Session check, role check
+│  │  ├─ validate.ts                      zod body and params validation
+│  │  ├─ rate-limit.ts
+│  │  └─ error-handler.ts                 Turns errors into { error: { code, message } }
+│  ├─ modules/                            One folder per feature in docs/specs/backend-api.md
+│  │  ├─ auth/  profile/  relay/  invites/  applications/
+│  │  ├─ credit/  reports/  admin/  jobs/
+│  │  │  ├─ <name>.routes.ts              Express router, no logic
+│  │  │  ├─ <name>.schema.ts              zod schemas for requests and responses
+│  │  │  ├─ <name>.service.ts             The logic
+│  │  │  └─ <name>.service.test.ts        vitest
+│  ├─ lib/
+│  │  ├─ near.ts                          RPC, contract calls, account creation
+│  │  ├─ supabase.ts                      Server client (service role)
+│  │  ├─ near-ai.ts                       NEAR AI Cloud client for the credit assistant
+│  │  ├─ storage.ts                       Uploads, sha256, signed links
+│  │  └─ email.ts
+│  └─ types/                              db.ts (generated Supabase types), express.d.ts
+├─ supabase/migrations/                   SQL migrations, one file per change
+├─ .env.example
+└─ package.json
+```
+
+Rules:
+- Routes call services. Services call `lib/`. Nothing in `lib/` knows about Express.
+- Every request body is checked with a zod schema from `<name>.schema.ts`.
+- Shared request and response types are exported from `packages/shared`.
+
+## Shared · `packages/shared/`
+
+```
+packages/shared/src/
+├─ index.ts
+├─ shipment.ts       Status, Shipment, Shipper, Destination (mirrors the contract views)
+├─ api.ts            Request and response types for every endpoint
+├─ money.ts          USDC base units, bps math, fee split (same numbers as the contract)
+└─ codes.ts          Error codes shared by contract, backend and frontend
+```
+
+## Contracts · `contracts/`
+
+```
+contracts/
+├─ waybil/
+│  ├─ src/
+│  │  ├─ lib.rs          Contract struct, init, config
+│  │  ├─ shipper.rs      Shippers, network, destinations, pause
+│  │  ├─ shipment.rs     Create, pickup, delivery, report, settle, cancel, repay
+│  │  ├─ pool.rs         Deposit, withdraw, queue, repayment split
+│  │  ├─ team.rs         Proposals and votes
+│  │  ├─ assistant.rs    Limit changes within caps
+│  │  ├─ callbacks.rs    Private callbacks for token transfers
+│  │  ├─ events.rs       NEP-297 events
+│  │  ├─ upgrade.rs      Versioned state, stage_code, migrate
+│  │  └─ views.rs
+│  └─ tests/             Sandbox tests per flow
+└─ mock-usdc/            NEP-141 test token
+```
+
+Both crates are created with `cargo near new` and follow `docs/specs/contract.md`.
+
+## Scripts · `scripts/`
+
+`deploy.ts` (contracts), `accounts.ts` (create testnet accounts), `seed.ts`
+(the story in `docs/specs/demo-data.md`). Run them from the root with `pnpm`.
+
+## Naming
+
+| Thing | Style | Example |
+|---|---|---|
+| React component file | PascalCase | `StatusPill.tsx` |
+| Hook | camelCase with `use` | `useShipment.ts` |
+| Other TS files | kebab-case | `send-contract.ts`, `trips.service.ts` |
+| Routes and folders | kebab-case | `shipments/new` |
+| Rust files | snake_case | `shipment.rs` |
+| Env vars | UPPER_SNAKE | `WAYBIL_CONTRACT` |
+| Tests | next to the file | `trips.service.test.ts` |

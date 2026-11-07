@@ -37,15 +37,30 @@ and tell that owner.
 ## Repo layout
 
 ```
-contracts/waybil/     main contract (shipments + lending pool)
-contracts/mock-usdc/  NEP-141 test token
-fe/                   Next.js app
-be/                   API, gasless relayer, AI credit agent
+contracts/waybil/     main contract (shipments, credit, pool, team votes) · Rust
+contracts/mock-usdc/  NEP-141 test token · Rust
+fe/                   Next.js app · pnpm workspace package
+be/                   Express API, relayer, credit assistant · pnpm workspace package
+packages/shared/      TypeScript types shared by fe and be
 scripts/              testnet deploy & seed scripts
-docs/specs/           feature designs (what & why)
-docs/plans/           task plans per feature
+design/               Pencil design file, logo, shaders
+docs/PRODUCT.md       what Waybil does (source of truth)
+docs/ARCHITECTURE.md  how it is built (source of truth)
+docs/STRUCTURE.md     where code goes in fe, be, packages, contracts
+docs/specs/           interfaces: contract.md, backend-api.md, demo-data.md
 docs/decisions/       short decision records (NNNN-title.md)
+docs/plans/           review notes and task plans
 ```
+
+## Source of truth
+
+- Read in this order before changing anything: `docs/PRODUCT.md`, `docs/ARCHITECTURE.md`,
+  then the spec for your area (`docs/specs/contract.md` or `docs/specs/backend-api.md`).
+- Specs change **before** code. If an interface or rule changes, update the spec,
+  and add a decision record when it changes product behaviour, in the same PR.
+- Work is tracked as GitHub issues. Link the issue in the PR ("Closes #12").
+- Package manager is **pnpm** for everything JavaScript. Don't commit `package-lock.json`
+  or `yarn.lock`.
 
 ## Branching
 
@@ -94,7 +109,8 @@ Keep commits small, written in the imperative ("add", not "added").
 
 ## Rules for AI agents
 
-- Read this file and the relevant `docs/specs/` before changing code.
+- Read this file, `docs/PRODUCT.md`, `docs/ARCHITECTURE.md` and the relevant
+  `docs/specs/` before changing code.
 - Use the NEAR skills in `.claude/skills/` for NEAR-specific work.
 - Write everything fresh in this repo. Don't copy code from other repositories,
   and don't reference other projects in code, docs, or commits.
