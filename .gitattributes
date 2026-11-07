@@ -1,4 +1,9 @@
+# Keep LF line endings in every text file on every OS (Prettier expects LF).
+* text=auto eol=lf
+
 # Design files are encrypted or binary. Never change their line endings.
 *.pen binary
 *.png binary
+*.jpg binary
 *.ico binary
+*.wasm binary
