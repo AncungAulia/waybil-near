@@ -22,6 +22,9 @@ messages, and PR descriptions.
 Stay inside your area. If a change must touch another area, say so in the PR
 and tell that owner.
 
+Each app folder has its own rules on top of this file: `fe/AGENTS.md` (design, UI and
+motion rules) and `be/AGENTS.md` (API, data and key rules). Read them before working there.
+
 ## Writing UI copy
 
 - Plain words a truck owner understands. No jargon or buzzwords in the UI:
