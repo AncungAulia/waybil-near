@@ -1,0 +1,12 @@
+node_modules
+dist
+.next
+out
+target
+contracts
+design
+docs
+pnpm-lock.yaml
+*.md
+.claude
+.github

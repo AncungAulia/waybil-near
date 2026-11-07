@@ -15,7 +15,13 @@ lending pool on NEAR.
 
 ## How to run
 
-<!-- Each step in "do X, see Y" form, tested on a fresh clone. -->
+You need Node.js 22 or newer and pnpm 12 (`corepack enable` installs it).
+
+1. Install everything: `pnpm install`. You see "Done" and no peer dependency warnings.
+2. Check the code: `pnpm lint`, `pnpm typecheck` and `pnpm test`. Each one ends without errors.
+3. Format the code: `pnpm format`.
+
+Running the contracts, backend and frontend is added here as each part lands.
 
 ## NEAR technology used
 

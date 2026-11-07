@@ -120,7 +120,19 @@ Keep commits small, written in the imperative ("add", not "added").
 
 ## Commands
 
-Filled in per area once each part is scaffolded (build, test, run, deploy).
+From the repo root:
+
+| Command | What it does |
+|---|---|
+| `pnpm install` | Installs every workspace package |
+| `pnpm lint` | ESLint over all TypeScript |
+| `pnpm typecheck` | `tsc --noEmit` in every package |
+| `pnpm test` | vitest in every package |
+| `pnpm format` / `pnpm format:check` | Prettier |
+| `pnpm --filter <pkg> <script>` | Run one package, for example `pnpm --filter @waybil/shared test` |
+
+TypeScript stays on 6.0.x until typescript-eslint supports 7.
+Contracts, backend and frontend commands are added here when each part lands.
 
 ## Definition of done
 
