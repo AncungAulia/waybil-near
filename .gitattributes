@@ -1,0 +1,4 @@
+# Design files are encrypted or binary. Never change their line endings.
+*.pen binary
+*.png binary
+*.ico binary
