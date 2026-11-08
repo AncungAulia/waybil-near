@@ -43,6 +43,8 @@ pub struct Shipment {
     pub report_hash: Option<String>,
     pub paid_at: Option<U64>,
     pub repaid_at: Option<U64>,
+    /// Counted in the shipper's `late_bills` (set by `mark_late`).
+    pub marked_late: bool,
 }
 
 #[near]
@@ -114,6 +116,7 @@ impl Contract {
             report_hash: None,
             paid_at: None,
             repaid_at: None,
+            marked_late: false,
         };
         self.shipments.insert(id, shipment);
         self.by_shipper.push(&key("s", &shipper_id), id);
@@ -201,6 +204,59 @@ impl Contract {
             );
             PromiseOrValue::Value(false)
         }
+    }
+
+    /// The shipper decides what to pay after a problem report (decision 0003).
+    /// `driver_amount` is what the driver gets, at most the original advance:
+    /// pay for what arrived, pay in full, or a different amount agreed with the driver.
+    /// The bill becomes `driver_amount / 97.5%`, rounded up, and the driver is paid at once.
+    pub fn settle_report(&mut self, id: u64, driver_amount: U128) -> Promise {
+        let mut s = self.shipment_or_panic(id);
+        require!(
+            env::predecessor_account_id() == s.shipper,
+            "E_NOT_SHIPPER_OF_SHIPMENT"
+        );
+        require!(s.status == Status::Reported, "E_WRONG_STATUS");
+        require!(driver_amount.0 > 0, "E_ZERO_AMOUNT");
+        require!(driver_amount.0 <= s.advance.0, "E_OVER_ADVANCE");
+
+        let driver_bps = self.config.driver_bps as u128;
+        let new_bill = (driver_amount.0 * crate::BPS).div_ceil(driver_bps);
+        let released_bill = s.bill.0 - new_bill;
+        let released_advance = s.advance.0 - driver_amount.0;
+
+        let mut shipper = self.shipper_or_panic(&s.shipper);
+        shipper.committed = U128(shipper.committed.0 - released_bill);
+        self.shippers.insert(s.shipper.clone(), shipper);
+        self.pool.committed = U128(self.pool.committed.0 - released_advance);
+
+        emit(
+            "report_settled",
+            json!({
+                "id": id, "driver_amount": driver_amount, "bill": U128(new_bill),
+                "old_bill": s.bill,
+            }),
+        );
+        s.bill = U128(new_bill);
+        s.advance = driver_amount;
+        self.shipments.insert(id, s);
+        self.pay_driver(id, true)
+    }
+
+    /// Marks an unpaid bill as late once its due date has passed. Anyone can call it
+    /// (the backend does every hour). A late bill blocks new shipments until it is repaid.
+    pub fn mark_late(&mut self, id: u64) -> bool {
+        let mut s = self.shipment_or_panic(id);
+        if s.marked_late || s.status != Status::Paid || Self::now() <= s.due_at.0 {
+            return false;
+        }
+        s.marked_late = true;
+        let mut shipper = self.shipper_or_panic(&s.shipper);
+        shipper.late_bills += 1;
+        self.shippers.insert(s.shipper.clone(), shipper);
+        emit("bill_late", json!({ "id": id, "shipper": s.shipper }));
+        self.shipments.insert(id, s);
+        true
     }
 }
 

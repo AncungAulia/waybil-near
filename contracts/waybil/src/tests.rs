@@ -7,14 +7,14 @@ use near_sdk::{
     AccountId, NearToken, PromiseOrValue, PromiseResult, RuntimeFeesConfig, testing_env,
 };
 
-const USDC: u128 = 1_000_000;
-const T0: u64 = 1_000 * DAY_NS;
+pub(crate) const USDC: u128 = 1_000_000;
+pub(crate) const T0: u64 = 1_000 * DAY_NS;
 
-fn acc(name: &str) -> AccountId {
+pub(crate) fn acc(name: &str) -> AccountId {
     name.parse().unwrap()
 }
 
-fn as_(caller: &str, now: u64) {
+pub(crate) fn as_(caller: &str, now: u64) {
     testing_env!(
         VMContextBuilder::new()
             .current_account_id(acc("app.waybil.testnet"))
@@ -26,7 +26,7 @@ fn as_(caller: &str, now: u64) {
     );
 }
 
-fn as_callback(now: u64, result: PromiseResult) {
+pub(crate) fn as_callback(now: u64, result: PromiseResult) {
     testing_env!(
         VMContextBuilder::new()
             .current_account_id(acc("app.waybil.testnet"))
@@ -40,7 +40,7 @@ fn as_callback(now: u64, result: PromiseResult) {
     );
 }
 
-fn new_contract() -> Contract {
+pub(crate) fn new_contract() -> Contract {
     as_("waybil.testnet", T0);
     Contract::new(
         acc("usdc.waybil.testnet"),
@@ -55,7 +55,7 @@ fn new_contract() -> Contract {
 }
 
 /// Team starts `shipper` with a limit (risk proposes, ops approves).
-fn start_shipper(c: &mut Contract, shipper: &str, limit: u128) {
+pub(crate) fn start_shipper(c: &mut Contract, shipper: &str, limit: u128) {
     as_("risk.testnet", T0);
     let id = c.propose(ProposalKind::StartShipper {
         shipper: acc(shipper),
@@ -65,14 +65,14 @@ fn start_shipper(c: &mut Contract, shipper: &str, limit: u128) {
     assert_eq!(c.vote(id, true), ProposalStatus::Approved);
 }
 
-fn deposit(c: &mut Contract, investor: &str, amount: u128) {
+pub(crate) fn deposit(c: &mut Contract, investor: &str, amount: u128) {
     as_("usdc.waybil.testnet", T0);
     let r = c.ft_on_transfer(acc(investor), U128(amount), "deposit".into());
     assert!(matches!(r, PromiseOrValue::Value(U128(0))));
 }
 
 /// A ready world: pool 25,000, PT Maju with a 3,000 limit, Pak Budi and Semarang hub linked.
-fn world() -> (Contract, u32) {
+pub(crate) fn world() -> (Contract, u32) {
     let mut c = new_contract();
     deposit(&mut c, "rina.testnet", 25_000 * USDC);
     start_shipper(&mut c, "ptmaju.testnet", 3_000 * USDC);
@@ -82,7 +82,7 @@ fn world() -> (Contract, u32) {
     (c, dest)
 }
 
-fn create(c: &mut Contract, dest: u32, bill: u128) -> u64 {
+pub(crate) fn create(c: &mut Contract, dest: u32, bill: u128) -> u64 {
     as_("ptmaju.testnet", T0);
     c.create_shipment(
         acc("budi.testnet"),

@@ -20,9 +20,11 @@ mod views;
 
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_money;
 
 pub use index::Index;
-pub use pool::{InvestorView, Pool};
+pub use pool::{InvestorView, Pool, QueueEntry};
 pub use shipment::{Shipment, Status};
 pub use shipper::{Destination, Network, Shipper};
 pub use team::{Proposal, ProposalKind, ProposalStatus};
@@ -99,6 +101,8 @@ pub(crate) enum StorageKey {
     ByDestinationItems,
     Investors,
     Proposals,
+    WithdrawQueue,
+    InvestorQueued,
 }
 
 #[near(contract_state)]
@@ -128,6 +132,12 @@ pub struct Contract {
     pub(crate) pool: Pool,
     /// Pool shares per investor.
     pub(crate) investors: LookupMap<AccountId, U128>,
+    /// Withdrawals waiting for cash, oldest at `queue_head`. Positions `queue_head..queue_tail`.
+    pub(crate) queue: LookupMap<u64, QueueEntry>,
+    pub(crate) queue_head: u64,
+    pub(crate) queue_tail: u64,
+    /// Total still queued per investor.
+    pub(crate) investor_queued: LookupMap<AccountId, U128>,
 
     pub(crate) proposals: IterableMap<u64, Proposal>,
     pub(crate) next_proposal: u64,
@@ -174,6 +184,10 @@ impl Contract {
             next_shipment: 1,
             pool: Pool::default(),
             investors: LookupMap::new(StorageKey::Investors),
+            queue: LookupMap::new(StorageKey::WithdrawQueue),
+            queue_head: 0,
+            queue_tail: 0,
+            investor_queued: LookupMap::new(StorageKey::InvestorQueued),
             proposals: IterableMap::new(StorageKey::Proposals),
             next_proposal: 1,
         }
