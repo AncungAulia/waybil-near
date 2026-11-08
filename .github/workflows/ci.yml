@@ -43,8 +43,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install cargo-near
-        # Pinned so the generated ABI matches the committed one.
-        run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/download/cargo-near-v0.22.0/cargo-near-installer.sh | sh
+        # Pinned so the generated ABI matches the committed one. GitHub downloads sometimes
+        # return 504, so retry and fail loudly instead of running tests without the tool.
+        run: |
+          set -o pipefail
+          url=https://github.com/near/cargo-near/releases/download/cargo-near-v0.22.0/cargo-near-installer.sh
+          for i in 1 2 3 4 5; do
+            curl --proto '=https' --tlsv1.2 -LsSf --retry 3 "$url" | sh && break
+            echo "Install failed, retrying in $((i * 10)) s"
+            sleep $((i * 10))
+          done
+          cargo near --version
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: contracts/${{ matrix.contract }}
