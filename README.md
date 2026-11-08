@@ -35,7 +35,10 @@ accounts, builds and deploys the contract and prints its team and pool when it i
 To run the landing page, copy `landing-page/.env.example` to `landing-page/.env.local`, then run
 `pnpm --filter @waybil/landing-page dev` and open http://localhost:3000.
 
-Running the backend and frontend is added here as each part lands.
+To run the frontend, use `pnpm --filter @waybil/fe dev` and open
+http://localhost:3001/driver or http://localhost:3001/warehouse. These screens use labeled
+demo fixtures while the backend and sign-in are being built. See [fe/README.md](fe/README.md)
+for the gallery and production build commands. Backend run instructions will be added when it lands.
 
 ## NEAR technology used
 

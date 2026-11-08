@@ -1,0 +1,744 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, ArrowDown, Check, Package, Warning, Copy } from "@phosphor-icons/react";
+import { RoleShell } from "@/components/layout/RoleShell";
+import { Panel } from "@/components/layout/Panel";
+import { ActionSheet } from "@/components/layout/ActionSheet";
+import { Button } from "@/components/ui/Button";
+import { Money } from "@/components/elements/Money";
+import { KeyValue } from "@/components/elements/KeyValue";
+import { Stat } from "@/components/elements/Stat";
+import { DemoMap } from "@/components/elements/DemoMap";
+import { DemoRecord } from "@/components/elements/DemoRecord";
+import { DeliveryQr } from "@/components/elements/DeliveryQr";
+import { ResultScreen } from "@/components/elements/ResultScreen";
+import { StatusPill } from "@/components/elements/StatusPill";
+import { useDemoDelivery, useDemoReport } from "@/hooks/useDemoDelivery";
+import { DEMO_CODE, DEFAULT_REPORT } from "@/lib/demo-delivery";
+import { cn } from "@/lib/cn";
+import { DRIVER_FIXTURES, type DriverState } from "../data/fixtures";
+
+const MAPS = "https://www.google.com/maps/search/?api=1&query=Harbor+Hub+9+Pier+Street";
+const PAYOUTS = [
+  ["1041", "Harbor City", "Nov 12", "292500000"],
+  ["1039", "Millbrook", "Nov 11", "117000000"],
+  ["1032", "Riverton", "Nov 8", "292500000"],
+  ["1027", "Oakdale", "Nov 1", "195000000"],
+] as const;
+
+function ShareLink() {
+  const [copied, setCopied] = useState(false);
+  const [failed, setFailed] = useState(false);
+  return (
+    <div className="flex flex-col gap-12">
+      <div className="flex items-center justify-between gap-8 rounded-small bg-ds-canvas p-12">
+        <span className="text-label">app.waybil.xyz/c/sam</span>
+        <button
+          type="button"
+          className="press focus-ring rounded-small p-8"
+          aria-label="Copy your link"
+          onClick={async () => {
+            try {
+              await navigator.clipboard.writeText("https://app.waybil.xyz/c/sam");
+              setCopied(true);
+              setFailed(false);
+            } catch {
+              setFailed(true);
+            }
+          }}
+        >
+          <Copy size={18} />
+        </button>
+      </div>
+      {copied && (
+        <p role="status" className="text-caption text-ds-success">
+          Your link is copied.
+        </p>
+      )}
+      {failed && (
+        <p role="status" className="text-caption text-ds-muted">
+          Select the link above to copy it.
+        </p>
+      )}
+      <a
+        className="press focus-ring rounded-full bg-ds-ink px-20 py-14 text-center text-body text-ds-bg"
+        href="https://wa.me/?text=https%3A%2F%2Fapp.waybil.xyz%2Fc%2Fsam"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Share my link on WhatsApp ↗
+      </a>
+    </div>
+  );
+}
+
+function TripFacts({ westfield = false }: { westfield?: boolean }) {
+  return (
+    <Panel title="Trip" gap={12}>
+      <div>
+        <KeyValue label="Shipping company" value="Northwind Freight Co." />
+        <KeyValue label="Pickup" value="Main warehouse, 21 Dock Road" />
+        <KeyValue label="Drop-off" value={westfield ? "Westfield" : "Harbor Hub, 9 Pier Street"} />
+        <KeyValue label="Cargo" value={westfield ? "60 boxes of oil" : "120 crates of coffee"} />
+        <KeyValue
+          label="Shipping fee"
+          value={<Money amount={westfield ? "210000000" : "300000000"} />}
+        />
+      </div>
+    </Panel>
+  );
+}
+
+function PayoutRows({ recent = false }: { recent?: boolean }) {
+  return (
+    <div className="flex flex-col gap-20">
+      {(recent ? PAYOUTS.slice(1, 3) : PAYOUTS).map(([id, city, date, amount]) => (
+        <div key={id} className="flex flex-wrap items-center gap-12">
+          <span className="grid size-40 shrink-0 place-items-center rounded-full bg-ds-success-soft text-ds-success">
+            <ArrowDown size={18} />
+          </span>
+          <div className="min-w-120 flex-1">
+            <p className="text-label">Eastport to {city}</p>
+            <p className="text-caption text-ds-muted">
+              #{id} · {date}
+            </p>
+          </div>
+          <div className="flex flex-col items-end gap-4">
+            <span className="text-label text-ds-success">
+              +<Money amount={amount} />
+            </span>
+            {!recent && (
+              <a
+                className="focus-ring text-caption text-ds-muted"
+                href="https://testnet.nearblocks.io/address/sam.users.waybil.testnet"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                See the record on NearBlocks ↗
+              </a>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function DriverScreen({
+  initialState = "K1.1",
+  preview = false,
+  shipmentId = 1041,
+}: {
+  initialState?: DriverState;
+  preview?: boolean;
+  shipmentId?: number;
+}) {
+  const [localState, setState] = useState<DriverState>(initialState);
+  const [loaded, setLoaded] = useState(true);
+  const [shareLocation, setShareLocation] = useState(true);
+  const [offline, setOffline] = useState(false);
+  const [reason, setReason] = useState("Running late");
+  const [note, setNote] = useState("Traffic jam near Pine Ridge. About 1 hour late.");
+  const [accepted, setAccepted] = useState(false);
+  const [reportBack, setReportBack] = useState<DriverState>("K2.9");
+  const delivery = useDemoDelivery();
+  const savedReport = useDemoReport();
+  const report = preview ? DEFAULT_REPORT : savedReport;
+  const router = useRouter();
+  useEffect(() => {
+    if (preview) return;
+    const update = () => setOffline(!navigator.onLine);
+    update();
+    window.addEventListener("online", update);
+    window.addEventListener("offline", update);
+    return () => {
+      window.removeEventListener("online", update);
+      window.removeEventListener("offline", update);
+    };
+  }, [preview]);
+  let state = localState;
+  if (!preview && shipmentId === 1041) {
+    if (state === "K1.1" && delivery === "paid") state = "K1.2";
+    if (["K2.4", "K2.5", "K2.6", "K2.7", "K2.13"].includes(state)) {
+      if (delivery === "paid") state = "K2.8";
+      else if (delivery === "reported") state = "K2.9";
+      else if (offline && state !== "K2.5") state = "K2.13";
+    }
+  }
+  const shipment = DRIVER_FIXTURES[state];
+  const westfield = shipmentId === 1044;
+  const go = (s: DriverState) => setState(s);
+  const openReport = () => {
+    setReportBack(state === "K2.11" ? "K2.11" : "K2.9");
+    go("K2.10");
+  };
+  const trips = () => {
+    if (preview) go("K1.1");
+    else router.push("/driver");
+  };
+  const openTrip = (s: DriverState, id = 1041) => {
+    if (preview) go(s);
+    else router.push(`/driver/trips/${id}${s === "K2.5" ? "?qr=on" : ""}`);
+  };
+  const pickup = () => {
+    if (shareLocation) go("K2.3");
+    else go("K2.4");
+  };
+  const detail = state.startsWith("K2");
+  const current = state.startsWith("K3")
+    ? ["K3.1", "K3.2"].includes(state)
+      ? "/driver/payouts"
+      : "/driver/companies"
+    : "/driver";
+  const title =
+    state === "K1.2"
+      ? "You got paid"
+      : state.startsWith("K1")
+        ? "Hi, Sam"
+        : state.startsWith("K3")
+          ? ["K3.1", "K3.2"].includes(state)
+            ? "Payouts"
+            : "Companies"
+          : westfield
+            ? "Eastport to Westfield"
+            : "Eastport to Harbor City";
+  const amount = westfield ? "204750000" : shipment.advance;
+  const sheet = ["K2.2", "K2.3", "K2.10", "K2.12"].includes(state);
+
+  if (state === "K2.5")
+    return (
+      <div className="flex min-h-dvh flex-col items-center gap-20 bg-ds-ink px-24 py-24 text-ds-bg">
+        <button
+          type="button"
+          className="press focus-ring self-end rounded-full px-16 py-10 text-label"
+          onClick={() => go("K2.4")}
+        >
+          Close
+        </button>
+        <div className="my-auto flex w-full max-w-440 flex-col gap-20 text-center">
+          <h1 className="text-title">Show this to Harbor Hub</h1>
+          <p className="text-body text-ds-on-night">They scan it to confirm the goods arrived.</p>
+          <DeliveryQr code={westfield ? "WSTF1044" : DEMO_CODE} />
+          <p className="text-amount tracking-[0.1em]">{westfield ? "WSTF 1044" : "7K2Q 9F4M"}</p>
+          <p className="text-label text-ds-on-night">
+            Shipment #{shipmentId} · {westfield ? "60 boxes of oil" : "120 crates of coffee"}
+          </p>
+          <p role="status" className="text-body">
+            Waiting for them to scan
+          </p>
+          <p className="text-caption text-ds-on-night">
+            Turn your screen brightness up if the scan is slow.
+          </p>
+        </div>
+      </div>
+    );
+  if (state === "K2.8")
+    return (
+      <div className="min-h-dvh bg-ds-canvas px-24">
+        <ResultScreen
+          fullScreen
+          title="You got paid"
+          description="Sent to your account seconds after Lena confirmed."
+          recorded="Demo payment receipt"
+          action="Back to trips"
+          onAction={trips}
+        >
+          <Money amount={amount} className="text-display" />
+        </ResultScreen>
+      </div>
+    );
+
+  return (
+    <RoleShell role="driver" current={current} detail={detail}>
+      {detail && (
+        <button
+          className="press focus-ring mb-20 flex items-center gap-8 rounded-small text-label text-ds-muted"
+          onClick={trips}
+        >
+          <ArrowLeft size={18} />
+          Trips
+        </button>
+      )}
+      {state === "K2.13" && (
+        <p
+          role="status"
+          className="mb-16 flex gap-10 rounded-small bg-ds-brand-soft p-16 text-label"
+        >
+          <Warning size={20} className="shrink-0" />
+          No signal. Your QR still works, and Waybil sends updates when you are back online.
+        </p>
+      )}
+      <div className="mb-20 flex flex-wrap items-end justify-between gap-12 md:mb-24">
+        <div>
+          <h1 className="text-title md:text-amount">{title}</h1>
+          <p className="mt-4 text-label text-ds-muted">
+            {detail
+              ? `#${shipmentId} · Northwind`
+              : state.startsWith("K1")
+                ? state === "K1.2"
+                  ? "The money is already in your account"
+                  : state === "K1.3"
+                    ? "Let us get your first trip"
+                    : "2 trips this week"
+                : current === "/driver/payouts"
+                  ? "Money paid to you when goods arrive"
+                  : "Shipping companies that can send you trips"}
+          </p>
+        </div>
+        {detail && (
+          <StatusPill
+            label={
+              state === "K2.11" ? "Paid" : ["K2.9", "K2.10"].includes(state) ? "On hold" : undefined
+            }
+            status={
+              state === "K2.11"
+                ? "paidEarly"
+                : ["K2.9", "K2.10"].includes(state)
+                  ? "disputed"
+                  : ["K2.6", "K2.7"].includes(state)
+                    ? "delivered"
+                    : ["K2.1", "K2.2", "K2.3"].includes(state)
+                      ? "approved"
+                      : "inTransit"
+            }
+          />
+        )}
+      </div>
+
+      {state === "K1.3" ? (
+        <Panel className="min-h-[60dvh] items-center justify-center text-center">
+          <img src="/illustrations/driver.svg" alt="" className="h-140 w-180 object-contain" />
+          <h2 className="text-heading">No trips yet</h2>
+          <p className="max-w-400 text-body text-ds-muted">
+            Trips appear here once a shipping company you work with approves one for you.
+          </p>
+          <div className="w-full max-w-380">
+            <ShareLink />
+          </div>
+        </Panel>
+      ) : state.startsWith("K1") ? (
+        <div className="grid gap-16 lg:grid-cols-[minmax(0,1fr)_420px]">
+          <div className="flex min-w-0 flex-col gap-16">
+            {state === "K1.2" ? (
+              <Panel>
+                <p className="text-heading">Harbor Hub confirmed your delivery</p>
+                <Money amount="292500000" className="text-display" />
+                <p className="text-label text-ds-muted">
+                  You received 97.5% of the 300.00 USDC fee for shipment #1041.
+                </p>
+                <Button
+                  className="w-full justify-between md:w-fit"
+                  onClick={() => openTrip("K2.8")}
+                >
+                  See the payment
+                </Button>
+              </Panel>
+            ) : (
+              <Panel
+                title="On the road · #1041"
+                action={
+                  <button
+                    className="focus-ring text-caption text-ds-brand-deep"
+                    onClick={() => openTrip("K2.4")}
+                  >
+                    Details
+                  </button>
+                }
+                className="p-18"
+              >
+                <DemoMap className="h-300" />
+                <div className="flex flex-col gap-12 md:flex-row">
+                  <Button onClick={() => openTrip("K2.5")}>Show QR at arrival</Button>
+                  <a
+                    className="focus-ring rounded-full border border-ds-line-strong px-20 py-12 text-body"
+                    href={MAPS}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Open in Google Maps ↗
+                  </a>
+                </div>
+              </Panel>
+            )}
+            <Panel title="Eastport to Westfield" action={<StatusPill status="approved" />}>
+              <p className="text-caption text-ds-muted">#1044 · Northwind</p>
+              <p className="text-label text-ds-muted">You get on arrival</p>
+              <Money amount="204750000" className="text-title" />
+              <p className="text-caption text-ds-muted">Pickup today</p>
+              <Button
+                variant="secondary"
+                className="w-full justify-between md:w-fit"
+                onClick={() => openTrip("K2.1", 1044)}
+              >
+                Confirm pickup
+              </Button>
+            </Panel>
+          </div>
+          <div className="flex min-w-0 flex-col gap-16">
+            <Stat
+              className="hidden w-full rounded-card p-24 lg:flex"
+              label="Paid to you this month"
+              value={<Money amount={state === "K1.2" ? "897000000" : "604500000"} />}
+              context={
+                state === "K1.2"
+                  ? "You were paid on arrival for four trips."
+                  : "You were paid on arrival for three trips."
+              }
+            />
+            <Panel
+              title="Recent payouts"
+              action={
+                <Link className="focus-ring text-caption text-ds-brand-deep" href="/driver/payouts">
+                  See all ↗
+                </Link>
+              }
+            >
+              <PayoutRows recent />
+            </Panel>
+          </div>
+        </div>
+      ) : current === "/driver/payouts" ? (
+        <div className="flex flex-col gap-16">
+          <div className="grid grid-cols-1 gap-16 md:grid-cols-2">
+            <Stat
+              className="w-full"
+              label="This month"
+              value={<Money amount={state === "K3.2" ? "0" : "897000000"} />}
+              context={
+                state === "K3.2"
+                  ? "Your first payout shows up here."
+                  : "You were paid seconds after arrival for four trips."
+              }
+            />
+            <Stat
+              className="w-full"
+              label="In your account"
+              value={<Money amount={state === "K3.2" ? "0" : "1284600000"} />}
+              context="The account you signed up with"
+            />
+          </div>
+          <Panel>
+            {state === "K3.2" ? (
+              <div className="flex min-h-360 flex-col items-center justify-center gap-12 text-center">
+                <ArrowDown size={56} />
+                <h2 className="text-heading">No payouts yet</h2>
+                <p className="text-body text-ds-muted">
+                  Finish a trip and you will be paid the moment the warehouse confirms.
+                </p>
+              </div>
+            ) : (
+              <PayoutRows />
+            )}
+          </Panel>
+        </div>
+      ) : current === "/driver/companies" ? (
+        <div className="grid gap-16 lg:grid-cols-[minmax(0,1fr)_420px]">
+          <div className="flex flex-col gap-16">
+            {state === "K3.4" && !accepted && (
+              <Panel className="bg-ds-brand-soft" title="Atlas Cargo wants to work with you">
+                <p className="text-label">Verified · paid on time 100%</p>
+                <div className="flex gap-12">
+                  <Button onClick={() => setAccepted(true)}>Accept</Button>
+                  <Button variant="quiet" onClick={() => go("K3.3")}>
+                    Decline
+                  </Button>
+                </div>
+              </Panel>
+            )}
+            <Panel title="Connected">
+              {["Northwind Freight Co.", "Blue Ridge", ...(accepted ? ["Atlas Cargo"] : [])].map(
+                (name, i) => (
+                  <div
+                    key={name}
+                    className="flex items-center gap-12 border-b border-ds-line py-16 last:border-0"
+                  >
+                    <span className="grid size-44 place-items-center rounded-full bg-ds-canvas">
+                      <Package size={20} />
+                    </span>
+                    <div className="flex-1">
+                      <h3 className="text-body">{name}</h3>
+                      <p className="text-caption text-ds-muted">
+                        {i === 0 ? "Eastport · 3 trips with you" : "Millbrook · 1 trip with you"}
+                      </p>
+                    </div>
+                    <span className="text-caption text-ds-muted">
+                      {i === 0 ? "1 trip now" : "No trips now"}
+                    </span>
+                  </div>
+                ),
+              )}
+            </Panel>
+          </div>
+          <Panel title="Work with a new company">
+            <p className="text-body text-ds-muted">
+              Send them your link. When they connect, their trips show up here.
+            </p>
+            <ShareLink />
+          </Panel>
+        </div>
+      ) : (
+        <div className="grid gap-16 lg:grid-cols-[minmax(0,1fr)_420px]">
+          <DemoMap
+            className="h-290 md:h-400 lg:h-520"
+            label={
+              state === "K2.13"
+                ? "Last seen 5 min ago"
+                : ["K2.1", "K2.2", "K2.3"].includes(state)
+                  ? "Pickup at Main warehouse"
+                  : ["K2.6", "K2.7", "K2.9", "K2.10", "K2.11"].includes(state)
+                    ? "At Harbor Hub"
+                    : "Sharing location"
+            }
+          />
+          <div className="flex min-w-0 flex-col gap-16">
+            <Panel>
+              {["K2.1", "K2.2", "K2.3"].includes(state) ? (
+                <>
+                  <p className="text-label text-ds-muted">You get on arrival</p>
+                  <Money amount={amount} className="text-amount" />
+                  <p className="text-label text-ds-muted">
+                    You receive 97.5% of the fee, paid the moment Harbor Hub confirms.
+                  </p>
+                  <Button className="w-full justify-between" onClick={() => go("K2.2")}>
+                    Confirm pickup
+                  </Button>
+                </>
+              ) : ["K2.6", "K2.7"].includes(state) ? (
+                <>
+                  <h2 className="text-heading">Lena confirmed all 120 crates</h2>
+                  <Money amount={amount} className="text-amount" />
+                  <p className="text-label text-ds-muted">
+                    {state === "K2.6"
+                      ? "It is on its way to your account. The 7.50 USDC fee pays for getting paid early."
+                      : "The network is slow right now. Your money is safe."}
+                  </p>
+                  <Button
+                    variant="moment"
+                    loading
+                    loadingLabel={state === "K2.6" ? "Sending" : "Still sending"}
+                  >
+                    Sending
+                  </Button>
+                  {state === "K2.7" && (
+                    <p className="text-caption text-ds-muted">
+                      It is taking longer than usual. It will arrive soon.
+                    </p>
+                  )}
+                </>
+              ) : ["K2.9", "K2.10"].includes(state) ? (
+                <>
+                  <h2 className="text-heading">Harbor Hub reported a problem</h2>
+                  <p className="text-body text-ds-muted">
+                    {report.note} You get paid after Northwind chooses what to pay.
+                  </p>
+                  <Button variant="secondary" onClick={openReport}>
+                    Read the report
+                  </Button>
+                </>
+              ) : state === "K2.11" ? (
+                <>
+                  <h2 className="text-heading">Northwind chose what to pay</h2>
+                  <p className="text-body">
+                    They paid for the 112 good crates. You got <Money amount={shipment.advance} />.
+                  </p>
+                  <DemoRecord title="Demo settlement receipt" />
+                  <Button variant="secondary" onClick={openReport}>
+                    Read the report
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <div className="flex justify-between gap-20">
+                    <div>
+                      <p className="text-label text-ds-muted">Arriving around</p>
+                      <p className="text-title">15:40</p>
+                    </div>
+                    <div>
+                      <p className="text-label text-ds-muted">Left to go</p>
+                      <p className="text-title">42 km</p>
+                    </div>
+                  </div>
+                  <Button className="w-full justify-between" onClick={() => go("K2.5")}>
+                    Show QR at arrival
+                  </Button>
+                  <a
+                    className="focus-ring rounded-full border border-ds-line-strong px-20 py-12 text-center text-body"
+                    href={MAPS}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Open in Google Maps ↗
+                  </a>
+                  <Button variant="quiet" className="text-ds-danger" onClick={() => go("K2.12")}>
+                    Report a problem
+                  </Button>
+                </>
+              )}
+            </Panel>
+            <TripFacts westfield={westfield} />
+          </div>
+        </div>
+      )}
+
+      {sheet && (
+        <ActionSheet
+          wide={state === "K2.10"}
+          title={
+            state === "K2.2"
+              ? "Confirm pickup"
+              : state === "K2.3"
+                ? "Allow location while driving"
+                : state === "K2.10"
+                  ? "Problem report"
+                  : "What happened?"
+          }
+          onClose={() => go(state === "K2.10" ? reportBack : state === "K2.12" ? "K2.4" : "K2.1")}
+          preview={preview}
+        >
+          {state === "K2.2" ? (
+            <>
+              <label className="flex items-center gap-12 text-body">
+                <input
+                  type="checkbox"
+                  checked={loaded}
+                  onChange={(e) => setLoaded(e.target.checked)}
+                  className="size-20 accent-ds-ink"
+                />
+                All {westfield ? "60 boxes of oil" : "120 crates of coffee"} are loaded
+              </label>
+              <label className="flex items-start gap-12 text-body">
+                <input
+                  type="checkbox"
+                  checked={shareLocation}
+                  onChange={(e) => setShareLocation(e.target.checked)}
+                  className="mt-4 size-20 shrink-0 accent-ds-ink"
+                />
+                <span>
+                  Share my location during this trip
+                  <span className="mt-4 block text-caption text-ds-muted">
+                    Northwind sees where the truck is. Sharing stops when you arrive.
+                  </span>
+                </span>
+              </label>
+              <Button className="w-full justify-between" disabled={!loaded} onClick={pickup}>
+                Confirm pickup
+              </Button>
+            </>
+          ) : state === "K2.3" ? (
+            <>
+              <p className="text-body text-ds-muted">
+                Your phone will ask next. Waybil only uses your location while a trip is on the
+                road, and only Northwind can see it.
+              </p>
+              <Button
+                onClick={() => {
+                  if (preview) {
+                    go("K2.4");
+                    return;
+                  }
+                  navigator.geolocation?.getCurrentPosition(
+                    () => go("K2.4"),
+                    () => go("K2.4"),
+                    { timeout: 10000 },
+                  );
+                  if (!navigator.geolocation) go("K2.4");
+                }}
+              >
+                Continue
+              </Button>
+              <Button variant="quiet" onClick={() => go("K2.4")}>
+                Not now
+              </Button>
+            </>
+          ) : state === "K2.10" ? (
+            <>
+              <p className="text-caption text-ds-muted">From Lena at Harbor Hub · Nov 12, 15:31</p>
+              <div className="grid grid-cols-3 gap-8">
+                {report.photos.length
+                  ? report.photos.map((photo, i) => (
+                      <img
+                        key={photo.name + i}
+                        src={photo.src}
+                        alt={photo.name}
+                        className="h-120 w-full rounded-small object-cover"
+                      />
+                    ))
+                  : [1, 2, 3].map((n) => (
+                      <span
+                        key={n}
+                        aria-label={`Demo report photo ${n}`}
+                        className="grid h-120 place-items-center rounded-small bg-ds-canvas"
+                      >
+                        <Package size={32} className="text-ds-muted" />
+                      </span>
+                    ))}
+              </div>
+              <div className="grid grid-cols-3 gap-8">
+                {[
+                  ["Expected", 120],
+                  ["In good shape", report.goodQty],
+                  ["Damaged", 120 - report.goodQty],
+                ].map(([label, count]) => (
+                  <div key={label} className="rounded-small bg-ds-canvas p-12">
+                    <p className="text-caption text-ds-muted">{label}</p>
+                    <p className={cn("mt-4 text-label", label === "Damaged" && "text-ds-danger")}>
+                      {count} crates
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <p className="text-label">Lena&apos;s note</p>
+              <p className="text-body">{report.note}</p>
+              <DemoRecord title="Demo report receipt" />
+              <Button variant="quiet" onClick={() => go(reportBack)}>
+                Close
+              </Button>
+            </>
+          ) : (
+            <>
+              <p className="text-body text-ds-muted">Send Northwind a message on WhatsApp.</p>
+              <div className="flex flex-wrap gap-8">
+                {["Running late", "Truck broke down", "Accident", "Something else"].map((r) => (
+                  <button
+                    key={r}
+                    className={cn(
+                      "press focus-ring rounded-full px-16 py-10 text-label",
+                      r === reason ? "bg-ds-ink text-ds-bg" : "bg-ds-canvas",
+                    )}
+                    aria-pressed={r === reason}
+                    onClick={() => setReason(r)}
+                  >
+                    {r === reason && <Check size={14} className="mr-6 inline" />}
+                    {r}
+                  </button>
+                ))}
+              </div>
+              <label className="text-label">
+                What happened
+                <textarea
+                  className="focus-ring mt-8 min-h-100 w-full resize-y rounded-small bg-ds-canvas p-16 text-body"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                />
+              </label>
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(`Shipment #${shipmentId}. ${reason}. ${note}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="press focus-ring rounded-full bg-ds-ink px-20 py-14 text-center text-body text-ds-bg"
+              >
+                Send to Northwind ↗
+              </a>
+            </>
+          )}
+        </ActionSheet>
+      )}
+      <p className="mt-24 text-center text-caption text-ds-muted">
+        This demo uses sample data. It does not move money.
+      </p>
+    </RoleShell>
+  );
+}

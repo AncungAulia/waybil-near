@@ -24,6 +24,7 @@ When you add a folder that isn't listed here, add it here in the same PR.
 
 ```
 fe/
+├─ review/              State checklists and PR screenshots
 ├─ public/
 │  ├─ brand/             logo, favicon, app icon (from design/logo)
 │  └─ illustrations/     role and empty-state art
@@ -60,7 +61,8 @@ fe/
 │  │  └─ elements/                        Shared Waybil pieces: StatusPill, ProofLink, ProofTag,
 │  │                                      ProofCard, FanMeter, CreditMeter, Stat, KeyValue,
 │  │                                      Avatar, TimelineStep, ShipmentRow, BalanceCard,
-│  │                                      TxToast, EmptyState, MapView, QrCode, QrScanner
+│  │                                      TxToast, EmptyState, Money, ResultScreen, DemoMap,
+│  │                                      DemoRecord, DeliveryQr, QrScanner (MapView follows live data)
 │  ├─ lib/
 │  │  ├─ near.ts                          RPC, contract ids, view helpers
 │  │  ├─ wallet.ts                        near-connect setup and signing
@@ -69,6 +71,7 @@ fe/
 │  │  ├─ format.ts                        Money, dates, account names
 │  │  ├─ errors.ts                        Contract error codes to plain sentences
 │  │  ├─ status.ts                        Contract status to the chip the design draws
+│  │  ├─ demo-delivery.ts                 Local driver/warehouse demo transport, no transactions
 │  │  ├─ cn.ts                            Joins class names, later Tailwind class wins
 │  │  └─ env.ts                           Typed public env (NEXT_PUBLIC_* only, no secrets)
 │  ├─ providers/                          AppProviders, AuthProvider, WalletProvider
