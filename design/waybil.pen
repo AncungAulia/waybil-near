@@ -3459,7 +3459,7 @@
                             {
                               "type": "frame",
                               "id": "c7GrG",
-                              "name": "Status/FINANCED",
+                              "name": "Status/PAID_EARLY",
                               "reusable": true,
                               "fill": "$ds-canvas",
                               "cornerRadius": 999,
@@ -4833,7 +4833,7 @@
                                       "id": "B9LwW",
                                       "name": "K",
                                       "fill": "$ds-ink",
-                                      "content": "Toast, drawer",
+                                      "content": "Drawer, toast",
                                       "fontFamily": "$ds-font",
                                       "fontSize": 14,
                                       "fontWeight": "500"
@@ -4843,7 +4843,7 @@
                                       "id": "XwyO1",
                                       "name": "V",
                                       "fill": "$ds-muted",
-                                      "content": "240ms, slide from 100%",
+                                      "content": "300ms drawer, 200ms toast",
                                       "fontFamily": "$ds-font",
                                       "fontSize": 13,
                                       "fontWeight": "normal"
@@ -4867,7 +4867,7 @@
                                       "id": "GjQRo",
                                       "name": "K",
                                       "fill": "$ds-ink",
-                                      "content": "Cash out moment",
+                                      "content": "Rare moment",
                                       "fontFamily": "$ds-font",
                                       "fontSize": 14,
                                       "fontWeight": "500"
@@ -4877,7 +4877,7 @@
                                       "id": "kJDrG",
                                       "name": "V",
                                       "fill": "$ds-muted",
-                                      "content": "240ms, scale 0.96 to 1 with fade",
+                                      "content": "spring about 400ms, main card only",
                                       "fontFamily": "$ds-font",
                                       "fontSize": 13,
                                       "fontWeight": "normal"
@@ -4945,7 +4945,7 @@
                                       "id": "X0Pt21",
                                       "name": "V",
                                       "fill": "$ds-muted",
-                                      "content": "page load choreography, bounce, over 300ms",
+                                      "content": "UI over 300ms, money counting up",
                                       "fontFamily": "$ds-font",
                                       "fontSize": 13,
                                       "fontWeight": "normal"
@@ -9732,7 +9732,7 @@
                                   "id": "o84MK",
                                   "name": "V",
                                   "fill": "$ds-muted",
-                                  "content": "scale 0.96 to 1 + fade · 240ms",
+                                  "content": "fade + 8px rise · 200ms",
                                   "fontFamily": "$ds-font",
                                   "fontSize": 12,
                                   "fontWeight": "normal"
@@ -11361,7 +11361,7 @@
                                 {
                                   "type": "frame",
                                   "id": "ke4um",
-                                  "name": "State Cashed out",
+                                  "name": "State Paid early",
                                   "layout": "vertical",
                                   "gap": 10,
                                   "children": [
@@ -11376,7 +11376,7 @@
                                       "id": "XKM5h",
                                       "name": "Caption",
                                       "fill": "$ds-muted",
-                                      "content": "Cashed out",
+                                      "content": "Paid early",
                                       "fontFamily": "$ds-font",
                                       "fontSize": 12,
                                       "fontWeight": "normal"
@@ -14356,7 +14356,7 @@
                                   "fill": "$ds-muted",
                                   "textGrowth": "fixed-width",
                                   "width": "fill_container",
-                                  "content": "Hover tints the row. Clicking selects it and opens the detail panel, which slides in from the right at 240ms.",
+                                  "content": "Hover tints the row. Clicking selects it and opens the detail panel, which slides in from the right at 300ms.",
                                   "lineHeight": 1.55,
                                   "fontFamily": "$ds-font",
                                   "fontSize": 12,

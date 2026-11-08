@@ -85,7 +85,7 @@ destination, `investors: LookupMap<AccountId, U128 shares>`,
 | `create_shipment(driver, destination, qty, unit, bill, due_at) -> u64` | Active, not paused, `late_bills == 0`, driver and destination in network, `due_at ≤ now + max_due_days`, `owed + committed + bill ≤ limit`, `bill ≤ max_share_bps` of pool value, free cash ≥ advance. Commits the advance. | `shipment_created` |
 | `cancel_shipment(id)` | Status `Approved` only. Frees the commitment. | `shipment_cancelled` |
 | `settle_report(id, driver_amount)` | Status `Reported`, `driver_amount ≤ advance`. New bill = `driver_amount × 10,000 / driver_bps` (rounded up). Pays the driver. | `report_settled`, `driver_paid` |
-| repay | `ft_transfer_call` from the shipper with msg `{"repay": id}` and amount = bill. Status `Paid`. Late payment clears `late_bills`. | `bill_repaid` |
+| repay | `ft_transfer_call` from the shipper with msg `{"repay": id}` and amount = bill. Status `Paid` (driver paid early), then `Repaid`. Late payment clears `late_bills`. | `bill_repaid` |
 
 ### Driver (Google, relayed)
 
