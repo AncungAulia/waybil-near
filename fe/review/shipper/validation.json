@@ -1,0 +1,719 @@
+{
+  "states": 39,
+  "widths": [1440, 834, 390],
+  "captures": [
+    {
+      "code": "P1.1",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P1.2",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P1.3",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P1.4",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P2.1",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P2.2",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P2.3",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P2.4",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P2.5",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P2.6",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P2.7",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P3.1",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P3.2",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P3.3",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P3.4",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P3.5",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P3.6",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P3.7",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P3.8",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P3.10",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P3.9",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P3.11",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P4.1",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P4.2",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P4.3",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P4.4",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P5.1",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P5.2",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P5.3",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P5.4",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P6.1",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P6.2",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P6.3",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P6.4",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P7.1",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P7.2",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P7.3",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P7.4",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P7.5",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "P1.1",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P1.2",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P1.3",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P1.4",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P2.1",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P2.2",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P2.3",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P2.4",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P2.5",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P2.6",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P2.7",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P3.1",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P3.2",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P3.3",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P3.4",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P3.5",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P3.6",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P3.7",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P3.8",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P3.10",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P3.9",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P3.11",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P4.1",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P4.2",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P4.3",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P4.4",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P5.1",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P5.2",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P5.3",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P5.4",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P6.1",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P6.2",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P6.3",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P6.4",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P7.1",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P7.2",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P7.3",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P7.4",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P7.5",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "P1.1",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P1.2",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P1.3",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P1.4",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P2.1",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P2.2",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P2.3",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P2.4",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P2.5",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P2.6",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P2.7",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P3.1",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P3.2",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P3.3",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P3.4",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P3.5",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P3.6",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P3.7",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P3.8",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P3.10",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P3.9",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P3.11",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P4.1",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P4.2",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P4.3",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P4.4",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P5.1",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P5.2",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P5.3",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P5.4",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P6.1",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P6.2",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P6.3",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P6.4",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P7.1",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P7.2",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P7.3",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P7.4",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "P7.5",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    }
+  ],
+  "browserErrors": [],
+  "flows": [
+    "create custom shipment and preserve cargo, bill and date",
+    "reserve and release credit",
+    "report damage across warehouse and shipper tabs",
+    "reject settlement above advance",
+    "settle at custom amount and preserve driver payout after repayment",
+    "cancel approved shipment",
+    "search and filter lists",
+    "move destination pin by keyboard"
+  ]
+}

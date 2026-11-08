@@ -1,0 +1,65 @@
+{
+  "routes": [
+    { "path": "/", "status": 200, "finalUrl": "http://localhost:3020/start" },
+    {
+      "path": "/start",
+      "status": 200,
+      "finalUrl": "http://localhost:3020/start"
+    },
+    {
+      "path": "/shipper",
+      "status": 200,
+      "finalUrl": "http://localhost:3020/shipper"
+    },
+    {
+      "path": "/driver",
+      "status": 200,
+      "finalUrl": "http://localhost:3020/driver"
+    },
+    {
+      "path": "/warehouse",
+      "status": 200,
+      "finalUrl": "http://localhost:3020/warehouse"
+    },
+    {
+      "path": "/pool",
+      "status": 200,
+      "finalUrl": "http://localhost:3020/pool"
+    },
+    {
+      "path": "/admin",
+      "status": 200,
+      "finalUrl": "http://localhost:3020/admin"
+    },
+    {
+      "path": "/join/demo-driver",
+      "status": 200,
+      "finalUrl": "http://localhost:3020/join/demo-driver"
+    },
+    {
+      "path": "/join/demo-warehouse",
+      "status": 200,
+      "finalUrl": "http://localhost:3020/join/demo-warehouse"
+    },
+    {
+      "path": "/c/sam",
+      "status": 200,
+      "finalUrl": "http://localhost:3020/shipper/network"
+    },
+    {
+      "path": "/this-page-does-not-exist",
+      "status": 404,
+      "finalUrl": "http://localhost:3020/this-page-does-not-exist"
+    }
+  ],
+  "climax": { "driverPaid": true, "delivery": "paid", "browserErrors": [] },
+  "checks": {
+    "lint": true,
+    "typecheck": true,
+    "tests": 23,
+    "format": true,
+    "productionBuild": true
+  },
+  "deployment": "deferred",
+  "changes": "committed for review"
+}

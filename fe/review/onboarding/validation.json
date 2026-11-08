@@ -1,0 +1,882 @@
+{
+  "states": 48,
+  "widths": [1440, 834, 390],
+  "results": [
+    {
+      "code": "A1",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "A2",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "A3",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "A4",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "A5",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "B1",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "B2",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "B3",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "B4",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "C1",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "C2",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "C3",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "C4",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "C5",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "C5.1",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "C5.2",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "C5.3",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "C6",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "C7",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "C8",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "C9",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "D1",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "D2",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "D3",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "D4",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "D5",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "D6",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "E1",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "E2",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "E3",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "F1",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "F2",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "F3",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "F4",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "F5",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "F6",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "G1",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "G2",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "G3",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "G4",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "G5",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "X1",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "X2",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "X3",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "X4",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "X5",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "X6",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "X7",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "A1",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "A2",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "A3",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "A4",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "A5",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "B1",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "B2",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "B3",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "B4",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "C1",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "C2",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "C3",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "C4",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "C5",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "C5.1",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "C5.2",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "C5.3",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "C6",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "C7",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "C8",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "C9",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "D1",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "D2",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "D3",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "D4",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "D5",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "D6",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "E1",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "E2",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "E3",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "F1",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "F2",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "F3",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "F4",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "F5",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "F6",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "G1",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "G2",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "G3",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "G4",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "G5",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "X1",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "X2",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "X3",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "X4",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "X5",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "X6",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "X7",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "A1",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "A2",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "A3",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "A4",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "A5",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "B1",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "B2",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "B3",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "B4",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "C1",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "C2",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "C3",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "C4",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "C5",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "C5.1",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "C5.2",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "C5.3",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "C6",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "C7",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "C8",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "C9",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "D1",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "D2",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "D3",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "D4",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "D5",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "D6",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "E1",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "E2",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "E3",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "F1",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "F2",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "F3",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "F4",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "F5",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "F6",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "G1",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "G2",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "G3",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "G4",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "G5",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "X1",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "X2",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "X3",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "X4",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "X5",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "X6",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "X7",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    }
+  ],
+  "errors": [],
+  "flows": [
+    "company details and cascading country selection",
+    "document type and size checks",
+    "company review submission",
+    "driver plate validation and invitation acceptance",
+    "warehouse invite without wallet",
+    "investor risk acknowledgement and first deposit",
+    "account menu and one-hour demo cooldown",
+    "keyboard dialogs without movement",
+    "reduced motion fade"
+  ]
+}
