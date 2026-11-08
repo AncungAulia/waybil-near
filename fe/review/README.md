@@ -1,7 +1,7 @@
 # Frontend review
 
 The remaining frontend batches are organized into progressive commits on `fe/shipper` for review.
-Commits and a branch push are authorized. No PR, merge or deployment is authorized.
+Progressive commits, a branch push and a review PR are authorized. Merge and deployment are deferred.
 Vercel deployment is deferred.
 The foundation and driver/warehouse batches were merged in PRs #52 and #53.
 Issue #32 was closed because the landing page already exists.
