@@ -37,7 +37,7 @@ export function CreditMeter({
         </span>
       </div>
 
-      <FanMeter value={value} label={label} />
+      <FanMeter value={value} label={label} className="w-full" />
 
       <div className="flex items-center justify-between">
         <span className="text-caption text-ds-muted">
