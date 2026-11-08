@@ -103,7 +103,7 @@ The queue is paid oldest first inside every repayment.
 | Method | Rules | Event |
 |---|---|---|
 | `assistant_set_limit(shipper, limit)` | Shipper active, `now ≥ blocked_until`, `limit ≤ max_limit`, raise within `assistant_raise_bps` over 7 days. Lowering is always allowed. | `limit_changed` |
-| `assistant_propose(kind)` | For anything outside the caps. Creates a proposal with no votes. Not allowed during the cooldown. | `proposal_created` |
+| `assistant_propose(shipper, limit)` | For a limit outside the caps. Creates a `SetLimit` proposal with no votes. Not allowed during the cooldown. | `proposal_created` |
 
 ### Team (3 member accounts, wallet)
 
@@ -138,16 +138,20 @@ then `ft_transfer(treasury, 1.50)`. Rounding leftovers go to the reserve.
 
 ## Views
 
-`get_config`, `get_pool`, `get_shipper(account)`, `get_shipment(id)`,
-`list_shipments_by_shipper(account, from, limit)`, `list_shipments_by_driver`,
-`list_shipments_by_destination`, `get_destinations(shipper)`, `get_investor(account)`
-(shares, value, queued), `get_withdraw_queue(from, limit)`, `get_proposal(id)`,
-`list_proposals(status, from, limit)`, `is_member(account)`.
+`get_config`, `get_team`, `is_member(account_id)`, `get_pool`, `get_shipper(account_id)`,
+`get_network(account_id)` (drivers and destinations), `get_destination(id)`,
+`get_shipment(id)`, `list_shipments_by_shipper(account_id, from, limit)`,
+`list_shipments_by_driver(account_id, from, limit)`,
+`list_shipments_by_destination(destination, from, limit)`, `get_investor(account_id)`
+(shares, value; queued amount comes with withdrawals), `get_withdraw_queue(from, limit)`
+(with withdrawals), `get_proposal(id)`, `list_proposals(status, limit)` (newest first).
+Lists return at most 50 items.
 
 ## Upgrades
 
-State is versioned: `enum VersionedState { V1(StateV1) }`. Every upgrade that changes
-the state adds a new version and a migration.
+The contract stores a `version` field (now `1`). An upgrade that changes the state adds
+a `migrate()` that reads the previous struct with `env::state_read`, builds the new one and
+bumps `version`.
 
 | Stage | Who can upgrade | How |
 |---|---|---|

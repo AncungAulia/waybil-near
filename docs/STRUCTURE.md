@@ -141,6 +141,8 @@ contracts/
 │  │  ├─ assistant.rs    Limit changes within caps
 │  │  ├─ callbacks.rs    Private callbacks for token transfers
 │  │  ├─ events.rs       NEP-297 events
+│  │  ├─ index.rs        Ordered lists (shipments per shipper, driver, destination)
+│  │  ├─ tests.rs        Unit tests
 │  │  ├─ upgrade.rs      Versioned state, stage_code, migrate
 │  │  └─ views.rs
 │  └─ tests/             Sandbox tests per flow
