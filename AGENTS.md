@@ -36,6 +36,7 @@ motion rules) and `be/AGENTS.md` (API, data and key rules). Read them before wor
 - Links to the blockchain explorer read "See the record on NearBlocks ↗".
 - Use one arrow per link. Plain text links end with "↗". Buttons and cards that already
   show an arrow icon drop the "↗" from their label.
+- Footer links drop the "↗" and use short labels, for example "X", "GitHub" and "NearBlocks".
 
 ## Repo layout
 
