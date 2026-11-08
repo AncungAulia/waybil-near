@@ -33,3 +33,7 @@ neardev/
 Thumbs.db
 .idea/
 .vscode/
+
+# Third-party screenshots for the private moodboard
+design/references/
+design/references.pen
