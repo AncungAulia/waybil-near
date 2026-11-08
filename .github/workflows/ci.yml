@@ -1,9 +1,19 @@
 name: CI
 
 on:
+  # Design files, docs and Markdown are not checked by any job, so changes that
+  # only touch them skip CI. A change that also touches code still runs everything.
   pull_request:
+    paths-ignore:
+      - "design/**"
+      - "docs/**"
+      - "**/*.md"
   push:
     branches: [main]
+    paths-ignore:
+      - "design/**"
+      - "docs/**"
+      - "**/*.md"
 
 jobs:
   typescript:
