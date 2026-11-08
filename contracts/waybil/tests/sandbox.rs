@@ -81,11 +81,11 @@ async fn core_flow_pays_the_driver_on_delivery() -> testresult::TestResult<()> {
     let finance = account(&sandbox, "finance.sandbox").await?;
     let assistant = account(&sandbox, "assistant.sandbox").await?;
     let treasury = account(&sandbox, "treasury.sandbox").await?;
-    let rina = account(&sandbox, "rina.sandbox").await?;
-    let ptmaju = account(&sandbox, "ptmaju.sandbox").await?;
-    let budi = account(&sandbox, "budi.sandbox").await?;
+    let maya = account(&sandbox, "maya.sandbox").await?;
+    let northwind = account(&sandbox, "northwind.sandbox").await?;
+    let sam = account(&sandbox, "sam.sandbox").await?;
     let carl = account(&sandbox, "carl.sandbox").await?;
-    let semarang = account(&sandbox, "semarang.sandbox").await?;
+    let harborhub = account(&sandbox, "harborhub.sandbox").await?;
 
     near_api::Contract::deploy(usdc_id.clone())
         .use_code(usdc_wasm)
@@ -108,8 +108,8 @@ async fn core_flow_pays_the_driver_on_delivery() -> testresult::TestResult<()> {
     let usdc = near_api::Contract(usdc_id.clone());
     let app = near_api::Contract(app_id.clone());
 
-    // Register the app and Pak Budi on the token. Carl stays unregistered on purpose.
-    for who in [&app_id, &budi] {
+    // Register the app and Sam on the token. Carl stays unregistered on purpose.
+    for who in [&app_id, &sam] {
         tx!(
             net,
             signer,
@@ -127,16 +127,16 @@ async fn core_flow_pays_the_driver_on_delivery() -> testresult::TestResult<()> {
         owner,
         usdc,
         "mint",
-        json!({ "account_id": rina, "amount": U128(25_000 * USDC) }),
+        json!({ "account_id": maya, "amount": U128(25_000 * USDC) }),
         0
     )
     .assert_success();
 
-    // Rina deposits 25,000 into the pool.
+    // Maya deposits 25,000 into the pool.
     tx!(
         net,
         signer,
-        rina,
+        maya,
         usdc,
         "ft_transfer_call",
         json!({ "receiver_id": app_id, "amount": U128(25_000 * USDC), "msg": "deposit" }),
@@ -148,14 +148,14 @@ async fn core_flow_pays_the_driver_on_delivery() -> testresult::TestResult<()> {
         json!((25_000 * USDC).to_string())
     );
 
-    // The team starts PT Maju with a 3,000 limit (2 of 3).
+    // The team starts Northwind with a 3,000 limit (2 of 3).
     tx!(
         net,
         signer,
         risk,
         app,
         "propose",
-        json!({ "kind": { "StartShipper": { "shipper": ptmaju, "limit": U128(3_000 * USDC) } } }),
+        json!({ "kind": { "StartShipper": { "shipper": northwind, "limit": U128(3_000 * USDC) } } }),
         0
     )
     .assert_success();
@@ -170,21 +170,21 @@ async fn core_flow_pays_the_driver_on_delivery() -> testresult::TestResult<()> {
     )
     .assert_success();
 
-    // Network: Pak Budi, Carl and Semarang hub.
+    // Network: Sam, Carl and Harbor Hub.
     tx!(
         net,
         signer,
-        ptmaju,
+        northwind,
         app,
         "add_driver",
-        json!({ "driver": budi }),
+        json!({ "driver": sam }),
         0
     )
     .assert_success();
     tx!(
         net,
         signer,
-        ptmaju,
+        northwind,
         app,
         "add_driver",
         json!({ "driver": carl }),
@@ -194,10 +194,10 @@ async fn core_flow_pays_the_driver_on_delivery() -> testresult::TestResult<()> {
     tx!(
         net,
         signer,
-        ptmaju,
+        northwind,
         app,
         "add_destination",
-        json!({ "warehouse": semarang }),
+        json!({ "warehouse": harborhub }),
         0
     )
     .assert_success();
@@ -211,21 +211,21 @@ async fn core_flow_pays_the_driver_on_delivery() -> testresult::TestResult<()> {
                 "bill": U128(300 * USDC), "due_at": due.to_string() })
     };
 
-    // Shipment 1 with Pak Budi: pickup, clean delivery, paid at once.
+    // Shipment 1 with Sam: pickup, clean delivery, paid at once.
     tx!(
         net,
         signer,
-        ptmaju,
+        northwind,
         app,
         "create_shipment",
-        shipment(&budi),
+        shipment(&sam),
         0
     )
     .assert_success();
     tx!(
         net,
         signer,
-        budi,
+        sam,
         app,
         "confirm_pickup",
         json!({ "id": 1 }),
@@ -235,7 +235,7 @@ async fn core_flow_pays_the_driver_on_delivery() -> testresult::TestResult<()> {
     tx!(
         net,
         signer,
-        semarang,
+        harborhub,
         app,
         "confirm_delivery",
         json!({ "id": 1, "good_qty": 120 }),
@@ -243,7 +243,7 @@ async fn core_flow_pays_the_driver_on_delivery() -> testresult::TestResult<()> {
     )
     .assert_success();
     assert_eq!(
-        view!(net, usdc, "ft_balance_of", json!({ "account_id": budi })),
+        view!(net, usdc, "ft_balance_of", json!({ "account_id": sam })),
         json!("292500000")
     );
     assert_eq!(
@@ -255,7 +255,7 @@ async fn core_flow_pays_the_driver_on_delivery() -> testresult::TestResult<()> {
     tx!(
         net,
         signer,
-        ptmaju,
+        northwind,
         app,
         "create_shipment",
         shipment(&carl),
@@ -275,7 +275,7 @@ async fn core_flow_pays_the_driver_on_delivery() -> testresult::TestResult<()> {
     let _ = tx!(
         net,
         signer,
-        semarang,
+        harborhub,
         app,
         "confirm_delivery",
         json!({ "id": 2, "good_qty": 120 }),
@@ -290,21 +290,21 @@ async fn core_flow_pays_the_driver_on_delivery() -> testresult::TestResult<()> {
         json!("292500000")
     );
 
-    // PT Maju repays bill 1 (300 USDC). The pool earns 4.80, the reserve 1.20, Waybil 1.50.
+    // Northwind repays bill 1 (300 USDC). The pool earns 4.80, the reserve 1.20, Waybil 1.50.
     tx!(
         net,
         signer,
         owner,
         usdc,
         "mint",
-        json!({ "account_id": ptmaju, "amount": U128(300 * USDC) }),
+        json!({ "account_id": northwind, "amount": U128(300 * USDC) }),
         0
     )
     .assert_success();
     tx!(
         net,
         signer,
-        ptmaju,
+        northwind,
         usdc,
         "ft_transfer_call",
         json!({ "receiver_id": app_id, "amount": U128(300 * USDC), "msg": "{\"repay\":1}" }),
@@ -341,11 +341,11 @@ async fn core_flow_pays_the_driver_on_delivery() -> testresult::TestResult<()> {
         json!("1500000")
     );
 
-    // Rina withdraws 1,000 USDC and receives it.
+    // Maya withdraws 1,000 USDC and receives it.
     tx!(
         net,
         signer,
-        rina,
+        maya,
         app,
         "withdraw",
         json!({ "amount": U128(1_000 * USDC) }),
@@ -353,7 +353,7 @@ async fn core_flow_pays_the_driver_on_delivery() -> testresult::TestResult<()> {
     )
     .assert_success();
     assert_eq!(
-        view!(net, usdc, "ft_balance_of", json!({ "account_id": rina })),
+        view!(net, usdc, "ft_balance_of", json!({ "account_id": maya })),
         json!((1_000 * USDC).to_string())
     );
 
@@ -361,7 +361,7 @@ async fn core_flow_pays_the_driver_on_delivery() -> testresult::TestResult<()> {
     tx!(
         net,
         signer,
-        budi,
+        sam,
         app,
         "on_payout",
         json!({ "id": 1, "from_reported": false }),
