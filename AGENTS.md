@@ -147,6 +147,10 @@ Contracts, from `contracts/<name>/`:
 
 near-sandbox has no Windows build, so sandbox tests run in CI (`.github/workflows/ci.yml`).
 
+Each contract's ABI (every method, its arguments and types) is committed at
+`contracts/<name>/abi/<name>.json` for fe and be. After changing a public method, run
+`pnpm --filter @waybil/scripts abi` and commit the result. CI fails when the ABI is out of date.
+
 Testnet, from the repo root (needs near-cli-rs and the `waybil.testnet` key in your keychain):
 
 | Command | What it does |

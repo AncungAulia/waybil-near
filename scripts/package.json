@@ -6,6 +6,7 @@
   "scripts": {
     "deploy-contracts": "tsx deploy.ts",
     "seed": "tsx seed.ts",
+    "abi": "tsx abi.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
