@@ -1,0 +1,21 @@
+{
+  "responsiveCaptures": 111,
+  "responsiveFailures": [],
+  "browserErrors": [],
+  "dialogChecks": 12,
+  "checks": [
+    "Automatic warehouse-to-driver payout",
+    "Invalid code rejection",
+    "Duplicate confirmation rejection",
+    "Report holds payout",
+    "Report count validation",
+    "Report count and note shared between tabs",
+    "Offline QR decodes to 7K2Q9F4M",
+    "Synthetic camera feed scans QR",
+    "Camera denial falls back to code",
+    "Reduced motion uses 200 ms fade",
+    "Escape closes dialog",
+    "Settled report closes back to Paid"
+  ],
+  "galleryDisabledByDefault": true
+}

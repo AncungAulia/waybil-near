@@ -1,6 +1,9 @@
 import { notFound } from "next/navigation";
 import { cn } from "@/lib/cn";
 import { SECTIONS } from "./registry";
+import Link from "next/link";
+import { DRIVER_STATES } from "@/modules/driver/data/fixtures";
+import { WAREHOUSE_STATES } from "@/modules/warehouse/data/fixtures";
 
 /*
  * Every component state on one page, so a batch can be checked by scrolling instead of
@@ -30,6 +33,29 @@ export default function GalleryPage() {
         {total} states from the design board. Hover, focus and press are checked on the real
         component with a mouse and the Tab key.
       </p>
+
+      <section className="mt-32 rounded-card bg-ds-bg p-24">
+        <h2 className="text-heading">Driver and warehouse screens</h2>
+        <p className="mt-8 text-label text-ds-muted">
+          Each screen opens at the full browser width. Review every state at 1440, 834 and 390
+          pixels.
+        </p>
+        <div className="mt-16 grid gap-24 md:grid-cols-2">
+          {[DRIVER_STATES, WAREHOUSE_STATES].map((states, index) => (
+            <div key={index} className="flex flex-col gap-10">
+              {Object.entries(states).map(([code, title]) => (
+                <Link
+                  key={code}
+                  href={`/dev/gallery/screens/${code}`}
+                  className="focus-ring text-label text-ds-brand-deep"
+                >
+                  {code} · {title} ↗
+                </Link>
+              ))}
+            </div>
+          ))}
+        </div>
+      </section>
 
       {SECTIONS.map((section) => (
         <section key={section.title} className="mt-48">

@@ -6,6 +6,7 @@
     "dev": "next dev --port 3001",
     "build": "next build",
     "start": "next start --port 3001",
+    "test": "vitest run",
     "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
@@ -13,7 +14,9 @@
     "@radix-ui/react-dialog": "^1.1.15",
     "@waybil/shared": "workspace:*",
     "clsx": "^2.1.1",
+    "jsqr": "^1.4.0",
     "next": "16.4.5",
+    "qrcode.react": "^4.2.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "tailwind-merge": "^3.3.1"

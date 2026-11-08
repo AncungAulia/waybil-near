@@ -19,7 +19,15 @@ const CHIP: Record<StatusChip, { label: string; dot: string }> = {
   coveredByReserve: { label: "Paid from the reserve", dot: "bg-ds-warning" },
 };
 
-export function StatusPill({ status, className }: { status: StatusChip; className?: string }) {
+export function StatusPill({
+  status,
+  className,
+  label: roleLabel,
+}: {
+  status: StatusChip;
+  className?: string;
+  label?: string;
+}) {
   const { label, dot } = CHIP[status];
 
   return (
@@ -35,7 +43,7 @@ export function StatusPill({ status, className }: { status: StatusChip; classNam
       )}
     >
       <span className={cn("pop size-8 shrink-0 rounded-full", dot)} />
-      {label}
+      {roleLabel ?? label}
     </span>
   );
 }
