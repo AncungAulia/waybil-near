@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // AVIF first: photos are about a third smaller than WebP.
+  images: { formats: ["image/avif", "image/webp"] },
   cacheComponents: true,
   partialPrefetching: true,
   turbopack: {
