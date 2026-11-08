@@ -33,7 +33,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install cargo-near
-        run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/latest/download/cargo-near-installer.sh | sh
+        # Pinned so the generated ABI matches the committed one.
+        run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/download/cargo-near-v0.22.0/cargo-near-installer.sh | sh
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: contracts/${{ matrix.contract }}
@@ -41,3 +42,11 @@ jobs:
       - run: cargo clippy --target wasm32-unknown-unknown --lib -- -D warnings
       - name: Unit and sandbox tests
         run: cargo test
+      - name: ABI is up to date
+        run: |
+          cargo near abi
+          file=$(echo ${{ matrix.contract }} | tr - _)_abi.json
+          if ! diff -u abi/${{ matrix.contract }}.json target/near/$file; then
+            echo "The ABI is out of date. Run pnpm --filter @waybil/scripts abi and commit the result."
+            exit 1
+          fi

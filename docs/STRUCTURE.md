@@ -145,8 +145,9 @@ contracts/
 │  │  ├─ tests.rs        Unit tests
 │  │  ├─ upgrade.rs      Versioned state, stage_code, migrate
 │  │  └─ views.rs
-│  └─ tests/             Sandbox tests per flow
-└─ mock-usdc/            NEP-141 test token
+│  ├─ tests/             Sandbox tests per flow
+│  └─ abi/waybil.json    Generated ABI (methods, args, types) for fe and be
+└─ mock-usdc/            NEP-141 test token (ABI in abi/mock-usdc.json)
 ```
 
 Both crates are created with `cargo near new` and follow `docs/specs/contract.md`.
@@ -159,6 +160,7 @@ A pnpm workspace package (`@waybil/scripts`) run with `tsx`:
 scripts/
 ├─ deploy.ts         Creates the testnet accounts and deploys app.waybil.testnet (safe to rerun)
 ├─ seed.ts           The story in docs/specs/demo-data.md (issue #13)
+├─ abi.ts            Builds each contract's ABI into contracts/<name>/abi/
 └─ lib/near.ts       Calls near-cli-rs, which reads keys from the OS keychain
 ```
 
