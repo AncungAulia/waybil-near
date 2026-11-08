@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
+import { DemoWallet, type DemoWalletState } from "@/components/elements/DemoWallet";
 import {
   Truck,
   Scan,
@@ -23,12 +25,16 @@ export function RoleShell({
   current,
   children,
   detail = false,
+  walletPreview,
 }: {
   role: "driver" | "warehouse" | "shipper" | "investor" | "admin";
   current: string;
   children: React.ReactNode;
   detail?: boolean;
+  walletPreview?: DemoWalletState;
 }) {
+  const [wallet, setWallet] = useState<DemoWalletState | null>(walletPreview ?? null);
+  const hasWallet = role === "shipper" || role === "investor" || role === "admin";
   const names = {
     driver: "Sam",
     warehouse: "Lena",
@@ -81,14 +87,20 @@ export function RoleShell({
         current={current}
         className="hidden md:flex"
         wallet={
-          <span className="flex items-center gap-10 rounded-full border border-ds-line px-6 py-4 pr-12">
+          <button
+            type="button"
+            aria-label={hasWallet ? "Open account menu" : `${name} profile`}
+            disabled={!hasWallet}
+            onClick={() => setWallet("G1")}
+            className="press focus-ring flex items-center gap-10 rounded-full border border-ds-line px-6 py-4 pr-12"
+          >
             {avatar}
             <span className="flex flex-col text-label">
               {name}
               <span className="text-caption text-ds-muted">{sub}</span>
             </span>
             <CaretDown size={14} />
-          </span>
+          </button>
         }
       />
       <header className="flex h-56 items-center justify-between md:hidden">
@@ -97,10 +109,28 @@ export function RoleShell({
           {role === "warehouse" && (
             <span className="rounded-full bg-ds-bg px-12 py-8 text-caption">Harbor Hub</span>
           )}
-          {avatar}
+          {hasWallet ? (
+            <button
+              aria-label="Open account menu"
+              className="press focus-ring rounded-full"
+              onClick={() => setWallet("G1")}
+            >
+              {avatar}
+            </button>
+          ) : (
+            avatar
+          )}
         </div>
       </header>
       <main className="mt-16 md:mt-24">{children}</main>
+      {wallet && hasWallet && (
+        <DemoWallet
+          key={wallet}
+          initialState={wallet}
+          role={role}
+          onClose={() => setWallet(null)}
+        />
+      )}
       {!detail && (
         <nav
           aria-label="Main"
