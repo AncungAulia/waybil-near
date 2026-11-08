@@ -84,3 +84,13 @@ sheets and drawers 300 ms. UI motion stays under 300 ms. Only the rare moments b
 | Once | Onboarding done (C8 Approved, D6 All set, E3 Investor ready), first shipment approved, first payout | Spring entrance (bounce 0.2), items stagger 50 ms apart |
 
 Ask the team before adding motion to anything not listed here.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+## This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
