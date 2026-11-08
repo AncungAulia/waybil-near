@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Instrument_Sans } from "next/font/google";
+import { SmoothScroll } from "@/components/SmoothScroll";
 import "./globals.css";
 
 const instrumentSans = Instrument_Sans({
@@ -15,8 +16,14 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${instrumentSans.variable} h-full antialiased`}>
-      <body className="flex min-h-full flex-col font-sans">{children}</body>
+    <html lang="en" className={`${instrumentSans.variable} antialiased`}>
+      <body className="font-sans">
+        {/* Without JavaScript the scroll reveals never run, so show everything at once. */}
+        <noscript>
+          <style>{`.reveal,.rise-in{opacity:1;transform:none}.media-in{clip-path:none}.media-in img{transform:none}`}</style>
+        </noscript>
+        <SmoothScroll>{children}</SmoothScroll>
+      </body>
     </html>
   );
 }

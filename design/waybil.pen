@@ -419752,21 +419752,22 @@
                       "name": "Hero",
                       "clip": true,
                       "width": "fill_container",
-                      "height": 980,
+                      "height": 900,
+                      "fill": "$ds-canvas",
                       "layout": "none",
                       "children": [
                         {
                           "type": "frame",
                           "id": "PsTo9",
                           "x": 0,
-                          "y": 0,
+                          "y": 260,
                           "name": "Photo",
                           "width": 1440,
-                          "height": 806,
+                          "height": 804,
                           "fill": {
                             "type": "image",
                             "enabled": true,
-                            "url": "landing/hero-truck.jpg",
+                            "url": "landing/hero-road.jpg",
                             "mode": "cover"
                           }
                         },
@@ -419774,29 +419775,25 @@
                           "type": "frame",
                           "id": "ZzYYW",
                           "x": 0,
-                          "y": 560,
+                          "y": 260,
                           "name": "Fade",
                           "width": 1440,
-                          "height": 420,
+                          "height": 300,
                           "fill": {
                             "type": "gradient",
                             "gradientType": "linear",
                             "enabled": true,
-                            "rotation": 0,
+                            "rotation": 180,
                             "size": {
                               "height": 1
                             },
                             "colors": [
                               {
-                                "color": "#0B0B0B",
+                                "color": "#F2F2F2",
                                 "position": 0
                               },
                               {
-                                "color": "#0B0B0BE6",
-                                "position": 0.45
-                              },
-                              {
-                                "color": "#0B0B0B00",
+                                "color": "#F2F2F200",
                                 "position": 1
                               }
                             ]
@@ -419820,10 +419817,10 @@
                               "name": "Logo",
                               "descendants": {
                                 "myvT3/YCbBl": {
-                                  "fill": "#FFFFFF"
+                                  "fill": "$ds-ink"
                                 },
                                 "JE6gk": {
-                                  "fill": "#FFFFFF"
+                                  "fill": "$ds-ink"
                                 }
                               }
                             },
@@ -419837,7 +419834,7 @@
                                 {
                                   "type": "text",
                                   "id": "RtvHF",
-                                  "fill": "#FFFFFFB3",
+                                  "fill": "$ds-ink",
                                   "content": "How it works",
                                   "fontFamily": "$ds-font",
                                   "fontSize": 15,
@@ -419846,7 +419843,7 @@
                                 {
                                   "type": "text",
                                   "id": "j8kir",
-                                  "fill": "#FFFFFFB3",
+                                  "fill": "$ds-ink",
                                   "content": "Who it's for",
                                   "fontFamily": "$ds-font",
                                   "fontSize": 15,
@@ -419855,7 +419852,7 @@
                                 {
                                   "type": "text",
                                   "id": "DRtT8",
-                                  "fill": "#FFFFFFB3",
+                                  "fill": "$ds-ink",
                                   "content": "FAQ",
                                   "fontFamily": "$ds-font",
                                   "fontSize": 15,
@@ -419868,9 +419865,17 @@
                               "type": "ref",
                               "ref": "u8hfFy",
                               "name": "Open the app",
+                              "fill": "$ds-ink",
                               "descendants": {
                                 "zHJAQ": {
-                                  "content": "Open the app"
+                                  "content": "Open the app",
+                                  "fill": "#FFFFFF"
+                                },
+                                "aqYQR": {
+                                  "fill": "#FFFFFF"
+                                },
+                                "P3D3HT": {
+                                  "fill": "$ds-ink"
                                 }
                               }
                             }
@@ -419878,77 +419883,211 @@
                         },
                         {
                           "type": "frame",
-                          "id": "ZYNTs",
-                          "x": 40,
-                          "y": 756,
+                          "id": "rJC8a",
+                          "x": 220,
+                          "y": 130,
                           "name": "Copy",
-                          "width": 1360,
-                          "justifyContent": "space_between",
-                          "alignItems": "end",
+                          "width": 1000,
+                          "layout": "vertical",
+                          "gap": 24,
+                          "alignItems": "center",
                           "children": [
                             {
                               "type": "frame",
-                              "id": "p0tN2",
-                              "name": "Headline",
-                              "layout": "vertical",
-                              "gap": 20,
+                              "id": "CIQkq",
+                              "name": "Eyebrow",
+                              "fill": "#FFFFFF",
+                              "cornerRadius": 999,
+                              "stroke": "$ds-line",
+                              "strokeWidth": 1,
+                              "gap": 8,
+                              "padding": [
+                                6,
+                                14,
+                                6,
+                                10
+                              ],
+                              "alignItems": "center",
                               "children": [
                                 {
+                                  "type": "path",
+                                  "id": "N1QLk",
+                                  "geometry": "M72.2 4.6l-18.8 27.9c-1.3 1.9 1.2 4.2 3 2.6l18.5-16.1c0.5-0.4 1.2-0.1 1.2 0.6v50.3c0 0.7-0.9 1-1.3 0.5l-56-67c-1.8-2.2-4.4-3.4-7.1-3.4h-2c-5.4 0-9.7 4.3-9.7 9.6v70.8c0 5.3 4.3 9.6 9.6 9.6 3.3 0 6.4-1.7 8.2-4.6l18.8-27.9c1.3-1.9-1.2-4.2-3-2.6l-18.5 16c-0.5 0.4-1.2 0.1-1.2-0.6v-50.2c0-0.7 0.9-1 1.3-0.5l56 67c1.8 2.2 4.5 3.4 7.3 3.4h2c5.3 0 9.6-4.3 9.6-9.6v-70.8c0-5.3-4.3-9.6-9.6-9.6-3.4 0-6.5 1.7-8.3 4.6z",
+                                  "viewBox": [
+                                    0,
+                                    0,
+                                    90,
+                                    90
+                                  ],
+                                  "fill": "$ds-ink",
+                                  "width": 13,
+                                  "height": 13
+                                },
+                                {
                                   "type": "text",
-                                  "id": "K1d9M4",
-                                  "name": "H1",
-                                  "fill": "#FFFFFF",
-                                  "content": "Invoices take weeks.\nWaybil takes seconds.",
-                                  "lineHeight": 1.02,
+                                  "id": "ohIzl",
+                                  "fill": "$ds-ink",
+                                  "content": "Live on NEAR testnet",
                                   "fontFamily": "$ds-font",
-                                  "fontSize": 76,
-                                  "fontWeight": "500",
-                                  "letterSpacing": -2
+                                  "fontSize": 13,
+                                  "fontWeight": "500"
                                 }
                               ]
                             },
                             {
+                              "type": "text",
+                              "id": "Stagn",
+                              "fill": "$ds-ink",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "Invoices take weeks.\nWaybil takes seconds.",
+                              "lineHeight": 1.02,
+                              "textAlign": "center",
+                              "fontFamily": "$ds-font",
+                              "fontSize": 76,
+                              "fontWeight": "500",
+                              "letterSpacing": -2.2
+                            },
+                            {
+                              "type": "text",
+                              "id": "YRZ20",
+                              "fill": "$ds-muted",
+                              "textGrowth": "fixed-width",
+                              "width": 460,
+                              "content": "Truck owners get paid the moment the goods arrive. You pay on your due date.",
+                              "lineHeight": 1.5,
+                              "textAlign": "center",
+                              "fontFamily": "$ds-font",
+                              "fontSize": 17,
+                              "fontWeight": "normal"
+                            },
+                            {
                               "type": "frame",
-                              "id": "uGekR",
-                              "name": "Side",
-                              "width": 380,
-                              "layout": "vertical",
-                              "gap": 24,
+                              "id": "MpgrJ",
+                              "gap": 12,
+                              "padding": [
+                                8,
+                                0,
+                                0,
+                                0
+                              ],
                               "children": [
                                 {
-                                  "type": "text",
-                                  "id": "x4DsM",
-                                  "fill": "#FFFFFFB3",
-                                  "textGrowth": "fixed-width",
-                                  "width": "fill_container",
-                                  "content": "You pay the bill later, on the date you choose. Waybil pays the truck owner the minute the warehouse scans the delivery.",
-                                  "lineHeight": 1.5,
-                                  "fontFamily": "$ds-font",
-                                  "fontSize": 17,
-                                  "fontWeight": "normal"
-                                },
-                                {
-                                  "id": "JBJzH",
+                                  "id": "GY9sg",
                                   "type": "ref",
                                   "ref": "w0sQis",
-                                  "name": "Start shipping",
-                                  "fill": "$ds-brand",
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Start shipping",
-                                      "fill": "$ds-ink"
-                                    },
-                                    "m14L6c": {
-                                      "fill": "$ds-ink"
-                                    },
-                                    "OW9B8": {
-                                      "fill": "$ds-brand"
+                                      "content": "Start shipping"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "YJW5C",
+                                  "type": "ref",
+                                  "ref": "u8hfFy",
+                                  "fill": "#FFFFFF",
+                                  "descendants": {
+                                    "zHJAQ": {
+                                      "content": "Open the app"
                                     }
                                   }
                                 }
                               ]
                             }
                           ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "E6PNse",
+                          "x": 660,
+                          "y": 676,
+                          "name": "Truck label",
+                          "fill": "#FFFFFFC7",
+                          "cornerRadius": 16,
+                          "stroke": "#FFFFFFB3",
+                          "strokeWidth": 1,
+                          "effect": {
+                            "type": "background_blur",
+                            "radius": 20
+                          },
+                          "gap": 10,
+                          "padding": [
+                            10,
+                            14,
+                            10,
+                            10
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "CCz1h",
+                              "width": 28,
+                              "height": 28,
+                              "fill": "#1E7D3E1F",
+                              "cornerRadius": 999,
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "ellipse",
+                                  "id": "reE3O",
+                                  "fill": "$ds-success",
+                                  "width": 9,
+                                  "height": 9
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "G1RDv",
+                              "layout": "vertical",
+                              "gap": 1,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "Vk3cl",
+                                  "fill": "$ds-ink",
+                                  "content": "Paid on arrival",
+                                  "fontFamily": "$ds-font",
+                                  "fontSize": 14,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "B1yB1",
+                                  "fill": "$ds-muted",
+                                  "content": "Trip #1041",
+                                  "fontFamily": "$ds-font",
+                                  "fontSize": 12,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "Y8LspO",
+                          "x": 737,
+                          "y": 730,
+                          "name": "Tether",
+                          "fill": "#FFFFFFE6",
+                          "width": 1,
+                          "height": 72
+                        },
+                        {
+                          "type": "ellipse",
+                          "id": "JMMMz",
+                          "x": 733,
+                          "y": 800,
+                          "name": "Tether dot",
+                          "fill": "#FFFFFF",
+                          "width": 9,
+                          "height": 9,
+                          "stroke": "#FFFFFF59",
+                          "strokeWidth": 3
                         }
                       ]
                     },
@@ -421701,10 +421840,10 @@
                         {
                           "type": "frame",
                           "id": "HIJBL",
-                          "x": 320,
+                          "x": 220,
                           "y": 96,
                           "name": "Copy",
-                          "width": 800,
+                          "width": 1000,
                           "layout": "vertical",
                           "gap": 20,
                           "alignItems": "center",
@@ -421715,7 +421854,7 @@
                               "fill": "$ds-ink",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Make every\ndelivery payday.",
+                              "content": "Your drivers get paid today.\nYou pay later.",
                               "lineHeight": 1.02,
                               "textAlign": "center",
                               "fontFamily": "$ds-font",
@@ -421729,7 +421868,7 @@
                               "fill": "$ds-muted",
                               "textGrowth": "fixed-width",
                               "width": 520,
-                              "content": "Your drivers get paid the moment the goods arrive. You pay the same bill on the date you choose, with nothing added.",
+                              "content": "Same bill, on the date you choose.",
                               "lineHeight": 1.5,
                               "textAlign": "center",
                               "fontFamily": "$ds-font",
@@ -422037,22 +422176,22 @@
                       "name": "Hero",
                       "clip": true,
                       "width": "fill_container",
-                      "height": 960,
-                      "fill": "#0B0B0B",
+                      "height": 1024,
+                      "fill": "$ds-canvas",
                       "layout": "none",
                       "children": [
                         {
                           "type": "frame",
                           "id": "DEHcC",
-                          "x": -170,
-                          "y": 110,
+                          "x": -200,
+                          "y": 371,
                           "name": "Photo",
-                          "width": 1110,
-                          "height": 620,
+                          "width": 1170,
+                          "height": 653,
                           "fill": {
                             "type": "image",
                             "enabled": true,
-                            "url": "landing/hero-truck.jpg",
+                            "url": "landing/hero-road.jpg",
                             "mode": "cover"
                           }
                         },
@@ -422060,29 +422199,25 @@
                           "type": "frame",
                           "id": "VJoPl",
                           "x": 0,
-                          "y": 480,
+                          "y": 371,
                           "name": "Fade",
                           "width": 768,
-                          "height": 480,
+                          "height": 220,
                           "fill": {
                             "type": "gradient",
                             "gradientType": "linear",
                             "enabled": true,
-                            "rotation": 0,
+                            "rotation": 180,
                             "size": {
                               "height": 1
                             },
                             "colors": [
                               {
-                                "color": "#0B0B0B",
+                                "color": "#F2F2F2",
                                 "position": 0
                               },
                               {
-                                "color": "#0B0B0BE6",
-                                "position": 0.45
-                              },
-                              {
-                                "color": "#0B0B0B00",
+                                "color": "#F2F2F200",
                                 "position": 1
                               }
                             ]
@@ -422106,10 +422241,10 @@
                               "name": "Logo",
                               "descendants": {
                                 "myvT3/YCbBl": {
-                                  "fill": "#FFFFFF"
+                                  "fill": "$ds-ink"
                                 },
                                 "JE6gk": {
-                                  "fill": "#FFFFFF"
+                                  "fill": "$ds-ink"
                                 }
                               }
                             },
@@ -422126,7 +422261,7 @@
                                 {
                                   "type": "text",
                                   "id": "OkWf3",
-                                  "fill": "#FFFFFFB3",
+                                  "fill": "$ds-ink",
                                   "content": "How it works",
                                   "fontFamily": "$ds-font",
                                   "fontSize": 15,
@@ -422135,7 +422270,7 @@
                                 {
                                   "type": "text",
                                   "id": "n62dz",
-                                  "fill": "#FFFFFFB3",
+                                  "fill": "$ds-ink",
                                   "content": "Who it's for",
                                   "fontFamily": "$ds-font",
                                   "fontSize": 15,
@@ -422144,7 +422279,7 @@
                                 {
                                   "type": "text",
                                   "id": "h553bw",
-                                  "fill": "#FFFFFFB3",
+                                  "fill": "$ds-ink",
                                   "content": "FAQ",
                                   "fontFamily": "$ds-font",
                                   "fontSize": 15,
@@ -422157,9 +422292,17 @@
                               "type": "ref",
                               "ref": "u8hfFy",
                               "name": "Open the app",
+                              "fill": "$ds-ink",
                               "descendants": {
                                 "zHJAQ": {
-                                  "content": "Open the app"
+                                  "content": "Open the app",
+                                  "fill": "#FFFFFF"
+                                },
+                                "aqYQR": {
+                                  "fill": "#FFFFFF"
+                                },
+                                "P3D3HT": {
+                                  "fill": "$ds-ink"
                                 }
                               }
                             }
@@ -422167,72 +422310,114 @@
                         },
                         {
                           "type": "frame",
-                          "id": "z8sPQT",
-                          "x": 32,
-                          "y": 660,
+                          "id": "g1jbt",
+                          "x": 64,
+                          "y": 200,
                           "name": "Copy",
-                          "width": 704,
+                          "width": 640,
                           "layout": "vertical",
-                          "gap": 28,
-                          "justifyContent": "space_between",
+                          "gap": 22,
+                          "alignItems": "center",
                           "children": [
                             {
                               "type": "frame",
-                              "id": "c7D0TR",
-                              "name": "Headline",
-                              "layout": "vertical",
-                              "gap": 20,
+                              "id": "AOk4V",
+                              "name": "Eyebrow",
+                              "fill": "#FFFFFF",
+                              "cornerRadius": 999,
+                              "stroke": "$ds-line",
+                              "strokeWidth": 1,
+                              "gap": 8,
+                              "padding": [
+                                6,
+                                14,
+                                6,
+                                10
+                              ],
+                              "alignItems": "center",
                               "children": [
                                 {
+                                  "type": "path",
+                                  "id": "L5hETa",
+                                  "geometry": "M72.2 4.6l-18.8 27.9c-1.3 1.9 1.2 4.2 3 2.6l18.5-16.1c0.5-0.4 1.2-0.1 1.2 0.6v50.3c0 0.7-0.9 1-1.3 0.5l-56-67c-1.8-2.2-4.4-3.4-7.1-3.4h-2c-5.4 0-9.7 4.3-9.7 9.6v70.8c0 5.3 4.3 9.6 9.6 9.6 3.3 0 6.4-1.7 8.2-4.6l18.8-27.9c1.3-1.9-1.2-4.2-3-2.6l-18.5 16c-0.5 0.4-1.2 0.1-1.2-0.6v-50.2c0-0.7 0.9-1 1.3-0.5l56 67c1.8 2.2 4.5 3.4 7.3 3.4h2c5.3 0 9.6-4.3 9.6-9.6v-70.8c0-5.3-4.3-9.6-9.6-9.6-3.4 0-6.5 1.7-8.3 4.6z",
+                                  "viewBox": [
+                                    0,
+                                    0,
+                                    90,
+                                    90
+                                  ],
+                                  "fill": "$ds-ink",
+                                  "width": 13,
+                                  "height": 13
+                                },
+                                {
                                   "type": "text",
-                                  "id": "fVfFN",
-                                  "name": "H1",
-                                  "fill": "#FFFFFF",
-                                  "content": "Invoices take weeks.\nWaybil takes seconds.",
-                                  "lineHeight": 1.02,
+                                  "id": "rcDiw",
+                                  "fill": "$ds-ink",
+                                  "content": "Live on NEAR testnet",
                                   "fontFamily": "$ds-font",
-                                  "fontSize": 60,
-                                  "fontWeight": "500",
-                                  "letterSpacing": -1.8
+                                  "fontSize": 13,
+                                  "fontWeight": "500"
                                 }
                               ]
                             },
                             {
+                              "type": "text",
+                              "id": "LdyRq",
+                              "fill": "$ds-ink",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "Invoices take weeks.\nWaybil takes seconds.",
+                              "lineHeight": 1.04,
+                              "textAlign": "center",
+                              "fontFamily": "$ds-font",
+                              "fontSize": 56,
+                              "fontWeight": "500",
+                              "letterSpacing": -1.6
+                            },
+                            {
+                              "type": "text",
+                              "id": "BouFq",
+                              "fill": "$ds-muted",
+                              "textGrowth": "fixed-width",
+                              "width": 460,
+                              "content": "Truck owners get paid the moment the goods arrive. You pay on your due date.",
+                              "lineHeight": 1.5,
+                              "textAlign": "center",
+                              "fontFamily": "$ds-font",
+                              "fontSize": 17,
+                              "fontWeight": "normal"
+                            },
+                            {
                               "type": "frame",
-                              "id": "h2Ah4",
-                              "name": "Side",
-                              "width": 520,
-                              "layout": "vertical",
-                              "gap": 24,
+                              "id": "GRTNI",
+                              "gap": 10,
+                              "padding": [
+                                6,
+                                0,
+                                0,
+                                0
+                              ],
+                              "alignItems": "center",
                               "children": [
                                 {
-                                  "type": "text",
-                                  "id": "i1IaS",
-                                  "fill": "#FFFFFFB3",
-                                  "textGrowth": "fixed-width",
-                                  "width": "fill_container",
-                                  "content": "You pay the bill later, on the date you choose. Waybil pays the truck owner the minute the warehouse scans the delivery.",
-                                  "lineHeight": 1.5,
-                                  "fontFamily": "$ds-font",
-                                  "fontSize": 17,
-                                  "fontWeight": "normal"
-                                },
-                                {
-                                  "id": "erAf5",
+                                  "id": "GP4s9",
                                   "type": "ref",
                                   "ref": "w0sQis",
-                                  "name": "Start shipping",
-                                  "fill": "$ds-brand",
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Start shipping",
-                                      "fill": "$ds-ink"
-                                    },
-                                    "m14L6c": {
-                                      "fill": "$ds-ink"
-                                    },
-                                    "OW9B8": {
-                                      "fill": "$ds-brand"
+                                      "content": "Start shipping"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "sLwOp",
+                                  "type": "ref",
+                                  "ref": "u8hfFy",
+                                  "fill": "#FFFFFF",
+                                  "descendants": {
+                                    "zHJAQ": {
+                                      "content": "Open the app"
                                     }
                                   }
                                 }
@@ -422242,31 +422427,95 @@
                         },
                         {
                           "type": "frame",
-                          "id": "jmXOY",
-                          "x": 0,
-                          "y": 110,
-                          "name": "Top fade",
-                          "width": 768,
-                          "height": 110,
-                          "fill": {
-                            "type": "gradient",
-                            "gradientType": "linear",
-                            "enabled": true,
-                            "rotation": 180,
-                            "size": {
-                              "height": 1
+                          "id": "DGBaC",
+                          "x": 322,
+                          "y": 690,
+                          "name": "Truck label",
+                          "fill": "#FFFFFFC7",
+                          "cornerRadius": 16,
+                          "stroke": "#FFFFFFB3",
+                          "strokeWidth": 1,
+                          "effect": {
+                            "type": "background_blur",
+                            "radius": 20
+                          },
+                          "gap": 10,
+                          "padding": [
+                            10,
+                            14,
+                            10,
+                            10
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "eY2s8",
+                              "width": 28,
+                              "height": 28,
+                              "fill": "#1E7D3E1F",
+                              "cornerRadius": 999,
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "ellipse",
+                                  "id": "xd3uF",
+                                  "fill": "$ds-success",
+                                  "width": 9,
+                                  "height": 9
+                                }
+                              ]
                             },
-                            "colors": [
-                              {
-                                "color": "#0B0B0B",
-                                "position": 0
-                              },
-                              {
-                                "color": "#0B0B0B00",
-                                "position": 1
-                              }
-                            ]
-                          }
+                            {
+                              "type": "frame",
+                              "id": "bjxmh",
+                              "layout": "vertical",
+                              "gap": 1,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "P4eqzt",
+                                  "fill": "$ds-ink",
+                                  "content": "Paid on arrival",
+                                  "fontFamily": "$ds-font",
+                                  "fontSize": 14,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "RC2Ge",
+                                  "fill": "$ds-muted",
+                                  "content": "Trip #1041",
+                                  "fontFamily": "$ds-font",
+                                  "fontSize": 12,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "vkG6Y",
+                          "x": 399,
+                          "y": 744,
+                          "name": "Tether",
+                          "fill": "#FFFFFFE6",
+                          "width": 1,
+                          "height": 70
+                        },
+                        {
+                          "type": "ellipse",
+                          "id": "N2mfM",
+                          "x": 395,
+                          "y": 812,
+                          "name": "Tether dot",
+                          "fill": "#FFFFFF",
+                          "width": 9,
+                          "height": 9,
+                          "stroke": "#FFFFFF59",
+                          "strokeWidth": 3
                         }
                       ]
                     },
@@ -424051,7 +424300,7 @@
                               "fill": "$ds-ink",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Make every\ndelivery payday.",
+                              "content": "Your drivers get paid today.\nYou pay later.",
                               "lineHeight": 1.02,
                               "textAlign": "center",
                               "fontFamily": "$ds-font",
@@ -424065,7 +424314,7 @@
                               "fill": "$ds-muted",
                               "textGrowth": "fixed-width",
                               "width": 520,
-                              "content": "Your drivers get paid the moment the goods arrive. You pay the same bill on the date you choose, with nothing added.",
+                              "content": "Same bill, on the date you choose.",
                               "lineHeight": 1.5,
                               "textAlign": "center",
                               "fontFamily": "$ds-font",
@@ -424375,22 +424624,22 @@
                       "name": "Hero",
                       "clip": true,
                       "width": "fill_container",
-                      "height": 870,
-                      "fill": "#0B0B0B",
+                      "height": 844,
+                      "fill": "$ds-canvas",
                       "layout": "none",
                       "children": [
                         {
                           "type": "frame",
                           "id": "ReneM",
-                          "x": -170,
-                          "y": 96,
+                          "x": -380,
+                          "y": 286,
                           "name": "Photo",
-                          "width": 740,
-                          "height": 420,
+                          "width": 1000,
+                          "height": 558,
                           "fill": {
                             "type": "image",
                             "enabled": true,
-                            "url": "landing/hero-truck.jpg",
+                            "url": "landing/hero-road.jpg",
                             "mode": "cover"
                           }
                         },
@@ -424398,42 +424647,10 @@
                           "type": "frame",
                           "id": "x68Pi",
                           "x": 0,
-                          "y": 400,
+                          "y": 286,
                           "name": "Fade",
                           "width": 390,
-                          "height": 120,
-                          "fill": {
-                            "type": "gradient",
-                            "gradientType": "linear",
-                            "enabled": true,
-                            "rotation": 0,
-                            "size": {
-                              "height": 1
-                            },
-                            "colors": [
-                              {
-                                "color": "#0B0B0B",
-                                "position": 0
-                              },
-                              {
-                                "color": "#0B0B0B99",
-                                "position": 0.5
-                              },
-                              {
-                                "color": "#0B0B0B00",
-                                "position": 1
-                              }
-                            ]
-                          }
-                        },
-                        {
-                          "type": "frame",
-                          "id": "tMY5D",
-                          "x": 0,
-                          "y": 96,
-                          "name": "Top fade",
-                          "width": 390,
-                          "height": 90,
+                          "height": 170,
                           "fill": {
                             "type": "gradient",
                             "gradientType": "linear",
@@ -424444,11 +424661,11 @@
                             },
                             "colors": [
                               {
-                                "color": "#0B0B0B",
+                                "color": "#F2F2F2",
                                 "position": 0
                               },
                               {
-                                "color": "#0B0B0B00",
+                                "color": "#F2F2F200",
                                 "position": 1
                               }
                             ]
@@ -424472,10 +424689,10 @@
                               "name": "Logo",
                               "descendants": {
                                 "myvT3/YCbBl": {
-                                  "fill": "#FFFFFF"
+                                  "fill": "$ds-ink"
                                 },
                                 "JE6gk": {
-                                  "fill": "#FFFFFF"
+                                  "fill": "$ds-ink"
                                 }
                               }
                             },
@@ -424485,7 +424702,7 @@
                               "name": "Menu",
                               "width": 44,
                               "height": 44,
-                              "fill": "#FFFFFF",
+                              "fill": "$ds-ink",
                               "cornerRadius": 999,
                               "justifyContent": "center",
                               "alignItems": "center",
@@ -424497,7 +424714,7 @@
                                   "height": 20,
                                   "icon": "list-bold",
                                   "library": "phosphor",
-                                  "fill": "$ds-ink"
+                                  "fill": "#FFFFFF"
                                 }
                               ]
                             }
@@ -424505,80 +424722,217 @@
                         },
                         {
                           "type": "frame",
-                          "id": "lUcuF",
+                          "id": "O9U0Yj",
                           "x": 20,
-                          "y": 510,
+                          "y": 170,
                           "name": "Copy",
                           "width": 350,
                           "layout": "vertical",
-                          "gap": 24,
-                          "justifyContent": "space_between",
+                          "gap": 18,
+                          "alignItems": "center",
                           "children": [
                             {
                               "type": "frame",
-                              "id": "cu5BP",
-                              "name": "Headline",
-                              "layout": "vertical",
-                              "gap": 20,
+                              "id": "f2j1r",
+                              "name": "Eyebrow",
+                              "fill": "#FFFFFF",
+                              "cornerRadius": 999,
+                              "stroke": "$ds-line",
+                              "strokeWidth": 1,
+                              "gap": 8,
+                              "padding": [
+                                6,
+                                14,
+                                6,
+                                10
+                              ],
+                              "alignItems": "center",
                               "children": [
                                 {
+                                  "type": "path",
+                                  "id": "q50iNj",
+                                  "geometry": "M72.2 4.6l-18.8 27.9c-1.3 1.9 1.2 4.2 3 2.6l18.5-16.1c0.5-0.4 1.2-0.1 1.2 0.6v50.3c0 0.7-0.9 1-1.3 0.5l-56-67c-1.8-2.2-4.4-3.4-7.1-3.4h-2c-5.4 0-9.7 4.3-9.7 9.6v70.8c0 5.3 4.3 9.6 9.6 9.6 3.3 0 6.4-1.7 8.2-4.6l18.8-27.9c1.3-1.9-1.2-4.2-3-2.6l-18.5 16c-0.5 0.4-1.2 0.1-1.2-0.6v-50.2c0-0.7 0.9-1 1.3-0.5l56 67c1.8 2.2 4.5 3.4 7.3 3.4h2c5.3 0 9.6-4.3 9.6-9.6v-70.8c0-5.3-4.3-9.6-9.6-9.6-3.4 0-6.5 1.7-8.3 4.6z",
+                                  "viewBox": [
+                                    0,
+                                    0,
+                                    90,
+                                    90
+                                  ],
+                                  "fill": "$ds-ink",
+                                  "width": 13,
+                                  "height": 13
+                                },
+                                {
                                   "type": "text",
-                                  "id": "nToHc",
-                                  "name": "H1",
-                                  "fill": "#FFFFFF",
-                                  "textGrowth": "fixed-width",
-                                  "width": 350,
-                                  "content": "Invoices take weeks.\nWaybil takes seconds.",
-                                  "lineHeight": 1.05,
+                                  "id": "HXffm",
+                                  "fill": "$ds-ink",
+                                  "content": "Live on NEAR testnet",
                                   "fontFamily": "$ds-font",
-                                  "fontSize": 33,
-                                  "fontWeight": "500",
-                                  "letterSpacing": -1
+                                  "fontSize": 13,
+                                  "fontWeight": "500"
                                 }
                               ]
                             },
                             {
+                              "type": "text",
+                              "id": "ISM3b",
+                              "fill": "$ds-ink",
+                              "textGrowth": "fixed-width",
+                              "width": "fill_container",
+                              "content": "Invoices take weeks.\nWaybil takes seconds.",
+                              "lineHeight": 1.04,
+                              "textAlign": "center",
+                              "fontFamily": "$ds-font",
+                              "fontSize": 34,
+                              "fontWeight": "500",
+                              "letterSpacing": -1
+                            },
+                            {
+                              "type": "text",
+                              "id": "i4pxP",
+                              "fill": "$ds-muted",
+                              "textGrowth": "fixed-width",
+                              "width": 320,
+                              "content": "Truck owners get paid the moment the goods arrive. You pay on your due date.",
+                              "lineHeight": 1.5,
+                              "textAlign": "center",
+                              "fontFamily": "$ds-font",
+                              "fontSize": 16,
+                              "fontWeight": "normal"
+                            },
+                            {
                               "type": "frame",
-                              "id": "xn4Tg",
-                              "name": "Side",
-                              "width": 350,
+                              "id": "xBSkU",
                               "layout": "vertical",
-                              "gap": 20,
+                              "gap": 10,
+                              "padding": [
+                                6,
+                                0,
+                                0,
+                                0
+                              ],
+                              "alignItems": "center",
                               "children": [
                                 {
-                                  "type": "text",
-                                  "id": "HkgtG",
-                                  "fill": "#FFFFFFB3",
-                                  "textGrowth": "fixed-width",
-                                  "width": "fill_container",
-                                  "content": "You pay the bill later, on the date you choose. Waybil pays the truck owner the minute the warehouse scans the delivery.",
-                                  "lineHeight": 1.5,
-                                  "fontFamily": "$ds-font",
-                                  "fontSize": 16,
-                                  "fontWeight": "normal"
-                                },
-                                {
-                                  "id": "lhBI6",
+                                  "id": "eKVdu",
                                   "type": "ref",
                                   "ref": "w0sQis",
-                                  "name": "Start shipping",
-                                  "fill": "$ds-brand",
+                                  "width": "fit_content",
+                                  "justifyContent": "start",
                                   "descendants": {
                                     "QGn3f": {
-                                      "content": "Start shipping",
-                                      "fill": "$ds-ink"
-                                    },
-                                    "m14L6c": {
-                                      "fill": "$ds-ink"
-                                    },
-                                    "OW9B8": {
-                                      "fill": "$ds-brand"
+                                      "content": "Start shipping"
+                                    }
+                                  }
+                                },
+                                {
+                                  "id": "YtidF",
+                                  "type": "ref",
+                                  "ref": "u8hfFy",
+                                  "fill": "#FFFFFF",
+                                  "width": "fit_content",
+                                  "justifyContent": "start",
+                                  "descendants": {
+                                    "zHJAQ": {
+                                      "content": "Open the app"
                                     }
                                   }
                                 }
                               ]
                             }
                           ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "pHR0W",
+                          "x": 56,
+                          "y": 548,
+                          "name": "Truck label",
+                          "fill": "#FFFFFFC7",
+                          "cornerRadius": 16,
+                          "stroke": "#FFFFFFB3",
+                          "strokeWidth": 1,
+                          "effect": {
+                            "type": "background_blur",
+                            "radius": 20
+                          },
+                          "gap": 10,
+                          "padding": [
+                            10,
+                            14,
+                            10,
+                            10
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "frame",
+                              "id": "hli3s",
+                              "width": 28,
+                              "height": 28,
+                              "fill": "#1E7D3E1F",
+                              "cornerRadius": 999,
+                              "justifyContent": "center",
+                              "alignItems": "center",
+                              "children": [
+                                {
+                                  "type": "ellipse",
+                                  "id": "s9KGU",
+                                  "fill": "$ds-success",
+                                  "width": 9,
+                                  "height": 9
+                                }
+                              ]
+                            },
+                            {
+                              "type": "frame",
+                              "id": "VTjfF",
+                              "layout": "vertical",
+                              "gap": 1,
+                              "children": [
+                                {
+                                  "type": "text",
+                                  "id": "zAofM",
+                                  "fill": "$ds-ink",
+                                  "content": "Paid on arrival",
+                                  "fontFamily": "$ds-font",
+                                  "fontSize": 14,
+                                  "fontWeight": "600"
+                                },
+                                {
+                                  "type": "text",
+                                  "id": "IbSCB",
+                                  "fill": "$ds-muted",
+                                  "content": "Trip #1041",
+                                  "fontFamily": "$ds-font",
+                                  "fontSize": 12,
+                                  "fontWeight": "normal"
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "rectangle",
+                          "id": "iV73Z",
+                          "x": 132,
+                          "y": 602,
+                          "name": "Tether",
+                          "fill": "#FFFFFFE6",
+                          "width": 1,
+                          "height": 62
+                        },
+                        {
+                          "type": "ellipse",
+                          "id": "ZpUMI",
+                          "x": 128,
+                          "y": 662,
+                          "name": "Tether dot",
+                          "fill": "#FFFFFF",
+                          "width": 9,
+                          "height": 9,
+                          "stroke": "#FFFFFF59",
+                          "strokeWidth": 3
                         }
                       ]
                     },
@@ -426349,7 +426703,7 @@
                               "fill": "$ds-ink",
                               "textGrowth": "fixed-width",
                               "width": "fill_container",
-                              "content": "Make every\ndelivery payday.",
+                              "content": "Your drivers get paid today.\nYou pay later.",
                               "lineHeight": 1.02,
                               "textAlign": "center",
                               "fontFamily": "$ds-font",
@@ -426363,7 +426717,7 @@
                               "fill": "$ds-muted",
                               "textGrowth": "fixed-width",
                               "width": 330,
-                              "content": "Your drivers get paid the moment the goods arrive. You pay the same bill on the date you choose, with nothing added.",
+                              "content": "Same bill, on the date you choose.",
                               "lineHeight": 1.5,
                               "textAlign": "center",
                               "fontFamily": "$ds-font",

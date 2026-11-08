@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "lenis/dist/lenis.css";
 
 /* Design tokens from design/waybil.pen (the ds-* variables). Keep in sync with fe. */
 @theme {
@@ -18,13 +19,359 @@
 
   --font-sans: var(--font-instrument-sans), ui-sans-serif, system-ui, sans-serif;
 
-  /* Motion, see fe/AGENTS.md "Motion". */
+  /* Motion, see fe/AGENTS.md "Motion" and landing-page/AGENTS.md "Moments". */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* Every number utility (p-24, gap-16, h-560, size-40) is that many design pixels. */
+  --spacing: var(--u);
+}
+
+/*
+ * --u is one pixel of the design in design/waybil.pen, so the code uses the design's numbers.
+ * Mobile is drawn at 390 and stays at 1px. Tablet is drawn at 768 and follows the width.
+ * Desktop is drawn at 1440 × 900 and shrinks with the width or the height, whichever is
+ * tighter, so a laptop at 125% or 150% display scaling (about 1280 × 670) sees the same
+ * composition, smaller. It never goes below 0.68 so text stays readable.
+ * --uh does the same for the hero (drawn at 1440 × 980) so it always fits the first screen.
+ */
+:root {
+  --u: 1px;
+  --uh: 1px;
+}
+@media (min-width: 768px) {
+  :root {
+    --u: calc(100vw / 768);
+    --uh: var(--u);
+  }
+}
+@media (min-width: 1024px) {
+  :root {
+    --u: max(0.68px, min(1px, calc(100vw / 1440), calc(100svh / 900)));
+    --uh: max(0.6px, min(1px, calc(100vw / 1440), calc(100svh / 980)));
+  }
+}
+
+/*
+ * Font size in design pixels: fs-72 is 72 px at the design size.
+ * Half of it is rem and half follows --u, so text still grows with browser zoom and with the
+ * visitor's font size setting, while big headlines still shrink on short laptop screens.
+ * Never larger than the design size, never under 75% of it.
+ */
+@utility fs-* {
+  font-size: clamp(
+    calc(--value(number) * 0.75rem / 16),
+    calc(--value(number) * 0.5rem / 16 + var(--u) * --value(number) * 0.5),
+    calc(--value(number) * 1rem / 16)
+  );
+}
+
+/* Corner radius in design pixels: r-24. */
+@utility r-* {
+  border-radius: calc(var(--u) * --value(number));
+}
+
+/* Hover effects only for real pointers. `desk` also needs a wide screen. */
+@custom-variant hover-fine (@media (hover: hover) and (pointer: fine));
+@custom-variant desk (@media (min-width: 1024px) and (hover: hover) and (pointer: fine));
+
+/* Smooth scrolling comes from Lenis (<SmoothScroll>), which skips it under reduced motion. */
+
+/* On mouse devices <ScrollIndicator> draws a thin scrollbar that hides when idle, so the
+   browser's own is hidden. Touch screens keep their native overlay scrollbar. */
+@media (hover: hover) and (pointer: fine) {
+  html {
+    scrollbar-width: none;
+  }
+  html::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 body {
   background: var(--color-ds-canvas);
   color: var(--color-ds-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-ds-ink);
+  outline-offset: 2px;
+}
+
+/*
+ * Motion. See landing-page/AGENTS.md "Moments". Every entrance plays once.
+ * --d is a delay in ms on page load (hero); --i is a stagger index when scrolled into view.
+ */
+
+/* Hero, on page load. */
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes rise {
+  from {
+    transform: translateY(105%);
+  }
+}
+@keyframes settle {
+  from {
+    opacity: 0;
+    transform: scale(1.04);
+  }
+}
+@keyframes drop {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+.enter {
+  animation: enter 1000ms var(--ease-out) both;
+  animation-delay: calc(var(--d, 0) * 1ms);
+}
+.rise-load {
+  animation: rise 1100ms var(--ease-out) both;
+  animation-delay: calc(var(--d, 0) * 1ms);
+}
+.settle-load {
+  animation: settle 1500ms var(--ease-out) both;
+  animation-delay: calc(var(--d, 0) * 1ms);
+}
+/* Hero photo: a very slow push in toward the truck and back, with mist drifting over the horizon. */
+@keyframes hero-drift {
+  to {
+    transform: scale(1.07);
+  }
+}
+@keyframes hero-mist {
+  to {
+    transform: translateX(-50%);
+  }
+}
+.hero-drift {
+  transform-origin: 51% 68%;
+  animation: hero-drift 26s ease-in-out infinite alternate;
+}
+.hero-mist {
+  background-image:
+    radial-gradient(ellipse 22% 45% at 18% 55%, rgb(255 255 255 / 0.55), transparent 70%),
+    radial-gradient(ellipse 18% 35% at 52% 40%, rgb(255 255 255 / 0.4), transparent 70%),
+    radial-gradient(ellipse 24% 50% at 82% 60%, rgb(255 255 255 / 0.5), transparent 70%);
+  background-size: 50% 100%;
+  background-repeat: repeat-x;
+  animation: hero-mist 80s linear infinite;
+  pointer-events: none;
+}
+.drop-load {
+  animation: drop 900ms var(--ease-out) both;
+  animation-delay: calc(var(--d, 0) * 1ms);
+}
+
+/* A headline line: the text rises from under its own baseline. */
+.line {
+  display: block;
+  overflow: hidden;
+  /* room for descenders inside the mask */
+  padding-bottom: 0.08em;
+  margin-bottom: -0.08em;
+}
+.line > span {
+  display: block;
+}
+
+/* Scrolled into view. <Reveal> sets data-shown on each item when it enters. */
+.reveal {
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity 800ms var(--ease-out),
+    transform 800ms var(--ease-out);
+  transition-delay: calc(var(--i, 0) * 90ms);
+}
+.rise-in {
+  transform: translateY(105%);
+  transition: transform 1000ms var(--ease-out);
+  transition-delay: calc(var(--i, 0) * 110ms);
+}
+/* Photos and cards open from the top down, and the photo inside settles from 1.06 to 1. */
+.media-in {
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path 850ms var(--ease-in-out);
+  transition-delay: calc(var(--i, 0) * 70ms);
+}
+.media-in img {
+  transform: scale(1.08);
+  transition: transform 1100ms var(--ease-out);
+  transition-delay: calc(var(--i, 0) * 70ms);
+}
+.reveal[data-shown],
+.rise-in[data-shown] {
+  opacity: 1;
+  transform: none;
+}
+.media-in[data-shown] {
+  clip-path: inset(0 0 0 0);
+}
+.media-in[data-shown] img {
+  transform: none;
+}
+
+/* Press feedback on anything tappable. Release is faster than press. */
+.press {
+  transition: transform 100ms ease;
+}
+.press:active {
+  transform: scale(0.97);
+  transition-duration: 160ms;
+}
+
+/* The round arrow in a button: on hover it leaves up and right and a new one comes in. */
+.arrow-swap {
+  position: relative;
+  overflow: hidden;
+}
+.arrow-swap > svg {
+  transition: transform 550ms var(--ease-out);
+}
+.arrow-swap > svg + svg {
+  position: absolute;
+  transform: translate(-150%, 150%);
+}
+@media (hover: hover) and (pointer: fine) {
+  .group:hover .arrow-swap > svg:first-child {
+    transform: translate(150%, -150%);
+  }
+  .group:hover .arrow-swap > svg + svg {
+    transform: none;
+  }
+}
+
+/* Text links: an underline grows from the left on hover. */
+.link-line {
+  background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat;
+  transition: background-size 450ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .link-line:hover {
+    background-size: 100% 1px;
+  }
+}
+
+/*
+ * Four people cards (desktop with a mouse). The card under the pointer or with keyboard focus
+ * widens, its photo leans in and its description slides up; the other cards dim a little.
+ * Everywhere else every description is shown.
+ */
+.people-dim {
+  opacity: 0;
+  pointer-events: none;
+}
+.people-desc {
+  display: grid;
+  grid-template-rows: 1fr;
+}
+.people-desc > p {
+  min-height: 0;
+  overflow: hidden;
+}
+@media (min-width: 1024px) and (hover: hover) and (pointer: fine) {
+  .people-card {
+    transition: flex-grow 450ms cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  .people-card:hover,
+  .people-card:focus-visible {
+    flex-grow: 1.7;
+  }
+  .people-zoom {
+    transition: transform 600ms var(--ease-out);
+  }
+  .people-card:hover .people-zoom,
+  .people-card:focus-visible .people-zoom {
+    transform: scale(1.05);
+  }
+  .people-dim {
+    transition: opacity 300ms ease;
+  }
+  .people:hover .people-card:not(:hover) .people-dim,
+  .people:focus-within .people-card:not(:focus-visible) .people-dim {
+    opacity: 0.25;
+  }
+  .people-desc {
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 400ms cubic-bezier(0.65, 0, 0.35, 1);
+  }
+  .people-desc > p {
+    opacity: 0;
+    transform: translateY(8px);
+    transition:
+      opacity 250ms ease,
+      transform 300ms var(--ease-out);
+  }
+  .people-card:hover .people-desc,
+  .people-card:focus-visible .people-desc {
+    grid-template-rows: 1fr;
+  }
+  .people-card:hover .people-desc > p,
+  .people-card:focus-visible .people-desc > p {
+    opacity: 1;
+    transform: none;
+    transition-delay: 100ms;
+  }
+}
+
+/* Reduced motion: fades stay, movement, scale and wipes go. */
+@media (prefers-reduced-motion: reduce) {
+  .enter,
+  .drop-load,
+  .settle-load {
+    animation-name: fade;
+  }
+  .rise-load {
+    animation: fade 400ms ease both;
+  }
+  .hero-drift,
+  .hero-mist {
+    animation: none;
+  }
+  .reveal,
+  .rise-in {
+    transform: none;
+  }
+  .rise-in {
+    opacity: 0;
+    transition: opacity 400ms ease;
+  }
+  .media-in {
+    clip-path: none;
+    opacity: 0;
+    transition: opacity 400ms ease;
+  }
+  .media-in[data-shown] {
+    opacity: 1;
+  }
+  .media-in img {
+    transform: none;
+  }
+  .press:active {
+    transform: none;
+  }
+  .arrow-swap > svg {
+    transition: none;
+  }
+  .people-card,
+  .people-zoom,
+  .people-desc {
+    transition: none !important;
+  }
+  .people-zoom {
+    transform: none !important;
+  }
 }
