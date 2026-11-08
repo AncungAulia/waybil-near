@@ -5,12 +5,37 @@ import spawn from "cross-spawn";
 
 const NETWORK = "testnet";
 
-function run(args: string[], quiet = false): { ok: boolean; stdout: string } {
+/** Pause between calls so the public RPC doesn't rate-limit the scripts. */
+const PAUSE_MS = 400;
+
+interface Result {
+  ok: boolean;
+  stdout: string;
+  stderr: string;
+}
+
+function run(args: string[], quiet = false): Result {
+  sleep(PAUSE_MS);
   const result = spawn.sync("near", args, {
     encoding: "utf8",
     stdio: quiet ? ["ignore", "pipe", "pipe"] : ["ignore", "pipe", "inherit"],
   });
-  return { ok: result.status === 0, stdout: result.stdout ?? "" };
+  return { ok: result.status === 0, stdout: result.stdout ?? "", stderr: result.stderr ?? "" };
+}
+
+const isRateLimited = (r: Result) => /rate limit|too many requests/i.test(r.stderr);
+
+/**
+ * Runs a read-only command, retrying when the RPC rate-limits it.
+ * Only for reads: transactions are never retried, so nothing is sent twice.
+ */
+function read(args: string[]): Result {
+  let r = run(args, true);
+  for (let i = 0; i < 5 && !r.ok && isRateLimited(r); i++) {
+    sleep(3_000 * (i + 1));
+    r = run(args, true);
+  }
+  return r;
 }
 
 function must(args: string[], what: string): string {
@@ -19,9 +44,12 @@ function must(args: string[], what: string): string {
   return stdout;
 }
 
+/** True or false only when the chain says so. Any other failure throws. */
 export function accountExists(account: string): boolean {
-  return run(["account", "view-account-summary", account, "network-config", NETWORK, "now"], true)
-    .ok;
+  const r = read(["account", "view-account-summary", account, "network-config", NETWORK, "now"]);
+  if (r.ok) return true;
+  if (/does not exist/i.test(r.stderr)) return false;
+  throw new Error(`Could not check ${account}. Try again in a minute.`);
 }
 
 /** Creates `account` funded by its parent `parent`, with a new key saved to the keychain. */
@@ -46,25 +74,76 @@ export function createAccount(account: string, parent: string, near: string): vo
   );
 }
 
-/** Calls a view method. Returns the parsed JSON, or undefined when the call fails. */
-export function view<T>(contract: string, method: string, args: object = {}): T | undefined {
-  const { ok, stdout } = run(
+/**
+ * Creates a top-level testnet account through the testnet faucet, like a new wallet would.
+ * The faucet funds it with test NEAR. The CLI sometimes reports an error even when the
+ * account was made, and the account can take a few seconds to show up, so this waits and
+ * checks the chain instead of trusting the exit code. Never retry the faucet call itself:
+ * a retry saves an extra unused key to the keychain.
+ */
+export function createFaucetAccount(account: string): void {
+  run(
     [
-      "contract",
-      "call-function",
-      "as-read-only",
-      contract,
-      method,
-      "json-args",
-      JSON.stringify(args),
+      "account",
+      "create-account",
+      "sponsor-by-faucet-service",
+      account,
+      "autogenerate-new-keypair",
+      "save-to-keychain",
       "network-config",
       NETWORK,
-      "now",
+      "create",
     ],
     true,
   );
-  if (!ok || !stdout.trim()) return undefined;
-  return JSON.parse(stdout) as T;
+  for (let i = 0; i < 10; i++) {
+    if (accountExists(account)) return;
+    sleep(3_000);
+  }
+  throw new Error(`Faucet could not create ${account}`);
+}
+
+function sleep(ms: number) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+/** Calls a view method. Returns the parsed JSON, or undefined when the call fails. */
+function readView(contract: string, method: string, args: object): Result {
+  return read([
+    "contract",
+    "call-function",
+    "as-read-only",
+    contract,
+    method,
+    "json-args",
+    JSON.stringify(args),
+    "network-config",
+    NETWORK,
+    "now",
+  ]);
+}
+
+/**
+ * Calls a view method and returns its JSON (which may be `null`).
+ * Throws when the call fails, so a flaky RPC never looks like "no data".
+ */
+export function view<T>(contract: string, method: string, args: object = {}): T {
+  const r = readView(contract, method, args);
+  if (!r.ok || !r.stdout.trim()) {
+    throw new Error(`Could not read ${method} on ${contract}. Try again in a minute.`);
+  }
+  return JSON.parse(r.stdout) as T;
+}
+
+/**
+ * Like `view`, but returns undefined when the contract itself can't answer
+ * (for example it is not initialized yet). Still throws when the RPC is rate-limited.
+ */
+export function tryView<T>(contract: string, method: string, args: object = {}): T | undefined {
+  const r = readView(contract, method, args);
+  if (r.ok && r.stdout.trim()) return JSON.parse(r.stdout) as T;
+  if (isRateLimited(r)) throw new Error(`The RPC is busy. Try again in a minute.`);
+  return undefined;
 }
 
 /** Sends a function call signed by `signer` from the keychain. */

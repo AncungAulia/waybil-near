@@ -31,7 +31,7 @@ motion rules) and `be/AGENTS.md` (API, data and key rules). Read them before wor
   avoid "on-chain", "multisig", "contract", "agent", "TEE", "attestation", "gasless".
   Say "recorded", "team approval", "credit assistant", "private check", "proof".
 - Full, simple sentences (subject, verb, object). No colons or semicolons in UI text.
-- The middle dot (·) only joins short facts, for example "#1041 · Pak Budi · due Dec 11".
+- The middle dot (·) only joins short facts, for example "#1041 · Sam · due Dec 11".
   Anything with a verb or a money outcome is written as full sentences instead.
 - Links to the blockchain explorer read "See the record on NearBlocks ↗".
 - Use one arrow per link. Plain text links end with "↗". Buttons and cards that already
@@ -153,6 +153,7 @@ Testnet, from the repo root (needs near-cli-rs and the `waybil.testnet` key in y
 |---|---|
 | `pnpm --filter @waybil/scripts deploy-contracts` | Creates missing accounts, builds and deploys `app.waybil.testnet`, registers token storage. Safe to rerun. |
 | `pnpm --filter @waybil/scripts deploy-contracts --no-build` | The same with the wasm already built |
+| `pnpm --filter @waybil/scripts seed` | Seeds the demo story (wallets, pool, team approvals, credit, Northwind's network). Safe to rerun. |
 
 Backend and frontend commands are added here when each part lands.
 
