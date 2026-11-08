@@ -162,9 +162,21 @@ fn a_late_bill_blocks_new_shipments_until_repaid() {
     as_("anyone.testnet", T0 + 30 * DAY_NS);
     assert!(c.mark_late(id));
     assert!(!c.mark_late(id), "marking twice does nothing");
-    assert_eq!(c.get_shipper(acc("northwind.testnet")).unwrap().late_bills, 1);
-    repay(&mut c, "northwind.testnet", id, 300 * USDC, T0 + 31 * DAY_NS);
-    assert_eq!(c.get_shipper(acc("northwind.testnet")).unwrap().late_bills, 0);
+    assert_eq!(
+        c.get_shipper(acc("northwind.testnet")).unwrap().late_bills,
+        1
+    );
+    repay(
+        &mut c,
+        "northwind.testnet",
+        id,
+        300 * USDC,
+        T0 + 31 * DAY_NS,
+    );
+    assert_eq!(
+        c.get_shipper(acc("northwind.testnet")).unwrap().late_bills,
+        0
+    );
 }
 
 #[test]

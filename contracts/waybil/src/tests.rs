@@ -523,7 +523,10 @@ fn cancel_before_pickup_frees_everything() {
     as_("northwind.testnet", T0);
     c.cancel_shipment(id);
     assert_eq!(c.get_shipment(id).unwrap().status, Status::Cancelled);
-    assert_eq!(c.get_shipper(acc("northwind.testnet")).unwrap().committed.0, 0);
+    assert_eq!(
+        c.get_shipper(acc("northwind.testnet")).unwrap().committed.0,
+        0
+    );
     assert_eq!(c.get_pool().committed.0, 0);
 }
 
