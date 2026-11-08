@@ -39,10 +39,11 @@ flowchart LR
 | Test token | `contracts/mock-usdc` | Rust, NEP-141, 6 decimals | Ancung |
 | Frontend | `fe/` | Next.js (App Router), TypeScript, Tailwind CSS, shadcn/ui, near-connect, MapLibre + OpenStreetMap | Yeypayeyy |
 | Backend | `be/` | Node.js, TypeScript, Express, near-api-js, Supabase client | Nasta |
+| Landing page | `landing-page/` | Next.js (App Router), TypeScript, Tailwind CSS | Ancung |
 | Shared types | `packages/shared` | TypeScript | everyone |
 | Scripts | `scripts/` | TypeScript (deploy, seed) and shell | Ancung |
 
-The repo is a **pnpm workspace** (`fe`, `be`, `packages/*`). Contracts build with Cargo.
+The repo is a **pnpm workspace** (`fe`, `be`, `landing-page`, `packages/*`, `scripts`). Contracts build with Cargo.
 Folder layout and naming per app: `docs/STRUCTURE.md`.
 
 ## Who talks to whom
@@ -103,7 +104,8 @@ messages for backend sign-in, NEAR AI Cloud for the private credit check.
 
 | Thing | Where |
 |---|---|
-| Frontend | Vercel, preview per PR |
+| Landing page | Vercel, its own project at the root domain (planned `waybil.xyz`), preview per PR |
+| Frontend | Vercel, the `app.` subdomain (planned `app.waybil.xyz`), preview per PR |
 | Backend | Railway, deploys from `main` |
 | Database and files | Supabase project `waybil` |
 | Chain | NEAR testnet |
@@ -114,4 +116,5 @@ Each app has a `.env.example` with empty values.
 ## Decisions behind this
 
 `docs/decisions/0001` one contract, `0002` team approvals and assistant limits,
-`0003` payouts and fees, `0004` stack and in-contract team voting, `0005` contract upgrades.
+`0003` payouts and fees, `0004` stack and in-contract team voting, `0005` contract upgrades,
+`0006` the landing page as its own app.

@@ -1,7 +1,10 @@
 packages:
   - fe
   - be
+  - landing-page
   - packages/*
   - scripts
 allowBuilds:
   esbuild: true
+  sharp: false
+  unrs-resolver: false

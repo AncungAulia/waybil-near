@@ -32,6 +32,9 @@ To deploy your own copy you need Rust, cargo-near and near-cli-rs, plus the depl
 your keychain. Then run `pnpm --filter @waybil/scripts deploy-contracts`. It creates the
 accounts, builds and deploys the contract and prints its team and pool when it is done.
 
+To run the landing page, copy `landing-page/.env.example` to `landing-page/.env.local`, then run
+`pnpm --filter @waybil/landing-page dev` and open http://localhost:3000.
+
 Running the backend and frontend is added here as each part lands.
 
 ## NEAR technology used

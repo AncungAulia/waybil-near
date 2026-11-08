@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+/* Design tokens from design/waybil.pen (the ds-* variables). Keep in sync with fe. */
+@theme {
+  --color-ds-bg: #ffffff;
+  --color-ds-canvas: #f2f2f2;
+  --color-ds-surface-2: #f7f7f7;
+  --color-ds-surface-3: #ededed;
+  --color-ds-line: #e6e6e6;
+  --color-ds-line-strong: #d6d6d6;
+  --color-ds-ink: #111111;
+  --color-ds-ink-2: #3d3d3d;
+  --color-ds-muted: #6b6b6b;
+  --color-ds-brand: #ffd60a;
+  --color-ds-brand-deep: #6b5600;
+  --color-ds-brand-soft: #fff8d1;
+  --color-ds-night: #0b0b0b;
+
+  --font-sans: var(--font-instrument-sans), ui-sans-serif, system-ui, sans-serif;
+
+  /* Motion, see fe/AGENTS.md "Motion". */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+body {
+  background: var(--color-ds-canvas);
+  color: var(--color-ds-ink);
+}
