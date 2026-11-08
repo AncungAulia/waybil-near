@@ -12,7 +12,7 @@ import spawn from "cross-spawn";
 import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { accountExists, call, createAccount, deploy, view } from "./lib/near.js";
+import { accountExists, call, createAccount, deploy, tryView, view } from "./lib/near.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const PARENT = "waybil.testnet";
@@ -63,7 +63,7 @@ function main() {
   }
 
   step(`Contract ${APP}`);
-  const initialized = view(APP, "get_config") !== undefined;
+  const initialized = tryView(APP, "get_config") !== undefined;
   if (initialized) {
     console.log("  already initialized, updating the code only");
     deploy(APP, wasm);

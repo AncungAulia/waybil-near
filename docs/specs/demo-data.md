@@ -63,27 +63,17 @@ Northwind pays for what arrived (driver 273.00, bill 280.00).
 - 25,000 USDC from 5 investors. 3,294 lent out (Northwind 2,400, Blue Ridge 594, Atlas 300).
 - Reserve 1,250. Pool earns 1.6% of each bill.
 - Maya Harper: deposited 5,500 on Oct 21, withdrew 500 on Nov 1, 5,000 in the pool (20%), 9.72 earned.
-- Other investors: `orbit-ventures`, `harbor-coop`, `leo`, `ana` (all `.testnet`).
+- Other investors: `orbit-ventures.testnet`, `harbor-coop.testnet`, `leo-moreau.testnet`, `ana-silva.testnet`.
 
-## Name changes from the first draft
+## Other people and details on screen
 
-For the design and seed update after this file is approved.
-
-| Before | After |
+| Who or what | Name |
 |---|---|
-| PT Maju Logistik (Sari Wulandari) | Northwind Freight Co. (Hannah Brooks) |
-| CV Lancar Jaya | Blue Ridge Logistics |
-| PT Lintas Jawa | Atlas Cargo |
-| Sinar Logistik, Surabaya | Meridian Shipping, Port Ellis |
-| Andalas Freight, Medan | Coastline Freight, Northgate |
-| Pak Budi Santoso, AB 1234 CD | Sam Carter, NWF-204 |
-| Sri Rahayu | Jordan Lee |
-| Semarang hub (Dewi) | Harbor Hub (Lena) |
-| Rina | Maya Harper |
-| Jogja / Yogyakarta | Eastport |
-| Semarang | Harbor City |
-| Solo, Klaten, Purworejo | Riverton, Millbrook, Westfield |
-| Main warehouse, Jl. Magelang 21 | Main warehouse, 21 Dock Road |
-| Jl. Kaligawe 9 | 9 Pier Street |
-| 120 boxes of rice | 120 crates of coffee |
-| budi-ventures, koperasi-maju, andi, sari | orbit-ventures, harbor-coop, leo, ana |
+| Second driver | Jordan Lee, truck JLE-118 |
+| Third driver (invited) | Chris Novak |
+| Meridian Shipping contact | Priya Shah, Finance |
+| Coastline Freight contact | Marcus Reid, Owner |
+| Country in forms | United States (state Maine), phone +1 207 555 0142 |
+| Other branch | Riverton branch, 40 River Road |
+
+The design (`design/waybil.pen`) uses these names everywhere.

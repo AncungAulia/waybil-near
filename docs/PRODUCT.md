@@ -6,7 +6,7 @@ update this file in the same PR.
 
 ## The problem
 
-Small truck owners in Indonesia pay for fuel, tolls and crew before every trip.
+In many countries, small truck owners pay for fuel, tolls and crew before every trip.
 The shipping company pays the bill weeks later. To keep driving, truck owners borrow
 at high rates or turn loads down.
 

@@ -71,21 +71,21 @@ pub(crate) fn deposit(c: &mut Contract, investor: &str, amount: u128) {
     assert!(matches!(r, PromiseOrValue::Value(U128(0))));
 }
 
-/// A ready world: pool 25,000, PT Maju with a 3,000 limit, Pak Budi and Semarang hub linked.
+/// A ready world: pool 25,000, Northwind with a 3,000 limit, Sam and Harbor Hub linked.
 pub(crate) fn world() -> (Contract, u32) {
     let mut c = new_contract();
-    deposit(&mut c, "rina.testnet", 25_000 * USDC);
-    start_shipper(&mut c, "ptmaju.testnet", 3_000 * USDC);
-    as_("ptmaju.testnet", T0);
-    c.add_driver(acc("budi.testnet"));
-    let dest = c.add_destination(acc("semarang.testnet"));
+    deposit(&mut c, "maya.testnet", 25_000 * USDC);
+    start_shipper(&mut c, "northwind.testnet", 3_000 * USDC);
+    as_("northwind.testnet", T0);
+    c.add_driver(acc("sam.testnet"));
+    let dest = c.add_destination(acc("harborhub.testnet"));
     (c, dest)
 }
 
 pub(crate) fn create(c: &mut Contract, dest: u32, bill: u128) -> u64 {
-    as_("ptmaju.testnet", T0);
+    as_("northwind.testnet", T0);
     c.create_shipment(
-        acc("budi.testnet"),
+        acc("sam.testnet"),
         dest,
         120,
         "boxes".into(),
@@ -101,7 +101,7 @@ fn init_sets_defaults() {
     let c = new_contract();
     assert_eq!(c.get_config(), Config::default());
     assert!(c.is_member(acc("ops.testnet")));
-    assert!(!c.is_member(acc("ptmaju.testnet")));
+    assert!(!c.is_member(acc("northwind.testnet")));
     assert_eq!(c.get_pool(), Pool::default());
 }
 
@@ -134,12 +134,12 @@ fn init_rejects_duplicate_members() {
 #[test]
 fn deposit_mints_shares_at_the_current_price() {
     let mut c = new_contract();
-    deposit(&mut c, "rina.testnet", 5_000 * USDC);
-    deposit(&mut c, "budi-ventures.testnet", 8_000 * USDC);
+    deposit(&mut c, "maya.testnet", 5_000 * USDC);
+    deposit(&mut c, "orbit-ventures.testnet", 8_000 * USDC);
     assert_eq!(c.get_pool().cash.0, 13_000 * USDC);
-    assert_eq!(c.get_investor(acc("rina.testnet")).value.0, 5_000 * USDC);
+    assert_eq!(c.get_investor(acc("maya.testnet")).value.0, 5_000 * USDC);
     assert_eq!(
-        c.get_investor(acc("budi-ventures.testnet")).value.0,
+        c.get_investor(acc("orbit-ventures.testnet")).value.0,
         8_000 * USDC
     );
 }
@@ -149,7 +149,7 @@ fn deposit_mints_shares_at_the_current_price() {
 fn deposit_only_from_usdc() {
     let mut c = new_contract();
     as_("fake-token.testnet", T0);
-    let _ = c.ft_on_transfer(acc("rina.testnet"), U128(USDC), "deposit".into());
+    let _ = c.ft_on_transfer(acc("maya.testnet"), U128(USDC), "deposit".into());
 }
 
 #[test]
@@ -157,7 +157,7 @@ fn deposit_only_from_usdc() {
 fn unknown_transfer_message_fails() {
     let mut c = new_contract();
     as_("usdc.waybil.testnet", T0);
-    let _ = c.ft_on_transfer(acc("rina.testnet"), U128(USDC), "hello".into());
+    let _ = c.ft_on_transfer(acc("maya.testnet"), U128(USDC), "hello".into());
 }
 
 // ---------- team ----------
@@ -165,9 +165,9 @@ fn unknown_transfer_message_fails() {
 #[test]
 fn two_approvals_start_a_shipper() {
     let mut c = new_contract();
-    start_shipper(&mut c, "ptmaju.testnet", 2_500 * USDC);
+    start_shipper(&mut c, "northwind.testnet", 2_500 * USDC);
     assert_eq!(
-        c.get_shipper(acc("ptmaju.testnet")).unwrap().limit.0,
+        c.get_shipper(acc("northwind.testnet")).unwrap().limit.0,
         2_500 * USDC
     );
 }
@@ -177,7 +177,7 @@ fn one_approval_and_one_rejection_stays_open() {
     let mut c = new_contract();
     as_("risk.testnet", T0);
     let id = c.propose(ProposalKind::StartShipper {
-        shipper: acc("sinar.testnet"),
+        shipper: acc("meridian.testnet"),
         limit: U128(2_000 * USDC),
     });
     as_("ops.testnet", T0);
@@ -191,14 +191,14 @@ fn two_rejections_close_it() {
     let mut c = new_contract();
     as_("risk.testnet", T0);
     let id = c.propose(ProposalKind::StartShipper {
-        shipper: acc("andalas.testnet"),
+        shipper: acc("coastline.testnet"),
         limit: U128(1_000 * USDC),
     });
     as_("ops.testnet", T0);
     c.vote(id, false);
     as_("finance.testnet", T0);
     assert_eq!(c.vote(id, false), ProposalStatus::Rejected);
-    assert!(c.get_shipper(acc("andalas.testnet")).is_none());
+    assert!(c.get_shipper(acc("coastline.testnet")).is_none());
 }
 
 #[test]
@@ -206,12 +206,12 @@ fn a_vote_after_7_days_expires_it() {
     let mut c = new_contract();
     as_("risk.testnet", T0);
     let id = c.propose(ProposalKind::StartShipper {
-        shipper: acc("sinar.testnet"),
+        shipper: acc("meridian.testnet"),
         limit: U128(2_000 * USDC),
     });
     as_("ops.testnet", T0 + 7 * DAY_NS + 1);
     assert_eq!(c.vote(id, true), ProposalStatus::Expired);
-    assert!(c.get_shipper(acc("sinar.testnet")).is_none());
+    assert!(c.get_shipper(acc("meridian.testnet")).is_none());
 }
 
 #[test]
@@ -220,7 +220,7 @@ fn no_double_votes() {
     let mut c = new_contract();
     as_("risk.testnet", T0);
     let id = c.propose(ProposalKind::StartShipper {
-        shipper: acc("sinar.testnet"),
+        shipper: acc("meridian.testnet"),
         limit: U128(USDC),
     });
     c.vote(id, true);
@@ -230,9 +230,9 @@ fn no_double_votes() {
 #[should_panic(expected = "E_NOT_TEAM")]
 fn only_members_vote() {
     let mut c = new_contract();
-    as_("ptmaju.testnet", T0);
+    as_("northwind.testnet", T0);
     c.propose(ProposalKind::StartShipper {
-        shipper: acc("ptmaju.testnet"),
+        shipper: acc("northwind.testnet"),
         limit: U128(USDC),
     });
 }
@@ -241,7 +241,7 @@ fn only_members_vote() {
 #[should_panic(expected = "E_PROPOSAL_CLOSED")]
 fn closed_proposals_take_no_votes() {
     let mut c = new_contract();
-    start_shipper(&mut c, "ptmaju.testnet", USDC);
+    start_shipper(&mut c, "northwind.testnet", USDC);
     as_("finance.testnet", T0);
     c.vote(1, true);
 }
@@ -250,21 +250,21 @@ fn closed_proposals_take_no_votes() {
 fn pause_is_instant_and_unpause_needs_two() {
     let (mut c, dest) = world();
     as_("finance.testnet", T0);
-    c.pause_shipper(acc("ptmaju.testnet"), "Late bill".into());
+    c.pause_shipper(acc("northwind.testnet"), "Late bill".into());
     assert!(
-        c.get_shipper(acc("ptmaju.testnet"))
+        c.get_shipper(acc("northwind.testnet"))
             .unwrap()
             .paused
             .is_some()
     );
     as_("risk.testnet", T0);
     let id = c.propose(ProposalKind::Unpause {
-        shipper: acc("ptmaju.testnet"),
+        shipper: acc("northwind.testnet"),
     });
     as_("ops.testnet", T0);
     c.vote(id, true);
     assert!(
-        c.get_shipper(acc("ptmaju.testnet"))
+        c.get_shipper(acc("northwind.testnet"))
             .unwrap()
             .paused
             .is_none()
@@ -277,7 +277,7 @@ fn pause_is_instant_and_unpause_needs_two() {
 fn paused_shipper_cannot_create() {
     let (mut c, dest) = world();
     as_("finance.testnet", T0);
-    c.pause_shipper(acc("ptmaju.testnet"), "Late bill".into());
+    c.pause_shipper(acc("northwind.testnet"), "Late bill".into());
     create(&mut c, dest, 300 * USDC);
 }
 
@@ -287,9 +287,9 @@ fn paused_shipper_cannot_create() {
 fn assistant_raises_up_to_20_percent_a_week() {
     let (mut c, _) = world();
     as_("assistant.waybil.testnet", T0);
-    c.assistant_set_limit(acc("ptmaju.testnet"), U128(3_600 * USDC));
+    c.assistant_set_limit(acc("northwind.testnet"), U128(3_600 * USDC));
     assert_eq!(
-        c.get_shipper(acc("ptmaju.testnet")).unwrap().limit.0,
+        c.get_shipper(acc("northwind.testnet")).unwrap().limit.0,
         3_600 * USDC
     );
 }
@@ -299,7 +299,7 @@ fn assistant_raises_up_to_20_percent_a_week() {
 fn assistant_cannot_raise_more_than_20_percent() {
     let (mut c, _) = world();
     as_("assistant.waybil.testnet", T0);
-    c.assistant_set_limit(acc("ptmaju.testnet"), U128(3_601 * USDC));
+    c.assistant_set_limit(acc("northwind.testnet"), U128(3_601 * USDC));
 }
 
 #[test]
@@ -307,18 +307,18 @@ fn assistant_cannot_raise_more_than_20_percent() {
 fn two_raises_in_one_week_share_the_cap() {
     let (mut c, _) = world();
     as_("assistant.waybil.testnet", T0);
-    c.assistant_set_limit(acc("ptmaju.testnet"), U128(3_300 * USDC));
+    c.assistant_set_limit(acc("northwind.testnet"), U128(3_300 * USDC));
     as_("assistant.waybil.testnet", T0 + DAY_NS);
-    c.assistant_set_limit(acc("ptmaju.testnet"), U128(3_700 * USDC));
+    c.assistant_set_limit(acc("northwind.testnet"), U128(3_700 * USDC));
 }
 
 #[test]
 fn a_new_week_resets_the_raise_window() {
     let (mut c, _) = world();
     as_("assistant.waybil.testnet", T0);
-    c.assistant_set_limit(acc("ptmaju.testnet"), U128(3_600 * USDC));
+    c.assistant_set_limit(acc("northwind.testnet"), U128(3_600 * USDC));
     as_("assistant.waybil.testnet", T0 + 7 * DAY_NS);
-    c.assistant_set_limit(acc("ptmaju.testnet"), U128(4_320 * USDC));
+    c.assistant_set_limit(acc("northwind.testnet"), U128(4_320 * USDC));
 }
 
 #[test]
@@ -327,33 +327,33 @@ fn assistant_never_goes_above_10000() {
     let (mut c, _) = world();
     as_("risk.testnet", T0);
     let id = c.propose(ProposalKind::SetLimit {
-        shipper: acc("ptmaju.testnet"),
+        shipper: acc("northwind.testnet"),
         limit: U128(9_500 * USDC),
     });
     as_("ops.testnet", T0);
     c.vote(id, true);
     as_("assistant.waybil.testnet", T0);
-    c.assistant_set_limit(acc("ptmaju.testnet"), U128(10_001 * USDC));
+    c.assistant_set_limit(acc("northwind.testnet"), U128(10_001 * USDC));
 }
 
 #[test]
 #[should_panic(expected = "E_NOT_ASSISTANT")]
 fn only_the_assistant_sets_limits() {
     let (mut c, _) = world();
-    as_("ptmaju.testnet", T0);
-    c.assistant_set_limit(acc("ptmaju.testnet"), U128(3_100 * USDC));
+    as_("northwind.testnet", T0);
+    c.assistant_set_limit(acc("northwind.testnet"), U128(3_100 * USDC));
 }
 
 #[test]
 fn rejected_assistant_proposal_blocks_it_for_7_days() {
     let (mut c, _) = world();
     as_("assistant.waybil.testnet", T0);
-    let id = c.assistant_propose(acc("ptmaju.testnet"), U128(5_000 * USDC));
+    let id = c.assistant_propose(acc("northwind.testnet"), U128(5_000 * USDC));
     as_("risk.testnet", T0);
     c.vote(id, false);
     as_("finance.testnet", T0);
     assert_eq!(c.vote(id, false), ProposalStatus::Rejected);
-    let s = c.get_shipper(acc("ptmaju.testnet")).unwrap();
+    let s = c.get_shipper(acc("northwind.testnet")).unwrap();
     assert_eq!(s.blocked_until.0, T0 + 7 * DAY_NS);
 }
 
@@ -362,26 +362,26 @@ fn rejected_assistant_proposal_blocks_it_for_7_days() {
 fn assistant_waits_out_the_cooldown() {
     let (mut c, _) = world();
     as_("assistant.waybil.testnet", T0);
-    let id = c.assistant_propose(acc("ptmaju.testnet"), U128(5_000 * USDC));
+    let id = c.assistant_propose(acc("northwind.testnet"), U128(5_000 * USDC));
     as_("risk.testnet", T0);
     c.vote(id, false);
     as_("finance.testnet", T0);
     c.vote(id, false);
     as_("assistant.waybil.testnet", T0 + 7 * DAY_NS - 1);
-    c.assistant_set_limit(acc("ptmaju.testnet"), U128(3_100 * USDC));
+    c.assistant_set_limit(acc("northwind.testnet"), U128(3_100 * USDC));
 }
 
 #[test]
 fn team_approves_a_big_raise_from_the_assistant() {
     let (mut c, _) = world();
     as_("assistant.waybil.testnet", T0);
-    let id = c.assistant_propose(acc("ptmaju.testnet"), U128(5_000 * USDC));
+    let id = c.assistant_propose(acc("northwind.testnet"), U128(5_000 * USDC));
     as_("risk.testnet", T0);
     c.vote(id, true);
     as_("finance.testnet", T0);
     assert_eq!(c.vote(id, true), ProposalStatus::Approved);
     assert_eq!(
-        c.get_shipper(acc("ptmaju.testnet")).unwrap().limit.0,
+        c.get_shipper(acc("northwind.testnet")).unwrap().limit.0,
         5_000 * USDC
     );
 }
@@ -391,10 +391,10 @@ fn team_approves_a_big_raise_from_the_assistant() {
 #[test]
 fn network_lists_drivers_and_destinations() {
     let (c, dest) = world();
-    let n = c.get_network(acc("ptmaju.testnet"));
-    assert_eq!(n.drivers, vec![acc("budi.testnet")]);
+    let n = c.get_network(acc("northwind.testnet"));
+    assert_eq!(n.drivers, vec![acc("sam.testnet")]);
     assert_eq!(n.destinations[0].id, dest);
-    assert_eq!(n.destinations[0].warehouse, acc("semarang.testnet"));
+    assert_eq!(n.destinations[0].warehouse, acc("harborhub.testnet"));
 }
 
 #[test]
@@ -402,15 +402,15 @@ fn network_lists_drivers_and_destinations() {
 fn only_shippers_add_drivers() {
     let mut c = new_contract();
     as_("nobody.testnet", T0);
-    c.add_driver(acc("budi.testnet"));
+    c.add_driver(acc("sam.testnet"));
 }
 
 #[test]
 #[should_panic(expected = "E_ALREADY_IN_NETWORK")]
 fn no_duplicate_drivers() {
     let (mut c, _) = world();
-    as_("ptmaju.testnet", T0);
-    c.add_driver(acc("budi.testnet"));
+    as_("northwind.testnet", T0);
+    c.add_driver(acc("sam.testnet"));
 }
 
 // ---------- shipments ----------
@@ -423,17 +423,17 @@ fn create_commits_the_bill_and_the_advance() {
     assert_eq!(s.status, Status::Approved);
     assert_eq!(s.advance.0, 292_500_000);
     assert_eq!(
-        c.get_shipper(acc("ptmaju.testnet")).unwrap().committed.0,
+        c.get_shipper(acc("northwind.testnet")).unwrap().committed.0,
         300 * USDC
     );
     assert_eq!(c.get_pool().committed.0, 292_500_000);
     assert_eq!(
-        c.list_shipments_by_shipper(acc("ptmaju.testnet"), None, None)
+        c.list_shipments_by_shipper(acc("northwind.testnet"), None, None)
             .len(),
         1
     );
     assert_eq!(
-        c.list_shipments_by_driver(acc("budi.testnet"), None, None)
+        c.list_shipments_by_driver(acc("sam.testnet"), None, None)
             .len(),
         1
     );
@@ -452,7 +452,7 @@ fn create_respects_the_limit() {
 #[should_panic(expected = "E_DRIVER_NOT_IN_NETWORK")]
 fn create_needs_a_driver_in_the_network() {
     let (mut c, dest) = world();
-    as_("ptmaju.testnet", T0);
+    as_("northwind.testnet", T0);
     c.create_shipment(
         acc("stranger.testnet"),
         dest,
@@ -467,9 +467,9 @@ fn create_needs_a_driver_in_the_network() {
 #[should_panic(expected = "E_BAD_DUE_DATE")]
 fn due_date_within_60_days() {
     let (mut c, dest) = world();
-    as_("ptmaju.testnet", T0);
+    as_("northwind.testnet", T0);
     c.create_shipment(
-        acc("budi.testnet"),
+        acc("sam.testnet"),
         dest,
         1,
         "box".into(),
@@ -482,9 +482,9 @@ fn due_date_within_60_days() {
 #[should_panic(expected = "E_BAD_UNIT")]
 fn unit_is_required() {
     let (mut c, dest) = world();
-    as_("ptmaju.testnet", T0);
+    as_("northwind.testnet", T0);
     c.create_shipment(
-        acc("budi.testnet"),
+        acc("sam.testnet"),
         dest,
         1,
         " ".into(),
@@ -497,10 +497,10 @@ fn unit_is_required() {
 #[should_panic(expected = "E_POOL_EMPTY")]
 fn no_shipments_without_a_pool() {
     let mut c = new_contract();
-    start_shipper(&mut c, "ptmaju.testnet", 3_000 * USDC);
-    as_("ptmaju.testnet", T0);
-    c.add_driver(acc("budi.testnet"));
-    let dest = c.add_destination(acc("semarang.testnet"));
+    start_shipper(&mut c, "northwind.testnet", 3_000 * USDC);
+    as_("northwind.testnet", T0);
+    c.add_driver(acc("sam.testnet"));
+    let dest = c.add_destination(acc("harborhub.testnet"));
     create(&mut c, dest, 300 * USDC);
 }
 
@@ -508,11 +508,11 @@ fn no_shipments_without_a_pool() {
 #[should_panic(expected = "E_OVER_POOL_SHARE")]
 fn one_bill_cannot_take_over_a_quarter_of_the_pool() {
     let mut c = new_contract();
-    deposit(&mut c, "rina.testnet", 1_000 * USDC);
-    start_shipper(&mut c, "ptmaju.testnet", 3_000 * USDC);
-    as_("ptmaju.testnet", T0);
-    c.add_driver(acc("budi.testnet"));
-    let dest = c.add_destination(acc("semarang.testnet"));
+    deposit(&mut c, "maya.testnet", 1_000 * USDC);
+    start_shipper(&mut c, "northwind.testnet", 3_000 * USDC);
+    as_("northwind.testnet", T0);
+    c.add_driver(acc("sam.testnet"));
+    let dest = c.add_destination(acc("harborhub.testnet"));
     create(&mut c, dest, 300 * USDC);
 }
 
@@ -520,10 +520,13 @@ fn one_bill_cannot_take_over_a_quarter_of_the_pool() {
 fn cancel_before_pickup_frees_everything() {
     let (mut c, dest) = world();
     let id = create(&mut c, dest, 300 * USDC);
-    as_("ptmaju.testnet", T0);
+    as_("northwind.testnet", T0);
     c.cancel_shipment(id);
     assert_eq!(c.get_shipment(id).unwrap().status, Status::Cancelled);
-    assert_eq!(c.get_shipper(acc("ptmaju.testnet")).unwrap().committed.0, 0);
+    assert_eq!(
+        c.get_shipper(acc("northwind.testnet")).unwrap().committed.0,
+        0
+    );
     assert_eq!(c.get_pool().committed.0, 0);
 }
 
@@ -532,9 +535,9 @@ fn cancel_before_pickup_frees_everything() {
 fn no_cancel_after_pickup() {
     let (mut c, dest) = world();
     let id = create(&mut c, dest, 300 * USDC);
-    as_("budi.testnet", T0);
+    as_("sam.testnet", T0);
     c.confirm_pickup(id);
-    as_("ptmaju.testnet", T0);
+    as_("northwind.testnet", T0);
     c.cancel_shipment(id);
 }
 
@@ -543,7 +546,7 @@ fn no_cancel_after_pickup() {
 fn only_the_driver_confirms_pickup() {
     let (mut c, dest) = world();
     let id = create(&mut c, dest, 300 * USDC);
-    as_("ptmaju.testnet", T0);
+    as_("northwind.testnet", T0);
     c.confirm_pickup(id);
 }
 
@@ -552,9 +555,9 @@ fn only_the_driver_confirms_pickup() {
 fn only_the_destination_warehouse_confirms() {
     let (mut c, dest) = world();
     let id = create(&mut c, dest, 300 * USDC);
-    as_("budi.testnet", T0);
+    as_("sam.testnet", T0);
     c.confirm_pickup(id);
-    as_("budi.testnet", T0);
+    as_("sam.testnet", T0);
     let _ = c.confirm_delivery(id, 120, None);
 }
 
@@ -562,9 +565,9 @@ fn only_the_destination_warehouse_confirms() {
 fn clean_delivery_pays_the_driver_at_once() {
     let (mut c, dest) = world();
     let id = create(&mut c, dest, 300 * USDC);
-    as_("budi.testnet", T0);
+    as_("sam.testnet", T0);
     c.confirm_pickup(id);
-    as_("semarang.testnet", T0 + 1);
+    as_("harborhub.testnet", T0 + 1);
     let r = c.confirm_delivery(id, 120, None);
     assert!(matches!(r, PromiseOrValue::Promise(_)));
 
@@ -574,20 +577,20 @@ fn clean_delivery_pays_the_driver_at_once() {
     assert_eq!(pool.lent.0, 292_500_000);
     assert_eq!(pool.cash.0, 25_000 * USDC - 292_500_000);
     assert_eq!(pool.committed.0, 0);
-    let shipper = c.get_shipper(acc("ptmaju.testnet")).unwrap();
+    let shipper = c.get_shipper(acc("northwind.testnet")).unwrap();
     assert_eq!(shipper.owed.0, 300 * USDC);
     assert_eq!(shipper.committed.0, 0);
     // The pool value doesn't change when money is lent out.
-    assert_eq!(c.get_investor(acc("rina.testnet")).value.0, 25_000 * USDC);
+    assert_eq!(c.get_investor(acc("maya.testnet")).value.0, 25_000 * USDC);
 }
 
 #[test]
 fn damaged_goods_hold_the_payout() {
     let (mut c, dest) = world();
     let id = create(&mut c, dest, 300 * USDC);
-    as_("budi.testnet", T0);
+    as_("sam.testnet", T0);
     c.confirm_pickup(id);
-    as_("semarang.testnet", T0 + 1);
+    as_("harborhub.testnet", T0 + 1);
     let r = c.confirm_delivery(id, 112, Some("ab".repeat(32)));
     assert!(matches!(r, PromiseOrValue::Value(false)));
     let s = c.get_shipment(id).unwrap();
@@ -600,9 +603,9 @@ fn damaged_goods_hold_the_payout() {
 fn failed_payout_rolls_back() {
     let (mut c, dest) = world();
     let id = create(&mut c, dest, 300 * USDC);
-    as_("budi.testnet", T0);
+    as_("sam.testnet", T0);
     c.confirm_pickup(id);
-    as_("semarang.testnet", T0 + 1);
+    as_("harborhub.testnet", T0 + 1);
     let _ = c.confirm_delivery(id, 120, None);
 
     as_callback(T0 + 2, PromiseResult::Failed);
@@ -614,7 +617,7 @@ fn failed_payout_rolls_back() {
     assert_eq!(pool.lent.0, 0);
     assert_eq!(pool.cash.0, 25_000 * USDC);
     assert_eq!(pool.committed.0, 292_500_000);
-    let shipper = c.get_shipper(acc("ptmaju.testnet")).unwrap();
+    let shipper = c.get_shipper(acc("northwind.testnet")).unwrap();
     assert_eq!(shipper.owed.0, 0);
     assert_eq!(shipper.committed.0, 300 * USDC);
 }
@@ -623,9 +626,9 @@ fn failed_payout_rolls_back() {
 fn successful_payout_keeps_the_state() {
     let (mut c, dest) = world();
     let id = create(&mut c, dest, 300 * USDC);
-    as_("budi.testnet", T0);
+    as_("sam.testnet", T0);
     c.confirm_pickup(id);
-    as_("semarang.testnet", T0 + 1);
+    as_("harborhub.testnet", T0 + 1);
     let _ = c.confirm_delivery(id, 120, None);
     as_callback(T0 + 2, PromiseResult::Successful(vec![]));
     assert!(c.on_payout(id, false));

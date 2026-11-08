@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "deploy-contracts": "tsx deploy.ts",
+    "seed": "tsx seed.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
