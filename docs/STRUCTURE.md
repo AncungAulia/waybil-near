@@ -10,12 +10,13 @@ When you add a folder that isn't listed here, add it here in the same PR.
 ├─ contracts/            Rust contracts (Cargo, not part of the pnpm workspace)
 ├─ fe/                   Next.js app
 ├─ be/                   Express API
+├─ landing-page/         Public landing page (Next.js, its own Vercel project)
 ├─ packages/shared/      Types and helpers used by fe and be
 ├─ scripts/              Testnet deploy and seed
 ├─ design/               Pencil file, logo, shaders
 ├─ docs/
 ├─ package.json          Root scripts only (dev, build, lint, test)
-├─ pnpm-workspace.yaml   fe, be, packages/*
+├─ pnpm-workspace.yaml   fe, be, landing-page, packages/*, scripts
 ├─ .editorconfig  .prettierrc.json  .gitattributes  .gitignore
 ```
 
@@ -28,7 +29,7 @@ fe/
 │  └─ illustrations/     role and empty-state art
 ├─ src/
 │  ├─ app/                                Routes only. Pages stay thin and render a module screen.
-│  │  ├─ (marketing)/page.tsx             Landing page
+│  │  ├─ page.tsx                         Root route, sends people to sign in (the landing page is in landing-page/)
 │  │  ├─ start/                           Sign in (A1–A5)
 │  │  ├─ onboarding/{shipper,driver,investor}/   (B, C, D, E)
 │  │  ├─ join/[code]/                     Invite links (F)
@@ -115,6 +116,33 @@ Rules:
 - Routes call services. Services call `lib/`. Nothing in `lib/` knows about Express.
 - Every request body is checked with a zod schema from `<name>.schema.ts`.
 - Shared request and response types are exported from `packages/shared`.
+
+## Landing page · `landing-page/`
+
+The public page at the root domain. No wallet, no backend calls. Decision 0006.
+
+```
+landing-page/
+├─ public/
+│  ├─ images/            Photos copied from design/landing (compressed, max 2400 px)
+│  └─ brand/             Logo, favicon, NEAR logo
+├─ src/
+│  ├─ app/
+│  │  ├─ layout.tsx      Font, metadata, Open Graph image
+│  │  ├─ page.tsx        Renders the sections in order
+│  │  └─ globals.css     Tailwind and the ds-* tokens (copied from fe)
+│  ├─ sections/          One file per section: Hero, Statement, HowItWorks, FourPeople, Faq, Cta, Footer
+│  ├─ components/        Navbar, MobileMenu, Button, PhotoCard
+│  └─ lib/env.ts         NEXT_PUBLIC_APP_URL for links into the app
+├─ AGENTS.md
+├─ .env.example
+└─ package.json
+```
+
+Rules:
+- Same design tokens, font and motion rules as `fe/` (see `fe/AGENTS.md`). No shadcn/ui.
+- Links into the app use `NEXT_PUBLIC_APP_URL`, never a hard-coded domain.
+- UI copy follows "Writing UI copy" in `AGENTS.md`.
 
 ## Shared · `packages/shared/`
 

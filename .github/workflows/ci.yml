@@ -42,12 +42,25 @@ jobs:
         working-directory: contracts/${{ matrix.contract }}
     steps:
       - uses: actions/checkout@v4
-      - name: Install cargo-near
-        # Pinned so the generated ABI matches the committed one.
-        run: curl --proto '=https' --tlsv1.2 -LsSf https://github.com/near/cargo-near/releases/download/cargo-near-v0.22.0/cargo-near-installer.sh | sh
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: contracts/${{ matrix.contract }}
+      - name: Install cargo-near
+        # Pinned so the generated ABI matches the committed one. The cache above usually
+        # has it already. GitHub release downloads sometimes return 504, so try them a few
+        # times, then build it from crates.io instead of running tests without the tool.
+        run: |
+          if cargo near --version 2>/dev/null | grep -q "0.22.0"; then exit 0; fi
+          set -o pipefail
+          url=https://github.com/near/cargo-near/releases/download/cargo-near-v0.22.0/cargo-near-installer.sh
+          for i in 1 2 3; do
+            curl --proto '=https' --tlsv1.2 -LsSf "$url" | sh && break || sleep $((i * 10))
+          done
+          if ! cargo near --version; then
+            sudo apt-get update -q && sudo apt-get install -yq libudev-dev pkg-config
+            cargo install cargo-near --version 0.22.0 --locked
+          fi
+          cargo near --version
       - run: cargo fmt --check
       - run: cargo clippy --target wasm32-unknown-unknown --lib -- -D warnings
       - name: Unit and sandbox tests

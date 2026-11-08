@@ -18,12 +18,13 @@ messages, and PR descriptions.
 | Contracts | Ancung    | `contracts/` |
 | Frontend  | Yeypayeyy | `fe/`        |
 | Backend   | Nasta     | `be/`        |
+| Landing page | Ancung | `landing-page/` |
 
 Stay inside your area. If a change must touch another area, say so in the PR
 and tell that owner.
 
 Each app folder has its own rules on top of this file: `fe/AGENTS.md` (design, UI and
-motion rules) and `be/AGENTS.md` (API, data and key rules). Read them before working there.
+motion rules), `be/AGENTS.md` (API, data and key rules) and `landing-page/AGENTS.md`. Read them before working there.
 
 ## Writing UI copy
 
@@ -45,6 +46,7 @@ contracts/waybil/     main contract (shipments, credit, pool, team votes) · Rus
 contracts/mock-usdc/  NEP-141 test token · Rust
 fe/                   Next.js app · pnpm workspace package
 be/                   Express API, relayer, credit assistant · pnpm workspace package
+landing-page/         Public landing page, Next.js · pnpm workspace package
 packages/shared/      TypeScript types shared by fe and be
 scripts/              testnet deploy & seed scripts
 design/               Pencil design file, logo, shaders
@@ -159,6 +161,13 @@ Testnet, from the repo root (needs near-cli-rs and the `waybil.testnet` key in y
 | `pnpm --filter @waybil/scripts deploy-contracts` | Creates missing accounts, builds and deploys `app.waybil.testnet`, registers token storage. Safe to rerun. |
 | `pnpm --filter @waybil/scripts deploy-contracts --no-build` | The same with the wasm already built |
 | `pnpm --filter @waybil/scripts seed` | Seeds the demo story (wallets, pool, team approvals, credit, Northwind's network). Safe to rerun. |
+
+Landing page, from the repo root:
+
+| Command | What it does |
+|---|---|
+| `pnpm --filter @waybil/landing-page dev` | Runs the landing page at http://localhost:3000 |
+| `pnpm --filter @waybil/landing-page build` | Production build |
 
 Backend and frontend commands are added here when each part lands.
 
