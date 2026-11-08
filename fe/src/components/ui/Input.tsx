@@ -18,10 +18,11 @@ const FIELD = cn(
   "has-[:focus]:bg-ds-bg has-[:focus]:border-ds-ink has-[:focus]:hover:border-ds-ink",
 );
 
-export interface InputProps extends Omit<ComponentProps<"input">, "id"> {
+export interface InputProps extends Omit<ComponentProps<"input">, "id" | "prefix"> {
   label: string;
   /** The unit after the value, for example "USDC". */
   suffix?: ReactNode;
+  prefix?: ReactNode;
   /** The line under the field. Replaced by `error` when something is wrong. */
   hint?: ReactNode;
   /** Why the value is not accepted. Turns the whole field red. */
@@ -33,6 +34,7 @@ export interface InputProps extends Omit<ComponentProps<"input">, "id"> {
 export function Input({
   label,
   suffix,
+  prefix,
   hint,
   error,
   locked = false,
@@ -57,6 +59,7 @@ export function Input({
           (disabled || locked) && "hover:border-ds-canvas",
         )}
       >
+        {prefix}
         <input
           {...rest}
           id={id}

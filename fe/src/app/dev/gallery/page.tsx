@@ -4,6 +4,10 @@ import { SECTIONS } from "./registry";
 import Link from "next/link";
 import { DRIVER_STATES } from "@/modules/driver/data/fixtures";
 import { WAREHOUSE_STATES } from "@/modules/warehouse/data/fixtures";
+import { SHIPPER_STATES } from "@/modules/shipper/data/fixtures";
+import { INVESTOR_STATES } from "@/modules/investor/data/fixtures";
+import { ADMIN_STATES } from "@/modules/admin/data/fixtures";
+import { ONBOARDING_STATES } from "@/modules/onboarding/data/fixtures";
 
 /*
  * Every component state on one page, so a batch can be checked by scrolling instead of
@@ -35,13 +39,20 @@ export default function GalleryPage() {
       </p>
 
       <section className="mt-32 rounded-card bg-ds-bg p-24">
-        <h2 className="text-heading">Driver and warehouse screens</h2>
+        <h2 className="text-heading">Role screens</h2>
         <p className="mt-8 text-label text-ds-muted">
           Each screen opens at the full browser width. Review every state at 1440, 834 and 390
           pixels.
         </p>
         <div className="mt-16 grid gap-24 md:grid-cols-2">
-          {[DRIVER_STATES, WAREHOUSE_STATES].map((states, index) => (
+          {[
+            DRIVER_STATES,
+            WAREHOUSE_STATES,
+            SHIPPER_STATES,
+            INVESTOR_STATES,
+            ADMIN_STATES,
+            ONBOARDING_STATES,
+          ].map((states, index) => (
             <div key={index} className="flex flex-col gap-10">
               {Object.entries(states).map(([code, title]) => (
                 <Link

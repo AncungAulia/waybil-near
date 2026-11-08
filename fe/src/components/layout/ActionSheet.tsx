@@ -18,6 +18,9 @@ export function ActionSheet({
 }) {
   const start = useRef<{ y: number; time: number } | null>(null);
   const [drag, setDrag] = useState(0);
+  const [openedWithKeyboard] = useState(
+    () => typeof document !== "undefined" && !!document.activeElement?.matches(":focus-visible"),
+  );
   const contents = (
     <>
       <div className="flex items-center justify-between gap-16">
@@ -51,7 +54,10 @@ export function ActionSheet({
             "action-sheet fixed right-0 bottom-0 left-0 z-50 max-h-[90dvh] overflow-y-auto md:top-1/2 md:right-auto md:bottom-auto md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2",
             wide ? "md:w-560" : "md:w-480",
           )}
-          style={drag ? { transform: `translateY(${drag}px)` } : undefined}
+          style={{
+            ...(drag ? { transform: `translateY(${drag}px)` } : {}),
+            ...(openedWithKeyboard ? { animation: "none" } : {}),
+          }}
         >
           <div
             aria-hidden

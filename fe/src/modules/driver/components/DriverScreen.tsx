@@ -16,7 +16,8 @@ import { DemoRecord } from "@/components/elements/DemoRecord";
 import { DeliveryQr } from "@/components/elements/DeliveryQr";
 import { ResultScreen } from "@/components/elements/ResultScreen";
 import { StatusPill } from "@/components/elements/StatusPill";
-import { useDemoDelivery, useDemoReport } from "@/hooks/useDemoDelivery";
+import { useOrigin } from "@/hooks/useOrigin";
+import { useDemoDelivery, useDemoReport, useDemoSettlement } from "@/hooks/useDemoDelivery";
 import { DEMO_CODE, DEFAULT_REPORT } from "@/lib/demo-delivery";
 import { cn } from "@/lib/cn";
 import { DRIVER_FIXTURES, type DriverState } from "../data/fixtures";
@@ -30,19 +31,20 @@ const PAYOUTS = [
 ] as const;
 
 function ShareLink() {
+  const url = `${useOrigin()}/c/sam`;
   const [copied, setCopied] = useState(false);
   const [failed, setFailed] = useState(false);
   return (
     <div className="flex flex-col gap-12">
       <div className="flex items-center justify-between gap-8 rounded-small bg-ds-canvas p-12">
-        <span className="text-label">app.waybil.xyz/c/sam</span>
+        <span className="min-w-0 break-all text-label">{url}</span>
         <button
           type="button"
           className="press focus-ring rounded-small p-8"
           aria-label="Copy your link"
           onClick={async () => {
             try {
-              await navigator.clipboard.writeText("https://app.waybil.xyz/c/sam");
+              await navigator.clipboard.writeText(url);
               setCopied(true);
               setFailed(false);
             } catch {
@@ -65,7 +67,7 @@ function ShareLink() {
       )}
       <a
         className="press focus-ring rounded-full bg-ds-ink px-20 py-14 text-center text-body text-ds-bg"
-        href="https://wa.me/?text=https%3A%2F%2Fapp.waybil.xyz%2Fc%2Fsam"
+        href={`https://wa.me/?text=${encodeURIComponent(url)}`}
         target="_blank"
         rel="noopener noreferrer"
       >
@@ -92,7 +94,13 @@ function TripFacts({ westfield = false }: { westfield?: boolean }) {
   );
 }
 
-function PayoutRows({ recent = false }: { recent?: boolean }) {
+function PayoutRows({
+  recent = false,
+  latest = "292500000",
+}: {
+  recent?: boolean;
+  latest?: string;
+}) {
   return (
     <div className="flex flex-col gap-20">
       {(recent ? PAYOUTS.slice(1, 3) : PAYOUTS).map(([id, city, date, amount]) => (
@@ -108,7 +116,7 @@ function PayoutRows({ recent = false }: { recent?: boolean }) {
           </div>
           <div className="flex flex-col items-end gap-4">
             <span className="text-label text-ds-success">
-              +<Money amount={amount} />
+              +<Money amount={id === "1041" ? latest : amount} />
             </span>
             {!recent && (
               <a
@@ -146,7 +154,11 @@ export function DriverScreen({
   const [reportBack, setReportBack] = useState<DriverState>("K2.9");
   const delivery = useDemoDelivery();
   const savedReport = useDemoReport();
+  const settlement = useDemoSettlement();
   const report = preview ? DEFAULT_REPORT : savedReport;
+  const settlementPaid = !preview && ["settled", "repaid"].includes(delivery) && settlement.active;
+  const latest = settlementPaid ? settlement.amount : "292500000";
+  const monthTotal = (604500000n + BigInt(latest)).toString();
   const router = useRouter();
   useEffect(() => {
     if (preview) return;
@@ -161,9 +173,10 @@ export function DriverScreen({
   }, [preview]);
   let state = localState;
   if (!preview && shipmentId === 1041) {
-    if (state === "K1.1" && delivery === "paid") state = "K1.2";
-    if (["K2.4", "K2.5", "K2.6", "K2.7", "K2.13"].includes(state)) {
-      if (delivery === "paid") state = "K2.8";
+    if (state === "K1.1" && ["paid", "settled", "repaid"].includes(delivery)) state = "K1.2";
+    if (["K2.4", "K2.5", "K2.6", "K2.7", "K2.9", "K2.10", "K2.13"].includes(state)) {
+      if (delivery === "settled" || (delivery === "repaid" && settlement.active)) state = "K2.11";
+      else if (delivery === "paid" || delivery === "repaid") state = "K2.8";
       else if (delivery === "reported") state = "K2.9";
       else if (offline && state !== "K2.5") state = "K2.13";
     }
@@ -324,10 +337,16 @@ export function DriverScreen({
           <div className="flex min-w-0 flex-col gap-16">
             {state === "K1.2" ? (
               <Panel>
-                <p className="text-heading">Harbor Hub confirmed your delivery</p>
-                <Money amount="292500000" className="text-display" />
+                <p className="text-heading">
+                  {!preview && settlement.active
+                    ? "Northwind chose what to pay"
+                    : "Harbor Hub confirmed your delivery"}
+                </p>
+                <Money amount={latest} className="text-display" />
                 <p className="text-label text-ds-muted">
-                  You received 97.5% of the 300.00 USDC fee for shipment #1041.
+                  {!preview && settlement.active
+                    ? settlement.reason
+                    : "You received 97.5% of the 300.00 USDC fee for shipment #1041."}
                 </p>
                 <Button
                   className="w-full justify-between md:w-fit"
@@ -381,7 +400,7 @@ export function DriverScreen({
             <Stat
               className="hidden w-full rounded-card p-24 lg:flex"
               label="Paid to you this month"
-              value={<Money amount={state === "K1.2" ? "897000000" : "604500000"} />}
+              value={<Money amount={state === "K1.2" ? monthTotal : "604500000"} />}
               context={
                 state === "K1.2"
                   ? "You were paid on arrival for four trips."
@@ -406,7 +425,7 @@ export function DriverScreen({
             <Stat
               className="w-full"
               label="This month"
-              value={<Money amount={state === "K3.2" ? "0" : "897000000"} />}
+              value={<Money amount={state === "K3.2" ? "0" : monthTotal} />}
               context={
                 state === "K3.2"
                   ? "Your first payout shows up here."
@@ -416,7 +435,9 @@ export function DriverScreen({
             <Stat
               className="w-full"
               label="In your account"
-              value={<Money amount={state === "K3.2" ? "0" : "1284600000"} />}
+              value={
+                <Money amount={state === "K3.2" ? "0" : (992100000n + BigInt(latest)).toString()} />
+              }
               context="The account you signed up with"
             />
           </div>
@@ -430,7 +451,7 @@ export function DriverScreen({
                 </p>
               </div>
             ) : (
-              <PayoutRows />
+              <PayoutRows latest={latest} />
             )}
           </Panel>
         </div>
@@ -482,6 +503,13 @@ export function DriverScreen({
       ) : (
         <div className="grid gap-16 lg:grid-cols-[minmax(0,1fr)_420px]">
           <DemoMap
+            phase={
+              ["K2.1", "K2.2", "K2.3"].includes(state)
+                ? "pickup"
+                : ["K2.6", "K2.7", "K2.9", "K2.10", "K2.11"].includes(state)
+                  ? "arrived"
+                  : "road"
+            }
             className="h-290 md:h-400 lg:h-520"
             label={
               state === "K2.13"
@@ -542,7 +570,8 @@ export function DriverScreen({
                 <>
                   <h2 className="text-heading">Northwind chose what to pay</h2>
                   <p className="text-body">
-                    They paid for the 112 good crates. You got <Money amount={shipment.advance} />.
+                    {preview ? "They paid for the 112 good crates." : settlement.reason} You got{" "}
+                    <Money amount={preview ? shipment.advance : settlement.amount} />.
                   </p>
                   <DemoRecord title="Demo settlement receipt" />
                   <Button variant="secondary" onClick={openReport}>

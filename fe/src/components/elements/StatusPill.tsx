@@ -32,8 +32,8 @@ export function StatusPill({
 
   return (
     /*
-     * Keyed on the status so a change replays the rise, and the dot pops once with it.
-     * See the board: "the old chip fades out and the new one fades in with a 4px rise".
+     * Status pills are frequent. Their values crossfade without movement, as fe/AGENTS.md
+     * requires, rather than following the older rise and pop note on the board.
      */
     <span
       key={status}
@@ -42,7 +42,7 @@ export function StatusPill({
         className,
       )}
     >
-      <span className={cn("pop size-8 shrink-0 rounded-full", dot)} />
+      <span className={cn("size-8 shrink-0 rounded-full", dot)} />
       {roleLabel ?? label}
     </span>
   );

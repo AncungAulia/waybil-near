@@ -135,6 +135,13 @@
 }
 
 @layer components {
+  .bill-card {
+    background-image: radial-gradient(
+      ellipse at top right,
+      color-mix(in srgb, var(--color-ds-brand) 20%, transparent),
+      transparent 65%
+    );
+  }
   /*
    * Buttons get the three layer ring drawn on the States board: a brand-deep hairline on the
    * button edge, a 3 px brand ring 6 px out, and a 1 px ink line just outside it. The ink
@@ -161,7 +168,7 @@
   .press {
     transition: transform 100ms ease;
   }
-  .press:not(:disabled):active {
+  .press:not(:disabled):active:not(:focus-visible) {
     transform: scale(0.97);
     transition-duration: 160ms;
   }
@@ -217,7 +224,6 @@
 @keyframes status-in {
   from {
     opacity: 0;
-    transform: translateY(4px);
   }
 }
 @layer components {
@@ -261,7 +267,7 @@
     .action-sheet {
       animation: fade 200ms ease backwards;
     }
-    .press:active {
+    .press:not(:disabled):active:not(:focus-visible) {
       transform: none;
     }
   }

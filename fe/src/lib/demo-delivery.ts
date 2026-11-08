@@ -1,4 +1,4 @@
-import { advanceFor, parseUsdc, type Shipment } from "@waybil/shared";
+import { advanceFor, billForDriverAmount, parseUsdc, type Shipment } from "@waybil/shared";
 
 /** Fictional shipment from demo-data.md. No transaction is submitted by this transport. */
 export const DEMO_CODE = "7K2Q9F4M";
@@ -11,7 +11,7 @@ export const DEMO_SHIPMENT: Shipment = {
   unit: "crates",
   bill: parseUsdc("300").toString(),
   advance: advanceFor(parseUsdc("300")).toString(),
-  due_at: "1797033600000000000",
+  due_at: "1796947200000000000",
   status: "PickedUp",
   approved_at: "1794470520000000000",
   picked_up_at: "1794474840000000000",
@@ -24,18 +24,91 @@ export const DEMO_SHIPMENT: Shipment = {
 };
 
 export function demoShipment(status: Shipment["status"], arrived = false): Shipment {
+  const hasArrived = arrived || ["Reported", "Paid", "Repaid", "CoveredByReserve"].includes(status);
   return {
     ...DEMO_SHIPMENT,
     status,
-    picked_up_at: status === "Approved" ? null : DEMO_SHIPMENT.picked_up_at,
-    arrived_at: arrived ? "1794497760000000000" : null,
-    paid_at: status === "Paid" ? "1794497761000000000" : null,
-    good_qty: status === "Reported" ? 112 : arrived ? 120 : null,
+    picked_up_at:
+      status === "Approved" || status === "Cancelled" ? null : DEMO_SHIPMENT.picked_up_at,
+    arrived_at: hasArrived ? "1794497760000000000" : null,
+    paid_at: ["Paid", "Repaid", "CoveredByReserve"].includes(status) ? "1794497761000000000" : null,
+    repaid_at: status === "Repaid" ? "1796860800000000000" : null,
+    good_qty: status === "Reported" ? 112 : hasArrived ? 120 : null,
   };
 }
 
-export type DemoDelivery = "road" | "paid" | "reported";
+export type DemoDelivery = "road" | "paid" | "reported" | "settled" | "repaid";
+export function demoCreditUsed(delivery: DemoDelivery, settlementBill: string, committed = 0n) {
+  const adjustment =
+    delivery === "repaid"
+      ? -300000000n
+      : delivery === "settled"
+        ? BigInt(settlementBill) - 300000000n
+        : 0n;
+  return 2400000000n + adjustment + committed;
+}
 export const DELIVERY_KEY = "waybil-demo-delivery-v1";
+export const SETTLEMENT_KEY = "waybil-demo-settlement-v1";
+export interface DemoSettlement {
+  active: boolean;
+  amount: string;
+  bill: string;
+  reason: string;
+}
+export const DEFAULT_SETTLEMENT: DemoSettlement = {
+  active: false,
+  amount: "273000000",
+  bill: "280000000",
+  reason: "Paid for the 112 good crates.",
+};
+export const DEFAULT_SETTLEMENT_JSON = JSON.stringify(DEFAULT_SETTLEMENT);
+export function readDemoSettlementJson() {
+  try {
+    return localStorage.getItem(SETTLEMENT_KEY) ?? DEFAULT_SETTLEMENT_JSON;
+  } catch {
+    return DEFAULT_SETTLEMENT_JSON;
+  }
+}
+export function parseDemoSettlement(json: string): DemoSettlement {
+  try {
+    const value = JSON.parse(json) as DemoSettlement;
+    if (
+      typeof value.amount !== "string" ||
+      !/^\d+$/.test(value.amount) ||
+      typeof value.reason !== "string"
+    )
+      return DEFAULT_SETTLEMENT;
+    const amount = BigInt(value.amount);
+    if (amount > BigInt(DEMO_SHIPMENT.advance)) return DEFAULT_SETTLEMENT;
+    return {
+      active: value.active === true,
+      amount: value.amount,
+      bill: billForDriverAmount(amount).toString(),
+      reason: value.reason,
+    };
+  } catch {
+    return DEFAULT_SETTLEMENT;
+  }
+}
+export function settleDemoReport(amount: string, reason: string) {
+  if (readDemoDelivery() !== "reported") return false;
+  const units = BigInt(amount);
+  if (units < 0n || units > BigInt(DEMO_SHIPMENT.advance) || !reason.trim())
+    throw new Error("Invalid settlement");
+  localStorage.setItem(
+    SETTLEMENT_KEY,
+    JSON.stringify({ active: true, amount, bill: billForDriverAmount(units).toString(), reason }),
+  );
+  localStorage.setItem(DELIVERY_KEY, "settled");
+  window.dispatchEvent(new Event("waybil-demo-delivery"));
+  return true;
+}
+export function repayDemoBill() {
+  if (!["paid", "settled"].includes(readDemoDelivery())) return false;
+  localStorage.setItem(DELIVERY_KEY, "repaid");
+  window.dispatchEvent(new Event("waybil-demo-delivery"));
+  return true;
+}
 export const REPORT_KEY = "waybil-demo-report-v1";
 export interface DemoReport {
   goodQty: number;
@@ -90,12 +163,15 @@ export function readDemoDelivery(): DemoDelivery {
   } catch {
     return "road";
   }
-  return saved === "paid" || saved === "reported" ? saved : "road";
+  return saved === "paid" || saved === "reported" || saved === "settled" || saved === "repaid"
+    ? saved
+    : "road";
 }
 
 /** Shared between tabs so the warehouse confirmation updates the driver's screen. */
-export function confirmDemoDelivery(result: Exclude<DemoDelivery, "road">, report?: DemoReport) {
+export function confirmDemoDelivery(result: "paid" | "reported", report?: DemoReport) {
   if (readDemoDelivery() !== "road") return false;
+  localStorage.removeItem(SETTLEMENT_KEY);
   if (result === "reported" && report) localStorage.setItem(REPORT_KEY, JSON.stringify(report));
   localStorage.setItem(DELIVERY_KEY, result);
   window.dispatchEvent(new Event("waybil-demo-delivery"));

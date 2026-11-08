@@ -1,0 +1,683 @@
+{
+  "states": 37,
+  "widths": [1440, 834, 390],
+  "results": [
+    {
+      "code": "I1.1",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "I1.2",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "I1.3",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "I2.1",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "I2.2",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "I2.3",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "I2.4",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "I2.5",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "I2.6",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "I2.7",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "I3.1",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "I3.2",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "I3.3",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "I3.4",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "M1.1",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "M1.2",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "M1.3",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "M1.4",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "M1.5",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "M1.6",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "M1.7",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "M2.1",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "M2.2",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "M2.3",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "M2.4",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "M2.5",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "M2.6",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "M2.7",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "M2.8",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "M2.9",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "M2.10",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "M2.11",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "M2.12",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "M3.1",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "M3.2",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "M3.3",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "M3.4",
+      "width": 1440,
+      "status": 200,
+      "scroll": 1440
+    },
+    {
+      "code": "I1.1",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "I1.2",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "I1.3",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "I2.1",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "I2.2",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "I2.3",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "I2.4",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "I2.5",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "I2.6",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "I2.7",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "I3.1",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "I3.2",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "I3.3",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "I3.4",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "M1.1",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "M1.2",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "M1.3",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "M1.4",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "M1.5",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "M1.6",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "M1.7",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "M2.1",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "M2.2",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "M2.3",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "M2.4",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "M2.5",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "M2.6",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "M2.7",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "M2.8",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "M2.9",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "M2.10",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "M2.11",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "M2.12",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "M3.1",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "M3.2",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "M3.3",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "M3.4",
+      "width": 834,
+      "status": 200,
+      "scroll": 834
+    },
+    {
+      "code": "I1.1",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "I1.2",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "I1.3",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "I2.1",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "I2.2",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "I2.3",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "I2.4",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "I2.5",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "I2.6",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "I2.7",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "I3.1",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "I3.2",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "I3.3",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "I3.4",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "M1.1",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "M1.2",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "M1.3",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "M1.4",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "M1.5",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "M1.6",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "M1.7",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "M2.1",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "M2.2",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "M2.3",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "M2.4",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "M2.5",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "M2.6",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "M2.7",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "M2.8",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "M2.9",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "M2.10",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "M2.11",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "M2.12",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "M3.1",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "M3.2",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "M3.3",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    },
+    {
+      "code": "M3.4",
+      "width": 390,
+      "status": 200,
+      "scroll": 390
+    }
+  ],
+  "errors": [],
+  "flows": [
+    "deposit balance limit and exact custom amount",
+    "withdrawal restores original balance",
+    "partial withdrawal pays 2,000 and queues 3,000",
+    "rejection requires a reason and disables repeat votes",
+    "reject only the chosen company",
+    "preserve edited starting limit",
+    "block limits above 10,000",
+    "pause takes effect immediately"
+  ]
+}

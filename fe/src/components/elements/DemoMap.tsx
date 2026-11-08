@@ -1,61 +1,104 @@
-import { Truck, Warehouse } from "@phosphor-icons/react/dist/ssr";
+"use client";
+import { useState } from "react";
+import { Truck, Warehouse, Plus, Minus } from "@phosphor-icons/react";
 import { cn } from "@/lib/cn";
 
-/** The design's fictional geography. Real maps require location data from the backend. */
+type Phase = "pickup" | "road" | "arrived" | "planned";
+/** Vector geography and route exported from the design. This is a fixture, not live location data. */
 export function DemoMap({
   label = "Sharing location",
   className,
   twoTrucks = false,
+  empty = false,
+  phase = "road",
+  controls = false,
 }: {
   label?: string;
   className?: string;
   twoTrucks?: boolean;
+  empty?: boolean;
+  phase?: Phase;
+  controls?: boolean;
 }) {
+  const [zoom, setZoom] = useState(1);
+  const position = (x: number, y: number) => ({
+    left: `calc(50% + ${x / 944 - 0.5} * max(100cqw, 168.571cqh))`,
+    top: `calc(50% + ${y / 560 - 0.5} * max(100cqh, 59.322cqw))`,
+    transform: `translate(-50%, -50%) scale(${1 / zoom})`,
+  });
+  const truck =
+    phase === "pickup" ? [346, 463] : phase === "arrived" ? [568, 140] : [459.1164, 242.744];
+  const asset = empty
+    ? "demo-map.svg"
+    : phase === "planned"
+      ? "demo-route-planned.svg"
+      : "demo-route.svg";
   return (
     <div
-      role="img"
+      role={controls ? "region" : "img"}
       aria-label={`Demo route from Eastport to Harbor Hub. ${label}.`}
+      style={{ containerType: "size" }}
       className={cn("relative h-290 overflow-hidden rounded-[24px] bg-ds-surface-3", className)}
     >
-      <img
-        src="/illustrations/demo-map.svg"
-        alt=""
-        className="absolute h-full w-full object-cover object-left"
-      />
-      <svg
-        viewBox="0 0 900 520"
-        preserveAspectRatio="xMidYMid slice"
-        className="absolute inset-0 size-full"
-        aria-hidden
-      >
-        <path
-          d="M 85 470 Q 120 340 180 265 T 300 65"
-          fill="none"
-          stroke="var(--color-ds-bg)"
-          strokeWidth="14"
-        />
-        <path
-          d="M 85 470 Q 120 340 180 265 T 300 65"
-          fill="none"
-          stroke="var(--color-ds-brand)"
-          strokeWidth="7"
-        />
-      </svg>
-      <span className="absolute top-16 left-16 z-10 flex items-center gap-8 rounded-full bg-ds-bg px-12 py-8 text-caption">
-        <span className="size-8 rounded-full bg-ds-success" />
-        {label}
+      <div className="absolute inset-0" style={{ transform: `scale(${zoom})` }}>
+        <img src={`/illustrations/${asset}`} alt="" className="absolute size-full object-cover" />
+        {!empty && (
+          <>
+            <span
+              style={position(346, 463)}
+              className="absolute size-16 rounded-full border-3 border-ds-bg bg-ds-ink"
+            />
+            <span
+              style={position(598, 97)}
+              className="absolute grid size-32 place-items-center rounded-small border-3 border-ds-bg bg-ds-ink text-ds-bg"
+            >
+              <Warehouse size={16} />
+            </span>
+            {phase !== "planned" && (
+              <span
+                style={position(truck[0]!, truck[1]!)}
+                className="absolute grid size-44 place-items-center rounded-full border-3 border-ds-bg bg-ds-ink text-ds-brand ring-12 ring-ds-brand/30"
+              >
+                <Truck size={20} />
+              </span>
+            )}
+            {twoTrucks && (
+              <span
+                style={position(420, 463)}
+                className="absolute grid size-40 place-items-center rounded-full border-3 border-ds-bg bg-ds-ink text-ds-brand"
+              >
+                <Truck size={18} />
+              </span>
+            )}
+          </>
+        )}
+      </div>
+      <span className="absolute top-16 left-16 z-10 flex max-w-[calc(100%-80px)] items-center gap-8 rounded-full bg-ds-bg px-12 py-8 text-caption">
+        <span className="size-8 shrink-0 rounded-full bg-ds-success" />
+        <span className="truncate">{label}</span>
       </span>
-      <span className="absolute top-[43%] left-[28%] grid size-44 place-items-center rounded-full border-3 border-ds-bg bg-ds-ink text-ds-brand ring-12 ring-ds-brand/30">
-        <Truck size={20} />
-      </span>
-      {twoTrucks && (
-        <span className="absolute top-[70%] left-[65%] grid size-40 place-items-center rounded-full border-3 border-ds-bg bg-ds-ink text-ds-brand">
-          <Truck size={18} />
-        </span>
+      {controls && (
+        <div className="absolute top-16 right-16 z-10 flex flex-col overflow-hidden rounded-small bg-ds-bg">
+          <button
+            type="button"
+            aria-label="Zoom in"
+            disabled={zoom >= 2.5}
+            className="press focus-ring grid size-36 place-items-center disabled:text-ds-muted"
+            onClick={() => setZoom(Math.min(2.5, zoom + 0.25))}
+          >
+            <Plus size={16} />
+          </button>
+          <button
+            type="button"
+            aria-label="Zoom out"
+            disabled={zoom <= 1}
+            className="press focus-ring grid size-36 place-items-center disabled:text-ds-muted"
+            onClick={() => setZoom(Math.max(1, zoom - 0.25))}
+          >
+            <Minus size={16} />
+          </button>
+        </div>
       )}
-      <span className="absolute top-[12%] left-[65%] grid size-32 place-items-center rounded-small border-3 border-ds-bg bg-ds-ink text-ds-bg">
-        <Warehouse size={16} />
-      </span>
       <span className="absolute right-12 bottom-8 text-[10px] text-ds-muted">
         Demo map · © OpenStreetMap
       </span>
