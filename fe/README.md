@@ -7,9 +7,10 @@ pnpm install
 pnpm --filter @waybil/fe dev
 ```
 
-Open http://localhost:3001/shipper, http://localhost:3001/driver or http://localhost:3001/warehouse.
+Open http://localhost:3001/shipper, http://localhost:3001/driver, http://localhost:3001/warehouse,
+http://localhost:3001/pool or http://localhost:3001/admin.
 These screens currently use labeled demo fixtures. The backend and sign-in are pending.
-No money moves, and no wallet is requested for either role.
+No money moves. Drivers and warehouses never receive wallet prompts.
 
 For a production gallery review in PowerShell:
 
@@ -19,7 +20,7 @@ pnpm --filter @waybil/fe build
 pnpm --filter @waybil/fe exec next start --port 3002
 ```
 
-Open http://localhost:3002/dev/gallery. Links open every shipper, driver and warehouse state at the
+Open http://localhost:3002/dev/gallery. Links open every role state at the
 full browser width. Review at 1440, 834 and 390 pixels. Keep the flag unset for deployment.
 
 Run `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm format:check` before submitting changes.

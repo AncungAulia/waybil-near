@@ -1,3 +1,5 @@
+import { ADMIN_STATES } from "@/modules/admin/data/fixtures";
+import { INVESTOR_STATES } from "@/modules/investor/data/fixtures";
 import { SHIPPER_STATES } from "@/modules/shipper/data/fixtures";
 import { notFound } from "next/navigation";
 import { cn } from "@/lib/cn";
@@ -42,19 +44,21 @@ export default function GalleryPage() {
           pixels.
         </p>
         <div className="mt-16 grid gap-24 md:grid-cols-2">
-          {[DRIVER_STATES, WAREHOUSE_STATES, SHIPPER_STATES].map((states, index) => (
-            <div key={index} className="flex flex-col gap-10">
-              {Object.entries(states).map(([code, title]) => (
-                <Link
-                  key={code}
-                  href={`/dev/gallery/screens/${code}`}
-                  className="focus-ring text-label text-ds-brand-deep"
-                >
-                  {code} · {title} ↗
-                </Link>
-              ))}
-            </div>
-          ))}
+          {[DRIVER_STATES, WAREHOUSE_STATES, SHIPPER_STATES, INVESTOR_STATES, ADMIN_STATES].map(
+            (states, index) => (
+              <div key={index} className="flex flex-col gap-10">
+                {Object.entries(states).map(([code, title]) => (
+                  <Link
+                    key={code}
+                    href={`/dev/gallery/screens/${code}`}
+                    className="focus-ring text-label text-ds-brand-deep"
+                  >
+                    {code} · {title} ↗
+                  </Link>
+                ))}
+              </div>
+            ),
+          )}
         </div>
       </section>
 
