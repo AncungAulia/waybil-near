@@ -15,7 +15,7 @@ Conventions:
 | Method | Path | Who | What |
 |---|---|---|---|
 | POST | `/v1/auth/wallet` | Wallet users | Body: NEP-413 signed message (`accountId`, `publicKey`, `signature`, `nonce`). Checks the key belongs to the account on chain. Returns a session. |
-| POST | `/v1/auth/google` | Drivers, warehouses | Body: Google ID token, `publicKey` made in the browser, `inviteCode`. First time: creates `<name>.waybil.testnet` with that key as a function-call key for `app.waybil.testnet`. Returns the account and a session. |
+| POST | `/v1/auth/google` | Drivers, warehouses | Body: Google ID token, `publicKey` made in the browser, `inviteCode`. First time: creates `<name>.waybil.testnet` with that key as a function-call key for `app.waybil.testnet`, and registers the account on `usdc.waybil.testnet` (`storage_deposit`) so payouts can reach it. Returns the account and a session. |
 | GET | `/v1/me` | Signed in | Account, role, profile |
 | PUT | `/v1/me/profile` | Signed in | Name, phone (WhatsApp), email |
 

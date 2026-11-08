@@ -135,7 +135,18 @@ From the repo root:
 | `pnpm --filter <pkg> <script>` | Run one package, for example `pnpm --filter @waybil/shared test` |
 
 TypeScript stays on 6.0.x until typescript-eslint supports 7.
-Contracts, backend and frontend commands are added here when each part lands.
+
+Contracts, from `contracts/<name>/`:
+
+| Command | What it does |
+|---|---|
+| `cargo test` | Unit tests, plus sandbox tests on Linux and macOS |
+| `cargo near build non-reproducible-wasm --no-abi` | Builds the wasm into `target/near/` (`--no-abi` is needed on Windows) |
+| `cargo clippy --target wasm32-unknown-unknown --lib -- -D warnings` | Lints the contract |
+| `cargo fmt` | Formats Rust |
+
+near-sandbox has no Windows build, so sandbox tests run in CI (`.github/workflows/ci.yml`).
+Backend and frontend commands are added here when each part lands.
 
 ## Definition of done
 
