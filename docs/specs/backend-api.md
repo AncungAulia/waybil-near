@@ -15,7 +15,7 @@ Conventions:
 | Method | Path | Who | What |
 |---|---|---|---|
 | POST | `/v1/auth/wallet` | Wallet users | Body: NEP-413 signed message (`accountId`, `publicKey`, `signature`, `nonce`). Checks the key belongs to the account on chain. Returns a session. |
-| POST | `/v1/auth/google` | Drivers, warehouses | Body: Google ID token, `publicKey` made in the browser, `inviteCode`. First time: creates `<name>.waybil.testnet` with that key as a function-call key for `app.waybil.testnet`, and registers the account on `usdc.waybil.testnet` (`storage_deposit`) so payouts can reach it. Returns the account and a session. |
+| POST | `/v1/auth/google` | Drivers, warehouses | Body: Google ID token, `publicKey` made in the browser, `inviteCode`. First time: creates `<name>.users.waybil.testnet` (signed by `users.waybil.testnet`) with that key as a function-call key for `app.waybil.testnet`, and registers the account on `usdc.waybil.testnet` (`storage_deposit`) so payouts can reach it. Returns the account and a session. |
 | GET | `/v1/me` | Signed in | Account, role, profile |
 | PUT | `/v1/me/profile` | Signed in | Name, phone (WhatsApp), email |
 
@@ -93,6 +93,6 @@ Storage buckets `documents` and `report-photos` are private. Links are signed an
 ## Env (`be/.env.example`)
 
 `PORT`, `NEAR_NETWORK`, `NEAR_RPC_URL`, `WAYBIL_CONTRACT`, `USDC_CONTRACT`,
-`RELAYER_ACCOUNT`, `RELAYER_PRIVATE_KEY`, `ASSISTANT_ACCOUNT`, `ASSISTANT_PRIVATE_KEY`,
+`RELAYER_ACCOUNT`, `RELAYER_PRIVATE_KEY`, `USERS_ACCOUNT`, `USERS_PRIVATE_KEY`, `ASSISTANT_ACCOUNT`, `ASSISTANT_PRIVATE_KEY`,
 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `GOOGLE_CLIENT_ID`, `JWT_SECRET`,
 `NEAR_AI_API_KEY`, `EMAIL_API_KEY`.

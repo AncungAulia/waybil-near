@@ -51,7 +51,7 @@ Folder layout and naming per app: `docs/STRUCTURE.md`.
   near-connect. The frontend calls the contract directly for these.
 - **Google users** (drivers, warehouses) never see a wallet.
   1. The browser makes a key pair and keeps the private key on the device.
-  2. After Google sign-in, the backend creates `<name>.waybil.testnet` with that public key
+  2. After Google sign-in, the backend creates `<name>.users.waybil.testnet` with that public key
      as a function-call key limited to the waybil contract.
   3. The browser signs each action as a NEP-366 delegate action. The backend relays it
      and pays the gas. The device key never leaves the browser.
@@ -86,7 +86,8 @@ Folder layout and naming per app: `docs/STRUCTURE.md`.
 | `waybil.testnet` | Deployer, parent of every Waybil account |
 | `app.waybil.testnet` | Main contract |
 | `usdc.waybil.testnet` | Mock USDC |
-| `relayer.waybil.testnet` | Pays gas for meta transactions, creates Google user accounts |
+| `relayer.waybil.testnet` | Pays gas for meta transactions |
+| `users.waybil.testnet` | Parent of Google user accounts (`<name>.users.waybil.testnet`). Only a parent can create sub-accounts on NEAR, so the backend holds this key instead of the admin key. Created with issue #16. |
 | `assistant.waybil.testnet` | Credit assistant key (allowed to set limits within caps) |
 | `treasury.waybil.testnet` | Receives Waybil's 0.5% |
 | `risk.`, `ops.`, `finance.waybil.testnet` | The three team members |

@@ -25,7 +25,9 @@ in 0002 (reject cooldown, expiry).
 **Google sign-in we build ourselves**
 
 - The browser makes a key pair. After Google sign-in the backend creates
-  `<name>.waybil.testnet` with that public key as a function-call key for the waybil contract.
+  `<name>.users.waybil.testnet` with that public key as a function-call key for the waybil
+  contract. Only a parent account can create sub-accounts on NEAR, so the backend holds the
+  key of `users.waybil.testnet`, never the admin key of `waybil.testnet`.
 - Actions are signed in the browser as NEP-366 delegate actions and relayed by the backend,
   which pays the gas. The device key never leaves the browser.
 - The backend also adds one recovery key to each Google account, so a driver who loses
