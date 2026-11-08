@@ -1,3 +1,5 @@
+import { ShipperScreen } from "@/modules/shipper/components/ShipperScreen";
+import { SHIPPER_STATES, type ShipperState } from "@/modules/shipper/data/fixtures";
 import { notFound } from "next/navigation";
 import { DriverScreen } from "@/modules/driver/components/DriverScreen";
 import { WarehouseScreen } from "@/modules/warehouse/components/WarehouseScreen";
@@ -6,6 +8,9 @@ import { WAREHOUSE_STATES, type WarehouseState } from "@/modules/warehouse/data/
 export default async function Page({ params }: { params: Promise<{ state: string }> }) {
   if (process.env.NEXT_PUBLIC_GALLERY !== "on") notFound();
   const { state } = await params;
+  if (Object.hasOwn(SHIPPER_STATES, state))
+    return <ShipperScreen key={state} initialState={state as ShipperState} preview />;
+
   if (Object.hasOwn(DRIVER_STATES, state))
     return <DriverScreen key={state} initialState={state as DriverState} preview />;
   if (Object.hasOwn(WAREHOUSE_STATES, state))

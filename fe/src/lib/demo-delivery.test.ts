@@ -6,6 +6,10 @@ import {
   parseDemoReport,
   DEFAULT_REPORT,
   DELIVERY_KEY,
+  settleDemoReport,
+  repayDemoBill,
+  readDemoSettlementJson,
+  parseDemoSettlement,
 } from "./demo-delivery";
 
 describe("the delivery demo transport", () => {
@@ -15,6 +19,7 @@ describe("the delivery demo transport", () => {
     vi.stubGlobal("localStorage", {
       getItem: (key: string) => values.get(key) ?? null,
       setItem: (key: string, value: string) => values.set(key, value),
+      removeItem: (key: string) => values.delete(key),
     });
     vi.stubGlobal("window", new EventTarget());
   });
@@ -46,6 +51,7 @@ describe("the delivery demo transport", () => {
     window.addEventListener("waybil-demo-delivery", notified);
     vi.stubGlobal("localStorage", {
       getItem: () => null,
+      removeItem: () => {},
       setItem: () => {
         throw new Error("Full");
       },
@@ -61,5 +67,26 @@ describe("the delivery demo transport", () => {
     expect(parseDemoReport(JSON.stringify({ ...DEFAULT_REPORT, goodQty: 121 }))).toEqual(
       DEFAULT_REPORT,
     );
+  });
+
+  it("settles a report once, rounds the bill up and preserves the payout after repayment", () => {
+    confirmDemoDelivery("reported", DEFAULT_REPORT);
+    expect(settleDemoReport("250000000", "Agreed with Sam.")).toBe(true);
+    expect(readDemoDelivery()).toBe("settled");
+    expect(parseDemoSettlement(readDemoSettlementJson())).toMatchObject({
+      active: true,
+      amount: "250000000",
+      bill: "256410257",
+    });
+    expect(settleDemoReport("273000000", "Another choice")).toBe(false);
+    expect(repayDemoBill()).toBe(true);
+    expect(repayDemoBill()).toBe(false);
+    expect(parseDemoSettlement(readDemoSettlementJson()).amount).toBe("250000000");
+  });
+  it("refuses an amount above the advance and refuses repayment while a report is open", () => {
+    confirmDemoDelivery("reported", DEFAULT_REPORT);
+    expect(() => settleDemoReport("292500001", "Too much.")).toThrow("Invalid settlement");
+    expect(repayDemoBill()).toBe(false);
+    expect(readDemoDelivery()).toBe("reported");
   });
 });

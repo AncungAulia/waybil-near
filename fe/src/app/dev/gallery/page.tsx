@@ -1,3 +1,4 @@
+import { SHIPPER_STATES } from "@/modules/shipper/data/fixtures";
 import { notFound } from "next/navigation";
 import { cn } from "@/lib/cn";
 import { SECTIONS } from "./registry";
@@ -35,13 +36,13 @@ export default function GalleryPage() {
       </p>
 
       <section className="mt-32 rounded-card bg-ds-bg p-24">
-        <h2 className="text-heading">Driver and warehouse screens</h2>
+        <h2 className="text-heading">Role screens</h2>
         <p className="mt-8 text-label text-ds-muted">
           Each screen opens at the full browser width. Review every state at 1440, 834 and 390
           pixels.
         </p>
         <div className="mt-16 grid gap-24 md:grid-cols-2">
-          {[DRIVER_STATES, WAREHOUSE_STATES].map((states, index) => (
+          {[DRIVER_STATES, WAREHOUSE_STATES, SHIPPER_STATES].map((states, index) => (
             <div key={index} className="flex flex-col gap-10">
               {Object.entries(states).map(([code, title]) => (
                 <Link

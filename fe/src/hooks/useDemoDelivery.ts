@@ -6,6 +6,9 @@ import {
   readDemoReportJson,
   DEFAULT_REPORT_JSON,
   parseDemoReport,
+  readDemoSettlementJson,
+  parseDemoSettlement,
+  DEFAULT_SETTLEMENT_JSON,
 } from "@/lib/demo-delivery";
 
 function subscribe(notify: () => void) {
@@ -24,4 +27,13 @@ export function useDemoDelivery() {
 export function useDemoReport() {
   const json = useSyncExternalStore(subscribe, readDemoReportJson, () => DEFAULT_REPORT_JSON);
   return useMemo(() => parseDemoReport(json), [json]);
+}
+
+export function useDemoSettlement() {
+  const json = useSyncExternalStore(
+    subscribe,
+    readDemoSettlementJson,
+    () => DEFAULT_SETTLEMENT_JSON,
+  );
+  return useMemo(() => parseDemoSettlement(json), [json]);
 }
