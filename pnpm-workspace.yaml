@@ -2,3 +2,6 @@ packages:
   - fe
   - be
   - packages/*
+  - scripts
+allowBuilds:
+  esbuild: true

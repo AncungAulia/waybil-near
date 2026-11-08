@@ -146,6 +146,14 @@ Contracts, from `contracts/<name>/`:
 | `cargo fmt` | Formats Rust |
 
 near-sandbox has no Windows build, so sandbox tests run in CI (`.github/workflows/ci.yml`).
+
+Testnet, from the repo root (needs near-cli-rs and the `waybil.testnet` key in your keychain):
+
+| Command | What it does |
+|---|---|
+| `pnpm --filter @waybil/scripts deploy-contracts` | Creates missing accounts, builds and deploys `app.waybil.testnet`, registers token storage. Safe to rerun. |
+| `pnpm --filter @waybil/scripts deploy-contracts --no-build` | The same with the wasm already built |
+
 Backend and frontend commands are added here when each part lands.
 
 ## Definition of done

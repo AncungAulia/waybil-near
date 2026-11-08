@@ -153,8 +153,14 @@ Both crates are created with `cargo near new` and follow `docs/specs/contract.md
 
 ## Scripts · `scripts/`
 
-`deploy.ts` (contracts), `accounts.ts` (create testnet accounts), `seed.ts`
-(the story in `docs/specs/demo-data.md`). Run them from the root with `pnpm`.
+A pnpm workspace package (`@waybil/scripts`) run with `tsx`:
+
+```
+scripts/
+├─ deploy.ts         Creates the testnet accounts and deploys app.waybil.testnet (safe to rerun)
+├─ seed.ts           The story in docs/specs/demo-data.md (issue #13)
+└─ lib/near.ts       Calls near-cli-rs, which reads keys from the OS keychain
+```
 
 ## Naming
 

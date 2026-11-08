@@ -21,7 +21,18 @@ You need Node.js 22 or newer and pnpm 12 (`corepack enable` installs it).
 2. Check the code: `pnpm lint`, `pnpm typecheck` and `pnpm test`. Each one ends without errors.
 3. Format the code: `pnpm format`.
 
-Running the contracts, backend and frontend is added here as each part lands.
+The contracts are live on NEAR testnet:
+
+| Contract | Account |
+|---|---|
+| Waybil | [`app.waybil.testnet`](https://testnet.nearblocks.io/address/app.waybil.testnet) |
+| Test USDC | [`usdc.waybil.testnet`](https://testnet.nearblocks.io/address/usdc.waybil.testnet) |
+
+To deploy your own copy you need Rust, cargo-near and near-cli-rs, plus the deployer key in
+your keychain. Then run `pnpm --filter @waybil/scripts deploy-contracts`. It creates the
+accounts, builds and deploys the contract and prints its team and pool when it is done.
+
+Running the backend and frontend is added here as each part lands.
 
 ## NEAR technology used
 
