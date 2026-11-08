@@ -290,6 +290,73 @@ async fn core_flow_pays_the_driver_on_delivery() -> testresult::TestResult<()> {
         json!("292500000")
     );
 
+    // PT Maju repays bill 1 (300 USDC). The pool earns 4.80, the reserve 1.20, Waybil 1.50.
+    tx!(
+        net,
+        signer,
+        owner,
+        usdc,
+        "mint",
+        json!({ "account_id": ptmaju, "amount": U128(300 * USDC) }),
+        0
+    )
+    .assert_success();
+    tx!(
+        net,
+        signer,
+        ptmaju,
+        usdc,
+        "ft_transfer_call",
+        json!({ "receiver_id": app_id, "amount": U128(300 * USDC), "msg": "{\"repay\":1}" }),
+        1
+    )
+    .assert_success();
+    assert_eq!(
+        view!(net, app, "get_shipment", json!({ "id": 1 }))["status"],
+        json!("Repaid")
+    );
+    let pool = view!(net, app, "get_pool", json!({}));
+    assert_eq!(pool["reserve"], json!("1200000"));
+    assert_eq!(pool["fees"], json!("1500000"));
+
+    // The treasury claims Waybil's fees.
+    tx!(
+        net,
+        signer,
+        owner,
+        usdc,
+        "storage_deposit",
+        json!({ "account_id": treasury }),
+        STORAGE
+    )
+    .assert_success();
+    tx!(net, signer, treasury, app, "claim_fees", json!({}), 0).assert_success();
+    assert_eq!(
+        view!(
+            net,
+            usdc,
+            "ft_balance_of",
+            json!({ "account_id": treasury })
+        ),
+        json!("1500000")
+    );
+
+    // Rina withdraws 1,000 USDC and receives it.
+    tx!(
+        net,
+        signer,
+        rina,
+        app,
+        "withdraw",
+        json!({ "amount": U128(1_000 * USDC) }),
+        0
+    )
+    .assert_success();
+    assert_eq!(
+        view!(net, usdc, "ft_balance_of", json!({ "account_id": rina })),
+        json!((1_000 * USDC).to_string())
+    );
+
     // Nobody outside the contract can call the payout callback.
     tx!(
         net,

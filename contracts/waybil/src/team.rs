@@ -21,6 +21,10 @@ pub enum ProposalKind {
     Unpause {
         shipper: AccountId,
     },
+    /// The reserve covers a bill still unpaid `reserve_cover_after_days` after its due date.
+    CoverFromReserve {
+        shipment_id: u64,
+    },
 }
 
 #[near(serializers = [json, borsh])]
@@ -101,6 +105,12 @@ impl Contract {
                     self.shipper_or_panic(shipper).paused.is_some(),
                     "E_NOT_PAUSED"
                 );
+            }
+            ProposalKind::CoverFromReserve { shipment_id } => {
+                let s = self.shipment_or_panic(*shipment_id);
+                require!(s.status == crate::Status::Paid, "E_WRONG_STATUS");
+                let wait = self.config.reserve_cover_after_days as u64 * DAY_NS;
+                require!(Self::now() > s.due_at.0 + wait, "E_TOO_EARLY");
             }
         }
     }
@@ -219,6 +229,38 @@ impl Contract {
                 self.shippers.insert(shipper.clone(), s);
                 emit("shipper_unpaused", json!({ "shipper": shipper }));
             }
+            ProposalKind::CoverFromReserve { shipment_id } => self.cover_from_reserve(*shipment_id),
         }
+    }
+
+    /// Writes off an unpaid bill. The reserve pays back the advance as far as it can;
+    /// anything the reserve can't cover is a loss shared by the pool.
+    fn cover_from_reserve(&mut self, id: u64) {
+        let mut s = self.shipment_or_panic(id);
+        let advance = s.advance.0;
+        let covered = advance.min(self.pool.reserve.0);
+        self.pool.reserve = U128(self.pool.reserve.0 - covered);
+        self.pool.lent = U128(self.pool.lent.0 - advance);
+        self.pool.cash = U128(self.pool.cash.0 + covered);
+
+        let mut shipper = self.shipper_or_panic(&s.shipper);
+        shipper.owed = U128(shipper.owed.0 - s.bill.0);
+        if s.marked_late {
+            shipper.late_bills = shipper.late_bills.saturating_sub(1);
+        }
+        // The company still owes the money off-chain, so it stays paused.
+        if shipper.paused.is_none() {
+            shipper.paused = Some("Bill covered by the reserve".into());
+        }
+        self.shippers.insert(s.shipper.clone(), shipper);
+
+        s.status = crate::Status::CoveredByReserve;
+        s.marked_late = false;
+        self.shipments.insert(id, s);
+        emit(
+            "reserve_cover",
+            json!({ "id": id, "covered": U128(covered), "loss": U128(advance - covered) }),
+        );
+        self.pay_queue(10);
     }
 }

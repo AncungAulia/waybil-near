@@ -11,15 +11,14 @@ Will live at `app.waybil.testnet` (deploy script: issue #12).
 |---|---|
 | Init | `new(usdc, assistant, treasury, team)` with three different team accounts |
 | Shippers | `add_driver`, `add_destination` |
-| Shipments | `create_shipment`, `cancel_shipment`, `confirm_pickup`, `confirm_delivery` (pays the driver at once, or holds the payout when there is a problem) |
-| Pool | `ft_on_transfer` with msg `"deposit"` |
-| Team | `propose` (`StartShipper`, `SetLimit`, `Unpause`), `vote`, `pause_shipper` |
+| Shipments | `create_shipment`, `cancel_shipment`, `confirm_pickup`, `confirm_delivery` (pays the driver at once, or holds the payout when there is a problem), `settle_report`, `mark_late` |
+| Pool | `ft_on_transfer` with msg `"deposit"` or `{"repay": id}`, `withdraw` (queue for what is lent out), `process_queue`, `claim_fees` (treasury) |
+| Team | `propose` (`StartShipper`, `SetLimit`, `Unpause`, `CoverFromReserve`), `vote`, `pause_shipper` |
 | Credit assistant | `assistant_set_limit`, `assistant_propose` |
-| Callback | `on_payout` (private, rolls back a failed payout) |
+| Callbacks | `on_payout`, `on_withdraw_sent`, `on_fees_sent` (private, roll back failed transfers) |
 | Views | see the spec |
 
-Next: settling problem reports (#8), withdrawals, repayment and the reserve (#9),
-team upgrades (#11).
+Next: team upgrades (#11) and the testnet deploy (#12).
 
 ## Build and test
 

@@ -22,6 +22,8 @@ export interface Shipment {
   report_hash: string | null;
   paid_at: string | null;
   repaid_at: string | null;
+  /** Counted in the shipper's late bills. */
+  marked_late: boolean;
 }
 
 export interface Shipper {
@@ -55,13 +57,33 @@ export interface Pool {
   cash: string;
   lent: string;
   reserve: string;
+  /** Promised to approved shipments, not paid out yet. */
   committed: string;
+  /** Owed to queued withdrawals. */
+  queued: string;
+  /** Waybil's 0.5%, waiting for the treasury to claim it. */
+  fees: string;
+}
+
+export interface Investor {
+  shares: string;
+  /** What the shares are worth now. */
+  value: string;
+  /** Withdrawals still waiting in the queue. */
+  queued: string;
+}
+
+export interface QueueEntry {
+  investor: string;
+  amount: string;
+  requested_at: string;
 }
 
 export type ProposalKind =
   | { StartShipper: { shipper: string; limit: string } }
   | { SetLimit: { shipper: string; limit: string } }
-  | { Unpause: { shipper: string } };
+  | { Unpause: { shipper: string } }
+  | { CoverFromReserve: { shipment_id: number } };
 
 export type ProposalStatus = "Open" | "Approved" | "Rejected" | "Expired";
 

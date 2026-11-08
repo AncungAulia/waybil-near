@@ -45,8 +45,11 @@ struct Shipment {
   approved_at: u64, picked_up_at: Option<u64>, arrived_at: Option<u64>,
   good_qty: Option<u32>, report_hash: Option<String>,   // sha256 of report + photos
   paid_at: Option<u64>, repaid_at: Option<u64>,
+  marked_late: bool,                   // counted in the shipper's late_bills
 }
-struct Pool { total_shares: U128, cash: U128, lent: U128, reserve: U128 }
+struct Pool { total_shares: U128, cash: U128, lent: U128, reserve: U128,
+              committed: U128, queued: U128, fees: U128 }
+struct QueueEntry { investor: AccountId, amount: U128, requested_at: u64 }
 struct Proposal { id: u64, kind: ProposalKind, by: AccountId, created_at: u64,
                   approvals: Vec<AccountId>, rejections: Vec<AccountId>, status: ProposalStatus }
 enum ProposalKind { StartShipper{shipper, limit}, SetLimit{shipper, limit},
@@ -55,14 +58,21 @@ enum ProposalKind { StartShipper{shipper, limit}, SetLimit{shipper, limit},
 enum ProposalStatus { Open, Approved, Rejected, Expired }
 ```
 
-Collections (`near_sdk::store`, unique prefixes): `shippers: LookupMap`, `drivers: LookupSet`
-(per shipper network: `LookupSet<(shipper, driver)>`), `destinations: Vector`,
-`shipments: LookupMap<u64, Shipment>`, `shipments_by_shipper: LookupMap<AccountId, Vector<u64>>`,
-`shipments_by_driver`, `shipments_by_destination`, `investors: LookupMap<AccountId, U128 shares>`,
-`withdraw_queue: Vector<(AccountId, U128)>`, `proposals: IterableMap`.
+Collections (`near_sdk::store`, unique prefixes): `shippers: LookupMap`,
+`network: LookupSet<(shipper, driver)>`, `destinations: LookupMap<u32, Destination>`,
+`shipments: LookupMap<u64, Shipment>`, ordered lists (`Index`: a count per key plus one entry
+per position) for drivers and destinations per shipper and shipments per shipper, driver and
+destination, `investors: LookupMap<AccountId, U128 shares>`,
+`queue: LookupMap<u64, QueueEntry>` with `queue_head` and `queue_tail`,
+`investor_queued: LookupMap<AccountId, U128>`, `proposals: IterableMap<u64, Proposal>`.
 
-Pool value = `cash + lent` (reserve is separate). Free cash for new advances and
-withdrawals = `cash − committed_total`.
+`cash` holds everything the contract keeps for the pool. Parts of it are already spoken for:
+`committed` (advances for approved shipments), `queued` (owed to queued withdrawals) and
+`fees` (Waybil's 0.5%, waiting for `claim_fees`). The reserve is kept apart.
+
+- Pool value (what shares are worth) = `cash + lent − queued − fees`.
+- Free cash (for new advances and new withdrawals) = `cash − committed − queued − fees`.
+- The queue is paid from `cash − committed − fees`, oldest first.
 
 ## Methods by role
 
@@ -94,9 +104,17 @@ withdrawals = `cash − committed_total`.
 | Method | Rules | Event |
 |---|---|---|
 | deposit | `ft_transfer_call` with msg `"deposit"`. Mints shares at the current share price. | `deposited` |
-| `withdraw(amount)` | Burns shares for `amount`. Pays the free part now and queues the rest. | `withdraw_paid`, `withdraw_queued` |
+| `withdraw(amount)` | Pays older queued requests first. Burns shares for `amount` at the current price (rounded up). Pays the free part now and queues the rest. | `withdraw_paid`, `withdraw_queued` |
+| `process_queue()` | Anyone. Pays up to 10 queued requests from free cash. | `withdraw_paid` |
 
-The queue is paid oldest first inside every repayment.
+The queue is also paid, oldest first, inside every repayment and reserve cover. A failed
+withdrawal transfer goes back to the end of the queue (`withdraw_failed`).
+
+### Treasury
+
+| Method | Rules | Event |
+|---|---|---|
+| `claim_fees()` | Caller is `treasury`. Sends all collected Waybil fees. On failure they stay claimable. | `fees_claimed` |
 
 ### Credit assistant (`assistant` key, backend)
 
@@ -115,12 +133,15 @@ The queue is paid oldest first inside every repayment.
 | Unpause, start shipper, set limit, cover from reserve, config | Only through an approved proposal | `shipper_unpaused`, `limit_changed`, `reserve_cover` |
 
 `CoverFromReserve` is allowed only when the bill is unpaid `reserve_cover_after_days`
-after `due_at`. It moves the bill amount from the reserve back to the pool.
+after `due_at`. The reserve pays back the advance as far as it can; anything left is a loss
+shared by the pool. The bill leaves `owed`, the shipment becomes `CoveredByReserve`, and the
+shipper is paused because it still owes the money off-chain.
 
 ### Anyone
 
-`mark_late(id)` sets `late_bills += 1` on the shipper once `now > due_at` and the bill is
-unpaid. The backend calls it after the due date. Idempotent.
+`mark_late(id) -> bool` sets `late_bills += 1` on the shipper once `now > due_at` and the
+bill is unpaid (status `Paid`). The backend calls it after the due date. Returns false and
+changes nothing when it is not late yet or already marked. Event `bill_late`.
 
 ## Payout and callbacks
 
@@ -133,8 +154,9 @@ Withdrawals and Waybil's fee transfers use the same pattern.
 
 ## Repayment split (bill 300.00)
 
-`lent −= advance (292.50)`, `cash += 292.50 + 4.80` (pool earns), `reserve += 1.20`,
-then `ft_transfer(treasury, 1.50)`. Rounding leftovers go to the reserve.
+`lent −= advance (292.50)`, `cash += 292.50 + 4.80 + 1.50`, `fees += 1.50` (Waybil,
+claimed later by the treasury), `reserve += 1.20`. Rounding leftovers go to the reserve.
+After a settled report the same split runs on the new bill.
 
 ## Views
 

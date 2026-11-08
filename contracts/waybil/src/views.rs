@@ -2,7 +2,7 @@
 
 use crate::{
     Config, Contract, ContractExt, Destination, InvestorView, Network, Pool, Proposal,
-    ProposalStatus, Shipment, Shipper, key,
+    ProposalStatus, QueueEntry, Shipment, Shipper, key,
 };
 use near_sdk::json_types::U128;
 use near_sdk::{AccountId, near};
@@ -92,10 +92,25 @@ impl Contract {
 
     pub fn get_investor(&self, account_id: AccountId) -> InvestorView {
         let shares = self.investors.get(&account_id).map(|s| s.0).unwrap_or(0);
+        let queued = self
+            .investor_queued
+            .get(&account_id)
+            .map(|q| q.0)
+            .unwrap_or(0);
         InvestorView {
             shares: U128(shares),
             value: U128(self.shares_value(shares)),
+            queued: U128(queued),
         }
+    }
+
+    /// Queued withdrawals, oldest first. `from` counts from the head of the queue.
+    pub fn get_withdraw_queue(&self, from: Option<u32>, limit: Option<u32>) -> Vec<QueueEntry> {
+        let start = self.queue_head + from.unwrap_or(0) as u64;
+        let end = self.queue_tail.min(start + page(limit) as u64);
+        (start..end)
+            .filter_map(|i| self.queue.get(&i).cloned())
+            .collect()
     }
 
     pub fn get_proposal(&self, id: u64) -> Option<Proposal> {
