@@ -419847,7 +419847,7 @@
                                   "type": "text",
                                   "id": "j8kir",
                                   "fill": "#FFFFFFB3",
-                                  "content": "Costs",
+                                  "content": "Who it's for",
                                   "fontFamily": "$ds-font",
                                   "fontSize": 15,
                                   "fontWeight": "normal"
@@ -419898,7 +419898,7 @@
                                   "id": "K1d9M4",
                                   "name": "H1",
                                   "fill": "#FFFFFF",
-                                  "content": "Your driver gets paid\nthe moment goods arrive.",
+                                  "content": "Invoices take weeks.\nWaybil takes seconds.",
                                   "lineHeight": 1.02,
                                   "fontFamily": "$ds-font",
                                   "fontSize": 76,
@@ -422136,7 +422136,7 @@
                                   "type": "text",
                                   "id": "n62dz",
                                   "fill": "#FFFFFFB3",
-                                  "content": "Costs",
+                                  "content": "Who it's for",
                                   "fontFamily": "$ds-font",
                                   "fontSize": 15,
                                   "fontWeight": "normal"
@@ -422188,7 +422188,7 @@
                                   "id": "fVfFN",
                                   "name": "H1",
                                   "fill": "#FFFFFF",
-                                  "content": "Your driver gets paid\nthe moment goods arrive.",
+                                  "content": "Invoices take weeks.\nWaybil takes seconds.",
                                   "lineHeight": 1.02,
                                   "fontFamily": "$ds-font",
                                   "fontSize": 60,
@@ -424375,18 +424375,18 @@
                       "name": "Hero",
                       "clip": true,
                       "width": "fill_container",
-                      "height": 830,
+                      "height": 870,
                       "fill": "#0B0B0B",
                       "layout": "none",
                       "children": [
                         {
                           "type": "frame",
                           "id": "ReneM",
-                          "x": -150,
+                          "x": -170,
                           "y": 96,
                           "name": "Photo",
-                          "width": 680,
-                          "height": 380,
+                          "width": 740,
+                          "height": 420,
                           "fill": {
                             "type": "image",
                             "enabled": true,
@@ -424398,10 +424398,10 @@
                           "type": "frame",
                           "id": "x68Pi",
                           "x": 0,
-                          "y": 296,
+                          "y": 400,
                           "name": "Fade",
                           "width": 390,
-                          "height": 184,
+                          "height": 120,
                           "fill": {
                             "type": "gradient",
                             "gradientType": "linear",
@@ -424416,8 +424416,8 @@
                                 "position": 0
                               },
                               {
-                                "color": "#0B0B0BE6",
-                                "position": 0.45
+                                "color": "#0B0B0B99",
+                                "position": 0.5
                               },
                               {
                                 "color": "#0B0B0B00",
@@ -424507,7 +424507,7 @@
                           "type": "frame",
                           "id": "lUcuF",
                           "x": 20,
-                          "y": 470,
+                          "y": 510,
                           "name": "Copy",
                           "width": 350,
                           "layout": "vertical",
@@ -424528,12 +424528,12 @@
                                   "fill": "#FFFFFF",
                                   "textGrowth": "fixed-width",
                                   "width": 350,
-                                  "content": "Your driver gets paid the moment goods arrive.",
+                                  "content": "Invoices take weeks.\nWaybil takes seconds.",
                                   "lineHeight": 1.05,
                                   "fontFamily": "$ds-font",
-                                  "fontSize": 40,
+                                  "fontSize": 33,
                                   "fontWeight": "500",
-                                  "letterSpacing": -1.2
+                                  "letterSpacing": -1
                                 }
                               ]
                             },
