@@ -46,6 +46,7 @@ fe/
 │  │  ├─ admin/                           Approvals (M1)
 │  │  │  ├─ shippers/  shippers/[account]/  pool/         (M2, M3)
 │  │  ├─ not-found.tsx  error.tsx  offline/               (X1–X5)
+│  │  ├─ dev/gallery/                     Every component state on one page (development only)
 │  │  └─ layout.tsx
 │  ├─ modules/                            One folder per role or feature
 │  │  ├─ shipper/  driver/  warehouse/  investor/  admin/  onboarding/  wallet/
@@ -54,10 +55,12 @@ fe/
 │  │  │  ├─ data/                         Contract calls and API calls for this module
 │  │  │  └─ README.md                     Which screens (codes from the design) live here
 │  ├─ components/
-│  │  ├─ ui/                              shadcn/ui components, restyled to the design tokens
-│  │  ├─ layout/                          Navbar, BottomNav, PageHeader, Sheet, Dialog shells
-│  │  └─ elements/                        Shared Waybil pieces: StatusPill, ProofLink, Meter,
-│  │                                      HeroCard, MapView, QrCode, QrScanner, EmptyState
+│  │  ├─ ui/                              Form and action pieces: Button, Input, Segmented
+│  │  ├─ layout/                          Logo, Navbar, MobileHeader, BottomNav, Footer, Panel
+│  │  └─ elements/                        Shared Waybil pieces: StatusPill, ProofLink, ProofTag,
+│  │                                      ProofCard, FanMeter, CreditMeter, Stat, KeyValue,
+│  │                                      Avatar, TimelineStep, ShipmentRow, BalanceCard,
+│  │                                      TxToast, EmptyState, MapView, QrCode, QrScanner
 │  ├─ lib/
 │  │  ├─ near.ts                          RPC, contract ids, view helpers
 │  │  ├─ wallet.ts                        near-connect setup and signing
@@ -65,6 +68,8 @@ fe/
 │  │  ├─ api.ts                           Fetch wrapper for the backend
 │  │  ├─ format.ts                        Money, dates, account names
 │  │  ├─ errors.ts                        Contract error codes to plain sentences
+│  │  ├─ status.ts                        Contract status to the chip the design draws
+│  │  ├─ cn.ts                            Joins class names, later Tailwind class wins
 │  │  └─ env.ts                           Typed public env (NEXT_PUBLIC_* only, no secrets)
 │  ├─ providers/                          AppProviders, AuthProvider, WalletProvider
 │  ├─ hooks/                              Hooks used by more than one module
