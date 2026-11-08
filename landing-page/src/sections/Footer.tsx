@@ -42,7 +42,7 @@ export function Footer() {
           <div className="flex gap-64 lg:gap-80">
             {COLUMNS.map((col) => (
               <div key={col.title} className="flex flex-col gap-14">
-                <p className="fs-14 font-medium text-white/40">{col.title}</p>
+                <p className="fs-14 font-medium text-white/60">{col.title}</p>
                 {col.links.map((l) => (
                   <a
                     key={l.label}

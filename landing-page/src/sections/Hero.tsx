@@ -40,7 +40,7 @@ export function Hero({ appUrl }: { appUrl: string }) {
             alt="A Waybil truck on a quiet road through misty hills"
             fill
             preload
-            sizes="(max-width: 768px) 260vw, 160vw"
+            sizes="160vw"
             className="settle-load object-cover"
             style={d(0)}
           />
