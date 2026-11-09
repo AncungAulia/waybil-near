@@ -15,6 +15,13 @@ export function Stat({
   justChanged = false,
   /** Nothing has happened yet, so the number is greyed. */
   empty = false,
+  /**
+   * The card's colour. "dark" is the ink card with the brand glow the boards use for a
+   * running total, "brand" the yellow one on the pool board.
+   */
+  tone = "plain",
+  /** A glyph in a soft circle above the label, drawn on the brand cards. */
+  icon,
   className,
 }: {
   label: string;
@@ -22,19 +29,55 @@ export function Stat({
   context?: ReactNode;
   justChanged?: boolean;
   empty?: boolean;
+  tone?: "plain" | "dark" | "brand";
+  icon?: ReactNode;
   className?: string;
 }) {
+  const dark = tone === "dark";
+  const brand = tone === "brand";
   return (
-    <div className={cn("flex w-280 flex-col gap-6 rounded-[22px] bg-ds-bg p-20", className)}>
-      <span className="text-label text-ds-muted">{label}</span>
+    <div
+      className={cn(
+        "flex w-280 flex-col gap-6 rounded-[22px] p-20",
+        dark ? "bill-card bg-ds-ink" : brand ? "ready-card bg-ds-brand" : "bg-ds-bg",
+        className,
+      )}
+    >
+      {icon && (
+        <span className="mb-4 grid size-32 place-items-center rounded-full bg-ds-bg/50 text-ds-ink-2">
+          {icon}
+        </span>
+      )}
+      <span
+        className={cn(
+          "text-label",
+          dark ? "text-ds-on-night" : brand ? "text-ds-brand-deep" : "text-ds-muted",
+        )}
+      >
+        {label}
+      </span>
       <span
         key={String(value)}
-        className={cn("swap text-[32px] font-medium", empty ? "text-ds-off-ink" : "text-ds-ink")}
+        className={cn(
+          "swap text-[32px] font-medium",
+          dark ? "text-ds-bg" : empty && !brand ? "text-ds-off-ink" : "text-ds-ink",
+        )}
       >
         {value}
       </span>
       {context && (
-        <span className={cn("text-caption", justChanged ? "text-ds-success" : "text-ds-muted")}>
+        <span
+          className={cn(
+            "text-caption",
+            dark
+              ? "text-ds-brand"
+              : brand
+                ? "text-ds-brand-deep"
+                : justChanged
+                  ? "text-ds-success"
+                  : "text-ds-muted",
+          )}
+        >
           {context}
         </span>
       )}

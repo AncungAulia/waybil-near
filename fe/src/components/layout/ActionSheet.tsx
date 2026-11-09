@@ -9,19 +9,30 @@ export function ActionSheet({
   children,
   onClose,
   wide = false,
+  stamp,
 }: {
   title: string;
   children: React.ReactNode;
   onClose: () => void;
   preview?: boolean;
   wide?: boolean;
+  /** An icon for a permission ask. It centres the sheet and replaces the close button. */
+  stamp?: React.ReactNode;
 }) {
   const start = useRef<{ y: number; time: number } | null>(null);
   const [drag, setDrag] = useState(0);
   const [openedWithKeyboard] = useState(
     () => typeof document !== "undefined" && !!document.activeElement?.matches(":focus-visible"),
   );
-  const contents = (
+  const contents = stamp ? (
+    <>
+      <span className="grid size-80 place-items-center rounded-full bg-ds-brand-soft text-ds-brand-deep">
+        {stamp}
+      </span>
+      <Dialog.Title className="text-heading">{title}</Dialog.Title>
+      {children}
+    </>
+  ) : (
     <>
       <div className="flex items-center justify-between gap-16">
         <Dialog.Title className="text-heading">{title}</Dialog.Title>
@@ -37,7 +48,10 @@ export function ActionSheet({
       {children}
     </>
   );
-  const classes = "flex flex-col gap-20 rounded-t-card bg-ds-bg p-24 md:rounded-card";
+  const classes = cn(
+    "flex flex-col gap-20 rounded-t-card bg-ds-bg p-24 md:rounded-card",
+    stamp && "items-center gap-14 text-center",
+  );
   return (
     <Dialog.Root
       open
