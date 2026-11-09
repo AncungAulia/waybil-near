@@ -3,11 +3,28 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, ArrowDown, Check, Package, Warning, Copy } from "@phosphor-icons/react";
+import {
+  ArrowLeft,
+  ArrowDown,
+  ArrowRight,
+  Check,
+  NavigationArrow,
+  Package,
+  PaperPlaneTilt,
+  QrCode,
+  SealCheck,
+  Image,
+  X,
+  ArrowLineDown,
+  WarningCircle,
+  WifiSlash,
+  Copy,
+  MapPin,
+} from "@phosphor-icons/react";
 import { RoleShell } from "@/components/layout/RoleShell";
 import { Panel } from "@/components/layout/Panel";
 import { ActionSheet } from "@/components/layout/ActionSheet";
-import { Button } from "@/components/ui/Button";
+import { Button, ButtonLink } from "@/components/ui/Button";
 import { Money } from "@/components/elements/Money";
 import { KeyValue } from "@/components/elements/KeyValue";
 import { Stat } from "@/components/elements/Stat";
@@ -16,6 +33,7 @@ import { DemoRecord } from "@/components/elements/DemoRecord";
 import { DeliveryQr } from "@/components/elements/DeliveryQr";
 import { ResultScreen } from "@/components/elements/ResultScreen";
 import { StatusPill } from "@/components/elements/StatusPill";
+import { Switch } from "@/components/elements/Switch";
 import { useOrigin } from "@/hooks/useOrigin";
 import { useDemoDelivery, useDemoReport, useDemoSettlement } from "@/hooks/useDemoDelivery";
 import { DEMO_CODE, DEFAULT_REPORT } from "@/lib/demo-delivery";
@@ -24,10 +42,10 @@ import { DRIVER_FIXTURES, type DriverState } from "../data/fixtures";
 
 const MAPS = "https://www.google.com/maps/search/?api=1&query=Harbor+Hub+9+Pier+Street";
 const PAYOUTS = [
-  ["1041", "Harbor City", "Nov 12", "292500000"],
-  ["1039", "Millbrook", "Nov 11", "117000000"],
-  ["1032", "Riverton", "Nov 8", "292500000"],
-  ["1027", "Oakdale", "Nov 1", "195000000"],
+  ["1041", "Harbor City", "Nov 12", "292500000", "Northwind"],
+  ["1039", "Millbrook", "Nov 11", "117000000", "Northwind"],
+  ["1032", "Riverton", "Nov 8", "292500000", "Northwind"],
+  ["1027", "Oakdale", "Nov 1", "195000000", "Blue Ridge"],
 ] as const;
 
 function ShareLink() {
@@ -65,14 +83,15 @@ function ShareLink() {
           Select the link above to copy it.
         </p>
       )}
-      <a
-        className="press focus-ring rounded-full bg-ds-ink px-20 py-14 text-center text-body text-ds-bg"
+      <ButtonLink
+        className="justify-between"
+        icon={<PaperPlaneTilt size={17} />}
         href={`https://wa.me/?text=${encodeURIComponent(url)}`}
         target="_blank"
         rel="noopener noreferrer"
       >
-        Share my link on WhatsApp ↗
-      </a>
+        Share my link on WhatsApp
+      </ButtonLink>
     </div>
   );
 }
@@ -103,15 +122,15 @@ function PayoutRows({
 }) {
   return (
     <div className="flex flex-col gap-20">
-      {(recent ? PAYOUTS.slice(1, 3) : PAYOUTS).map(([id, city, date, amount]) => (
+      {(recent ? PAYOUTS.slice(1, 3) : PAYOUTS).map(([id, city, date, amount, company]) => (
         <div key={id} className="flex flex-wrap items-center gap-12">
           <span className="grid size-40 shrink-0 place-items-center rounded-full bg-ds-success-soft text-ds-success">
-            <ArrowDown size={18} />
+            <ArrowLineDown size={18} />
           </span>
           <div className="min-w-120 flex-1">
             <p className="text-label">Eastport to {city}</p>
             <p className="text-caption text-ds-muted">
-              #{id} · {date}
+              #{id} · {company} · {date}
             </p>
           </div>
           <div className="flex flex-col items-end gap-4">
@@ -120,7 +139,7 @@ function PayoutRows({
             </span>
             {!recent && (
               <a
-                className="focus-ring text-caption text-ds-muted"
+                className="link focus-ring text-caption"
                 href="https://testnet.nearblocks.io/address/sam.users.waybil.testnet"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -278,9 +297,9 @@ export function DriverScreen({
       {state === "K2.13" && (
         <p
           role="status"
-          className="mb-16 flex gap-10 rounded-small bg-ds-brand-soft p-16 text-label"
+          className="mb-16 flex gap-10 rounded-small bg-ds-ink p-16 text-label text-ds-bg"
         >
-          <Warning size={20} className="shrink-0" />
+          <WifiSlash size={18} className="shrink-0 text-ds-brand" />
           No signal. Your QR still works, and Waybil sends updates when you are back online.
         </p>
       )}
@@ -336,19 +355,21 @@ export function DriverScreen({
         <div className="grid gap-16 lg:grid-cols-[minmax(0,1fr)_420px]">
           <div className="flex min-w-0 flex-col gap-16">
             {state === "K1.2" ? (
-              <Panel>
-                <p className="text-heading">
+              <Panel className="ready-card bg-ds-brand">
+                <p className="flex items-center gap-8 text-label">
+                  <SealCheck size={18} className="shrink-0" />
                   {!preview && settlement.active
                     ? "Northwind chose what to pay"
                     : "Harbor Hub confirmed your delivery"}
                 </p>
                 <Money amount={latest} className="text-display" />
-                <p className="text-label text-ds-muted">
+                <p className="text-label text-ds-ink-2">
                   {!preview && settlement.active
                     ? settlement.reason
                     : "You received 97.5% of the 300.00 USDC fee for shipment #1041."}
                 </p>
                 <Button
+                  icon={<ArrowRight size={17} />}
                   className="w-full justify-between md:w-fit"
                   onClick={() => openTrip("K2.8")}
                 >
@@ -359,10 +380,7 @@ export function DriverScreen({
               <Panel
                 title="On the road · #1041"
                 action={
-                  <button
-                    className="focus-ring text-caption text-ds-brand-deep"
-                    onClick={() => openTrip("K2.4")}
-                  >
+                  <button className="link focus-ring text-caption" onClick={() => openTrip("K2.4")}>
                     Details
                   </button>
                 }
@@ -370,25 +388,33 @@ export function DriverScreen({
               >
                 <DemoMap className="h-300" />
                 <div className="flex flex-col gap-12 md:flex-row">
-                  <Button onClick={() => openTrip("K2.5")}>Show QR at arrival</Button>
-                  <a
-                    className="focus-ring rounded-full border border-ds-line-strong px-20 py-12 text-body"
+                  <Button icon={<QrCode size={17} />} onClick={() => openTrip("K2.5")}>
+                    Show QR at arrival
+                  </Button>
+                  <ButtonLink
+                    variant="secondary"
+                    icon={<NavigationArrow size={17} />}
                     href={MAPS}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    Open in Google Maps ↗
-                  </a>
+                    Open in Google Maps
+                  </ButtonLink>
                 </div>
               </Panel>
             )}
             <Panel title="Eastport to Westfield" action={<StatusPill status="approved" />}>
               <p className="text-caption text-ds-muted">#1044 · Northwind</p>
-              <p className="text-label text-ds-muted">You get on arrival</p>
-              <Money amount="204750000" className="text-title" />
-              <p className="text-caption text-ds-muted">Pickup today</p>
+              <div className="flex items-end justify-between gap-12">
+                <div>
+                  <p className="text-label text-ds-muted">You get on arrival</p>
+                  <Money amount="204750000" className="text-title" />
+                </div>
+                <p className="text-caption text-ds-muted">Pickup today</p>
+              </div>
               <Button
                 variant="secondary"
+                icon={<Package size={17} />}
                 className="w-full justify-between md:w-fit"
                 onClick={() => openTrip("K2.1", 1044)}
               >
@@ -410,7 +436,7 @@ export function DriverScreen({
             <Panel
               title="Recent payouts"
               action={
-                <Link className="focus-ring text-caption text-ds-brand-deep" href="/driver/payouts">
+                <Link className="link focus-ring text-caption" href="/driver/payouts">
                   See all ↗
                 </Link>
               }
@@ -424,17 +450,18 @@ export function DriverScreen({
           <div className="grid grid-cols-1 gap-16 md:grid-cols-2">
             <Stat
               className="w-full"
+              tone="dark"
               label="This month"
               value={<Money amount={state === "K3.2" ? "0" : monthTotal} />}
               context={
                 state === "K3.2"
                   ? "Your first payout shows up here."
-                  : "You were paid seconds after arrival for four trips."
+                  : "4 trips, each paid seconds after arrival."
               }
             />
             <Stat
               className="w-full"
-              label="In your account"
+              label="In your wallet"
               value={
                 <Money amount={state === "K3.2" ? "0" : (992100000n + BigInt(latest)).toString()} />
               }
@@ -463,8 +490,8 @@ export function DriverScreen({
                 <p className="text-label">Verified · paid on time 100%</p>
                 <div className="flex gap-12">
                   <Button onClick={() => setAccepted(true)}>Accept</Button>
-                  <Button variant="quiet" onClick={() => go("K3.3")}>
-                    Decline
+                  <Button variant="secondary" icon={<X size={17} />} onClick={() => go("K3.3")}>
+                    Not now
                   </Button>
                 </div>
               </Panel>
@@ -485,7 +512,7 @@ export function DriverScreen({
                         {i === 0 ? "Eastport · 3 trips with you" : "Millbrook · 1 trip with you"}
                       </p>
                     </div>
-                    <span className="text-caption text-ds-muted">
+                    <span className="rounded-full bg-ds-canvas px-12 py-6 text-caption">
                       {i === 0 ? "1 trip now" : "No trips now"}
                     </span>
                   </div>
@@ -522,7 +549,13 @@ export function DriverScreen({
             }
           />
           <div className="flex min-w-0 flex-col gap-16">
-            <Panel>
+            <Panel
+              className={cn(
+                ["K2.6", "K2.7"].includes(state) && "ready-card bg-ds-brand",
+                ["K2.9", "K2.10"].includes(state) && "bg-ds-danger-soft",
+                state === "K2.11" && "bg-ds-success-soft",
+              )}
+            >
               {["K2.1", "K2.2", "K2.3"].includes(state) ? (
                 <>
                   <p className="text-label text-ds-muted">You get on arrival</p>
@@ -530,51 +563,74 @@ export function DriverScreen({
                   <p className="text-label text-ds-muted">
                     You receive 97.5% of the fee, paid the moment Harbor Hub confirms.
                   </p>
-                  <Button className="w-full justify-between" onClick={() => go("K2.2")}>
+                  <Button
+                    icon={<Package size={17} />}
+                    className="w-full justify-between"
+                    onClick={() => go("K2.2")}
+                  >
                     Confirm pickup
                   </Button>
                 </>
               ) : ["K2.6", "K2.7"].includes(state) ? (
                 <>
-                  <h2 className="text-heading">Lena confirmed all 120 crates</h2>
+                  <p className="flex items-center gap-8 text-label">
+                    <SealCheck size={18} className="shrink-0" />
+                    Lena confirmed all 120 crates
+                  </p>
                   <Money amount={amount} className="text-amount" />
-                  <p className="text-label text-ds-muted">
+                  <p className="text-label text-ds-ink-2">
                     {state === "K2.6"
                       ? "It is on its way to your account. The 7.50 USDC fee pays for getting paid early."
                       : "The network is slow right now. Your money is safe."}
                   </p>
                   <Button
-                    variant="moment"
                     loading
+                    className="w-full justify-between"
                     loadingLabel={state === "K2.6" ? "Sending" : "Still sending"}
                   >
                     Sending
                   </Button>
                   {state === "K2.7" && (
-                    <p className="text-caption text-ds-muted">
+                    <p className="text-caption text-ds-ink-2">
                       It is taking longer than usual. It will arrive soon.
                     </p>
                   )}
                 </>
               ) : ["K2.9", "K2.10"].includes(state) ? (
                 <>
-                  <h2 className="text-heading">Harbor Hub reported a problem</h2>
-                  <p className="text-body text-ds-muted">
+                  <h2 className="flex items-center gap-10 text-body font-medium">
+                    <WarningCircle size={20} className="shrink-0 text-ds-danger" />
+                    Harbor Hub reported a problem
+                  </h2>
+                  <p className="text-body text-ds-ink-2">
                     {report.note} You get paid after Northwind chooses what to pay.
                   </p>
-                  <Button variant="secondary" onClick={openReport}>
+                  <Button
+                    variant="secondary"
+                    icon={<Image size={17} />}
+                    className="self-start"
+                    onClick={openReport}
+                  >
                     Read the report
                   </Button>
                 </>
               ) : state === "K2.11" ? (
                 <>
-                  <h2 className="text-heading">Northwind chose what to pay</h2>
-                  <p className="text-body">
+                  <h2 className="flex items-center gap-10 text-body font-medium">
+                    <WarningCircle size={20} className="shrink-0 text-ds-success" />
+                    Northwind chose what to pay
+                  </h2>
+                  <p className="text-body text-ds-ink-2">
                     {preview ? "They paid for the 112 good crates." : settlement.reason} You got{" "}
                     <Money amount={preview ? shipment.advance : settlement.amount} />.
                   </p>
                   <DemoRecord title="Demo settlement receipt" />
-                  <Button variant="secondary" onClick={openReport}>
+                  <Button
+                    variant="secondary"
+                    icon={<Image size={17} />}
+                    className="self-start"
+                    onClick={openReport}
+                  >
                     Read the report
                   </Button>
                 </>
@@ -590,17 +646,23 @@ export function DriverScreen({
                       <p className="text-title">42 km</p>
                     </div>
                   </div>
-                  <Button className="w-full justify-between" onClick={() => go("K2.5")}>
+                  <Button
+                    icon={<QrCode size={17} />}
+                    className="w-full justify-between"
+                    onClick={() => go("K2.5")}
+                  >
                     Show QR at arrival
                   </Button>
-                  <a
-                    className="focus-ring rounded-full border border-ds-line-strong px-20 py-12 text-center text-body"
+                  <ButtonLink
+                    variant="secondary"
+                    icon={<NavigationArrow size={17} />}
+                    className="justify-between"
                     href={MAPS}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    Open in Google Maps ↗
-                  </a>
+                    Open in Google Maps
+                  </ButtonLink>
                   <Button variant="quiet" className="text-ds-danger" onClick={() => go("K2.12")}>
                     Report a problem
                   </Button>
@@ -615,6 +677,7 @@ export function DriverScreen({
       {sheet && (
         <ActionSheet
           wide={state === "K2.10"}
+          stamp={state === "K2.3" ? <MapPin size={34} /> : undefined}
           title={
             state === "K2.2"
               ? "Confirm pickup"
@@ -629,29 +692,29 @@ export function DriverScreen({
         >
           {state === "K2.2" ? (
             <>
-              <label className="flex items-center gap-12 text-body">
+              <label className="flex cursor-pointer items-center gap-12 rounded-row bg-ds-canvas p-16 text-label">
                 <input
                   type="checkbox"
                   checked={loaded}
                   onChange={(e) => setLoaded(e.target.checked)}
-                  className="size-20 accent-ds-ink"
+                  className="size-20 shrink-0 accent-ds-ink"
                 />
                 All {westfield ? "60 boxes of oil" : "120 crates of coffee"} are loaded
               </label>
-              <label className="flex items-start gap-12 text-body">
-                <input
-                  type="checkbox"
-                  checked={shareLocation}
-                  onChange={(e) => setShareLocation(e.target.checked)}
-                  className="mt-4 size-20 shrink-0 accent-ds-ink"
-                />
-                <span>
+              <div className="flex items-center gap-12 rounded-row bg-ds-canvas p-16">
+                <span className="text-label">
                   Share my location during this trip
                   <span className="mt-4 block text-caption text-ds-muted">
-                    Northwind sees where the truck is. Sharing stops when you arrive.
+                    Northwind sees where the truck is. Stops when you arrive.
                   </span>
                 </span>
-              </label>
+                <Switch
+                  checked={shareLocation}
+                  onChange={setShareLocation}
+                  label="Share my location during this trip"
+                  className="ml-auto"
+                />
+              </div>
               <Button className="w-full justify-between" disabled={!loaded} onClick={pickup}>
                 Confirm pickup
               </Button>
@@ -663,6 +726,7 @@ export function DriverScreen({
                 road, and only Northwind can see it.
               </p>
               <Button
+                className="w-full justify-between"
                 onClick={() => {
                   if (preview) {
                     go("K2.4");
@@ -678,7 +742,7 @@ export function DriverScreen({
               >
                 Continue
               </Button>
-              <Button variant="quiet" onClick={() => go("K2.4")}>
+              <Button variant="quiet" className="w-full justify-center" onClick={() => go("K2.4")}>
                 Not now
               </Button>
             </>
@@ -753,14 +817,15 @@ export function DriverScreen({
                   onChange={(e) => setNote(e.target.value)}
                 />
               </label>
-              <a
+              <ButtonLink
+                icon={<PaperPlaneTilt size={17} />}
+                className="justify-between"
                 href={`https://wa.me/?text=${encodeURIComponent(`Shipment #${shipmentId}. ${reason}. ${note}`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="press focus-ring rounded-full bg-ds-ink px-20 py-14 text-center text-body text-ds-bg"
               >
-                Send to Northwind ↗
-              </a>
+                Send to Northwind
+              </ButtonLink>
             </>
           )}
         </ActionSheet>
