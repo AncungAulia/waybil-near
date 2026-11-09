@@ -128,6 +128,20 @@
     color: var(--color-ds-ink);
   }
 
+  /*
+   * Tailwind 4 drops the browser's own pointer on a button, so anything tappable asks for it
+   * back here rather than every component repeating `cursor-pointer`. A button that is off
+   * keeps the plain arrow.
+   */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="switch"]:not(:disabled),
+  [role="tab"]:not(:disabled),
+  label:has(input[type="checkbox"]:not(:disabled)),
+  label:has(input[type="radio"]:not(:disabled)) {
+    cursor: pointer;
+  }
+
   /* Keyboard only: a 2 px ring with a 2 px offset. */
   :focus-visible {
     outline: 2px solid var(--color-ds-ink);

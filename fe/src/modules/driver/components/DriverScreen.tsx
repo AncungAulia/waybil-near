@@ -692,7 +692,7 @@ export function DriverScreen({
         >
           {state === "K2.2" ? (
             <>
-              <label className="flex cursor-pointer items-center gap-12 rounded-row bg-ds-canvas p-16 text-label">
+              <label className="flex items-center gap-12 rounded-row bg-ds-canvas p-16 text-label">
                 <input
                   type="checkbox"
                   checked={loaded}

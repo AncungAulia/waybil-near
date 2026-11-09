@@ -93,7 +93,7 @@ export function ShipperHome({
         <p className="rounded-row bg-ds-danger-soft p-16 text-label text-ds-danger">
           Bill for #1036 is 3 days late. New shipments are paused until it is paid.{" "}
           <button
-            className="focus-ring cursor-pointer underline transition-colors duration-150 ease-base hover:text-ds-ink"
+            className="focus-ring underline transition-colors duration-150 ease-base hover:text-ds-ink"
             onClick={() => open(1036)}
           >
             Pay now
