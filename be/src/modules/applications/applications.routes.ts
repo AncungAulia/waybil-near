@@ -53,11 +53,9 @@ export function applicationRoutes(deps: AppDeps, service: Applications) {
     },
   );
   router.post("/applications/:id/submit", auth, roles("shipper"), async (req, res) => {
-    res
-      .status(202)
-      .json({
-        application: await service.submit(principal(req), parse(applicationId, req.params).id),
-      });
+    res.status(202).json({
+      application: await service.submit(principal(req), parse(applicationId, req.params).id),
+    });
   });
   router.get("/admin/applications", auth, team(deps.chain), async (req, res) => {
     res.json(await service.adminList(principal(req)));
