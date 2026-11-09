@@ -56,7 +56,7 @@ export function FanMeter({
           style={{
             height: `${i % MAJOR === 0 ? 100 : i % MID === 0 ? 78 : 57}%`,
           }}
-          className={cn("w-2 shrink-0", i / TICKS <= marker ? used : "bg-ds-meter-empty")}
+          className={cn("w-3 shrink-0", i / TICKS <= marker ? used : "bg-ds-meter-empty")}
         />
       ))}
 
@@ -64,7 +64,7 @@ export function FanMeter({
         <span
           aria-hidden
           style={{ left: `${marker * 100}%` }}
-          className="absolute bottom-0 h-full w-3 -translate-x-1/2 bg-ds-brand"
+          className="absolute bottom-0 h-full w-4 -translate-x-1/2 bg-ds-brand"
         />
       )}
     </span>
