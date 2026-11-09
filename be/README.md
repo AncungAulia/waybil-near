@@ -67,3 +67,19 @@ reused when the persisted recovery key proves ownership. Parent funding and demo
 coordination remain required before testnet acceptance. No external credentials are provided
 by this branch. Runtime dependencies added in #16 are near-api-js 7.4.0 and google-auth-library.
 Use Node.js 22.22.2 or newer for the SDK. This branch depends on `be/18-invites`.
+
+## Relayer (#17)
+
+Configure the funded relayer account/key and apply migration 004. Send the SDK's
+`encodeSignedDelegate` output as base64 in `{signedDelegate}` using the current Google session.
+Only role-scoped pickup/delivery calls are accepted. Responses contain the original transaction
+hash and execution status, never an invented payment receipt. Read the shipment view for payout
+status. Retries reconcile or rebroadcast the same signed outer transaction. An unresolved
+transaction blocks new relayer signatures until its outcome is known; investigate the original
+hash/RPC rather than clearing records and signing the user action again.
+
+Problem confirmations require the #21 report validator; this path fails unavailable until that
+integration is present. The per-account HTTP limiter is process-local; shared database leases,
+request deduplication and nonce validation protect transaction submission across processes.
+The later deployment task must size the HTTP limit for its replica count. New dependency in
+#17 is borsh 2.0.0 for decoding the SDK schema. This branch depends on `be/16-auth`.

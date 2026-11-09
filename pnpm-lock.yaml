@@ -142,6 +142,9 @@ importers:
       '@waybil/shared':
         specifier: workspace:*
         version: link:../packages/shared
+      borsh:
+        specifier: 2.0.0
+        version: 2.0.0
       cors:
         specifier: ^2.8.5
         version: 2.8.6
