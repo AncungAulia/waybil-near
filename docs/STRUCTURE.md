@@ -95,6 +95,7 @@ be/
 ├─ src/
 │  ├─ index.ts                            Starts the server
 │  ├─ app.ts                              Express app, middlewares, routes
+│  ├─ routes.ts                           Wires feature services and routers
 │  ├─ config/env.ts                       Reads and checks env (zod)
 │  ├─ middlewares/
 │  │  ├─ auth.ts                          Session check, role check
@@ -111,10 +112,15 @@ be/
 │  ├─ lib/
 │  │  ├─ near.ts                          RPC, contract calls, account creation
 │  │  ├─ supabase.ts                      Server client (service role)
+│  │  ├─ near-sdk.ts                      Signing SDK configuration and bounded retries
+│  │  ├─ session.ts                       JWT creation and verification
+│  │  ├─ leases.ts                        Atomic database work claims
+│  │  ├─ recovery.ts                      Identity-bound recovery-key encryption
 │  │  ├─ near-ai.ts                       NEAR AI Cloud client for the credit assistant
 │  │  ├─ storage.ts                       Uploads, sha256, signed links
 │  │  └─ email.ts
-│  └─ types/                              db.ts (generated Supabase types), express.d.ts
+│  ├─ test/                               Injected test providers and migration checks
+│  └─ types/                              db.ts (versioned domain store), express.d.ts
 ├─ supabase/migrations/                   SQL migrations, one file per change
 ├─ .env.example
 └─ package.json

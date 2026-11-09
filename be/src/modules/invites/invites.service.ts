@@ -58,8 +58,9 @@ export class Invites {
       ),
     };
   }
-  async reserve(code: string, subjectHash: string): Promise<InviteRecord> {
+  async reserve(code: string, subjectHash: string, accountId?: string): Promise<InviteRecord> {
     const row = requireValue(await this.store.get<InviteRecord>("invites", code));
+    if (accountId && row.value.acceptedBy === accountId) return row.value;
     this.open(row.value);
     if (
       row.value.reservedFor &&

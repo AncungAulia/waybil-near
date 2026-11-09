@@ -46,3 +46,24 @@ require an address. Public reads omit contact data; acceptance is conditional an
 reservations protect the invitation for five minutes without consuming it. Google identity
 resolution is connected by #16; until then the production accept route fails unavailable.
 This branch depends on `be/15-scaffold`. No additional dependencies were added for #18.
+
+## Authentication (#16)
+
+Apply migration 003 and configure Google client ID, the funded users-parent account/key,
+Supabase, JWT and `RECOVERY_ENCRYPTION_KEY`. Generate the last value with
+`node -e "console.log(require('node:crypto').randomBytes(32).toString('base64'))"` in your local
+terminal and keep it in the backend environment. Changing it requires re-encrypting existing
+records first. See decision 0008 for custody. The browser supplies only its public device key.
+
+Request a challenge first. Wallets sign the exact returned NEP-413 fields; Google clients
+pass the returned nonce to Google Identity Services. Send `challengeId` with the login result.
+The Google login body is `{challengeId,idToken}`; the device key/invite are bound to the
+challenge. A fresh driver needs no invite; warehouse role requires an invitation. Seven-day
+JWTs are versioned and old device sessions stop working after recovery.
+
+`GOOGLE_ACCOUNT_NAMES` optionally maps SHA-256 Google subject hashes to demo account slugs.
+It is server configuration, never a requested client account ID. Existing accounts are only
+reused when the persisted recovery key proves ownership. Parent funding and demo identity
+coordination remain required before testnet acceptance. No external credentials are provided
+by this branch. Runtime dependencies added in #16 are near-api-js 7.4.0 and google-auth-library.
+Use Node.js 22.22.2 or newer for the SDK. This branch depends on `be/18-invites`.
