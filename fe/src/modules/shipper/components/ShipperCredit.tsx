@@ -1,10 +1,10 @@
 "use client";
 import { useEffect, useRef } from "react";
-import { CheckCircle, Sparkle } from "@phosphor-icons/react";
+import { CheckCircle, Sparkle, ArrowsClockwise, Hourglass } from "@phosphor-icons/react";
 import { Panel } from "@/components/layout/Panel";
 import { Button } from "@/components/ui/Button";
 import { Money } from "@/components/elements/Money";
-import { FanMeter } from "@/components/elements/FanMeter";
+import { FanMeter, MeterLegend } from "@/components/elements/FanMeter";
 import { KeyValue } from "@/components/elements/KeyValue";
 import { DemoRecord } from "@/components/elements/DemoRecord";
 import type { ShipperState } from "../data/fixtures";
@@ -70,6 +70,7 @@ export function ShipperCredit({
         <Button
           loading={reviewing}
           loadingLabel="Reviewing"
+          icon={same ? <Hourglass size={17} /> : <ArrowsClockwise size={17} />}
           disabled={proposed || same || rejected}
           onClick={review}
         >
@@ -99,7 +100,8 @@ export function ShipperCredit({
               <FanMeter
                 value={Number(usedBefore) / 3000000000}
                 label="Credit limit used"
-                className="w-full h-36"
+                markerLabel={`${Math.round(Number(usedBefore) / 1000000).toLocaleString("en-US")} used`}
+                className="h-36 w-full"
               />
               <div className="mt-8 flex justify-between text-caption text-ds-muted">
                 <span>0</span>
@@ -107,6 +109,7 @@ export function ShipperCredit({
                 <span>2,000</span>
                 <span>3,000</span>
               </div>
+              <MeterLegend value={Number(usedBefore) / 3000000000} className="mt-10" />
             </div>
             <div className="flex flex-wrap justify-between gap-12 text-label">
               <span>

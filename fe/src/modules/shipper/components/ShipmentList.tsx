@@ -4,14 +4,20 @@ import { Money } from "@/components/elements/Money";
 import { StatusPill } from "@/components/elements/StatusPill";
 import { statusChip } from "@/lib/status";
 import type { DemoShipmentRow } from "../data/fixtures";
-import { cn } from "@/lib/cn";
 
 export function ShipmentList({
   rows,
   onOpen,
+  meta = "cargo",
 }: {
   rows: DemoShipmentRow[];
   onOpen: (id: number) => void;
+  /**
+   * What the second line says after the number and the driver. The shipments page shows the
+   * cargo and keeps the due date in its own column (P6). The home card shows the due date
+   * on that line instead (P1).
+   */
+  meta?: "cargo" | "due";
 }) {
   return (
     <div className="flex flex-col">
@@ -21,10 +27,7 @@ export function ShipmentList({
           disabled={shipment.status === "Cancelled"}
           key={shipment.id}
           onClick={() => onOpen(shipment.id)}
-          className={cn(
-            "press focus-ring flex w-full flex-wrap items-center gap-12 rounded-row p-16 text-left hover:bg-ds-canvas",
-            shipment.id === 1039 && "bg-ds-brand-soft/40",
-          )}
+          className="press focus-ring flex w-full flex-wrap items-center gap-12 rounded-row p-16 text-left hover:bg-ds-canvas"
         >
           <span className="hidden size-40 shrink-0 place-items-center rounded-full bg-ds-canvas md:grid">
             <Truck size={18} />
@@ -32,13 +35,13 @@ export function ShipmentList({
           <span className="min-w-140 flex-1">
             <span className="block text-body font-medium">Eastport to {city}</span>
             <span className="mt-4 block text-caption text-ds-muted">
-              #{shipment.id} · {driver} · {cargo}
+              #{shipment.id} · {driver} · {meta === "due" ? due.replace(/^Due /, "due ") : cargo}
             </span>
           </span>
           <span className="flex flex-col items-end gap-6">
             <Money amount={shipment.bill} className="text-body font-medium" />
             <StatusPill status={statusChip(shipment)} />
-            <span className="text-caption text-ds-muted">{due}</span>
+            {meta === "cargo" && <span className="text-caption text-ds-muted">{due}</span>}
           </span>
         </button>
       ))}

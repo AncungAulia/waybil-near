@@ -1,13 +1,29 @@
 "use client";
-import { Check, Plus } from "@phosphor-icons/react";
+import { useState } from "react";
+import { Check, Plus, UserPlus } from "@phosphor-icons/react";
 import { Panel } from "@/components/layout/Panel";
 import { Button } from "@/components/ui/Button";
+import { Segmented } from "@/components/ui/Segmented";
+import { cn } from "@/lib/cn";
 import { Money } from "@/components/elements/Money";
 import { Stat } from "@/components/elements/Stat";
-import { FanMeter } from "@/components/elements/FanMeter";
+import { FanMeter, MeterLegend } from "@/components/elements/FanMeter";
 import { DemoMap } from "@/components/elements/DemoMap";
 import { ShipmentList } from "./ShipmentList";
 import { SHIPMENTS, type ShipperState } from "../data/fixtures";
+
+/* The three tabs on the Shipments card, and which demo shipments each one shows. */
+type Tab = "active" | "paid" | "history";
+const TABS: { value: Tab; label: string }[] = [
+  { value: "active", label: "Active" },
+  { value: "paid", label: "Paid early" },
+  { value: "history", label: "History" },
+];
+const TAB_ROWS: Record<Tab, number[]> = {
+  active: [1041, 1043, 1039],
+  paid: [1039],
+  history: [1032],
+};
 
 export function ShipperHome({
   state,
@@ -20,20 +36,24 @@ export function ShipperHome({
   open: (id: number, pay?: boolean) => void;
   usedBefore?: bigint;
 }) {
+  const [tab, setTab] = useState<Tab>("active");
   const first = state === "P1.2",
     late = state === "P1.4",
     near = state === "P1.3";
   const used = first ? 0n : near ? 2790000000n : usedBefore;
   const left = (3000000000n - used).toString();
+  /* A late bill is the soft danger card on the board, an open one the ink card with the glow. */
   const bill = (
-    <Panel className="bill-card bg-ds-ink text-ds-bg">
-      <p className="text-label text-ds-brand">{late ? "3 days late" : "Due in 2 days"}</p>
-      <p className="text-label text-ds-on-night">
+    <Panel className={late ? "bg-ds-danger-soft" : "bill-card bg-ds-ink text-ds-bg"}>
+      <p className={cn("text-label", late ? "text-ds-danger" : "text-ds-brand")}>
+        {late ? "3 days late" : "Due in 2 days"}
+      </p>
+      <p className={cn("text-label", late ? "text-ds-ink-2" : "text-ds-on-night")}>
         Bill for #{late ? 1036 : 1039} · Eastport to {late ? "Riverton" : "Millbrook"}
       </p>
       <Money amount={late ? "300000000" : "120000000"} className="text-amount" />
       <Button
-        variant="moment"
+        variant={late ? "primary" : "moment"}
         className="w-full justify-between"
         onClick={() => open(late ? 1036 : 1039, true)}
       >
@@ -51,10 +71,16 @@ export function ShipperHome({
           <p className="mt-6 text-label text-ds-muted">Thursday, Nov 12</p>
         </div>
         <div className="flex w-full gap-12 md:w-auto">
-          <Button variant="secondary" className="hidden md:inline-flex" onClick={() => go("P5.3")}>
+          <Button
+            variant="secondary"
+            icon={<UserPlus size={17} />}
+            className="hidden md:inline-flex"
+            onClick={() => go("P5.3")}
+          >
             Invite driver
           </Button>
           <Button
+            icon={<Plus size={17} />}
             className="w-full justify-between md:w-auto"
             disabled={late}
             onClick={() => go("P2.1")}
@@ -66,7 +92,10 @@ export function ShipperHome({
       {late && (
         <p className="rounded-row bg-ds-danger-soft p-16 text-label text-ds-danger">
           Bill for #1036 is 3 days late. New shipments are paused until it is paid.{" "}
-          <button className="focus-ring underline" onClick={() => open(1036)}>
+          <button
+            className="focus-ring cursor-pointer underline transition-colors duration-150 ease-base hover:text-ds-ink"
+            onClick={() => open(1036)}
+          >
             Pay now
           </button>
         </p>
@@ -122,10 +151,7 @@ export function ShipperHome({
         <Panel
           title="On the road"
           action={
-            <button
-              className="focus-ring text-caption text-ds-brand-deep"
-              onClick={() => open(1041)}
-            >
+            <button className="link focus-ring text-caption" onClick={() => open(1041)}>
               Open map
             </button>
           }
@@ -156,6 +182,7 @@ export function ShipperHome({
               className="w-full"
               value={Number(used) / 3000000000}
               label="Credit limit used"
+              markerLabel={`${Math.round(Number(used) / 1000000).toLocaleString("en-US")} used`}
             />
             <div className="flex justify-between text-caption text-ds-muted">
               <span>0</span>
@@ -163,6 +190,7 @@ export function ShipperHome({
               <span>2,000</span>
               <span>3,000</span>
             </div>
+            <MeterLegend value={Number(used) / 3000000000} />
             <div className="border-t border-ds-line pt-16">
               <h3 className="mb-12 text-label">What is using it</h3>
               {first ? (
@@ -175,10 +203,22 @@ export function ShipperHome({
                   .map((r) => (
                     <button
                       key={r.shipment.id}
-                      className="focus-ring mb-12 flex w-full items-center justify-between gap-12 text-left text-caption"
+                      className="focus-ring mb-12 flex w-full items-center gap-10 text-left text-caption"
                       onClick={() => open(r.shipment.id)}
                     >
-                      <span>
+                      {/* The soonest bill is marked in brand, the rest in ink. */}
+                      <span
+                        aria-hidden
+                        className={cn(
+                          "size-8 shrink-0 rounded-full",
+                          !r.due.startsWith("Due in")
+                            ? "bg-ds-ink"
+                            : late
+                              ? "bg-ds-danger"
+                              : "bg-ds-brand",
+                        )}
+                      />
+                      <span className="flex-1">
                         #{r.shipment.id} Eastport to {r.city}
                         <span className="block text-ds-muted">{r.due}</span>
                       </span>
@@ -186,8 +226,16 @@ export function ShipperHome({
                     </button>
                   ))
               )}
+              {!first && (
+                <button className="link focus-ring text-caption" onClick={() => go("P6.1")}>
+                  View all
+                </button>
+              )}
             </div>
-            <button className="focus-ring self-start text-label" onClick={() => go("P7.1")}>
+            <button
+              className="link-ink focus-ring self-start text-label"
+              onClick={() => go("P7.1")}
+            >
               View credit details ↗
             </button>
           </Panel>
@@ -195,10 +243,21 @@ export function ShipperHome({
         </div>
       </div>
       {!first && (
-        <Panel title="Shipments">
+        <Panel
+          title="Shipments"
+          action={
+            <Segmented
+              options={TABS}
+              value={tab}
+              onChange={setTab}
+              label="Which shipments to show"
+            />
+          }
+        >
           <ShipmentList
-            rows={[1041, 1043, 1039].map((id) => SHIPMENTS.find((r) => r.shipment.id === id)!)}
+            rows={TAB_ROWS[tab].map((id) => SHIPMENTS.find((r) => r.shipment.id === id)!)}
             onOpen={open}
+            meta="due"
           />
         </Panel>
       )}
