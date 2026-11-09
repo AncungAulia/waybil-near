@@ -175,7 +175,7 @@ export function ShipperHome({
           ))}
         </Panel>
       )}
-      <div className="grid items-stretch gap-16 lg:grid-cols-[minmax(0,1fr)_400px]">
+      <div className="grid items-start gap-16 lg:grid-cols-[minmax(0,1fr)_400px]">
         <Panel
           title="On the road"
           titleClassName="text-[18px]"
@@ -193,7 +193,7 @@ export function ShipperHome({
             empty={first}
             label={first ? "No trucks on the road yet" : "2 trucks moving"}
             twoTrucks={!first}
-            className="h-340 md:h-500 lg:h-full lg:min-h-600"
+            className="h-280 md:h-380 lg:h-440"
           />
         </Panel>
         <div className="flex flex-col gap-16">
