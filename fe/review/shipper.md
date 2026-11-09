@@ -62,6 +62,17 @@ of these four, and none of them is an app defect:
 - The invite link. P5.3 draws `app.waybil.xyz/join/c8F2kq`. The app shows the link that
   actually opens the driver invitation, so the demo stays usable.
 
+### Asked for on the home screen, away from the board
+
+The map card and the credit column had to fit one screen, so P1.1 to P1.4 differ from the
+board on purpose:
+
+- The ruler's legend ("In use" and "Free") is gone from the credit card. The ruler and its
+  marker stay. P7 still draws the pair.
+- The credit card and the bill card sit on tighter padding and gaps, 16 and 20 instead of 24.
+- The map fills what is left of the row, so it is 624 instead of the 745 it had before, and
+  293 on a first visit. Both columns still end on the same line.
+
 ### For Ancung, where the board disagrees with itself
 
 - The home list writes `#1039 · Sam · due Nov 14` while the credit card on the same screen

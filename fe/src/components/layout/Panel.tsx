@@ -22,12 +22,12 @@ export function Panel({
   title?: string;
   action?: ReactNode;
   badge?: ReactNode;
-  gap?: 4 | 12 | 16 | 18;
+  gap?: 4 | 10 | 12 | 16 | 18;
   titleClassName?: string;
   children: ReactNode;
   className?: string;
 }) {
-  const gaps = { 4: "gap-4", 12: "gap-12", 16: "gap-16", 18: "gap-18" } as const;
+  const gaps = { 4: "gap-4", 10: "gap-10", 12: "gap-12", 16: "gap-16", 18: "gap-18" } as const;
 
   return (
     <section
