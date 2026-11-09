@@ -175,7 +175,7 @@ export function ShipperHome({
           ))}
         </Panel>
       )}
-      <div className="grid items-start gap-16 lg:grid-cols-[minmax(0,1fr)_400px]">
+      <div className="grid items-stretch gap-16 lg:grid-cols-[minmax(0,1fr)_400px]">
         <Panel
           title="On the road"
           titleClassName="text-[18px]"
@@ -193,11 +193,13 @@ export function ShipperHome({
             empty={first}
             label={first ? "No trucks on the road yet" : "2 trucks moving"}
             twoTrucks={!first}
-            className="h-280 md:h-380 lg:h-440"
+            className="h-280 md:h-380 lg:h-full lg:min-h-340"
           />
         </Panel>
         <div className="flex flex-col gap-16">
           <Panel
+            gap={12}
+            className="p-20"
             title="Credit limit"
             titleClassName="text-body"
             action={
@@ -227,8 +229,8 @@ export function ShipperHome({
               <span>3,000</span>
             </div>
             <MeterLegend value={Number(used) / 3000000000} />
-            <div className="border-t border-ds-line pt-16">
-              <h3 className={cn("mb-12", first ? "text-[14.5px] font-medium" : "text-label")}>
+            <div className="border-t border-ds-line pt-12">
+              <h3 className={cn("mb-10", first ? "text-[14.5px] font-medium" : "text-label")}>
                 {first ? "Nothing in use yet" : "What's using it"}
               </h3>
               {first ? (
@@ -239,7 +241,7 @@ export function ShipperHome({
                 using.map((r, i) => (
                   <button
                     key={r.shipment.id}
-                    className="focus-ring mb-12 flex w-full items-center gap-10 text-left text-caption"
+                    className="focus-ring mb-10 flex w-full items-center gap-10 text-left text-caption"
                     onClick={() => open(r.shipment.id)}
                   >
                     {/* The soonest bill is marked in brand, a late one in red, the rest in ink. */}
