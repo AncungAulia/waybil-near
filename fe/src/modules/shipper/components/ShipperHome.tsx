@@ -147,55 +147,57 @@ export function ShipperHome({
         />
       </div>
       {!first && <div className="md:hidden">{bill}</div>}
-      {first && (
-        <Panel
-          title="Get set up"
-          action={<span className="text-caption text-ds-muted">1 of 3 done</span>}
-        >
-          {[
-            ["Invite a driver", "Sam joined", "P5.3"],
-            ["Add a destination", "Where your goods go", "P5.4"],
-            ["Create your first shipment", "Approve a trip before the truck leaves", "P2.1"],
-          ].map(([title, note, next], i) => (
-            <button
-              key={title}
-              className="press focus-ring flex items-center gap-16 rounded-small p-12 text-left"
-              onClick={() => go(next as ShipperState)}
-            >
-              {/* Only the step that is done carries a tick. The rest keep an empty circle. */}
-              <span className="grid size-32 shrink-0 place-items-center rounded-full bg-ds-canvas">
-                {i === 0 && <Check size={18} />}
-              </span>
-              <span className="flex-1">
-                <span className="block text-body">{title}</span>
-                <span className="block text-caption text-ds-muted">{note}</span>
-              </span>
-              <CaretRight size={16} className="shrink-0 text-ds-muted" />
-            </button>
-          ))}
-        </Panel>
-      )}
       <div className="grid items-stretch gap-16 lg:grid-cols-[minmax(0,1fr)_400px]">
-        <Panel
-          title="On the road"
-          titleClassName="text-[18px]"
-          action={
-            !first && (
-              <button className="link focus-ring text-caption" onClick={() => open(1041)}>
-                Open map
-              </button>
-            )
-          }
-          className="p-18"
-        >
-          <DemoMap
-            controls
-            empty={first}
-            label={first ? "No trucks on the road yet" : "2 trucks moving"}
-            twoTrucks={!first}
-            className="h-340 md:h-500 lg:h-full lg:min-h-600"
-          />
-        </Panel>
+        <div className="flex min-w-0 flex-col gap-16">
+          {first && (
+            <Panel
+              title="Get set up"
+              action={<span className="text-caption text-ds-muted">1 of 3 done</span>}
+            >
+              {[
+                ["Invite a driver", "Sam joined", "P5.3"],
+                ["Add a destination", "Where your goods go", "P5.4"],
+                ["Create your first shipment", "Approve a trip before the truck leaves", "P2.1"],
+              ].map(([title, note, next], i) => (
+                <button
+                  key={title}
+                  className="press focus-ring flex items-center gap-16 rounded-small p-12 text-left"
+                  onClick={() => go(next as ShipperState)}
+                >
+                  {/* Only the step that is done carries a tick. The rest keep an empty circle. */}
+                  <span className="grid size-32 shrink-0 place-items-center rounded-full bg-ds-canvas">
+                    {i === 0 && <Check size={18} />}
+                  </span>
+                  <span className="flex-1">
+                    <span className="block text-body">{title}</span>
+                    <span className="block text-caption text-ds-muted">{note}</span>
+                  </span>
+                  <CaretRight size={16} className="shrink-0 text-ds-muted" />
+                </button>
+              ))}
+            </Panel>
+          )}
+          <Panel
+            title="On the road"
+            titleClassName="text-[18px]"
+            action={
+              !first && (
+                <button className="link focus-ring text-caption" onClick={() => open(1041)}>
+                  Open map
+                </button>
+              )
+            }
+            className="flex-1 p-18"
+          >
+            <DemoMap
+              controls
+              empty={first}
+              label={first ? "No trucks on the road yet" : "2 trucks moving"}
+              twoTrucks={!first}
+              className="h-340 md:h-500 lg:h-full lg:min-h-600"
+            />
+          </Panel>
+        </div>
         <div className="flex flex-col gap-16">
           <Panel
             title="Credit limit"
