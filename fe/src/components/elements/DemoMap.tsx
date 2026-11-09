@@ -28,11 +28,17 @@ export function DemoMap({
   });
   const truck =
     phase === "pickup" ? [346, 463] : phase === "arrived" ? [568, 140] : [459.1164, 242.744];
+  /*
+   * The board paints the travelled leg yellow and the rest grey, so a trip that has not left
+   * is all grey and an arrived one is all yellow.
+   */
   const asset = empty
     ? "demo-map.svg"
-    : phase === "planned"
-      ? "demo-route-planned.svg"
-      : "demo-route.svg";
+    : phase === "pickup"
+      ? "demo-route-waiting.svg"
+      : phase === "planned" || phase === "arrived"
+        ? "demo-route-planned.svg"
+        : "demo-route.svg";
   return (
     <div
       role={controls ? "region" : "img"}

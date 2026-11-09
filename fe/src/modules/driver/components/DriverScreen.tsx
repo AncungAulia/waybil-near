@@ -7,7 +7,6 @@ import {
   ArrowLeft,
   ArrowDown,
   ArrowRight,
-  Check,
   NavigationArrow,
   Package,
   PaperPlaneTilt,
@@ -18,6 +17,12 @@ import {
   ArrowLineDown,
   WarningCircle,
   WifiSlash,
+  CircleNotch,
+  ClockCountdown,
+  Link as LinkIcon,
+  Wrench,
+  Warning,
+  ChatCircle,
   Copy,
   MapPin,
 } from "@phosphor-icons/react";
@@ -33,6 +38,7 @@ import { DemoRecord } from "@/components/elements/DemoRecord";
 import { DeliveryQr } from "@/components/elements/DeliveryQr";
 import { ResultScreen } from "@/components/elements/ResultScreen";
 import { StatusPill } from "@/components/elements/StatusPill";
+import { Avatar } from "@/components/elements/Avatar";
 import { Switch } from "@/components/elements/Switch";
 import { useOrigin } from "@/hooks/useOrigin";
 import { useDemoDelivery, useDemoReport, useDemoSettlement } from "@/hooks/useDemoDelivery";
@@ -54,11 +60,12 @@ function ShareLink() {
   const [failed, setFailed] = useState(false);
   return (
     <div className="flex flex-col gap-12">
-      <div className="flex items-center justify-between gap-8 rounded-small bg-ds-canvas p-12">
-        <span className="min-w-0 break-all text-label">{url}</span>
+      <div className="flex items-center gap-10 rounded-full bg-ds-canvas py-6 pr-6 pl-16">
+        <LinkIcon size={16} className="shrink-0 text-ds-muted" />
+        <span className="min-w-0 flex-1 truncate text-label">{url}</span>
         <button
           type="button"
-          className="press focus-ring rounded-small p-8"
+          className="press focus-ring grid size-34 shrink-0 place-items-center rounded-full bg-ds-bg"
           aria-label="Copy your link"
           onClick={async () => {
             try {
@@ -70,7 +77,7 @@ function ShareLink() {
             }
           }}
         >
-          <Copy size={18} />
+          <Copy size={15} />
         </button>
       </div>
       {copied && (
@@ -144,7 +151,7 @@ function PayoutRows({
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                See the record on NearBlocks ↗
+                See record ↗
               </a>
             )}
           </div>
@@ -242,26 +249,45 @@ export function DriverScreen({
 
   if (state === "K2.5")
     return (
-      <div className="flex min-h-dvh flex-col items-center gap-20 bg-ds-ink px-24 py-24 text-ds-bg">
+      <div className="flex min-h-dvh flex-col gap-24 bg-ds-bg px-16 py-12 md:px-32">
         <button
           type="button"
-          className="press focus-ring self-end rounded-full px-16 py-10 text-label"
+          className="press focus-ring flex w-fit items-center gap-8 rounded-full p-8 text-body"
           onClick={() => go("K2.4")}
         >
+          <X size={22} />
           Close
         </button>
-        <div className="my-auto flex w-full max-w-440 flex-col gap-20 text-center">
-          <h1 className="text-title">Show this to Harbor Hub</h1>
-          <p className="text-body text-ds-on-night">They scan it to confirm the goods arrived.</p>
-          <DeliveryQr code={westfield ? "WSTF1044" : DEMO_CODE} />
-          <p className="text-amount tracking-[0.1em]">{westfield ? "WSTF 1044" : "7K2Q 9F4M"}</p>
-          <p className="text-label text-ds-on-night">
+        <div className="my-auto flex w-full flex-col items-center gap-20 text-center">
+          <h1 className="text-title md:text-[30px]">Show this to Harbor Hub</h1>
+          <p className="text-label text-ds-muted">They scan it to confirm the goods arrived.</p>
+          <div className="w-full max-w-340">
+            <DeliveryQr code={westfield ? "WSTF1044" : DEMO_CODE} />
+          </div>
+          <div className="flex items-center gap-10 rounded-small bg-ds-canvas px-20 py-10">
+            <span className="text-title tracking-[0.08em]">
+              {westfield ? "WSTF 1044" : "7K2Q 9F4M"}
+            </span>
+            <button
+              type="button"
+              aria-label="Copy the code"
+              className="press focus-ring rounded-small p-4 text-ds-muted"
+              onClick={() => navigator.clipboard?.writeText(westfield ? "WSTF1044" : DEMO_CODE)}
+            >
+              <Copy size={18} />
+            </button>
+          </div>
+          <p className="text-label">
             Shipment #{shipmentId} · {westfield ? "60 boxes of oil" : "120 crates of coffee"}
           </p>
-          <p role="status" className="text-body">
+          <p
+            role="status"
+            className="flex items-center gap-8 rounded-full bg-ds-canvas px-14 py-8 text-label"
+          >
+            <CircleNotch size={15} className="animate-spin motion-reduce:animate-none" />
             Waiting for them to scan
           </p>
-          <p className="text-caption text-ds-on-night">
+          <p className="text-caption text-ds-muted">
             Turn your screen brightness up if the scan is slow.
           </p>
         </div>
@@ -486,9 +512,17 @@ export function DriverScreen({
         <div className="grid gap-16 lg:grid-cols-[minmax(0,1fr)_420px]">
           <div className="flex flex-col gap-16">
             {state === "K3.4" && !accepted && (
-              <Panel className="bg-ds-brand-soft" title="Atlas Cargo wants to work with you">
-                <p className="text-label">Verified · paid on time 100%</p>
-                <div className="flex gap-12">
+              <Panel className="bg-ds-brand-soft">
+                <div className="flex items-center gap-12">
+                  <Avatar name="Atlas Cargo" />
+                  <span className="min-w-0">
+                    <span className="block text-body">Atlas Cargo wants to work with you</span>
+                    <span className="block text-caption text-ds-muted">
+                      Verified · paid on time 100%
+                    </span>
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-10">
                   <Button onClick={() => setAccepted(true)}>Accept</Button>
                   <Button variant="secondary" icon={<X size={17} />} onClick={() => go("K3.3")}>
                     Not now
@@ -503,16 +537,20 @@ export function DriverScreen({
                     key={name}
                     className="flex items-center gap-12 border-b border-ds-line py-16 last:border-0"
                   >
-                    <span className="grid size-44 place-items-center rounded-full bg-ds-canvas">
-                      <Package size={20} />
-                    </span>
+                    <Avatar name={name} />
                     <div className="flex-1">
                       <h3 className="text-body">{name}</h3>
                       <p className="text-caption text-ds-muted">
                         {i === 0 ? "Eastport · 3 trips with you" : "Millbrook · 1 trip with you"}
                       </p>
                     </div>
-                    <span className="rounded-full bg-ds-canvas px-12 py-6 text-caption">
+                    <span className="flex shrink-0 items-center gap-6 rounded-full bg-ds-canvas py-6 pr-14 pl-11 text-caption">
+                      <span
+                        className={cn(
+                          "size-7 rounded-full",
+                          i === 0 ? "bg-ds-info" : "bg-ds-line-strong",
+                        )}
+                      />
                       {i === 0 ? "1 trip now" : "No trips now"}
                     </span>
                   </div>
@@ -624,15 +662,24 @@ export function DriverScreen({
                     {preview ? "They paid for the 112 good crates." : settlement.reason} You got{" "}
                     <Money amount={preview ? shipment.advance : settlement.amount} />.
                   </p>
-                  <DemoRecord title="Demo settlement receipt" />
-                  <Button
-                    variant="secondary"
-                    icon={<Image size={17} />}
-                    className="self-start"
-                    onClick={openReport}
-                  >
-                    Read the report
-                  </Button>
+                  <div className="flex flex-wrap gap-10">
+                    <ButtonLink
+                      className="h-44"
+                      href="https://testnet.nearblocks.io/address/app.waybil.testnet"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      See record
+                    </ButtonLink>
+                    <Button
+                      variant="secondary"
+                      icon={<Image size={17} />}
+                      className="h-44"
+                      onClick={openReport}
+                    >
+                      Read the report
+                    </Button>
+                  </div>
                 </>
               ) : (
                 <>
@@ -715,7 +762,12 @@ export function DriverScreen({
                   className="ml-auto"
                 />
               </div>
-              <Button className="w-full justify-between" disabled={!loaded} onClick={pickup}>
+              <Button
+                icon={<Package size={17} />}
+                className="w-full justify-between"
+                disabled={!loaded}
+                onClick={pickup}
+              >
                 Confirm pickup
               </Button>
             </>
@@ -792,20 +844,25 @@ export function DriverScreen({
             </>
           ) : (
             <>
-              <p className="text-body text-ds-muted">Send Northwind a message on WhatsApp.</p>
-              <div className="flex flex-wrap gap-8">
-                {["Running late", "Truck broke down", "Accident", "Something else"].map((r) => (
+              <p className="text-caption text-ds-muted">Northwind gets a message right away.</p>
+              <div className="flex flex-col gap-8">
+                {[
+                  { label: "Running late", icon: <ClockCountdown size={18} /> },
+                  { label: "Truck broke down", icon: <Wrench size={18} /> },
+                  { label: "Accident", icon: <Warning size={18} /> },
+                  { label: "Something else", icon: <ChatCircle size={18} /> },
+                ].map((r) => (
                   <button
-                    key={r}
+                    key={r.label}
                     className={cn(
-                      "press focus-ring rounded-full px-16 py-10 text-label",
-                      r === reason ? "bg-ds-ink text-ds-bg" : "bg-ds-canvas",
+                      "press focus-ring flex items-center gap-12 rounded-small p-14 text-left text-body",
+                      r.label === reason ? "bg-ds-brand-soft" : "bg-ds-canvas",
                     )}
-                    aria-pressed={r === reason}
-                    onClick={() => setReason(r)}
+                    aria-pressed={r.label === reason}
+                    onClick={() => setReason(r.label)}
                   >
-                    {r === reason && <Check size={14} className="mr-6 inline" />}
-                    {r}
+                    <span className="shrink-0">{r.icon}</span>
+                    {r.label}
                   </button>
                 ))}
               </div>

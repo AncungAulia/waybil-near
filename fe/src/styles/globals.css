@@ -171,18 +171,22 @@
    */
   .bill-card {
     background-image:
+      /* The shader fades its dots away from the top right corner, so the card paints its
+         own colour back over them at the same falloff. */
+      radial-gradient(100% 100% at 100% 0%, transparent 15%, var(--color-ds-ink) 85%),
       radial-gradient(circle, color-mix(in srgb, white 16%, transparent) 2.2px, transparent 2.3px),
       radial-gradient(
         ellipse at top right,
-        color-mix(in srgb, var(--color-ds-brand) 33%, transparent),
+        color-mix(in srgb, var(--color-ds-brand) 40%, transparent),
         transparent 62%
       ),
       radial-gradient(
         ellipse at 80% 0%,
-        color-mix(in srgb, var(--color-ds-brand) 18%, transparent),
+        color-mix(in srgb, var(--color-ds-brand) 22%, transparent),
         transparent 55%
       );
     background-size:
+      auto,
       16px 16px,
       auto,
       auto;
@@ -193,6 +197,7 @@
    */
   .ready-card {
     background-image:
+      radial-gradient(100% 100% at 100% 0%, transparent 15%, var(--color-ds-brand) 85%),
       radial-gradient(circle, color-mix(in srgb, black 12%, transparent) 1.9px, transparent 2px),
       radial-gradient(
         ellipse at top right,
@@ -205,6 +210,7 @@
         transparent 55%
       );
     background-size:
+      auto,
       16px 16px,
       auto,
       auto;
