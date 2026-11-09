@@ -44,7 +44,7 @@ export function FanMeter({
       aria-valuetext={`${pct} percent`}
       key={value}
       className={cn(
-        "swap relative inline-flex h-18 w-320 items-end justify-between",
+        "swap relative inline-flex h-34 w-320 items-end justify-between",
         markerLabel && "w-full",
         className,
       )}

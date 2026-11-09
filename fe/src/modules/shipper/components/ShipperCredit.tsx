@@ -101,7 +101,7 @@ export function ShipperCredit({
                 value={Number(usedBefore) / 3000000000}
                 label="Credit limit used"
                 markerLabel={`${Math.round(Number(usedBefore) / 1000000).toLocaleString("en-US")} used`}
-                className="h-36 w-full"
+                className="w-full"
               />
               <div className="mt-8 flex justify-between text-caption text-ds-muted">
                 <span>0</span>
