@@ -115,3 +115,39 @@ Use the returned `confirmArgs` in a warehouse-signed delegate. The relayer now c
 actual stored report before sponsoring the confirmation. A saved report has `recorded=false`
 until the contract contains its hash. Photos, note or quantity changes invalidate the proof.
 No new dependencies were added. This branch depends on `be/19-applications`.
+
+## Credit assistant (#20)
+
+Apply migration 007, then configure the NEAR AI key, canonical `NEAR_AI_MODEL` and
+`NEAR_AI_TRUSTED_SIGNERS_JSON` as described in the API spec. Use an independently verified
+model signing key and expiry from official NEAR AI verification tooling. This Node 22 adapter
+verifies exact-byte Ed25519 provider_tee signatures against that pin and retains actual
+preflight evidence. It labels the result pinned_model_signer and does not claim to perform
+fresh Intel/NVIDIA quote verification. Missing, ambiguous or gateway-only evidence fails closed.
+
+Application submission is now connected to the durable evaluator. Searchable PDFs are parsed
+locally; JPG/PNG require an image-capable configured model. Unreadable/scanned PDFs ask for a
+clear photo or searchable PDF rather than guessing. Company/registration and three recent
+consecutive statement months are checked by server rules. Model instructions cannot write
+transactions. First limits always wait for two team members.
+
+There is no default credit formula or conversion rate. Set `CREDIT_POLICY_JSON` using the
+schema in the API spec. Leave `CREDIT_AUTO_LIMITS=false` for evidence/suggestions only.
+Enable it only after the team supplies its policy. A policy change does not mutate already
+queued review snapshots. Disabling automation stops new writes; existing signed intents
+continue reconciliation. Pending proposals, weekly caps, rejection cooldowns and three-more-
+repaid-bills eligibility are checked against fresh chain views. A bounded full proposal-ID
+scan handles pending entries older than the newest 50 without a contract change.
+
+Set `CREDIT_WORKER_ENABLED=true` to process queued work every five seconds, or run:
+
+```sh
+pnpm --filter @waybil/be build
+pnpm --filter @waybil/be credit:once
+```
+
+Worker state and signed transaction intent survive restarts. Live acceptance still requires
+provider credentials, a verified model key and SAMPLE documents. Seeded existing shippers need
+their off-chain application/papers imported in coordination with the seed-script owner.
+New dependency in #20 is unpdf 1.9.1, compatible with Node 22. This branch depends on
+`be/21-reports` and completes the evaluator integration required by #19.

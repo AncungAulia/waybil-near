@@ -47,6 +47,17 @@ export const envSchema = z
       })
       .default("{}"),
     NEAR_AI_API_KEY: secret,
+    NEAR_AI_MODEL: secret,
+    NEAR_AI_TRUSTED_SIGNERS_JSON: z.string().default("[]"),
+    CREDIT_POLICY_JSON: z.string().default(""),
+    CREDIT_AUTO_LIMITS: z
+      .enum(["true", "false"])
+      .default("false")
+      .transform((v) => v === "true"),
+    CREDIT_WORKER_ENABLED: z
+      .enum(["true", "false"])
+      .default("false")
+      .transform((v) => v === "true"),
     EMAIL_API_KEY: secret,
     EMAIL_FROM: optional(z.email()),
   })

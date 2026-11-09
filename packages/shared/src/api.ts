@@ -1,5 +1,31 @@
 import type { Role } from "./shipment";
 
+export interface CreditProof {
+  model: string;
+  chatId: string;
+  requestHash: string;
+  responseHash: string;
+  signature: string;
+  signer: string;
+  verification: "pinned_model_signer";
+  attestationReference: string;
+}
+export interface CreditReviewInfo {
+  id: string;
+  shipperId: string;
+  kind: "initial" | "review";
+  state: "queued" | "running" | "writing" | "complete";
+  result: "raised" | "proposed" | "no_change" | "failed" | null;
+  suggestedLimit: string | null;
+  needsCloserLook: boolean;
+  reasons: string[];
+  proposalId: number | null;
+  txHash: string | null;
+  proof: CreditProof | null;
+  createdAt: string;
+  completedAt: string | null;
+}
+
 export type ReportReason = "damaged" | "missing" | "wrong_goods" | "other";
 export interface ReportInput {
   shipmentId: number;

@@ -8,7 +8,8 @@ export type Table =
   | "application_documents"
   | "email_log"
   | "reports"
-  | "report_photos";
+  | "report_photos"
+  | "credit_reviews";
 export interface Snapshot<T> {
   value: T;
   version: number;

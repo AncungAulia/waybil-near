@@ -151,6 +151,43 @@ proposal id on the application.
 
 ## Credit assistant
 
+POST `/v1/credit/review` accepts an empty JSON object and queues a durable review, returning
+202 `{review}`. Initial application submissions queue the same evaluator. Reviews expose
+queued/running/writing/complete processing state separately from the final result
+raised/proposed/no_change/failed. Latest reads are owner/team scoped. Additional
+`GET /v1/credit/reviews/:id/proof` returns actual stored proof evidence to its owner/team.
+
+`CREDIT_WORKER_ENABLED=true` enables the durable runner; `credit:once` processes one batch.
+The runner validates actual file hashes, extracts searchable PDF text locally and sends
+JPG/PNG as image input only to a configured model supporting it. Scanned/unreadable PDFs
+need a clearer photo/searchable PDF and receive needs_more, never a guessed starting limit.
+The model extracts names, registration, currency and three monthly outgoing amounts. Server
+checks compare these to the form and compute amounts; document instructions cannot call tools.
+
+No credit formula is enabled by default. `CREDIT_POLICY_JSON` is an explicit versioned policy
+`{version,currency,outgoingFractionBps,usdcNumerator,usdcDenominator,maxLimit}`. Conversion ratio
+is explicit (positive integer strings), and maxLimit is base units. Recommendation equals
+floor(floor(sum(three monthly amounts)/3) * usdcNumerator * outgoingFractionBps /
+(usdcDenominator * 10000)), capped at maxLimit. No exchange rate or coefficient is assumed.
+`CREDIT_AUTO_LIMITS` defaults false; a missing formula or disabled automation produces no
+automatic writes. Starting limits always remain suggestions for two team approvals.
+
+Model config is `NEAR_AI_MODEL` (canonical ID), API key and `NEAR_AI_TRUSTED_SIGNERS_JSON`,
+an array of `{model,publicKey,expiresAt}` for independently verified Ed25519 model signing
+keys. Obtain/verify these using official NEAR AI verification tooling. The Node 22 adapter
+records preflight evidence and verifies exact-byte provider_tee signatures against these
+unexpired pins. Its proof mode is explicitly `pinned_model_signer`; it does not claim to
+perform fresh Intel/NVIDIA hardware quote verification. Gateway-only/missing/invalid proofs
+cannot authorize a limit write. Pin changes require operational review; there is no TOFU.
+
+One active review per shipper is enforced. No-change decisions under a configured policy
+require three additional Repaid shipment IDs before another review. Configuration-only
+no-change results are not credit decisions. Pending proposals and contract cooldowns are
+checked again before a write. Discover proposal IDs through the newest ID and read every
+preceding ID (maximum 1,000); evaluate TTL even if stored status is Open. Incomplete history
+fails unavailable rather than bypassing the pending-proposal gate. Writes persist their
+original signed transaction before broadcast and reconcile it without signing a replacement.
+
 | Method | Path | Who | What |
 |---|---|---|---|
 | POST | `/v1/credit/review` | Shipper | Starts a review. Reads repayment history from the contract and the papers, sends them to NEAR AI Cloud, then calls `assistant_set_limit` or `assistant_propose`. |

@@ -96,6 +96,7 @@ be/
 │  ├─ index.ts                            Starts the server
 │  ├─ app.ts                              Express app, middlewares, routes
 │  ├─ routes.ts                           Wires feature services and routers
+│  ├─ credit-once.ts                      Runs one durable credit-review batch
 │  ├─ config/env.ts                       Reads and checks env (zod)
 │  ├─ middlewares/
 │  │  ├─ auth.ts                          Session check, role check
