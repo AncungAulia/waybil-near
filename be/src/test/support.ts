@@ -4,6 +4,34 @@ import { readEnv } from "../config/env";
 import { Sessions } from "../lib/session";
 import type { Profile } from "@waybil/shared";
 import type { Leases } from "../lib/leases";
+import type { Bucket, FileStore } from "../lib/storage";
+
+export class MemoryFiles implements FileStore {
+  objects = new Map<string, Uint8Array>();
+  signed: string[] = [];
+  async put(bucket: Bucket, path: string, bytes: Uint8Array) {
+    this.objects.set(`${bucket}/${path}`, Uint8Array.from(bytes));
+  }
+  async read(bucket: Bucket, path: string) {
+    const value = this.objects.get(`${bucket}/${path}`);
+    if (!value) throw new Error("Missing test file");
+    return value;
+  }
+  async remove(bucket: Bucket, path: string) {
+    this.objects.delete(`${bucket}/${path}`);
+  }
+  async sign(bucket: Bucket, path: string) {
+    this.signed.push(`${bucket}/${path}`);
+    return `https://storage.example/signed/${bucket}/${path}`;
+  }
+}
+export const samplePdf = Buffer.from(
+  "%PDF-1.4\n% SAMPLE fixture document\n1 0 obj\n<<>>\nendobj\n%%EOF\n",
+);
+export const samplePng = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l8sAAAAASUVORK5CYII=",
+  "base64",
+);
 
 export class MemoryLeases implements Leases {
   private held = new Set<string>();

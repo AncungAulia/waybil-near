@@ -48,6 +48,7 @@ export const envSchema = z
       .default("{}"),
     NEAR_AI_API_KEY: secret,
     EMAIL_API_KEY: secret,
+    EMAIL_FROM: optional(z.email()),
   })
   .superRefine((v, ctx) => {
     if (Boolean(v.SUPABASE_URL) !== Boolean(v.SUPABASE_SERVICE_ROLE_KEY))

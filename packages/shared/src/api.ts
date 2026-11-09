@@ -1,5 +1,48 @@
 import type { Role } from "./shipment";
 
+export type DocumentKind = "registration" | "bank_statement" | "tax_id";
+export interface CompanyInput {
+  name: string;
+  registration: string;
+  country: string;
+  province: string;
+  city: string;
+  address: string;
+  postal: string;
+  contact: string;
+  job: string;
+  phone: string;
+  email: string;
+  trips: number;
+  shippingSpend: string;
+  routes: string;
+}
+export interface Application {
+  id: string;
+  shipperId: string;
+  company: CompanyInput;
+  state: "draft" | "in_review" | "needs_more" | "approved" | "rejected";
+  documents: Partial<Record<DocumentKind, string>>;
+  proposalId: number | null;
+  reviewId: string | null;
+  submissionNumber: number;
+  rejection: { reason: string; note: string; actor: string; at: string } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+export interface DocumentInfo {
+  id: string;
+  kind: DocumentKind;
+  mime: string;
+  size: number;
+  sha256: string;
+  signedUrl: string;
+}
+export interface ApplicationDetail {
+  application: Application;
+  documents: DocumentInfo[];
+}
+
 export interface RelayRequest {
   signedDelegate: string;
 }

@@ -110,6 +110,32 @@ The response distinguishes acceptance from the subsequent shipper-signed network
 
 ## Shipper applications
 
+Company JSON is `{name,registration,country,province,city,address,postal,contact,job,phone,
+email,trips,shippingSpend,routes}`. `shippingSpend` is a positive USDC base-unit string;
+frontend converts its decimal spend field with `parseUsdc`. Registration is 13 digits,
+phone is E.164, trips is a positive integer. One non-rejected application per shipper.
+`PUT /v1/applications/:id` replaces company fields only in draft/needs_more states.
+Document POST uses multipart `kind` (registration/bank_statement/tax_id) and `file`.
+Files are inspected by byte signature, limited to 2,097,152 bytes, SHA-256 hashed and stored
+privately. Document revisions retain their evidence records. Incomplete uploads are never
+used by a review. Only owners and current team members receive five-minute signed links.
+GET responses are `{application,documents}`; admin list is `{applications}` without file URLs.
+
+Submission requires the two mandatory ready documents. It freezes the snapshot in_review,
+increments submissionNumber and starts a durable evaluator. Repeated in_review submission
+resumes the same submission. The first #19 branch returns unavailable until #20 supplies
+that evaluator; it never invents a credit result. `POST /v1/admin/applications/:id/proposal`
+accepts `{proposalId}` and verifies a matching StartShipper proposal. Approved state requires
+its executed approval and an active contract shipper. An open proposal must be resolved by
+team voting before rejecting the application through this API.
+
+Rejection accepts `{reason,note}` (reason code, note up to 2,000 characters), persists the
+decision and queues a deduplicated Resend email. Repeated identical rejection is idempotent.
+`emailStatus` reports queued/sending/sent/failed/uncertain; an email problem does not undo the
+rejection. `EMAIL_FROM` is the verified sending email. No email is sent without both sender
+and EMAIL_API_KEY. Each transport attempt is recorded in email_log. Ambiguous sends may be
+retried with the same Resend key for up to 23 hours; older ambiguity requires reconciliation.
+
 | Method | Path | Who | What |
 |---|---|---|---|
 | POST | `/v1/applications` | Shipper | Company details and shipping profile |
