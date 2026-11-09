@@ -16,6 +16,8 @@ import { PrivateFiles } from "./lib/storage";
 import { Emails, ResendTransport } from "./lib/email";
 import { Applications } from "./modules/applications/applications.service";
 import { applicationRoutes } from "./modules/applications/applications.routes";
+import { Reports } from "./modules/reports/reports.service";
+import { reportRoutes } from "./modules/reports/reports.routes";
 
 export function createRoutes(deps: AppDeps) {
   const router = Router();
@@ -25,6 +27,7 @@ export function createRoutes(deps: AppDeps) {
   const files = new PrivateFiles(supabaseClient(deps.env));
   const emails = new Emails(deps.store, new ResendTransport(deps.env), leases);
   const applications = new Applications(deps.store, deps.chain, files, emails, leases);
+  const reports = new Reports(deps.store, deps.chain, files, leases);
   const auth = new AuthService(
     deps.store,
     deps.chain,
@@ -37,6 +40,7 @@ export function createRoutes(deps: AppDeps) {
   );
   router.use(authRoutes(deps, auth));
   router.use(applicationRoutes(deps, applications));
+  router.use(reportRoutes(deps, reports));
   router.use(inviteRoutes(deps, invites, (accountId) => auth.subjectFor(accountId)));
   router.use(
     relayRoutes(
@@ -47,6 +51,7 @@ export function createRoutes(deps: AppDeps) {
         new NearRelayer(deps.env, provider),
         leases,
         deps.env.WAYBIL_CONTRACT,
+        (shipment, hash, goodQty) => reports.validateConfirmation(shipment, hash, goodQty),
       ),
     ),
   );

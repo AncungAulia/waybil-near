@@ -1,5 +1,23 @@
 import type { Role } from "./shipment";
 
+export type ReportReason = "damaged" | "missing" | "wrong_goods" | "other";
+export interface ReportInput {
+  shipmentId: number;
+  goodQty: number;
+  reasons: ReportReason[];
+  note: string;
+}
+export interface ReportSaved {
+  reportHash: string;
+  confirmArgs: { id: number; good_qty: number; report_hash: string };
+}
+export interface ReportDetail extends ReportInput {
+  warehouseId: string;
+  reportHash: string;
+  recorded: boolean;
+  photos: Array<{ sha256: string; mime: string; size: number; signedUrl: string }>;
+}
+
 export type DocumentKind = "registration" | "bank_statement" | "tax_id";
 export interface CompanyInput {
   name: string;

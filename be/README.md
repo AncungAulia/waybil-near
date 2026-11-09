@@ -102,3 +102,16 @@ retry after 23 hours and require provider reconciliation. See decision 0009.
 
 Runtime dependencies added in #19 are multer and file-type; the Multer type package is a
 development dependency. File-type requires Node.js 22+. This branch depends on `be/17-relayer`.
+
+## Problem reports (#21)
+
+Apply migration 006 for reports and the private report-photos bucket. POST multipart with
+a JSON `report` field and up to five `photos`. Use the reason codes in shared types; the
+frontend's display labels must map to these codes. Server counts use the live shipment quantity.
+The saved hash covers normalized report JSON and each ordered photo hash. A retry resumes
+the same immutable report and file paths. Participant/team reads return five-minute links.
+
+Use the returned `confirmArgs` in a warehouse-signed delegate. The relayer now checks the
+actual stored report before sponsoring the confirmation. A saved report has `recorded=false`
+until the contract contains its hash. Photos, note or quantity changes invalidate the proof.
+No new dependencies were added. This branch depends on `be/19-applications`.

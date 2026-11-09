@@ -6,7 +6,9 @@ export type Table =
   | "relay_requests"
   | "applications"
   | "application_documents"
-  | "email_log";
+  | "email_log"
+  | "reports"
+  | "report_photos";
 export interface Snapshot<T> {
   value: T;
   version: number;
