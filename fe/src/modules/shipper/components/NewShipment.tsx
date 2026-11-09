@@ -1,6 +1,16 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { CaretUpDown, CaretLeft, CaretRight, Plus } from "@phosphor-icons/react";
+import {
+  ArrowRight,
+  CaretUpDown,
+  CaretLeft,
+  CaretRight,
+  MagnifyingGlass,
+  Path,
+  Plus,
+  UserPlus,
+  Warehouse,
+} from "@phosphor-icons/react";
 import { formatUsdc } from "@waybil/shared";
 import { Panel } from "@/components/layout/Panel";
 import { ActionSheet } from "@/components/layout/ActionSheet";
@@ -16,31 +26,50 @@ import { cn } from "@/lib/cn";
 import { draftNumbers, DEMO_TODAY, type ShipmentDraft } from "../data/form";
 import type { ShipperState } from "../data/fixtures";
 
+/** The board writes whole USDC in the summary and in the limit line. */
+const plain = (amount: string) => amount.replace(/\.00$/, "");
+
 const DRIVERS = [
-  { name: "Sam", plate: "NWF-204", trips: 12 },
-  { name: "Jordan Lee", plate: "JLE-118", trips: 4 },
-  { name: "Chris Novak", plate: "", trips: 0 },
+  /* The board draws Sam's avatar as "SC", so the avatar gets the full name. */
+  { name: "Sam", full: "Sam Carter", plate: "NWF-204", trips: 12 },
+  { name: "Jordan Lee", full: "Jordan Lee", plate: "JLE-118", trips: 4 },
+  { name: "Chris Novak", full: "Chris Novak", plate: "", trips: 0 },
 ];
 const PLACES = [
   {
     name: "Harbor Hub",
+    street: "9 Pier Street",
     address: "9 Pier Street, Harbor City",
     meta: "Lena receives here · 8 trips",
     linked: true,
   },
   {
     name: "Riverton branch",
+    street: "40 River Road",
     address: "40 River Road, Riverton",
     meta: "Receiver not linked yet",
     linked: false,
   },
   {
     name: "Millbrook depot",
+    street: "12 Mill Lane",
     address: "12 Mill Lane, Millbrook",
     meta: "Chris receives here · 3 trips",
     linked: true,
   },
 ];
+
+/* The board writes the chosen date and how far off it is: "Dec 11, 2026 · in 29 days". */
+function dueLabel(due: string) {
+  const date = new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(new Date(due));
+  const days = Math.round((Date.parse(due) - Date.parse(DEMO_TODAY)) / 86400000);
+  return `${date} · in ${days} days`;
+}
 
 function FieldButton({
   label,
@@ -139,6 +168,11 @@ export function NewShipment({
       Approve shipment
     </Button>
   );
+  /* While the wallet is open the note says what to do there (P2.7). */
+  const footnote =
+    state === "P2.7"
+      ? "Approve the request in your wallet."
+      : "Once approved, the fee and due date can’t be changed.";
   const changeMonth = (delta: number) => {
     const d = new Date(Date.UTC(year, monthIndex - 1 + delta, 1));
     setMonth(d.toISOString().slice(0, 7));
@@ -153,7 +187,7 @@ export function NewShipment({
         </p>
       )}
       <p className="mt-16 mb-24 text-body text-ds-muted">
-        You approve the fee and due date now. The driver cannot be paid until the goods arrive.
+        You approve the fee and due date now. The driver can&apos;t be paid until the goods arrive.
       </p>
       <div className="grid items-start gap-16 lg:grid-cols-[minmax(0,1fr)_400px]">
         <Panel className="gap-24 p-24 md:p-28">
@@ -174,6 +208,7 @@ export function NewShipment({
             {state === "P2.2" && (
               <div className={popup}>
                 <Input
+                  prefix={<MagnifyingGlass size={16} className="shrink-0 text-ds-muted" />}
                   label="Search name or plate"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -188,13 +223,13 @@ export function NewShipment({
                     onClick={() => choose("driver", d.name)}
                     className="press focus-ring flex gap-12 rounded-small p-10 text-left hover:bg-ds-canvas disabled:opacity-40"
                   >
-                    <Avatar name={d.name} />
+                    <Avatar name={d.full} />
                     <span>
                       <span className="block text-label">{d.name}</span>
                       <span className="block text-caption text-ds-muted">
                         {d.plate
                           ? `${d.plate} · ${d.trips} trips with you`
-                          : "Invite sent. They have not joined yet."}
+                          : "Invite sent, not joined yet"}
                       </span>
                     </span>
                   </button>
@@ -203,7 +238,7 @@ export function NewShipment({
                   className="link-ink focus-ring flex items-center gap-8 p-10 text-label"
                   onClick={() => go("P5.3")}
                 >
-                  <Plus size={16} />
+                  <UserPlus size={16} />
                   Invite a new driver
                 </button>
               </div>
@@ -214,7 +249,11 @@ export function NewShipment({
             <FieldButton
               disabled={state === "P2.7"}
               label="Destination"
-              value={draft.destination || "Choose a destination"}
+              value={
+                draft.destination
+                  ? `${draft.destination} · ${PLACES.find((p) => p.name === draft.destination)?.street ?? ""}`
+                  : "Choose a destination"
+              }
               onClick={() => {
                 setSearch("");
                 go(state === "P2.3" ? "P2.1" : "P2.3");
@@ -223,6 +262,7 @@ export function NewShipment({
               {state === "P2.3" && (
                 <div className={popup}>
                   <Input
+                    prefix={<MagnifyingGlass size={16} className="shrink-0 text-ds-muted" />}
                     label="Search places"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
@@ -236,6 +276,7 @@ export function NewShipment({
                       className="press focus-ring rounded-small p-12 text-left hover:bg-ds-canvas disabled:opacity-40"
                       onClick={() => choose("destination", p.name)}
                     >
+                      <Warehouse size={18} className="mb-6 text-ds-muted" />
                       <span className="block text-body">{p.name}</span>
                       <span className="block text-caption text-ds-muted">{p.address}</span>
                       <span className="block text-caption text-ds-muted">{p.meta}</span>
@@ -261,6 +302,7 @@ export function NewShipment({
             disabled={state === "P2.7"}
             label="Cargo"
             placeholder="e.g. 120 crates of coffee"
+            hint="Can't be changed after you approve."
             value={draft.cargo}
             onChange={(e) => update("cargo", e.target.value)}
           />
@@ -276,23 +318,14 @@ export function NewShipment({
               hint="What you pay the driver for this trip"
               error={
                 numbers.over
-                  ? `That is ${formatUsdc(-numbers.left)} USDC over your limit. Pay a bill early or lower the fee.`
+                  ? `That’s ${plain(formatUsdc(-numbers.left))} USDC over your limit. Pay a bill early or lower the fee.`
                   : undefined
               }
             />
             <FieldButton
               disabled={state === "P2.7"}
               label="Due date"
-              value={
-                draft.due
-                  ? new Intl.DateTimeFormat("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                      timeZone: "UTC",
-                    }).format(new Date(draft.due))
-                  : "Pick a date"
-              }
+              value={draft.due ? dueLabel(draft.due) : "Pick a date"}
               hint="When you pay the bill"
               onClick={() => go(state === "P2.4" ? "P2.1" : "P2.4")}
             >
@@ -360,8 +393,8 @@ export function NewShipment({
                           aria-pressed={draft.due === date}
                           disabled={distance <= 0 || distance > 60}
                           className={cn(
-                            "press focus-ring grid h-32 place-items-center rounded-full text-label disabled:opacity-25",
-                            draft.due === date ? "bg-ds-ink text-ds-bg" : "hover:bg-ds-canvas",
+                            "press focus-ring grid h-34 place-items-center rounded-[10px] text-label font-normal disabled:opacity-25",
+                            draft.due === date ? "bg-ds-brand" : "hover:bg-ds-canvas",
                           )}
                           onClick={() => choose("due", date)}
                         >
@@ -370,7 +403,9 @@ export function NewShipment({
                       );
                     })}
                   </div>
-                  <p className="text-caption text-ds-muted">The due date must be within 60 days.</p>
+                  <p className="text-caption text-ds-muted">
+                    Paying later than 60 days needs a talk with us.
+                  </p>
                 </div>
               )}
             </FieldButton>
@@ -381,15 +416,18 @@ export function NewShipment({
             {draft.destination ? (
               <DemoMap phase="planned" label="Planned route" className="mb-16 h-260" />
             ) : (
-              <p className="mb-20 text-body text-ds-muted">Fill in the trip to see the numbers.</p>
+              <div className="mb-20 flex flex-col gap-10">
+                <Path size={20} className="text-ds-muted" />
+                <p className="text-[13.5px] text-ds-muted">Fill in the trip to see the numbers.</p>
+              </div>
             )}
             <KeyValue
               label="Shipping fee"
-              value={numbers.bill > 0n ? <Money amount={numbers.bill.toString()} /> : "—"}
+              value={numbers.bill > 0n ? <Money amount={numbers.bill.toString()} /> : "-"}
             />
             <KeyValue
               label="Driver gets on arrival"
-              value={numbers.bill > 0n ? <Money amount={numbers.advance.toString()} /> : "—"}
+              value={numbers.bill > 0n ? <Money amount={numbers.advance.toString()} /> : "-"}
             />
             <KeyValue
               label={
@@ -397,33 +435,33 @@ export function NewShipment({
                   ? `You pay by ${new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(draft.due))}`
                   : "You pay by the due date"
               }
-              value={numbers.bill > 0n ? <Money amount={numbers.bill.toString()} /> : "—"}
+              value={numbers.bill > 0n ? <Money amount={numbers.bill.toString()} /> : "-"}
             />
           </div>
           <CreditMeter
             className="w-full p-0"
             label="Your limit after this trip"
-            used={formatUsdc(numbers.used)}
-            limit="3,000.00"
+            used={plain(formatUsdc(numbers.used))}
+            limit="3,000"
             value={Number(numbers.used) / 3000000000}
-            left={formatUsdc(numbers.left < 0n ? -numbers.left : numbers.left)}
+            left={plain(formatUsdc(numbers.left < 0n ? -numbers.left : numbers.left))}
           />
           {numbers.over && (
-            <button className="link focus-ring text-left text-label" onClick={() => go("P7.1")}>
-              See your credit ↗
+            <button
+              className="link focus-ring flex items-center gap-8 text-left text-label"
+              onClick={() => go("P7.1")}
+            >
+              See your credit
+              <ArrowRight size={16} />
             </button>
           )}
           <div className="hidden md:block">{approve}</div>
-          <p className="hidden text-caption text-ds-muted md:block">
-            Once approved, the fee and due date cannot be changed.
-          </p>
+          <p className="hidden text-caption text-ds-muted md:block">{footnote}</p>
         </Panel>
       </div>
       <div className="mt-16 md:hidden">
         {approve}
-        <p className="mt-12 text-center text-caption text-ds-muted">
-          Once approved, the fee and due date cannot be changed.
-        </p>
+        <p className="mt-12 text-center text-caption text-ds-muted">{footnote}</p>
       </div>
       {newPlace && (
         <ActionSheet title="Add a destination" onClose={() => setNewPlace(false)}>

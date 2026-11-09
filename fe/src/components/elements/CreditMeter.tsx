@@ -41,10 +41,10 @@ export function CreditMeter({
 
       <div className="flex items-center justify-between">
         <span className="text-caption text-ds-muted">
-          {used} of {limit} USDC
+          {over ? `${left} USDC over your ${limit} USDC limit` : `${used} of ${limit} USDC`}
         </span>
         <span className={cn("text-caption font-medium", over ? "text-ds-danger" : "text-ds-ink")}>
-          {over ? `Over by ${left} USDC` : `${left} USDC left`}
+          {over ? `${left} USDC over` : `${left} USDC left`}
         </span>
       </div>
     </div>
