@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  Wallet,
   Truck,
   Check,
   Warning,
@@ -31,6 +30,7 @@ import { RoleShell } from "@/components/layout/RoleShell";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Money } from "@/components/elements/Money";
 import { DemoRecord } from "@/components/elements/DemoRecord";
+import { WalletGlyph } from "@/components/elements/icons";
 import { cn } from "@/lib/cn";
 import {
   ONBOARDING_FIXTURES,
@@ -119,7 +119,10 @@ export function OnboardingScreen({
       {note && <p className="text-label text-ds-muted">{note}</p>}
     </div>
   );
-  const icon = (Icon: typeof Wallet, tone: "brand" | "soft" | "danger" = "brand") => (
+  const icon = (
+    Icon: (props: { size?: number }) => React.ReactNode,
+    tone: "brand" | "soft" | "danger" = "brand",
+  ) => (
     <span
       className={cn(
         "mx-auto grid size-80 shrink-0 place-content-center rounded-full",
@@ -130,7 +133,7 @@ export function OnboardingScreen({
             : "bg-ds-brand text-ds-ink",
       )}
     >
-      <Icon size={32} />
+      <Icon size={34} />
     </span>
   );
   const shareLink = `${useOrigin()}/c/sam`;
@@ -231,7 +234,7 @@ export function OnboardingScreen({
                     ? Warning
                     : state === "A5"
                       ? CircleNotch
-                      : Wallet,
+                      : WalletGlyph,
                   state === "A3" ? "danger" : state === "A4" ? "soft" : "brand",
                 )}
                 {heading(
@@ -259,7 +262,7 @@ export function OnboardingScreen({
                 {state === "A1" ? (
                   <>
                     <Button
-                      icon={<Wallet size={17} />}
+                      icon={<WalletGlyph size={17} />}
                       className={actionClass}
                       onClick={() => {
                         setRole(null);
