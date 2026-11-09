@@ -200,7 +200,7 @@ export function NewShipment({
                   </button>
                 ))}
                 <button
-                  className="focus-ring flex items-center gap-8 p-10 text-label"
+                  className="link-ink focus-ring flex items-center gap-8 p-10 text-label"
                   onClick={() => go("P5.3")}
                 >
                   <Plus size={16} />
@@ -242,7 +242,7 @@ export function NewShipment({
                     </button>
                   ))}
                   <button
-                    className="focus-ring flex items-center gap-8 p-10 text-label"
+                    className="link-ink focus-ring flex items-center gap-8 p-10 text-label"
                     onClick={() => setNewPlace(true)}
                   >
                     <Plus size={16} />
@@ -409,10 +409,7 @@ export function NewShipment({
             left={formatUsdc(numbers.left < 0n ? -numbers.left : numbers.left)}
           />
           {numbers.over && (
-            <button
-              className="focus-ring text-left text-label text-ds-brand-deep"
-              onClick={() => go("P7.1")}
-            >
+            <button className="link focus-ring text-left text-label" onClick={() => go("P7.1")}>
               See your credit ↗
             </button>
           )}

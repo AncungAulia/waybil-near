@@ -1,7 +1,7 @@
 "use client";
 import { useState, useSyncExternalStore } from "react";
 import { notFound, usePathname, useRouter } from "next/navigation";
-import { ArrowLeft, MagnifyingGlass } from "@phosphor-icons/react";
+import { ArrowLeft, MagnifyingGlass, Plus } from "@phosphor-icons/react";
 import { RoleShell } from "@/components/layout/RoleShell";
 import { Panel } from "@/components/layout/Panel";
 import { Button } from "@/components/ui/Button";
@@ -190,7 +190,11 @@ export function ShipperScreen({
               <h1 className="text-title md:text-amount">Shipments</h1>
               <p className="mt-4 text-label text-ds-muted">Everything you approved, newest first</p>
             </div>
-            <Button className="w-full justify-between md:w-auto" onClick={() => go("P2.1")}>
+            <Button
+              icon={<Plus size={17} />}
+              className="w-full justify-between md:w-auto"
+              onClick={() => go("P2.1")}
+            >
               New shipment
             </Button>
           </div>

@@ -24,7 +24,8 @@ Types and money helpers come from `@waybil/shared`. Never redo the fee math in t
   Instrument Sans). No raw hex in components.
 - Pages in `src/app` stay thin. Screens live in `src/modules/<role>`.
 - Every recorded action ends with a proof link (`ProofLink`) to NearBlocks.
-- Money shows two decimals and "USDC" set smaller next to the number.
+- Money shows two decimals with "USDC" next to the number, at the same size, as the board
+  writes it. Only the amount field keeps a smaller suffix.
 - Mobile: the main button sits at the bottom of the screen. Empty and error states fill the
   full width and height.
 - Drivers and warehouses never see a wallet prompt. Their actions go through the relayer.

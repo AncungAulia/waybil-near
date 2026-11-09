@@ -9,19 +9,44 @@ export function ActionSheet({
   children,
   onClose,
   wide = false,
+  stamp,
+  stampTone = "soft",
+  className,
 }: {
   title: string;
   children: React.ReactNode;
   onClose: () => void;
   preview?: boolean;
   wide?: boolean;
+  /** An icon for a permission ask or a result. It centres the sheet and drops the close button. */
+  stamp?: React.ReactNode;
+  /** The stamp colour: the soft tint of a permission ask, or the brand yellow of a result. */
+  stampTone?: "soft" | "brand" | "error";
+  className?: string;
 }) {
   const start = useRef<{ y: number; time: number } | null>(null);
   const [drag, setDrag] = useState(0);
   const [openedWithKeyboard] = useState(
     () => typeof document !== "undefined" && !!document.activeElement?.matches(":focus-visible"),
   );
-  const contents = (
+  const contents = stamp ? (
+    <>
+      <span
+        className={cn(
+          "grid size-80 place-items-center rounded-full",
+          stampTone === "brand"
+            ? "bg-ds-brand text-ds-ink"
+            : stampTone === "error"
+              ? "bg-ds-danger-stamp text-ds-brand-deep"
+              : "bg-ds-brand-soft text-ds-brand-deep",
+        )}
+      >
+        {stamp}
+      </span>
+      <Dialog.Title className="text-heading">{title}</Dialog.Title>
+      {children}
+    </>
+  ) : (
     <>
       <div className="flex items-center justify-between gap-16">
         <Dialog.Title className="text-heading">{title}</Dialog.Title>
@@ -37,7 +62,10 @@ export function ActionSheet({
       {children}
     </>
   );
-  const classes = "flex flex-col gap-20 rounded-t-card bg-ds-bg p-24 md:rounded-card";
+  const classes = cn(
+    "flex flex-col gap-20 rounded-t-card bg-ds-bg p-24 md:rounded-card",
+    stamp && "items-center gap-14 text-center",
+  );
   return (
     <Dialog.Root
       open
@@ -53,6 +81,7 @@ export function ActionSheet({
             classes,
             "action-sheet fixed right-0 bottom-0 left-0 z-50 max-h-[90dvh] overflow-y-auto md:top-1/2 md:right-auto md:bottom-auto md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2",
             wide ? "md:w-560" : "md:w-480",
+            className,
           )}
           style={{
             ...(drag ? { transform: `translateY(${drag}px)` } : {}),

@@ -26,13 +26,20 @@ export function DemoMap({
     top: `calc(50% + ${y / 560 - 0.5} * max(100cqh, 59.322cqw))`,
     transform: `translate(-50%, -50%) scale(${1 / zoom})`,
   });
+  /* Once the trip has arrived the truck stands on the warehouse, so only two marks show. */
   const truck =
-    phase === "pickup" ? [346, 463] : phase === "arrived" ? [568, 140] : [459.1164, 242.744];
+    phase === "pickup" ? [346, 463] : phase === "arrived" ? [598, 97] : [459.1164, 242.744];
+  /*
+   * The board paints the travelled leg yellow and the rest grey, so a trip that has not left
+   * is all grey and an arrived one is all yellow.
+   */
   const asset = empty
     ? "demo-map.svg"
-    : phase === "planned"
-      ? "demo-route-planned.svg"
-      : "demo-route.svg";
+    : phase === "pickup"
+      ? "demo-route-waiting.svg"
+      : phase === "planned" || phase === "arrived"
+        ? "demo-route-planned.svg"
+        : "demo-route.svg";
   return (
     <div
       role={controls ? "region" : "img"}
@@ -48,12 +55,14 @@ export function DemoMap({
               style={position(346, 463)}
               className="absolute size-16 rounded-full border-3 border-ds-bg bg-ds-ink"
             />
-            <span
-              style={position(598, 97)}
-              className="absolute grid size-32 place-items-center rounded-small border-3 border-ds-bg bg-ds-ink text-ds-bg"
-            >
-              <Warehouse size={16} />
-            </span>
+            {phase !== "arrived" && (
+              <span
+                style={position(598, 97)}
+                className="absolute grid size-32 place-items-center rounded-small border-3 border-ds-bg bg-ds-ink text-ds-bg"
+              >
+                <Warehouse size={16} />
+              </span>
+            )}
             {phase !== "planned" && (
               <span
                 style={position(truck[0]!, truck[1]!)}

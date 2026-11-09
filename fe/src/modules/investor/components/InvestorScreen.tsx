@@ -5,10 +5,22 @@ import { formatUsdc, parseUsdc, splitBill } from "@waybil/shared";
 import { RoleShell } from "@/components/layout/RoleShell";
 import { Panel } from "@/components/layout/Panel";
 import { ActionSheet } from "@/components/layout/ActionSheet";
+import {
+  ArrowLeft,
+  ArrowLineDown,
+  ArrowUpRight,
+  Check,
+  CircleNotch,
+  Info,
+  Package,
+  Plus,
+  SealCheck,
+  Wallet,
+} from "@phosphor-icons/react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Money } from "@/components/elements/Money";
-import { FanMeter } from "@/components/elements/FanMeter";
+import { FanMeter, MeterLegend } from "@/components/elements/FanMeter";
 import { DemoRecord } from "@/components/elements/DemoRecord";
 import { DemoMap } from "@/components/elements/DemoMap";
 import { StatusPill } from "@/components/elements/StatusPill";
@@ -46,11 +58,21 @@ function balanceFromJson(json: string): DemoPoolBalance {
   return INITIAL_BALANCE;
 }
 const HISTORY = [
-  { title: "Earned", note: "Nov 9 · Northwind's bill #1032", amount: "960000" },
-  { title: "Earned", note: "Nov 7 · Blue Ridge's bill #1028", amount: "980000" },
-  { title: "Withdrawal", note: "Nov 1 · Your wallet", amount: "-500000000" },
-  { title: "Deposit", note: "Oct 21 · Your wallet", amount: "5500000000" },
-];
+  {
+    title: "Earned",
+    note: "Nov 9 · from Northwind's bill #1032",
+    amount: "960000",
+    kind: "earned",
+  },
+  {
+    title: "Earned",
+    note: "Nov 7 · from Blue Ridge's bill #1028",
+    amount: "980000",
+    kind: "earned",
+  },
+  { title: "Withdrawal", note: "Nov 1 · to your wallet", amount: "-500000000", kind: "out" },
+  { title: "Deposit", note: "Oct 21 · from your wallet", amount: "5500000000", kind: "in" },
+] as const;
 export function InvestorScreen({
   initialState = "I1.1",
   preview = false,
@@ -107,6 +129,14 @@ export function InvestorScreen({
       : undefined;
   const paid = units < BigInt(balance.cash) ? units : BigInt(balance.cash),
     queued = deposit ? 0n : units - paid;
+  /* The wallet cannot cover the amount, so the row and its figure turn red. */
+  const walletShort = deposit && units > BigInt(balance.wallet);
+  /* What the result sheet reports once the money has moved. */
+  const settledValue =
+    preview && !receipt ? (deposit ? "6009720000" : "4009720000") : balance.value;
+  const settledTotal =
+    preview && !receipt ? (deposit ? "26000000000" : "24000000000") : balance.total;
+  const settledShare = Math.round((Number(settledValue) / Number(settledTotal)) * 100);
   function submit() {
     if (units <= 0n || error) return;
     const result = changePoolBalance(balance, deposit ? "deposit" : "withdraw", amount);
@@ -162,6 +192,7 @@ export function InvestorScreen({
           <div className="flex flex-col gap-10 md:flex-row [&>button]:justify-between">
             <Button
               variant="moment"
+              icon={<Plus size={17} />}
               onClick={() => {
                 setAmount("1000");
                 setState("I2.1");
@@ -195,24 +226,28 @@ export function InvestorScreen({
             </span>
           }
         >
-          <Money amount={balance.total} className="text-amount" />
-          <p className="text-caption text-ds-muted">
-            {busy
-              ? "23,000.00 is paid out early and 2,000.00 is free."
-              : `${formatUsdc(BigInt(balance.total) - BigInt(balance.cash))} USDC is paid out early. ${formatUsdc(BigInt(balance.cash))} USDC is free.`}
-          </p>
+          <div className="flex flex-col gap-4">
+            <Money amount={balance.total} className="text-amount" />
+            <p className="text-caption text-ds-muted">
+              {busy
+                ? "23,000.00 is paid out early and 2,000.00 is free."
+                : `${formatUsdc(BigInt(balance.total) - BigInt(balance.cash))} USDC is paid out early. ${formatUsdc(BigInt(balance.cash))} USDC is free.`}
+            </p>
+          </div>
           <div className="py-20">
-            <span className="mb-12 inline-block rounded-full bg-ds-ink px-12 py-6 text-caption text-ds-bg">
-              {formatUsdc(lent)} paid out
-            </span>
-            <FanMeter label="Pool money paid out" value={utilization} className="w-full" />
+            <FanMeter
+              label="Pool money paid out"
+              value={utilization}
+              markerLabel={`${formatUsdc(lent)} paid out`}
+              className="w-full"
+            />
             <div className="mt-8 flex justify-between text-caption text-ds-muted">
               {[0, 5000, 10000, 15000, 20000, 25000].map((n) => (
                 <span key={n}>{n.toLocaleString()}</span>
               ))}
             </div>
+            <MeterLegend value={utilization} className="mt-10" />
           </div>
-          <p className="text-caption text-ds-muted">● Paid out early · ● Available</p>
           {busy && (
             <p className="rounded-row bg-ds-warning-soft p-16 text-label">
               Most of the pool is working right now. Withdrawals over 2,000.00 USDC wait until
@@ -236,7 +271,7 @@ export function InvestorScreen({
           context="From payment to repayment"
         />
       </div>
-      <div className="grid gap-16 lg:grid-cols-2">
+      <div className="grid items-start gap-16 lg:grid-cols-2">
         <Panel title="Owed by each company">
           {[
             {
@@ -275,25 +310,53 @@ export function InvestorScreen({
         </Panel>
         <Panel
           title="Latest"
+          gap={4}
+          className="p-20 pb-10"
           action={
-            <Link className="focus-ring text-label text-ds-brand-deep" href="/pool/history">
+            <Link className="link focus-ring text-label" href="/pool/history">
               See all ↗
             </Link>
           }
         >
           {[
             {
+              icon: <ArrowLineDown size={16} />,
               title: "Paid Sam early",
               amount: "292500000",
-              note: "#1041 · Eastport to Harbor City · Today",
+              note: "#1041 · Eastport to Harbor City",
+              when: "Today",
             },
-            { title: "Northwind paid a bill", amount: "300000000", note: "#1032 · Yesterday" },
-            { title: "You deposited", amount: "5500000000", note: "Oct 21" },
+            {
+              icon: <SealCheck size={16} />,
+              title: "Northwind paid a bill",
+              amount: "300000000",
+              note: "#1032 · 1 day early",
+              when: "Yesterday",
+            },
+            {
+              icon: <Plus size={16} />,
+              title: "You deposited",
+              amount: "5500000000",
+              note: "",
+              when: "Oct 21",
+            },
           ].map((h) => (
-            <Link key={h.title} href="/pool/history" className="focus-ring rounded-row py-12">
-              <p className="text-label">{h.title}</p>
-              <Money amount={h.amount} className="text-label" />
-              <p className="text-caption text-ds-muted">{h.note}</p>
+            <Link
+              key={h.title}
+              href="/pool/history"
+              className="focus-ring flex items-center gap-12 py-12"
+            >
+              <span className="grid size-36 shrink-0 place-items-center rounded-full bg-ds-canvas">
+                {h.icon}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-label">{h.title}</span>
+                <span className="block text-caption text-ds-muted">
+                  <Money amount={h.amount} />
+                  {h.note && ` · ${h.note}`}
+                </span>
+              </span>
+              <span className="shrink-0 text-caption text-ds-muted">{h.when}</span>
             </Link>
           ))}
         </Panel>
@@ -313,25 +376,31 @@ export function InvestorScreen({
                 Your deposits, withdrawals, and earnings.
               </p>
             </header>
-            <Panel>
+            <Panel gap={4} className="px-20 py-8">
               {HISTORY.map((h, i) => (
-                <div
-                  key={i}
-                  className="flex flex-wrap items-center justify-between gap-12 border-b border-ds-line py-16 last:border-0"
-                >
-                  <div>
-                    <p className="text-body font-medium">{h.title}</p>
-                    <p className="text-caption text-ds-muted">{h.note}</p>
-                    <a
-                      className="focus-ring text-caption text-ds-brand-deep"
-                      href="https://testnet.nearblocks.io/address/app.waybil.testnet"
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      See the record on NearBlocks ↗
-                    </a>
-                  </div>
-                  <Money amount={h.amount} className="text-heading" />
+                <div key={i} className="flex items-center gap-12 py-14">
+                  <span className="grid size-38 shrink-0 place-items-center rounded-full bg-ds-canvas">
+                    {h.kind === "earned" ? (
+                      <SealCheck size={16} />
+                    ) : h.kind === "out" ? (
+                      <ArrowUpRight size={16} />
+                    ) : (
+                      <Plus size={16} />
+                    )}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-body">{h.title}</span>
+                    <span className="block text-caption text-ds-muted">{h.note}</span>
+                  </span>
+                  <span
+                    className={cn(
+                      "shrink-0 text-label",
+                      h.kind === "earned" ? "text-ds-success" : "text-ds-ink",
+                    )}
+                  >
+                    {h.kind === "earned" && "+"}
+                    <Money amount={h.amount} />
+                  </span>
                 </div>
               ))}
             </Panel>
@@ -346,18 +415,36 @@ export function InvestorScreen({
                 Every trip the pool paid for, with proof it arrived.
               </p>
             </header>
-            <Panel>
-              <div className="flex flex-wrap gap-8">
-                {["All", "Waiting to be repaid", "Repaid"].map((f) => (
-                  <Button
-                    key={f}
-                    variant={filter === f ? "primary" : "quiet"}
-                    onClick={() => setFilter(f)}
+            <div className="flex w-fit flex-wrap gap-6 rounded-full bg-ds-bg p-4">
+              {[
+                { label: "All", count: 9 },
+                { label: "Waiting to be repaid", count: 3 },
+                { label: "Repaid", count: 6 },
+              ].map((f) => (
+                <button
+                  key={f.label}
+                  type="button"
+                  onClick={() => setFilter(f.label)}
+                  className={cn(
+                    "press focus-ring flex items-center gap-6 rounded-full px-14 py-8 text-label transition-colors duration-150 ease-base",
+                    filter === f.label
+                      ? "bg-ds-ink text-ds-bg"
+                      : "text-ds-ink-2 hover:bg-ds-canvas",
+                  )}
+                >
+                  {f.label}
+                  <span
+                    className={cn(
+                      "text-caption",
+                      filter === f.label ? "text-ds-on-night" : "text-ds-muted",
+                    )}
                   >
-                    {f}
-                  </Button>
-                ))}
-              </div>
+                    {f.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <Panel gap={4} className="px-20 py-8">
               {state === "I3.4" ? (
                 <div className="grid min-h-360 place-content-center gap-16 text-center">
                   <img src="/illustrations/investor.svg" alt="" className="mx-auto h-96" />
@@ -367,60 +454,75 @@ export function InvestorScreen({
                   </p>
                 </div>
               ) : (
-                [
-                  {
-                    id: 1041,
-                    city: "Harbor City",
-                    driver: "Sam",
-                    amount: "292500000",
-                    due: "Dec 11",
-                    repaid: false,
-                  },
-                  {
-                    id: 1043,
-                    city: "Riverton",
-                    driver: "Jordan Lee",
-                    amount: "146250000",
-                    due: "Dec 13",
-                    repaid: false,
-                  },
-                  {
-                    id: 1039,
-                    city: "Millbrook",
-                    driver: "Sam",
-                    amount: "117000000",
-                    due: "Nov 14",
-                    repaid: false,
-                  },
-                  {
-                    id: 1032,
-                    city: "Riverton",
-                    driver: "Sam",
-                    amount: "292500000",
-                    due: "Nov 9",
-                    repaid: true,
-                  },
-                ]
-                  .filter((r) => filter === "All" || (filter === "Repaid") === r.repaid)
-                  .map((r) => (
-                    <Link
-                      href={`/pool/deliveries/${r.id}`}
-                      key={r.id}
-                      className="focus-ring grid gap-10 rounded-row border-b border-ds-line py-20 md:grid-cols-[1fr_150px_130px_170px]"
-                    >
-                      <div>
-                        <p className="text-body font-medium">Eastport to {r.city}</p>
-                        <p className="text-caption text-ds-muted">
-                          #{r.id} · Northwind · {r.driver}
+                <>
+                  <div className="hidden gap-16 py-12 text-caption text-ds-muted md:grid md:grid-cols-[1fr_140px_130px_170px]">
+                    <span>Delivery</span>
+                    <span>Paid early</span>
+                    <span>Status</span>
+                    <span>Bill</span>
+                  </div>
+                  {[
+                    {
+                      id: 1041,
+                      city: "Harbor City",
+                      driver: "Sam",
+                      amount: "292500000",
+                      due: "Dec 11",
+                      repaid: false,
+                    },
+                    {
+                      id: 1043,
+                      city: "Riverton",
+                      driver: "Jordan Lee",
+                      amount: "146250000",
+                      due: "Dec 13",
+                      repaid: false,
+                    },
+                    {
+                      id: 1039,
+                      city: "Millbrook",
+                      driver: "Sam",
+                      amount: "117000000",
+                      due: "Nov 14",
+                      repaid: false,
+                    },
+                    {
+                      id: 1032,
+                      city: "Riverton",
+                      driver: "Sam",
+                      amount: "292500000",
+                      due: "Nov 9",
+                      repaid: true,
+                    },
+                  ]
+                    .filter((r) => filter === "All" || (filter === "Repaid") === r.repaid)
+                    .map((r) => (
+                      <Link
+                        href={`/pool/deliveries/${r.id}`}
+                        key={r.id}
+                        className="focus-ring grid items-center gap-10 py-14 md:grid-cols-[1fr_140px_130px_170px] md:gap-16"
+                      >
+                        <span className="flex items-center gap-12">
+                          <span className="grid size-40 shrink-0 place-items-center rounded-full bg-ds-canvas">
+                            <Package size={17} />
+                          </span>
+                          <span className="min-w-0">
+                            <span className="block text-body">Eastport to {r.city}</span>
+                            <span className="block text-caption text-ds-muted">
+                              #{r.id} · Northwind · {r.driver}
+                            </span>
+                          </span>
+                        </span>
+                        <Money amount={r.amount} className="text-label" />
+                        <span className="justify-self-start">
+                          <StatusPill status={r.repaid ? "repaid" : "paidEarly"} />
+                        </span>
+                        <p className="text-label text-ds-ink-2">
+                          {r.repaid ? "Paid back" : "Bill due"} {r.due}
                         </p>
-                      </div>
-                      <Money amount={r.amount} className="text-body" />
-                      <StatusPill status={r.repaid ? "repaid" : "paidEarly"} />
-                      <p className="text-label text-ds-muted">
-                        {r.repaid ? "Paid back" : "Bill due"} {r.due}
-                      </p>
-                    </Link>
-                  ))
+                      </Link>
+                    ))}
+                </>
               )}
             </Panel>
           </>
@@ -440,6 +542,8 @@ export function InvestorScreen({
                 ? "Deposit"
                 : "Withdraw"
           }
+          stamp={success ? <SealCheck size={34} /> : undefined}
+          stampTone="brand"
           onClose={close}
         >
           {success ? (
@@ -457,15 +561,19 @@ export function InvestorScreen({
                 </p>
               )}
               <DemoRecord title={deposit ? "Demo deposit receipt" : "Demo withdrawal receipt"} />
-              <div className="flex justify-between text-label">
-                <span>Your money in the pool</span>
-                <Money
-                  amount={
-                    preview && !receipt ? (deposit ? "6009720000" : "4009720000") : balance.value
-                  }
-                />
+              <div className="w-full rounded-row bg-ds-canvas p-16 text-label">
+                <div className="flex justify-between gap-12 py-4">
+                  <span className="text-ds-muted">Your money in the pool</span>
+                  <Money amount={settledValue} />
+                </div>
+                <div className="flex justify-between gap-12 py-4">
+                  <span className="text-ds-muted">Your share</span>
+                  <span>{settledShare}%</span>
+                </div>
               </div>
-              <Button onClick={close}>Done</Button>
+              <Button icon={<ArrowUpRight size={17} />} className="w-full" onClick={close}>
+                Done
+              </Button>
             </>
           ) : (
             <>
@@ -478,41 +586,100 @@ export function InvestorScreen({
                 error={error}
                 disabled={waiting}
               />
-              <div className="grid grid-cols-3 gap-8">
+              {/* Small grey chips, the size the board draws them, not full buttons. */}
+              <div className="flex flex-wrap gap-8">
                 {[25, 50, 100].map((n) => (
-                  <Button key={n} variant="quiet" disabled={waiting} onClick={() => quick(n)}>
+                  <button
+                    key={n}
+                    type="button"
+                    disabled={waiting}
+                    onClick={() => quick(n)}
+                    className="press focus-ring rounded-full bg-ds-canvas px-12 py-6 text-caption hover:bg-ds-surface-3 disabled:text-ds-off-ink"
+                  >
                     {n === 100 ? (deposit ? "Max" : "Max now") : `${n}%`}
-                  </Button>
+                  </button>
                 ))}
               </div>
               {waiting ? (
-                <div className="flex flex-col gap-12 rounded-row bg-ds-canvas p-16 text-label">
-                  <p>Allow the deposit</p>
-                  <p className="text-ds-muted">Confirm the first-time setup in your wallet.</p>
-                  <p>Send {formatUsdc(units)} USDC</p>
+                <div className="flex flex-col gap-10">
+                  {[
+                    {
+                      title: deposit ? "Allow the deposit" : "Allow the withdrawal",
+                      note: "Done in your wallet",
+                      done: true,
+                    },
+                    {
+                      title: `Send ${formatUsdc(units)} USDC`,
+                      note: "Approve it in your wallet",
+                      done: false,
+                    },
+                  ].map((step) => (
+                    <div
+                      key={step.title}
+                      className={cn(
+                        "flex items-center gap-12 rounded-row p-14",
+                        step.done ? "bg-ds-canvas" : "bg-ds-brand-soft",
+                      )}
+                    >
+                      <span
+                        className={cn(
+                          "grid size-26 shrink-0 place-items-center rounded-full",
+                          step.done ? "bg-ds-ink text-ds-bg" : "bg-ds-brand text-ds-ink",
+                        )}
+                      >
+                        {step.done ? (
+                          <Check size={14} weight="bold" />
+                        ) : (
+                          <CircleNotch
+                            size={14}
+                            className="animate-spin motion-reduce:animate-none"
+                          />
+                        )}
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block text-label">{step.title}</span>
+                        <span className="block text-caption text-ds-muted">{step.note}</span>
+                      </span>
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <>
-                  <p
-                    className={cn(
-                      "text-label text-ds-muted",
-                      queued > 0n && "rounded-row bg-ds-warning-soft p-16 text-ds-ink",
-                    )}
-                  >
+                  <p className="text-label text-ds-muted">
                     {deposit
                       ? "Your money pays truck owners early. The pool earns 1.6% of each bill, and you get your share."
                       : queued > 0n
-                        ? `You get ${formatUsdc(paid)} USDC now. The other ${formatUsdc(queued)} USDC comes to you as bills are paid.`
+                        ? `Only ${formatUsdc(paid)} USDC is free right now. The rest is paying truck owners.`
                         : `You can withdraw up to ${formatUsdc(ceiling < BigInt(balance.cash) ? ceiling : BigInt(balance.cash))} USDC right now.`}
                   </p>
-                  <div className="rounded-row bg-ds-canvas p-16 text-label">
-                    <p>{deposit ? "From your wallet" : "To your wallet"}</p>
-                    <p className="mt-4 text-caption text-ds-muted">
-                      {deposit
-                        ? `${formatUsdc(BigInt(balance.wallet))} USDC is available.`
-                        : "The free part arrives after approval."}
-                    </p>
-                  </div>
+                  {queued > 0n ? (
+                    <div className="flex gap-12 rounded-row bg-ds-brand-soft p-16">
+                      <Info size={18} className="shrink-0 text-ds-brand-deep" />
+                      <p className="text-label">
+                        You get {formatUsdc(paid)} USDC now. The other {formatUsdc(queued)} USDC
+                        comes to you on its own as bills are paid.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-12 rounded-row border border-ds-line p-14">
+                      <Wallet size={18} className="shrink-0" />
+                      <span className="min-w-0">
+                        <span className="block text-label">
+                          {deposit ? "From your wallet" : "To your wallet"}
+                        </span>
+                        <span
+                          className={cn(
+                            "block text-caption",
+                            deposit && walletShort ? "text-ds-danger" : "text-ds-muted",
+                          )}
+                        >
+                          {deposit
+                            ? `${formatUsdc(BigInt(balance.wallet))} USDC available`
+                            : "Arrives in under a second"}
+                        </span>
+                      </span>
+                    </div>
+                  )}
                 </>
               )}
               <Button
@@ -521,18 +688,21 @@ export function InvestorScreen({
                 loadingLabel="Waiting for wallet"
                 onClick={submit}
               >
-                {deposit ? "Deposit" : "Withdraw"} {formatUsdc(units)} USDC
+                {error || units <= 0n
+                  ? deposit
+                    ? "Deposit"
+                    : "Withdraw"
+                  : `${deposit ? "Deposit" : "Withdraw"} ${formatUsdc(units)} USDC`}
               </Button>
-              {deposit && (
-                <button
-                  className="focus-ring text-caption text-ds-muted underline"
-                  onClick={() => setRisks(true)}
-                >
+              {deposit && !waiting && (
+                <button className="link focus-ring text-caption" onClick={() => setRisks(true)}>
                   How the pool works and its risks
                 </button>
               )}
               <p className="text-caption text-ds-muted">
-                This is a local demo. No wallet request is sent.
+                {waiting
+                  ? "Two quick approvals. The first one only happens once."
+                  : "This is a local demo. No wallet request is sent."}
               </p>
             </>
           )}
@@ -561,53 +731,79 @@ function DeliveryDetails({ id }: { id: number }) {
   const split = splitBill(bill);
   return (
     <>
-      <Link href="/pool/deliveries" className="focus-ring text-label text-ds-muted">
-        ← Deliveries
+      <Link
+        href="/pool/deliveries"
+        className="focus-ring flex items-center gap-8 text-label text-ds-muted"
+      >
+        <ArrowLeft size={18} />
+        Deliveries
       </Link>
-      <header>
-        <h1 className="text-title">Eastport to {city}</h1>
-        <p className="mt-6 text-label text-ds-muted">
-          #{id} · Northwind · {driver}
-        </p>
+      <header className="flex flex-wrap items-center justify-between gap-12">
+        <div>
+          <h1 className="text-title">Eastport to {city}</h1>
+          <p className="mt-6 text-label text-ds-muted">
+            #{id} · Northwind · {driver}
+          </p>
+        </div>
+        <StatusPill status="paidEarly" />
       </header>
-      <div className="grid items-start gap-24 lg:grid-cols-[1fr_440px]">
-        <div className="flex flex-col gap-24">
-          <DemoMap phase="arrived" />
-          <Panel title="Proof it happened">
-            {["Approved by Northwind", "Picked up by Sam", "Arrival confirmed by Harbor Hub"].map(
-              (title, i) => (
-                <div key={title} className="border-b border-ds-line py-12 last:border-0">
-                  <h3 className="text-body font-medium">{title}</h3>
-                  <p className="my-6 text-caption text-ds-muted">
-                    {
-                      [
-                        "Hannah Brooks · Nov 12, 08:02",
-                        "Sam · Nov 12, 09:14",
-                        "Lena · Nov 12, 15:36",
-                      ][i]
-                    }
-                  </p>
-                  <DemoRecord title="Demo delivery proof" />
-                </div>
-              ),
-            )}
+      <div className="grid items-start gap-16 lg:grid-cols-[minmax(0,1fr)_400px]">
+        <DemoMap phase="arrived" label="Delivered Nov 12" className="h-340 md:h-420 lg:h-500" />
+        <div className="flex flex-col gap-16">
+          <Panel title="Money" gap={4}>
+            {[
+              { label: `Paid early to ${driver}`, value: split.driver },
+              { label: "Northwind pays back", value: bill },
+              { label: "Pool earns", value: split.pool },
+              { label: "Your part at 20%", value: split.pool / 5n },
+              { label: "Safety reserve", value: split.reserve },
+              { label: "Waybil fee", value: split.waybil },
+            ].map((r) => (
+              <div key={r.label} className="flex flex-wrap justify-between gap-8 py-9 text-label">
+                <span className="text-ds-muted">{r.label}</span>
+                <Money amount={String(r.value)} />
+              </div>
+            ))}
+          </Panel>
+          <Panel title="Proof it happened" gap={4}>
+            {[
+              {
+                title: "Approved by Northwind",
+                who: "Hannah Brooks · Nov 12, 08:02",
+                detail: `Bill ${formatUsdc(bill)} USDC, due Dec 11`,
+              },
+              {
+                title: `Picked up by ${driver}`,
+                who: "Nov 12, 09:14 · Main warehouse, Eastport",
+                detail: "Load checked by the driver",
+              },
+              {
+                title: "Arrival confirmed by Harbor Hub",
+                who: "Lena · Nov 12, 15:36",
+                detail: "120 of 120 crates",
+              },
+            ].map((step) => (
+              <div key={step.title} className="flex gap-14 py-12">
+                <span className="mt-2 grid size-26 shrink-0 place-items-center rounded-full bg-ds-ink text-ds-bg">
+                  <Check size={14} weight="bold" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-label">{step.title}</span>
+                  <span className="block text-caption text-ds-muted">{step.who}</span>
+                  <span className="block text-caption text-ds-ink-2">{step.detail}</span>
+                  <a
+                    className="link focus-ring mt-4 inline-block text-caption"
+                    href="https://testnet.nearblocks.io/address/app.waybil.testnet"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    See the record on NearBlocks ↗
+                  </a>
+                </span>
+              </div>
+            ))}
           </Panel>
         </div>
-        <Panel title="Money">
-          {[
-            { label: `Paid early to ${driver}`, value: split.driver },
-            { label: "Northwind pays back", value: bill },
-            { label: "Pool earns", value: split.pool },
-            { label: "Your part at 20%", value: split.pool / 5n },
-            { label: "Safety reserve", value: split.reserve },
-            { label: "Waybil fee", value: split.waybil },
-          ].map((r) => (
-            <div key={r.label} className="flex flex-wrap justify-between gap-8 py-8 text-label">
-              <span className="text-ds-muted">{r.label}</span>
-              <Money amount={String(r.value)} />
-            </div>
-          ))}
-        </Panel>
       </div>
     </>
   );

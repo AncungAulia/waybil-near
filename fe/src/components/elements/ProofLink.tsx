@@ -16,8 +16,7 @@ export function ProofLink({ tx, className }: { tx: string; className?: string })
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        "inline-flex items-center gap-4 text-[14px] font-medium text-ds-brand-deep",
-        "transition-colors duration-150 ease-base hover:text-ds-ink",
+        "link focus-ring inline-flex items-center gap-4 text-[14px] font-medium",
         className,
       )}
     >

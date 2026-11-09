@@ -1,6 +1,6 @@
 # Frontend review
 
-The remaining frontend batches are organized into progressive commits on `fe/shipper` for review.
+The remaining frontend batches are organized into progressive commits on `fe/design-alignment` for review.
 Progressive commits, a branch push and a review PR are authorized. Merge and deployment are deferred.
 Vercel deployment is deferred.
 The foundation and driver/warehouse batches were merged in PRs #52 and #53.
@@ -79,3 +79,34 @@ These issues remain open for integration; the frontend does not claim testnet co
 Foundation questions about the footer, missing status chips and FanMeter wording remain recorded in PR #52.
 No new dependencies were added in these batches. All changes remain under `fe/`.
 This implementation is AI-generated and must retain that disclosure when a PR is opened.
+
+## Comparing a screen to the board
+
+`design-spec.json` holds every text and icon the Desktop frames of `design/waybil.pen` draw,
+per screen code, in document order. `compare-to-design.js` loads each screen in the gallery and
+reports what the app renders differently: text the board draws and the app does not, text the
+app adds, a font size off by more than 2 px, and a different number of icons.
+
+```powershell
+$env:NEXT_PUBLIC_GALLERY='on'
+pnpm --filter @waybil/fe dev
+```
+
+Open http://localhost:3001/dev/gallery, paste `design-spec.json` into the console as
+`window.__designSpec = { ... }`, paste `compare-to-design.js`, then run
+`await compareToDesign()` for every screen in the spec or `await compareToDesign(["W2.3"])`
+for a few.
+
+It reads text, sizes, icon counts and the shape of the cards. Colour, motion and anything a
+shader draws still need eyes, so a clean report means the words, the sizes and the layout are
+right, not that the screen is finished. Never call a board done on the report alone.
+
+Two rules when extracting a board, both learned the hard way:
+
+- Skip the map by structure, not by name. A frame called `Map` can be the card that holds the
+  map and its title. Skip the inner frame, the one with `Base` in it.
+- An "extra" line means the app draws something the spec does not list. Read the design node
+  before removing anything, because the spec may be the thing that is wrong. A map title was
+  deleted from W1.1 and W1.2 exactly this way.
+
+The spec covers the warehouse board so far; extend it a board at a time with the pencil MCP.

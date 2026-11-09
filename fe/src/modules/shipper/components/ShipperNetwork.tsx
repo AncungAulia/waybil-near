@@ -2,10 +2,11 @@
 import { useState } from "react";
 import { useOrigin } from "@/hooks/useOrigin";
 import { QRCodeSVG } from "qrcode.react";
+import { PaperPlaneTilt, Plus } from "@phosphor-icons/react";
 import { Panel } from "@/components/layout/Panel";
 import { ActionSheet } from "@/components/layout/ActionSheet";
 import { Input } from "@/components/ui/Input";
-import { Button } from "@/components/ui/Button";
+import { Button, ButtonLink } from "@/components/ui/Button";
 import { Avatar } from "@/components/elements/Avatar";
 import { GateMap } from "@/components/elements/GateMap";
 import { DemoRecord } from "@/components/elements/DemoRecord";
@@ -37,7 +38,7 @@ export function ShipperNetwork({
         <Panel
           title={`Drivers ${empty ? 0 : 3}`}
           action={
-            <Button variant="secondary" onClick={() => go("P5.3")}>
+            <Button variant="secondary" icon={<Plus size={17} />} onClick={() => go("P5.3")}>
               Invite
             </Button>
           }
@@ -70,7 +71,7 @@ export function ShipperNetwork({
         <Panel
           title={`Destinations ${empty ? 0 : added ? 3 : 2}`}
           action={
-            <Button variant="secondary" onClick={() => go("P5.4")}>
+            <Button variant="secondary" icon={<Plus size={17} />} onClick={() => go("P5.4")}>
               Add
             </Button>
           }
@@ -136,14 +137,15 @@ export function ShipperNetwork({
           {copyError && (
             <p className="text-caption text-ds-muted">Select the link above to copy it.</p>
           )}
-          <a
+          <ButtonLink
+            icon={<PaperPlaneTilt size={17} />}
+            className="justify-between"
             href={`https://wa.me/?text=${encodeURIComponent(`Join Northwind on Waybil. ${url}`)}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="press focus-ring rounded-full bg-ds-ink px-20 py-14 text-center text-body text-ds-bg"
           >
-            Share on WhatsApp ↗
-          </a>
+            Share on WhatsApp
+          </ButtonLink>
           <div className="mx-auto w-160">
             <QRCodeSVG value={url} size={160} marginSize={4} className="h-auto w-full" />
           </div>

@@ -17,11 +17,11 @@ export function Panel({
 }: {
   title?: string;
   action?: ReactNode;
-  gap?: 12 | 16 | 18;
+  gap?: 4 | 12 | 16 | 18;
   children: ReactNode;
   className?: string;
 }) {
-  const gaps = { 12: "gap-12", 16: "gap-16", 18: "gap-18" } as const;
+  const gaps = { 4: "gap-4", 12: "gap-12", 16: "gap-16", 18: "gap-18" } as const;
 
   return (
     <section

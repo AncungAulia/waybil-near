@@ -9,7 +9,7 @@ import {
 } from "@waybil/shared";
 import { Panel } from "@/components/layout/Panel";
 import { ActionSheet } from "@/components/layout/ActionSheet";
-import { Button } from "@/components/ui/Button";
+import { Button, ButtonLink } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Money } from "@/components/elements/Money";
 import { DemoMap } from "@/components/elements/DemoMap";
@@ -18,7 +18,16 @@ import { TimelineStep } from "@/components/elements/TimelineStep";
 import { KeyValue } from "@/components/elements/KeyValue";
 import { ResultScreen } from "@/components/elements/ResultScreen";
 import { StatusPill } from "@/components/elements/StatusPill";
-import { Package, Check } from "@phosphor-icons/react";
+import {
+  Package,
+  Check,
+  ArrowRight,
+  ChatCircle,
+  FileText,
+  Image as ImageIcon,
+  WarningCircle,
+  X,
+} from "@phosphor-icons/react";
 import { useDemoReport, useDemoSettlement } from "@/hooks/useDemoDelivery";
 import { DEFAULT_REPORT, repayDemoBill, settleDemoReport } from "@/lib/demo-delivery";
 import { cn } from "@/lib/cn";
@@ -212,28 +221,43 @@ export function ShipperDetail({
           <div className="grid items-start gap-16 lg:grid-cols-[minmax(0,1fr)_400px]">
             <div className="flex min-w-0 flex-col gap-16">
               {held && (
-                <Panel className="bg-ds-danger-soft" title="Harbor Hub reported a problem">
-                  <p className="text-body">
+                <Panel className="bg-ds-danger-soft">
+                  <h2 className="flex items-center gap-10 text-body font-medium">
+                    <WarningCircle size={20} className="shrink-0 text-ds-danger" />
+                    Harbor Hub reported a problem
+                  </h2>
+                  <p className="text-body text-ds-ink-2">
                     {report.note} Sam gets paid after you choose what to pay.
                   </p>
-                  <div className="flex flex-wrap gap-12">
-                    <Button onClick={() => go("P3.8")}>Choose what to pay</Button>
-                    <Button variant="secondary" onClick={openReport}>
+                  <div className="flex flex-wrap gap-12 self-start">
+                    <Button icon={<ArrowRight size={17} />} onClick={() => go("P3.8")}>
+                      Choose what to pay
+                    </Button>
+                    <Button variant="secondary" icon={<FileText size={17} />} onClick={openReport}>
                       Read report
                     </Button>
                   </div>
                 </Panel>
               )}
               {settled && (
-                <Panel className="bg-ds-success-soft" title="You chose what to pay">
-                  <p className="text-body">
+                <Panel className="bg-ds-success-soft">
+                  <h2 className="flex items-center gap-10 text-body font-medium">
+                    <WarningCircle size={20} className="shrink-0 text-ds-success" />
+                    You chose what to pay
+                  </h2>
+                  <p className="text-body text-ds-ink-2">
                     {preview
                       ? `You paid for the ${report.goodQty} good crates.`
                       : settlement.reason}{" "}
                     Sam got <Money amount={preview ? "273000000" : settlement.amount} /> and your
                     bill is now <Money amount={bill} />.
                   </p>
-                  <Button variant="secondary" onClick={openReport}>
+                  <Button
+                    variant="secondary"
+                    icon={<ImageIcon size={17} />}
+                    className="self-start"
+                    onClick={openReport}
+                  >
                     Read the report
                   </Button>
                   <DemoRecord title="Demo settlement receipt" />
@@ -260,9 +284,26 @@ export function ShipperDetail({
                 </p>
               )}
               {!approved && !road && (
-                <Panel title={held ? "Bill on hold" : repaid ? "Repaid on Dec 10" : "Your bill"}>
-                  <Money amount={bill} className="text-amount" />
-                  <p className="text-label text-ds-muted">
+                /* An open bill is the ink card with the brand glow, a held one the soft red card. */
+                <Panel className={held ? "bg-ds-danger-soft" : repaid ? "" : "bill-card bg-ds-ink"}>
+                  <p
+                    className={cn(
+                      "text-label",
+                      held ? "text-ds-danger" : repaid ? "text-ds-muted" : "text-ds-brand",
+                    )}
+                  >
+                    {held ? "Bill on hold" : repaid ? "Repaid on Dec 10" : "Your bill"}
+                  </p>
+                  <Money
+                    amount={bill}
+                    className={cn("text-amount", !held && !repaid && "text-ds-bg")}
+                  />
+                  <p
+                    className={cn(
+                      "text-label",
+                      !held && !repaid ? "text-ds-on-night" : "text-ds-ink-2",
+                    )}
+                  >
                     {held
                       ? "Nothing is due while the problem is open."
                       : repaid
@@ -274,6 +315,7 @@ export function ShipperDetail({
                   ) : (
                     !held && (
                       <Button
+                        variant="moment"
                         className="w-full justify-between md:w-fit"
                         onClick={() => go("P4.1")}
                       >
@@ -327,7 +369,12 @@ export function ShipperDetail({
                   );
                 })}
                 {approved && (
-                  <Button variant="quiet" className="text-ds-danger" onClick={() => go("P3.11")}>
+                  <Button
+                    variant="danger"
+                    icon={<X size={17} />}
+                    className="self-start"
+                    onClick={() => go("P3.11")}
+                  >
                     Cancel shipment
                   </Button>
                 )}
@@ -346,14 +393,16 @@ export function ShipperDetail({
                     value={<Money amount={trip?.shipment.bill ?? "300000000"} />}
                   />
                 </div>
-                <a
-                  className="press focus-ring rounded-full border border-ds-line-strong px-20 py-12 text-center text-body"
+                <ButtonLink
+                  variant="secondary"
+                  icon={<ChatCircle size={17} />}
+                  className="justify-between"
                   href="https://wa.me/?text=Hello%20Sam%2C%20about%20our%20Waybil%20shipment."
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  Chat with Sam ↗
-                </a>
+                  Chat with Sam
+                </ButtonLink>
               </Panel>
             </div>
           </div>
@@ -400,7 +449,11 @@ export function ShipperDetail({
                 <Button variant="quiet" onClick={() => go(back)}>
                   Close
                 </Button>
-                {back !== "P3.9" && <Button onClick={() => go("P3.8")}>Choose what to pay</Button>}
+                {back !== "P3.9" && (
+                  <Button icon={<ArrowRight size={17} />} onClick={() => go("P3.8")}>
+                    Choose what to pay
+                  </Button>
+                )}
               </div>
             </ActionSheet>
           )}
@@ -487,6 +540,7 @@ export function ShipperDetail({
                   Cancel
                 </Button>
                 <Button
+                  icon={<Check size={17} weight="bold" />}
                   disabled={choice === "different" && !customValid}
                   onClick={acceptSettlement}
                 >
@@ -509,7 +563,9 @@ export function ShipperDetail({
                 <Button variant="quiet" onClick={() => go("P3.1")}>
                   Keep it
                 </Button>
-                <Button onClick={onCancel}>Cancel shipment</Button>
+                <Button variant="danger" icon={<X size={17} />} onClick={onCancel}>
+                  Yes, cancel
+                </Button>
               </div>
             </ActionSheet>
           )}

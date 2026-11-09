@@ -11,9 +11,14 @@ import { cn } from "@/lib/cn";
  * Tailwind 4 already limits `hover:` to devices that really hover, so no extra guard here.
  */
 
-type Variant = "primary" | "secondary" | "moment" | "quiet";
+type Variant = "primary" | "secondary" | "moment" | "danger" | "quiet";
 
-const SHELL = "press focus-ring inline-flex h-48 items-center rounded-full text-body font-medium";
+/*
+ * The circle sits at the far right whenever the pill is wider than its label, which is what
+ * the board draws. On a pill that hugs its label there is no free space, so nothing moves.
+ */
+const SHELL =
+  "press focus-ring inline-flex h-48 items-center justify-between rounded-full text-body font-medium";
 
 const VARIANT: Record<Variant, string> = {
   primary: cn(
@@ -30,6 +35,11 @@ const VARIANT: Record<Variant, string> = {
     "gap-12 py-6 pr-6 pl-22 bg-ds-brand text-ds-ink",
     "active:bg-ds-brand-pressed",
     "disabled:bg-ds-brand-soft disabled:text-ds-off-brand-ink",
+  ),
+  danger: cn(
+    "gap-12 py-6 pr-6 pl-22 bg-ds-danger text-ds-bg",
+    "active:bg-ds-danger/92",
+    "disabled:bg-ds-danger-soft disabled:text-ds-off-ink",
   ),
   quiet: cn(
     "gap-8 px-18 bg-ds-canvas text-ds-ink",
@@ -55,6 +65,11 @@ const CIRCLE: Record<Exclude<Variant, "quiet">, string> = {
     "group-hover:bg-ds-bg group-hover:text-ds-ink",
     "group-disabled:bg-ds-off-brand-circle group-disabled:text-ds-bg",
   ),
+  danger: cn(
+    "bg-ds-bg text-ds-danger",
+    "group-hover:bg-ds-ink group-hover:text-ds-bg",
+    "group-disabled:bg-ds-off-circle group-disabled:text-ds-off-ink",
+  ),
 };
 
 export interface ButtonProps extends Omit<ComponentProps<"button">, "children"> {
@@ -68,6 +83,8 @@ export interface ButtonProps extends Omit<ComponentProps<"button">, "children"> 
   success?: boolean;
   /** What the label says once it worked, for example "Cashed out". */
   successLabel?: ReactNode;
+  /** Replaces the arrow in the circle where the board draws another icon, for example a plus. */
+  icon?: ReactNode;
 }
 
 export function Button({
@@ -77,6 +94,7 @@ export function Button({
   loadingLabel,
   success = false,
   successLabel,
+  icon,
   className,
   disabled,
   type = "button",
@@ -93,9 +111,15 @@ export function Button({
     <button
       {...rest}
       type={type}
-      disabled={disabled || loading}
+      disabled={disabled}
+      /*
+       * While it waits the button keeps its colours, as the board draws it, and only stops
+       * responding. `disabled` is kept for the buttons that are really off, and those grey out.
+       */
+      aria-disabled={loading || undefined}
       aria-busy={loading || undefined}
-      className={cn("group", SHELL, VARIANT[variant], className)}
+      onClick={loading ? undefined : rest.onClick}
+      className={cn("group", SHELL, VARIANT[variant], loading && "pointer-events-none", className)}
     >
       {/*
        * The resting label stays in the flow but invisible, so the pill keeps its width when
@@ -111,7 +135,7 @@ export function Button({
       </span>
 
       {variant !== "quiet" && (
-        <ButtonCircle variant={variant} loading={loading} success={success} />
+        <ButtonCircle variant={variant} loading={loading} success={success} icon={icon} />
       )}
     </button>
   );
@@ -121,10 +145,12 @@ function ButtonCircle({
   variant,
   loading,
   success,
+  icon,
 }: {
   variant: Exclude<Variant, "quiet">;
   loading: boolean;
   success: boolean;
+  icon?: ReactNode;
 }) {
   return (
     <span
@@ -137,6 +163,8 @@ function ButtonCircle({
         <CircleNotch size={17} className="animate-spin motion-reduce:animate-none" />
       ) : success ? (
         <Check size={17} weight="bold" />
+      ) : icon ? (
+        icon
       ) : variant === "moment" ? (
         <ArrowLineDown size={17} />
       ) : (
@@ -147,6 +175,29 @@ function ButtonCircle({
         />
       )}
     </span>
+  );
+}
+
+export interface ButtonLinkProps extends Omit<ComponentProps<"a">, "children"> {
+  variant?: Exclude<Variant, "quiet">;
+  children: ReactNode;
+  /** Replaces the arrow in the circle, for example the Google Maps needle. */
+  icon?: ReactNode;
+}
+
+/** The same pill as Button, for the links that leave the app. */
+export function ButtonLink({
+  variant = "primary",
+  children,
+  icon,
+  className,
+  ...rest
+}: ButtonLinkProps) {
+  return (
+    <a {...rest} className={cn("group", SHELL, VARIANT[variant], className)}>
+      <span className="whitespace-nowrap">{children}</span>
+      <ButtonCircle variant={variant} loading={false} success={false} icon={icon} />
+    </a>
   );
 }
 

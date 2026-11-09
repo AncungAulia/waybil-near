@@ -13,12 +13,22 @@ import {
   ChartPie,
   Clock,
   ArrowUpRight,
+  ArrowCounterClockwise,
+  ArrowRight,
+  Envelope,
+  House,
+  PaperPlaneTilt,
+  PencilSimple,
+  Plus,
+  Scan,
+  UserPlus,
+  X,
 } from "@phosphor-icons/react";
 import type { Role } from "@waybil/shared";
 import { useOrigin } from "@/hooks/useOrigin";
 import { Logo } from "@/components/layout/Logo";
 import { RoleShell } from "@/components/layout/RoleShell";
-import { Button } from "@/components/ui/Button";
+import { Button, ButtonLink } from "@/components/ui/Button";
 import { Money } from "@/components/elements/Money";
 import { DemoRecord } from "@/components/elements/DemoRecord";
 import { cn } from "@/lib/cn";
@@ -109,11 +119,15 @@ export function OnboardingScreen({
       {note && <p className="text-label text-ds-muted">{note}</p>}
     </div>
   );
-  const icon = (Icon: typeof Wallet, tone: "brand" | "danger" = "brand") => (
+  const icon = (Icon: typeof Wallet, tone: "brand" | "soft" | "danger" = "brand") => (
     <span
       className={cn(
         "mx-auto grid size-80 shrink-0 place-content-center rounded-full",
-        tone === "danger" ? "bg-ds-danger-soft text-ds-danger" : "bg-ds-brand text-ds-ink",
+        tone === "danger"
+          ? "bg-ds-danger-soft text-ds-danger"
+          : tone === "soft"
+            ? "bg-ds-brand-soft text-ds-brand-deep"
+            : "bg-ds-brand text-ds-ink",
       )}
     >
       <Icon size={32} />
@@ -218,7 +232,7 @@ export function OnboardingScreen({
                     : state === "A5"
                       ? CircleNotch
                       : Wallet,
-                  state === "A3" ? "danger" : "brand",
+                  state === "A3" ? "danger" : state === "A4" ? "soft" : "brand",
                 )}
                 {heading(
                   state === "A1"
@@ -245,6 +259,7 @@ export function OnboardingScreen({
                 {state === "A1" ? (
                   <>
                     <Button
+                      icon={<Wallet size={17} />}
                       className={actionClass}
                       onClick={() => {
                         setRole(null);
@@ -260,6 +275,7 @@ export function OnboardingScreen({
                     </div>
                     <Button
                       variant="secondary"
+                      icon={<Envelope size={17} />}
                       className={actionClass}
                       onClick={() => {
                         setRole("driver");
@@ -273,12 +289,21 @@ export function OnboardingScreen({
                     </p>
                   </>
                 ) : state === "A2" ? (
-                  <Button variant="quiet" className={actionClass} onClick={() => setState("A1")}>
+                  <Button
+                    variant="secondary"
+                    icon={<X size={17} />}
+                    className={actionClass}
+                    onClick={() => setState("A1")}
+                  >
                     Cancel
                   </Button>
                 ) : state === "A3" ? (
                   <>
-                    <Button className={actionClass} onClick={() => setState("A1")}>
+                    <Button
+                      icon={<ArrowCounterClockwise size={17} />}
+                      className={actionClass}
+                      onClick={() => setState("A1")}
+                    >
                       Try again
                     </Button>
                     <Button variant="quiet" onClick={() => setState("A1")}>
@@ -401,7 +426,10 @@ export function OnboardingScreen({
             />
           ) : group === "C" ? (
             <>
-              {icon(state === "C8" ? Check : state === "C9" ? Warning : Clock)}
+              {icon(
+                state === "C8" ? Check : state === "C9" ? Warning : Clock,
+                state === "C9" ? "soft" : "brand",
+              )}
               {heading(
                 state === "C8"
                   ? "You’re approved"
@@ -443,7 +471,8 @@ export function OnboardingScreen({
                       Go to dashboard
                     </Button>
                     <Button
-                      variant="quiet"
+                      variant="secondary"
+                      icon={<UserPlus size={17} />}
                       onClick={() => dashboard("/shipper/network?invite=driver")}
                     >
                       Invite your first driver
@@ -451,12 +480,17 @@ export function OnboardingScreen({
                   </>
                 ) : (
                   <>
-                    <Button className={actionClass} onClick={() => setState("C2")}>
+                    <Button
+                      variant={state === "C9" ? "primary" : "secondary"}
+                      icon={state === "C9" ? undefined : <PencilSimple size={17} />}
+                      className={actionClass}
+                      onClick={() => setState("C2")}
+                    >
                       {state === "C9" ? "Update details" : "Edit details"}
                     </Button>
                     {state === "C9" ? (
                       <a
-                        className="focus-ring text-center text-label text-ds-muted"
+                        className="link focus-ring text-center text-label"
                         href="https://wa.me/12075550142"
                         target="_blank"
                         rel="noreferrer"
@@ -485,14 +519,15 @@ export function OnboardingScreen({
                   {copied ? "Copied" : "Copy"}
                 </Button>
               </div>
-              <a
-                className="press focus-ring rounded-full bg-ds-ink px-20 py-16 text-center text-label text-ds-bg"
+              <ButtonLink
+                icon={<PaperPlaneTilt size={17} />}
+                className="justify-between"
                 href={`https://wa.me/?text=${encodeURIComponent(`Connect with me on Waybil. ${shareLink}`)}`}
                 target="_blank"
                 rel="noreferrer"
               >
-                Share on WhatsApp ↗
-              </a>
+                Share on WhatsApp
+              </ButtonLink>
               <Button
                 variant="quiet"
                 onClick={() =>
@@ -519,7 +554,11 @@ export function OnboardingScreen({
                     <Row label="Missed payments" value="0 of 9 trips" />
                   </div>
                   <DemoRecord title="Demo investor setup" />
-                  <Button className={actionClass} onClick={() => dashboard("/pool?deposit=on")}>
+                  <Button
+                    icon={<Plus size={17} />}
+                    className={actionClass}
+                    onClick={() => dashboard("/pool?deposit=on")}
+                  >
                     Make your first deposit
                   </Button>
                   <Button variant="quiet" onClick={() => dashboard("/pool")}>
@@ -572,7 +611,7 @@ export function OnboardingScreen({
                     disabled={!understood}
                     onClick={() => setState("E3")}
                   >
-                    Continue to the pool
+                    {understood ? "Continue to the pool" : "Continue"}
                   </Button>
                 </>
               )}
@@ -629,7 +668,11 @@ export function OnboardingScreen({
               )}
               <div className="mt-auto flex flex-col gap-12">
                 {state === "F1" ? (
-                  <Button className={actionClass} onClick={() => setState("D1")}>
+                  <Button
+                    icon={<Envelope size={17} />}
+                    className={actionClass}
+                    onClick={() => setState("D1")}
+                  >
                     Continue with Google
                   </Button>
                 ) : state === "F2" ? (
@@ -649,12 +692,21 @@ export function OnboardingScreen({
                     </Button>
                   </>
                 ) : state === "F4" ? (
-                  <Button className={actionClass} onClick={() => setState("A1")}>
+                  <Button
+                    variant="secondary"
+                    icon={<ArrowRight size={17} />}
+                    className={actionClass}
+                    onClick={() => setState("A1")}
+                  >
                     Go to Waybil
                   </Button>
                 ) : state === "F5" ? (
                   <>
-                    <Button className={actionClass} onClick={() => setState("F6")}>
+                    <Button
+                      icon={<Envelope size={17} />}
+                      className={actionClass}
+                      onClick={() => setState("F6")}
+                    >
                       Continue with Google
                     </Button>
                     <p className="text-center text-caption text-ds-muted">
@@ -664,7 +716,11 @@ export function OnboardingScreen({
                 ) : (
                   <>
                     <DemoRecord title="Demo receiver setup" />
-                    <Button className={actionClass} onClick={() => dashboard("/warehouse/scan")}>
+                    <Button
+                      icon={<Scan size={17} />}
+                      className={actionClass}
+                      onClick={() => dashboard("/warehouse/scan")}
+                    >
                       Open scanner
                     </Button>
                     <Button variant="quiet" onClick={() => dashboard("/warehouse")}>
@@ -733,7 +789,14 @@ function SystemContent({
             : "Your session ended. Sign in again to continue.";
   return (
     <>
-      <span className="mx-auto grid size-80 place-content-center rounded-full bg-ds-canvas">
+      <span
+        className={cn(
+          "mx-auto grid size-80 place-content-center rounded-full",
+          state === "X2"
+            ? "bg-ds-danger-soft text-ds-danger"
+            : "bg-ds-brand-soft text-ds-brand-deep",
+        )}
+      >
         <Icon size={32} />
       </span>
       <div className="text-center">
@@ -742,6 +805,15 @@ function SystemContent({
       </div>
       <div className="mt-auto flex flex-col gap-12 md:mt-0">
         <Button
+          icon={
+            state === "X1" || state === "X3" ? (
+              <House size={17} />
+            ) : state === "X5" ? (
+              <ArrowRight size={17} />
+            ) : (
+              <ArrowCounterClockwise size={17} />
+            )
+          }
           className="justify-between"
           onClick={state === "X1" || state === "X3" ? onHome : onRetry}
         >

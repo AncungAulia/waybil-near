@@ -1,0 +1,410 @@
+[
+  {
+    "width": 1440,
+    "state": "W1.1",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Good afternoon, Lena",
+    "dialog": false
+  },
+  {
+    "width": 1440,
+    "state": "W1.2",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Good afternoon, Lena",
+    "dialog": false
+  },
+  {
+    "width": 1440,
+    "state": "W1.3",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Arrivals",
+    "dialog": false
+  },
+  {
+    "width": 1440,
+    "state": "W2.1",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Scan a delivery",
+    "dialog": false
+  },
+  {
+    "width": 1440,
+    "state": "W2.2",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Scan a delivery",
+    "dialog": true
+  },
+  {
+    "width": 1440,
+    "state": "W2.3",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Confirm delivery",
+    "dialog": false
+  },
+  {
+    "width": 1440,
+    "state": "W2.4",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Not for this warehouse",
+    "dialog": false
+  },
+  {
+    "width": 1440,
+    "state": "W2.5",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Confirm delivery",
+    "dialog": false
+  },
+  {
+    "width": 1440,
+    "state": "W2.6",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Delivery confirmed",
+    "dialog": false
+  },
+  {
+    "width": 1440,
+    "state": "W2.7",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Report a problem",
+    "dialog": false
+  },
+  {
+    "width": 1440,
+    "state": "W2.8",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Report sent",
+    "dialog": false
+  },
+  {
+    "width": 1440,
+    "state": "W2.9",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Scan a delivery",
+    "dialog": true
+  },
+  {
+    "width": 1440,
+    "state": "W2.10",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Scan a delivery",
+    "dialog": true
+  },
+  {
+    "width": 1440,
+    "state": "W2.11",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Scan a delivery",
+    "dialog": true
+  },
+  {
+    "width": 1440,
+    "state": "W2.12",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Already confirmed",
+    "dialog": false
+  },
+  {
+    "width": 1440,
+    "state": "W3.1",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "History",
+    "dialog": false
+  },
+  {
+    "width": 1440,
+    "state": "W3.2",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "History",
+    "dialog": false
+  },
+  {
+    "width": 834,
+    "state": "W1.1",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Good afternoon, Lena",
+    "dialog": false
+  },
+  {
+    "width": 834,
+    "state": "W1.2",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Good afternoon, Lena",
+    "dialog": false
+  },
+  {
+    "width": 834,
+    "state": "W1.3",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Arrivals",
+    "dialog": false
+  },
+  {
+    "width": 834,
+    "state": "W2.1",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Scan a delivery",
+    "dialog": false
+  },
+  {
+    "width": 834,
+    "state": "W2.2",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Scan a delivery",
+    "dialog": true
+  },
+  {
+    "width": 834,
+    "state": "W2.3",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Confirm delivery",
+    "dialog": false
+  },
+  {
+    "width": 834,
+    "state": "W2.4",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Not for this warehouse",
+    "dialog": false
+  },
+  {
+    "width": 834,
+    "state": "W2.5",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Confirm delivery",
+    "dialog": false
+  },
+  {
+    "width": 834,
+    "state": "W2.6",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Delivery confirmed",
+    "dialog": false
+  },
+  {
+    "width": 834,
+    "state": "W2.7",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Report a problem",
+    "dialog": false
+  },
+  {
+    "width": 834,
+    "state": "W2.8",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Report sent",
+    "dialog": false
+  },
+  {
+    "width": 834,
+    "state": "W2.9",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Scan a delivery",
+    "dialog": true
+  },
+  {
+    "width": 834,
+    "state": "W2.10",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Scan a delivery",
+    "dialog": true
+  },
+  {
+    "width": 834,
+    "state": "W2.11",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Scan a delivery",
+    "dialog": true
+  },
+  {
+    "width": 834,
+    "state": "W2.12",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Already confirmed",
+    "dialog": false
+  },
+  {
+    "width": 834,
+    "state": "W3.1",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "History",
+    "dialog": false
+  },
+  {
+    "width": 834,
+    "state": "W3.2",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "History",
+    "dialog": false
+  },
+  {
+    "width": 390,
+    "state": "W1.1",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Good afternoon, Lena",
+    "dialog": false
+  },
+  {
+    "width": 390,
+    "state": "W1.2",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Good afternoon, Lena",
+    "dialog": false
+  },
+  {
+    "width": 390,
+    "state": "W1.3",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Arrivals",
+    "dialog": false
+  },
+  {
+    "width": 390,
+    "state": "W2.1",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Scan a delivery",
+    "dialog": false
+  },
+  {
+    "width": 390,
+    "state": "W2.2",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Scan a delivery",
+    "dialog": true
+  },
+  {
+    "width": 390,
+    "state": "W2.3",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Confirm delivery",
+    "dialog": false
+  },
+  {
+    "width": 390,
+    "state": "W2.4",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Not for this warehouse",
+    "dialog": false
+  },
+  {
+    "width": 390,
+    "state": "W2.5",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Confirm delivery",
+    "dialog": false
+  },
+  {
+    "width": 390,
+    "state": "W2.6",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Delivery confirmed",
+    "dialog": false
+  },
+  {
+    "width": 390,
+    "state": "W2.7",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Report a problem",
+    "dialog": false
+  },
+  {
+    "width": 390,
+    "state": "W2.8",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Report sent",
+    "dialog": false
+  },
+  {
+    "width": 390,
+    "state": "W2.9",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Scan a delivery",
+    "dialog": true
+  },
+  {
+    "width": 390,
+    "state": "W2.10",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Scan a delivery",
+    "dialog": true
+  },
+  {
+    "width": 390,
+    "state": "W2.11",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Scan a delivery",
+    "dialog": true
+  },
+  {
+    "width": 390,
+    "state": "W2.12",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Already confirmed",
+    "dialog": false
+  },
+  {
+    "width": 390,
+    "state": "W3.1",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "History",
+    "dialog": false
+  },
+  {
+    "width": 390,
+    "state": "W3.2",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "History",
+    "dialog": false
+  }
+]

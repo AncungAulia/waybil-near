@@ -8,7 +8,11 @@ export function Money({ amount, className }: { amount: string; className?: strin
       className={cn("swap inline-flex items-baseline gap-6 tabular-nums", className)}
     >
       {formatUsdc(BigInt(amount))}
-      <span className="text-[0.5em] font-medium tracking-normal">USDC</span>
+      {/*
+       * The board writes the amount and its unit at one size, so the unit only drops the
+       * number's tighter tracking. The amount field keeps its own smaller suffix.
+       */}
+      <span className="font-medium tracking-normal">USDC</span>
     </span>
   );
 }
