@@ -3,7 +3,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import { formatUsdc } from "@waybil/shared";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { X } from "@phosphor-icons/react";
+import { ArrowCounterClockwise, Plus, X } from "@phosphor-icons/react";
 import { ActionSheet } from "@/components/layout/ActionSheet";
 import { Button } from "@/components/ui/Button";
 import { Money } from "./Money";
@@ -163,6 +163,13 @@ export function DemoWallet({
           )}
           <Button
             className="justify-between"
+            icon={
+              state === "X6" || state === "X7" ? (
+                <ArrowCounterClockwise size={17} />
+              ) : state === "G5" ? undefined : (
+                <Plus size={17} />
+              )
+            }
             disabled={state === "G5"}
             loading={state === "G3"}
             loadingLabel="Waiting for wallet"
