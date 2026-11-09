@@ -134,11 +134,26 @@
    * keeps the plain arrow.
    */
   button:not(:disabled),
+  summary,
+  select:not(:disabled),
+  a[href],
   [role="button"]:not([aria-disabled="true"]),
   [role="switch"]:not(:disabled),
   [role="tab"]:not(:disabled),
-  label:has(input[type="checkbox"]:not(:disabled)),
-  label:has(input[type="radio"]:not(:disabled)) {
+  [role="option"],
+  [role="menuitem"],
+  [role="radio"]:not([aria-disabled="true"]),
+  [role="checkbox"]:not([aria-disabled="true"]),
+  [role="link"],
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  input[type="file"]:not(:disabled),
+  input[type="submit"]:not(:disabled),
+  input[type="button"]:not(:disabled),
+  input[type="range"]:not(:disabled),
+  input[type="color"]:not(:disabled),
+  label:has(input:not(:disabled):not([type="text"]):not([type="email"]):not([type="number"])),
+  label[for]:not(:has(input[type="text"], input[type="email"], input[type="number"], textarea)) {
     cursor: pointer;
   }
 
