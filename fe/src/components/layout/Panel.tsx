@@ -12,12 +12,15 @@ export function Panel({
   /** Shown next to the title, for example the segmented tabs. */
   action,
   gap = 16,
+  /** The board draws the card title at 15, 17, 18 or 20 px, depending on the card. */
+  titleClassName = "text-heading",
   children,
   className,
 }: {
   title?: string;
   action?: ReactNode;
   gap?: 4 | 12 | 16 | 18;
+  titleClassName?: string;
   children: ReactNode;
   className?: string;
 }) {
@@ -29,7 +32,7 @@ export function Panel({
     >
       {(title || action) && (
         <div className="flex items-center justify-between gap-16">
-          {title && <h2 className="text-heading">{title}</h2>}
+          {title && <h2 className={cn("font-medium", titleClassName)}>{title}</h2>}
           {action}
         </div>
       )}

@@ -74,7 +74,8 @@ export function FanMeter({
 
   return (
     <span className="flex w-full flex-col gap-6">
-      {markerLabel && value > 0 && (
+      {/* The pill stays at zero too: P1.2 draws "Nothing used" at the left end. */}
+      {markerLabel && (
         <span aria-hidden className="relative block h-26 w-full">
           {/* Held a little away from both ends so the pill never pushes the card sideways. */}
           <span

@@ -5,23 +5,24 @@ export function Money({
   amount,
   className,
   hideZeroDecimals = false,
+  /** A few lists on the board write the bare number, with the unit given once above. */
+  unit = true,
 }: {
   amount: string;
   className?: string;
   hideZeroDecimals?: boolean;
+  unit?: boolean;
 }) {
   const formatted = formatUsdc(BigInt(amount));
   return (
-    <span
-      key={amount}
-      className={cn("swap inline-flex items-baseline gap-6 tabular-nums", className)}
-    >
+    <span key={amount} className={cn("swap whitespace-nowrap tabular-nums", className)}>
       {hideZeroDecimals ? formatted.replace(/\.00$/, "") : formatted}
       {/*
-       * The board writes the amount and its unit at one size, so the unit only drops the
-       * number's tighter tracking. The amount field keeps its own smaller suffix.
+       * The board writes the amount and its unit as one line of text at one size, so the
+       * unit stays in the same run and only drops the number's tighter tracking. A flex
+       * row would turn it into its own block. The amount field keeps its own smaller suffix.
        */}
-      <span className="font-medium tracking-normal">USDC</span>
+      {unit && <span className="font-medium tracking-normal"> USDC</span>}
     </span>
   );
 }
