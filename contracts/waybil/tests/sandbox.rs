@@ -60,11 +60,13 @@ async fn account(sandbox: &near_sandbox::Sandbox, name: &str) -> testresult::Tes
         .send()
         .await?;
     let network = near_api::NetworkConfig::from_rpc_url("sandbox", sandbox.rpc_addr.parse()?);
+    let public_key: near_api::PublicKey =
+        near_sandbox::config::DEFAULT_GENESIS_ACCOUNT_PUBLIC_KEY.parse()?;
     // Patched keys must reach finality before the signer fetches their nonce.
     let ready = async {
         loop {
             let key = near_api::Account(id.clone())
-                .access_key(near_sandbox::config::DEFAULT_GENESIS_ACCOUNT_PUBLIC_KEY.parse()?)
+                .access_key(public_key.clone())
                 .at(near_api::types::Reference::Final)
                 .fetch_from(&network)
                 .await;
