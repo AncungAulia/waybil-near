@@ -10,14 +10,17 @@ export function ActionSheet({
   onClose,
   wide = false,
   stamp,
+  stampTone = "soft",
 }: {
   title: string;
   children: React.ReactNode;
   onClose: () => void;
   preview?: boolean;
   wide?: boolean;
-  /** An icon for a permission ask. It centres the sheet and replaces the close button. */
+  /** An icon for a permission ask or a result. It centres the sheet and drops the close button. */
   stamp?: React.ReactNode;
+  /** The stamp colour: the soft tint of a permission ask, or the brand yellow of a result. */
+  stampTone?: "soft" | "brand";
 }) {
   const start = useRef<{ y: number; time: number } | null>(null);
   const [drag, setDrag] = useState(0);
@@ -26,7 +29,12 @@ export function ActionSheet({
   );
   const contents = stamp ? (
     <>
-      <span className="grid size-80 place-items-center rounded-full bg-ds-brand-soft text-ds-brand-deep">
+      <span
+        className={cn(
+          "grid size-80 place-items-center rounded-full",
+          stampTone === "brand" ? "bg-ds-brand text-ds-ink" : "bg-ds-brand-soft text-ds-brand-deep",
+        )}
+      >
         {stamp}
       </span>
       <Dialog.Title className="text-heading">{title}</Dialog.Title>
