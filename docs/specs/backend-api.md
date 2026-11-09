@@ -10,6 +10,29 @@ Conventions:
 - File uploads use `multipart/form-data`, PDF/JPG/PNG, up to 2 MB per file.
 - Request and response types live in `packages/shared` and are shared with the frontend.
 
+## Runtime foundation (#15)
+
+`GET /health` is public liveness and returns `{ "status": "ok" }` without calling providers.
+The backend package is `@waybil/be` and defaults to port 4000. Browser origins are explicitly
+listed in `CORS_ORIGINS` (comma separated); requests from other browser origins are rejected.
+JSON bodies are limited to 64 KB. Errors use HTTP 400 (validation), 401 (session), 403 (access),
+404 (missing), 409 (conflict), 413 (size), 429 (rate) and 503 (unavailable integration).
+JWTs use HS256 with an explicit issuer/audience and a seven-day expiry. Every session loads
+the profile and compares its session version. Team routes also verify membership on NEAR.
+The health route works without provider secrets; protected features fail closed when their
+required configuration is absent. No test login or client-controlled role bypass exists.
+
+Off-chain domain tables store a validated JSONB `data` document, a text primary key and an
+integer `version`. Services validate writes, and conditional versioned updates prevent lost
+updates. Migrations add domain checks and unique indexes. Tables have RLS enabled with no
+anonymous/authenticated policies; only the backend service role accesses them. No chain
+balance or authoritative shipment-state table is created.
+
+Additional runtime env: `APP_URL`, `CORS_ORIGINS`, `JWT_ISSUER`, `JWT_AUDIENCE`,
+`TRUST_PROXY_HOPS`. Empty optional values disable the corresponding integration. `JWT_SECRET`
+must contain at least 32 characters when supplied. Supabase URL and service-role key must
+be supplied together. Defaults and feature setup are documented in `be/README.md`.
+
 ## Auth
 
 | Method | Path | Who | What |
