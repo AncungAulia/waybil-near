@@ -26,6 +26,7 @@
   --color-ds-warning: #e06a00;
   --color-ds-danger-soft: #fdf1f1;
   --color-ds-success-soft: #e3f1e7;
+  --color-ds-warning-soft: #fff1d6;
   /* The unused part of the ruler meter, from design/shaders/ruler.glsl. */
   --color-ds-meter-empty: #cfcfcf;
   /* Second line of text on the dark toast, and the quieter one in the footer. */
@@ -135,12 +136,49 @@
 }
 
 @layer components {
+  /*
+   * The Due card on the shipper board: a brand glow in the top right with the halftone
+   * dots from design/shaders/halftone.glsl over it (16 px cells, white at 16%).
+   */
   .bill-card {
-    background-image: radial-gradient(
-      ellipse at top right,
-      color-mix(in srgb, var(--color-ds-brand) 20%, transparent),
-      transparent 65%
-    );
+    background-image:
+      radial-gradient(circle, color-mix(in srgb, white 16%, transparent) 2.2px, transparent 2.3px),
+      radial-gradient(
+        ellipse at top right,
+        color-mix(in srgb, var(--color-ds-brand) 33%, transparent),
+        transparent 62%
+      ),
+      radial-gradient(
+        ellipse at 80% 0%,
+        color-mix(in srgb, var(--color-ds-brand) 18%, transparent),
+        transparent 55%
+      );
+    background-size:
+      16px 16px,
+      auto,
+      auto;
+  }
+  /*
+   * The driver's "Ready to get paid" card (K1.2): the same halftone, dark at 12% over the
+   * brand yellow, with a white and an amber glow in the top right.
+   */
+  .ready-card {
+    background-image:
+      radial-gradient(circle, color-mix(in srgb, black 12%, transparent) 1.9px, transparent 2px),
+      radial-gradient(
+        ellipse at top right,
+        color-mix(in srgb, white 60%, transparent),
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse at 80% 0%,
+        color-mix(in srgb, var(--color-ds-brand-pressed) 45%, transparent),
+        transparent 55%
+      );
+    background-size:
+      16px 16px,
+      auto,
+      auto;
   }
   /*
    * Buttons get the three layer ring drawn on the States board: a brand-deep hairline on the
@@ -171,6 +209,31 @@
   .press:not(:disabled):active:not(:focus-visible) {
     transform: scale(0.97);
     transition-duration: 160ms;
+  }
+
+  /*
+   * Text links on the boards. `link` rests in brand deep and turns ink under a real pointer,
+   * `link-ink` does the reverse for the links the board draws in ink. The whole label reacts,
+   * not only the arrow. Colour change only, 150 ms, plain ease.
+   */
+  .link,
+  .link-ink {
+    cursor: pointer;
+    transition: color 150ms var(--ease-base);
+  }
+  .link {
+    color: var(--color-ds-brand-deep);
+  }
+  .link-ink {
+    color: var(--color-ds-ink);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .link:not(:disabled):hover {
+      color: var(--color-ds-ink);
+    }
+    .link-ink:not(:disabled):hover {
+      color: var(--color-ds-brand-deep);
+    }
   }
 }
 
