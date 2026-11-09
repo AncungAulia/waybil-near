@@ -11,6 +11,7 @@ export function ActionSheet({
   wide = false,
   stamp,
   stampTone = "soft",
+  className,
 }: {
   title: string;
   children: React.ReactNode;
@@ -20,7 +21,8 @@ export function ActionSheet({
   /** An icon for a permission ask or a result. It centres the sheet and drops the close button. */
   stamp?: React.ReactNode;
   /** The stamp colour: the soft tint of a permission ask, or the brand yellow of a result. */
-  stampTone?: "soft" | "brand";
+  stampTone?: "soft" | "brand" | "error";
+  className?: string;
 }) {
   const start = useRef<{ y: number; time: number } | null>(null);
   const [drag, setDrag] = useState(0);
@@ -32,7 +34,11 @@ export function ActionSheet({
       <span
         className={cn(
           "grid size-80 place-items-center rounded-full",
-          stampTone === "brand" ? "bg-ds-brand text-ds-ink" : "bg-ds-brand-soft text-ds-brand-deep",
+          stampTone === "brand"
+            ? "bg-ds-brand text-ds-ink"
+            : stampTone === "error"
+              ? "bg-ds-danger-stamp text-ds-brand-deep"
+              : "bg-ds-brand-soft text-ds-brand-deep",
         )}
       >
         {stamp}
@@ -75,6 +81,7 @@ export function ActionSheet({
             classes,
             "action-sheet fixed right-0 bottom-0 left-0 z-50 max-h-[90dvh] overflow-y-auto md:top-1/2 md:right-auto md:bottom-auto md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2",
             wide ? "md:w-560" : "md:w-480",
+            className,
           )}
           style={{
             ...(drag ? { transform: `translateY(${drag}px)` } : {}),

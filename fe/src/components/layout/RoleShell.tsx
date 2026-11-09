@@ -15,6 +15,7 @@ import {
   Users,
   CheckCircle,
   ChartPie,
+  Warehouse,
 } from "@phosphor-icons/react";
 import { Navbar } from "./Navbar";
 import { Logo } from "./Logo";
@@ -116,7 +117,10 @@ export function RoleShell({
         <Logo />
         <div className="flex items-center gap-8">
           {role === "warehouse" && (
-            <span className="rounded-full bg-ds-bg px-12 py-8 text-caption">Harbor Hub</span>
+            <span className="flex items-center gap-6 rounded-full bg-ds-bg px-12 py-8 text-[12.5px] font-medium">
+              <Warehouse size={14} />
+              Harbor Hub
+            </span>
           )}
           {hasWallet ? (
             <button

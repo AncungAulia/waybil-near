@@ -25,6 +25,8 @@
   --color-ds-danger: #d42f34;
   --color-ds-warning: #e06a00;
   --color-ds-danger-soft: #fdf1f1;
+  --color-ds-danger-stamp: #fbe3ec;
+  --color-ds-danger-result: #fbeaea;
   --color-ds-success-soft: #e3f1e7;
   --color-ds-warning-soft: #fff1d6;
   /* The unused part of the ruler meter, from design/shaders/ruler.glsl. */
