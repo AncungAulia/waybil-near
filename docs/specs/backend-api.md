@@ -53,6 +53,16 @@ account so a new phone can get a new device key after Google sign-in (see 0004).
 
 ## Invites
 
+The implementation also provides owner-only `GET /v1/invites` returning `{ invites }`.
+Codes are 24-character random hex strings. Public reads never return phone/address/contact
+details. `shipperName` uses the account ID until the shipper publishes a company name.
+Acceptance is a conditional versioned update. Repeating acceptance by the same account
+returns its original acceptance; another account receives 409. Google signup can reserve
+an invitation for five minutes against a hashed Google subject, without consuming it.
+Acceptance requires the same subject reservation while it is live. Expiry is checked
+on each request, independently of the hourly cleanup. A used invitation stays used.
+The response distinguishes acceptance from the subsequent shipper-signed network link.
+
 | Method | Path | Who | What |
 |---|---|---|---|
 | POST | `/v1/invites` | Shipper | Body: `type` (`driver` or `warehouse`), name, phone, destination address for warehouses. Returns a code and link. Expires in 7 days. |
