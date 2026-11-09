@@ -5,7 +5,18 @@ import { parseUsdc, formatUsdc } from "@waybil/shared";
 import { RoleShell } from "@/components/layout/RoleShell";
 import { Panel } from "@/components/layout/Panel";
 import { ActionSheet } from "@/components/layout/ActionSheet";
-import { Button } from "@/components/ui/Button";
+import { Button, ButtonLink } from "@/components/ui/Button";
+import {
+  ArrowRight,
+  Bank,
+  Check,
+  Pause,
+  PaperPlaneTilt,
+  PencilSimple,
+  PencilSimpleLine,
+  Scales,
+  X,
+} from "@phosphor-icons/react";
 import { Input } from "@/components/ui/Input";
 import { Money } from "@/components/elements/Money";
 import { DemoRecord } from "@/components/elements/DemoRecord";
@@ -176,7 +187,7 @@ export function AdminScreen({
             href={ACCOUNT}
             target="_blank"
             rel="noreferrer"
-            className="focus-ring text-caption text-ds-brand-deep"
+            className="link focus-ring text-caption"
           >
             See the record on NearBlocks ↗
           </a>
@@ -266,7 +277,8 @@ export function AdminScreen({
           {(!terminal || state !== "M1.2") && (
             <div className="flex w-full flex-col-reverse gap-10 md:w-auto md:flex-row [&>button]:justify-between">
               <Button
-                variant="quiet"
+                variant="danger"
+                icon={<X size={17} />}
                 disabled={ownVote}
                 onClick={() => {
                   setSelected(second ? "Meridian Shipping" : "Northwind Freight");
@@ -278,6 +290,7 @@ export function AdminScreen({
                 Reject
               </Button>
               <Button
+                icon={<PencilSimpleLine size={17} />}
                 disabled={ownVote}
                 onClick={() => {
                   if (second) {
@@ -421,13 +434,18 @@ export function AdminScreen({
                       : "The assistant suggests a starting limit of 2,000.00 USDC."}
                 </p>
                 <div className="flex justify-between gap-12">
-                  <Link
+                  <ButtonLink
+                    variant="secondary"
+                    icon={<ArrowRight size={17} />}
                     href={`/admin/shippers/${i ? "coastline-freight.testnet" : "meridian-shipping.testnet"}`}
-                    className="press focus-ring rounded-full border border-ds-line px-18 py-12 text-label"
                   >
-                    View details ↗
-                  </Link>
-                  <Button disabled={approved} onClick={() => decide(name)}>
+                    Details
+                  </ButtonLink>
+                  <Button
+                    icon={<Scales size={17} />}
+                    disabled={approved}
+                    onClick={() => decide(name)}
+                  >
                     {approved ? "You approved" : "Decide"}
                   </Button>
                 </div>
@@ -483,7 +501,7 @@ export function AdminScreen({
                   </p>
                 </div>
                 <button
-                  className="focus-ring text-label text-ds-brand-deep"
+                  className="link focus-ring text-label"
                   onClick={() => {
                     setDocument(name);
                     setModal("document");
@@ -548,7 +566,9 @@ export function AdminScreen({
               ? "The assistant is unsure about this company. Check the papers before you decide."
               : "If you approve, the team gets a request for a starting limit. It goes live when 2 of 3 approve."}
           </p>
-          <Button onClick={() => decide(company)}>Decide</Button>
+          <Button icon={<Scales size={17} />} onClick={() => decide(company)}>
+            Decide
+          </Button>
         </Panel>
       </div>
     </div>
@@ -634,7 +654,7 @@ export function AdminScreen({
                 {t}
               </p>
             ))}
-            <Link href="/admin" className="focus-ring text-label text-ds-brand-deep">
+            <Link href="/admin" className="link focus-ring text-label">
               See it in Approvals ↗
             </Link>
           </Panel>
@@ -649,7 +669,8 @@ export function AdminScreen({
               A limit change needs 2 of 3 team members. A pause starts right away.
             </p>
             <Button
-              variant="secondary"
+              variant="danger"
+              icon={<Pause size={17} />}
               disabled={paused}
               onClick={() => {
                 setReason("");
@@ -659,6 +680,7 @@ export function AdminScreen({
               Pause new shipments
             </Button>
             <Button
+              icon={<PencilSimple size={17} />}
               onClick={() => {
                 setLimit("4000");
                 setReason("");
@@ -702,6 +724,9 @@ export function AdminScreen({
         ].map((s) => (
           <Stat
             key={s.label}
+            /* The board paints the first card brand yellow and gives it the bank glyph. */
+            tone={s.label === "In the pool" ? "brand" : "plain"}
+            icon={s.label === "In the pool" ? <Bank size={16} /> : undefined}
             className={cn(
               "w-full",
               state === "M3.3" &&
@@ -789,7 +814,7 @@ export function AdminScreen({
                       href={ACCOUNT}
                       target="_blank"
                       rel="noreferrer"
-                      className="focus-ring text-caption text-ds-brand-deep"
+                      className="link focus-ring text-caption"
                     >
                       See the record on NearBlocks ↗
                     </a>
@@ -877,7 +902,7 @@ export function AdminScreen({
                   </p>
                   <Link
                     href="/admin/shippers/blue-ridge.testnet"
-                    className="focus-ring mt-12 inline-block text-label underline"
+                    className="link-ink focus-ring mt-12 inline-block text-label underline"
                   >
                     See Blue Ridge Logistics ↗
                   </Link>
@@ -899,15 +924,20 @@ export function AdminScreen({
             application
           ) : (
             <>
+              {/* Tabs, so they are plain pills with no circle (design/waybil.pen, M2). */}
               <div className="flex gap-8 lg:hidden">
                 {["Waiting", "Active"].map((t) => (
-                  <Button
+                  <button
                     key={t}
-                    variant={tab === t ? "primary" : "secondary"}
+                    type="button"
                     onClick={() => setTab(t)}
+                    className={cn(
+                      "press focus-ring rounded-full px-16 py-8 text-label transition-colors duration-150 ease-base",
+                      tab === t ? "bg-ds-ink text-ds-bg" : "bg-ds-canvas text-ds-muted",
+                    )}
                   >
                     {t} {t === "Waiting" ? (state === "M2.8" ? 0 : 2) : state === "M2.9" ? 0 : 3}
-                  </Button>
+                  </button>
                 ))}
               </div>
               <div className="grid items-start gap-24 lg:grid-cols-[1fr_420px]">
@@ -965,12 +995,14 @@ export function AdminScreen({
                 <div className="flex gap-10">
                   <Button
                     variant={!rejection ? "primary" : "quiet"}
+                    icon={!rejection ? <Check size={17} weight="bold" /> : undefined}
                     onClick={() => setRejection(false)}
                   >
                     Approve
                   </Button>
                   <Button
-                    variant={rejection ? "primary" : "quiet"}
+                    variant={rejection ? "danger" : "quiet"}
+                    icon={rejection ? <X size={17} /> : undefined}
                     onClick={() => setRejection(true)}
                   >
                     Reject
@@ -1043,6 +1075,20 @@ export function AdminScreen({
                   Cancel
                 </Button>
                 <Button
+                  variant={
+                    showing === "pause" || showing === "vote" || rejection ? "danger" : "primary"
+                  }
+                  icon={
+                    showing === "pause" ? (
+                      <Pause size={17} />
+                    ) : showing === "vote" || rejection ? (
+                      <X size={17} />
+                    ) : showing === "limit" ? (
+                      <PaperPlaneTilt size={17} />
+                    ) : (
+                      <Check size={17} weight="bold" />
+                    )
+                  }
                   disabled={
                     showing === "pause" ||
                     showing === "vote" ||

@@ -5,10 +5,11 @@ import { formatUsdc, parseUsdc, splitBill } from "@waybil/shared";
 import { RoleShell } from "@/components/layout/RoleShell";
 import { Panel } from "@/components/layout/Panel";
 import { ActionSheet } from "@/components/layout/ActionSheet";
+import { ArrowLineDown, Plus, SealCheck } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Money } from "@/components/elements/Money";
-import { FanMeter } from "@/components/elements/FanMeter";
+import { FanMeter, MeterLegend } from "@/components/elements/FanMeter";
 import { DemoRecord } from "@/components/elements/DemoRecord";
 import { DemoMap } from "@/components/elements/DemoMap";
 import { StatusPill } from "@/components/elements/StatusPill";
@@ -162,6 +163,7 @@ export function InvestorScreen({
           <div className="flex flex-col gap-10 md:flex-row [&>button]:justify-between">
             <Button
               variant="moment"
+              icon={<Plus size={17} />}
               onClick={() => {
                 setAmount("1000");
                 setState("I2.1");
@@ -195,24 +197,28 @@ export function InvestorScreen({
             </span>
           }
         >
-          <Money amount={balance.total} className="text-amount" />
-          <p className="text-caption text-ds-muted">
-            {busy
-              ? "23,000.00 is paid out early and 2,000.00 is free."
-              : `${formatUsdc(BigInt(balance.total) - BigInt(balance.cash))} USDC is paid out early. ${formatUsdc(BigInt(balance.cash))} USDC is free.`}
-          </p>
+          <div className="flex flex-col gap-4">
+            <Money amount={balance.total} className="text-amount" />
+            <p className="text-caption text-ds-muted">
+              {busy
+                ? "23,000.00 is paid out early and 2,000.00 is free."
+                : `${formatUsdc(BigInt(balance.total) - BigInt(balance.cash))} USDC is paid out early. ${formatUsdc(BigInt(balance.cash))} USDC is free.`}
+            </p>
+          </div>
           <div className="py-20">
-            <span className="mb-12 inline-block rounded-full bg-ds-ink px-12 py-6 text-caption text-ds-bg">
-              {formatUsdc(lent)} paid out
-            </span>
-            <FanMeter label="Pool money paid out" value={utilization} className="w-full" />
+            <FanMeter
+              label="Pool money paid out"
+              value={utilization}
+              markerLabel={`${formatUsdc(lent)} paid out`}
+              className="w-full"
+            />
             <div className="mt-8 flex justify-between text-caption text-ds-muted">
               {[0, 5000, 10000, 15000, 20000, 25000].map((n) => (
                 <span key={n}>{n.toLocaleString()}</span>
               ))}
             </div>
+            <MeterLegend value={utilization} className="mt-10" />
           </div>
-          <p className="text-caption text-ds-muted">● Paid out early · ● Available</p>
           {busy && (
             <p className="rounded-row bg-ds-warning-soft p-16 text-label">
               Most of the pool is working right now. Withdrawals over 2,000.00 USDC wait until
@@ -236,7 +242,7 @@ export function InvestorScreen({
           context="From payment to repayment"
         />
       </div>
-      <div className="grid gap-16 lg:grid-cols-2">
+      <div className="grid items-start gap-16 lg:grid-cols-2">
         <Panel title="Owed by each company">
           {[
             {
@@ -275,25 +281,53 @@ export function InvestorScreen({
         </Panel>
         <Panel
           title="Latest"
+          gap={4}
+          className="p-20 pb-10"
           action={
-            <Link className="focus-ring text-label text-ds-brand-deep" href="/pool/history">
+            <Link className="link focus-ring text-label" href="/pool/history">
               See all ↗
             </Link>
           }
         >
           {[
             {
+              icon: <ArrowLineDown size={16} />,
               title: "Paid Sam early",
               amount: "292500000",
-              note: "#1041 · Eastport to Harbor City · Today",
+              note: "#1041 · Eastport to Harbor City",
+              when: "Today",
             },
-            { title: "Northwind paid a bill", amount: "300000000", note: "#1032 · Yesterday" },
-            { title: "You deposited", amount: "5500000000", note: "Oct 21" },
+            {
+              icon: <SealCheck size={16} />,
+              title: "Northwind paid a bill",
+              amount: "300000000",
+              note: "#1032 · 1 day early",
+              when: "Yesterday",
+            },
+            {
+              icon: <Plus size={16} />,
+              title: "You deposited",
+              amount: "5500000000",
+              note: "",
+              when: "Oct 21",
+            },
           ].map((h) => (
-            <Link key={h.title} href="/pool/history" className="focus-ring rounded-row py-12">
-              <p className="text-label">{h.title}</p>
-              <Money amount={h.amount} className="text-label" />
-              <p className="text-caption text-ds-muted">{h.note}</p>
+            <Link
+              key={h.title}
+              href="/pool/history"
+              className="focus-ring flex items-center gap-12 py-12"
+            >
+              <span className="grid size-36 shrink-0 place-items-center rounded-full bg-ds-canvas">
+                {h.icon}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-label">{h.title}</span>
+                <span className="block text-caption text-ds-muted">
+                  <Money amount={h.amount} />
+                  {h.note && ` · ${h.note}`}
+                </span>
+              </span>
+              <span className="shrink-0 text-caption text-ds-muted">{h.when}</span>
             </Link>
           ))}
         </Panel>
@@ -323,7 +357,7 @@ export function InvestorScreen({
                     <p className="text-body font-medium">{h.title}</p>
                     <p className="text-caption text-ds-muted">{h.note}</p>
                     <a
-                      className="focus-ring text-caption text-ds-brand-deep"
+                      className="link focus-ring text-caption"
                       href="https://testnet.nearblocks.io/address/app.waybil.testnet"
                       target="_blank"
                       rel="noreferrer"
@@ -349,13 +383,17 @@ export function InvestorScreen({
             <Panel>
               <div className="flex flex-wrap gap-8">
                 {["All", "Waiting to be repaid", "Repaid"].map((f) => (
-                  <Button
+                  <button
                     key={f}
-                    variant={filter === f ? "primary" : "quiet"}
+                    type="button"
                     onClick={() => setFilter(f)}
+                    className={cn(
+                      "press focus-ring rounded-full px-16 py-8 text-label transition-colors duration-150 ease-base",
+                      filter === f ? "bg-ds-ink text-ds-bg" : "bg-ds-canvas text-ds-muted",
+                    )}
                   >
                     {f}
-                  </Button>
+                  </button>
                 ))}
               </div>
               {state === "I3.4" ? (
@@ -478,11 +516,18 @@ export function InvestorScreen({
                 error={error}
                 disabled={waiting}
               />
-              <div className="grid grid-cols-3 gap-8">
+              {/* Small grey chips, the size the board draws them, not full buttons. */}
+              <div className="flex flex-wrap gap-8">
                 {[25, 50, 100].map((n) => (
-                  <Button key={n} variant="quiet" disabled={waiting} onClick={() => quick(n)}>
+                  <button
+                    key={n}
+                    type="button"
+                    disabled={waiting}
+                    onClick={() => quick(n)}
+                    className="press focus-ring rounded-full bg-ds-canvas px-12 py-6 text-caption hover:bg-ds-surface-3 disabled:text-ds-off-ink"
+                  >
                     {n === 100 ? (deposit ? "Max" : "Max now") : `${n}%`}
-                  </Button>
+                  </button>
                 ))}
               </div>
               {waiting ? (
@@ -524,10 +569,7 @@ export function InvestorScreen({
                 {deposit ? "Deposit" : "Withdraw"} {formatUsdc(units)} USDC
               </Button>
               {deposit && (
-                <button
-                  className="focus-ring text-caption text-ds-muted underline"
-                  onClick={() => setRisks(true)}
-                >
+                <button className="link focus-ring text-caption" onClick={() => setRisks(true)}>
                   How the pool works and its risks
                 </button>
               )}

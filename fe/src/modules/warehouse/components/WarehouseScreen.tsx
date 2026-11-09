@@ -10,6 +10,9 @@ import {
   Warning,
   Check,
   Image as ImageIcon,
+  Keyboard,
+  PaperPlaneTilt,
+  Scan,
 } from "@phosphor-icons/react";
 import { RoleShell } from "@/components/layout/RoleShell";
 import { Panel } from "@/components/layout/Panel";
@@ -161,13 +164,29 @@ export function WarehouseScreen({
           <ResultScreen
             {...result}
             warning={state === "W2.4"}
+            tone={
+              state === "W2.4"
+                ? "danger"
+                : state === "W2.8"
+                  ? "soft"
+                  : state === "W2.12"
+                    ? "success"
+                    : "brand"
+            }
             action={state === "W2.4" ? "Scan another QR" : "Back to arrivals"}
+            actionIcon={
+              state === "W2.4" ? (
+                <Scan size={17} />
+              ) : state === "W2.12" ? (
+                <ArrowLeft size={17} />
+              ) : undefined
+            }
             onAction={state === "W2.4" ? () => go("W2.2") : home}
           />
           {state === "W2.12" && (
             <Link
               href="/warehouse/history"
-              className="focus-ring mx-auto block w-fit text-label text-ds-muted"
+              className="link focus-ring mx-auto block w-fit text-label"
             >
               See it in history ↗
             </Link>
@@ -218,11 +237,21 @@ export function WarehouseScreen({
           ) : state.startsWith("W1") ? (
             <div className="flex flex-col gap-16">
               {state === "W1.2" && (
-                <Panel className="bg-ds-brand-soft" title="Arriving in about 5 minutes">
-                  <p className="text-heading">Sam · NWF-204</p>
-                  <p className="text-label">#1041 from Northwind · 120 crates of coffee</p>
-                  <Button className="w-full justify-between md:w-fit" onClick={scan}>
-                    Scan a delivery
+                <Panel className="ready-card bg-ds-brand">
+                  <p className="flex items-center gap-8 text-label">
+                    <Truck size={18} className="shrink-0" />
+                    Arriving in about 5 minutes
+                  </p>
+                  <p className="text-title">Sam · NWF-204</p>
+                  <p className="text-label text-ds-ink-2">
+                    #1041 from Northwind · 120 crates of coffee
+                  </p>
+                  <Button
+                    icon={<Scan size={17} />}
+                    className="w-full justify-between md:w-fit"
+                    onClick={scan}
+                  >
+                    Scan the driver&apos;s QR
                   </Button>
                 </Panel>
               )}
@@ -378,6 +407,7 @@ export function WarehouseScreen({
                   : "Turn the camera on in your settings, or type the code from the driver's phone."}
               </p>
               <Button
+                icon={state === "W2.11" ? <Keyboard size={17} /> : undefined}
                 className="w-full justify-between"
                 onClick={() => {
                   if (state === "W2.11") go("W2.9");
@@ -450,7 +480,11 @@ export function WarehouseScreen({
                   ))}
                 </span>
               </label>
-              <Button disabled={code.length !== 8} onClick={() => checkCode(code)}>
+              <Button
+                icon={<Check size={17} weight="bold" />}
+                disabled={code.length !== 8}
+                onClick={() => checkCode(code)}
+              >
                 Confirm code
               </Button>
               <Button variant="quiet" onClick={() => go("W2.2")}>
@@ -581,6 +615,7 @@ export function WarehouseScreen({
                 Sam will not be paid early until Northwind settles this with him.
               </p>
               <Button
+                icon={<PaperPlaneTilt size={17} />}
                 className="w-full justify-between"
                 disabled={submitting.current}
                 onClick={() => confirm(true)}
@@ -652,6 +687,7 @@ export function WarehouseScreen({
                 <Button
                   loading={state === "W2.5"}
                   loadingLabel="Saving your confirmation"
+                  icon={allGood ? <Check size={17} weight="bold" /> : undefined}
                   className="w-full justify-between md:w-fit"
                   onClick={() => (allGood ? confirm() : go("W2.7"))}
                 >
