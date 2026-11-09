@@ -79,3 +79,25 @@ These issues remain open for integration; the frontend does not claim testnet co
 Foundation questions about the footer, missing status chips and FanMeter wording remain recorded in PR #52.
 No new dependencies were added in these batches. All changes remain under `fe/`.
 This implementation is AI-generated and must retain that disclosure when a PR is opened.
+
+## Comparing a screen to the board
+
+`design-spec.json` holds every text and icon the Desktop frames of `design/waybil.pen` draw,
+per screen code, in document order. `compare-to-design.js` loads each screen in the gallery and
+reports what the app renders differently: text the board draws and the app does not, text the
+app adds, a font size off by more than 2 px, and a different number of icons.
+
+```powershell
+$env:NEXT_PUBLIC_GALLERY='on'
+pnpm --filter @waybil/fe dev
+```
+
+Open http://localhost:3001/dev/gallery, paste `design-spec.json` into the console as
+`window.__designSpec = { ... }`, paste `compare-to-design.js`, then run
+`await compareToDesign()` for every screen in the spec or `await compareToDesign(["W2.3"])`
+for a few.
+
+It reads text, sizes and icon counts only. Colour, spacing, motion and anything a shader
+draws still need eyes, so a clean report means the words and the pieces are right, not that
+the screen is finished. The spec covers the warehouse board so far; extend it a board at a
+time with the pencil MCP.
