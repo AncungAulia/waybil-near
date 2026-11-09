@@ -12,6 +12,9 @@ export function ActionSheet({
   stamp,
   stampTone = "soft",
   className,
+  appearance,
+  hideHeader = false,
+  overlayClassName,
 }: {
   title: string;
   children: React.ReactNode;
@@ -23,13 +26,22 @@ export function ActionSheet({
   /** The stamp colour: the soft tint of a permission ask, or the brand yellow of a result. */
   stampTone?: "soft" | "brand" | "error";
   className?: string;
+  appearance?: "wallet";
+  hideHeader?: boolean;
+  overlayClassName?: string;
 }) {
   const start = useRef<{ y: number; time: number } | null>(null);
+  const content = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState(0);
   const [openedWithKeyboard] = useState(
     () => typeof document !== "undefined" && !!document.activeElement?.matches(":focus-visible"),
   );
-  const contents = stamp ? (
+  const contents = hideHeader ? (
+    <>
+      <Dialog.Title className="sr-only">{title}</Dialog.Title>
+      {children}
+    </>
+  ) : stamp ? (
     <>
       <span
         className={cn(
@@ -43,7 +55,11 @@ export function ActionSheet({
       >
         {stamp}
       </span>
-      <Dialog.Title className="text-heading">{title}</Dialog.Title>
+      <Dialog.Title
+        className={cn("text-heading", appearance === "wallet" && "text-[24px] leading-[1.2]")}
+      >
+        {title}
+      </Dialog.Title>
       {children}
     </>
   ) : (
@@ -54,9 +70,13 @@ export function ActionSheet({
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="press focus-ring grid size-40 place-items-center rounded-full bg-ds-canvas"
+          className={cn(
+            "press grid size-40 place-items-center rounded-full bg-ds-canvas",
+            appearance === "wallet" ? "focus-visible:outline-ds-ink" : "focus-ring",
+            appearance === "wallet" && "size-24 bg-transparent text-ds-muted",
+          )}
         >
-          <X size={18} />
+          <X size={appearance === "wallet" ? 20 : 18} />
         </button>
       </div>
       {children}
@@ -64,6 +84,8 @@ export function ActionSheet({
   );
   const classes = cn(
     "flex flex-col gap-20 rounded-t-card bg-ds-bg p-24 md:rounded-card",
+    appearance === "wallet" &&
+      "gap-16 rounded-t-[32px] px-20 pt-12 pb-[calc(28px+env(safe-area-inset-bottom))] md:rounded-card md:p-28",
     stamp && "items-center gap-14 text-center",
   );
   return (
@@ -74,14 +96,23 @@ export function ActionSheet({
       }}
     >
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-40 bg-ds-ink/35" />
+        <Dialog.Overlay className={cn("fixed inset-0 z-40 bg-ds-ink/35", overlayClassName)} />
         <Dialog.Content
+          ref={content}
+          tabIndex={-1}
+          onOpenAutoFocus={(event) => {
+            if (appearance === "wallet" && !openedWithKeyboard) {
+              event.preventDefault();
+              content.current?.focus();
+            }
+          }}
           aria-describedby={undefined}
           className={cn(
             classes,
             "action-sheet fixed right-0 bottom-0 left-0 z-50 max-h-[90dvh] overflow-y-auto md:top-1/2 md:right-auto md:bottom-auto md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2",
             wide ? "md:w-560" : "md:w-480",
             className,
+            appearance === "wallet" && "focus-visible:outline-none",
           )}
           style={{
             ...(drag ? { transform: `translateY(${drag}px)` } : {}),

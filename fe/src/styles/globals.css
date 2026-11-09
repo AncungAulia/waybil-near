@@ -41,6 +41,7 @@
   /* Second line of text on the dark toast, and the quieter one in the footer. */
   --color-ds-on-night: #a8a8a8;
   --color-ds-on-night-dim: #8c8c8c;
+  --color-ds-role-selected-muted: #c9c9c9;
 
   /* Pressed and disabled shades, read off the States board. */
   --color-ds-brand-pressed: #f0b400;
