@@ -6,6 +6,8 @@ import Link from "next/link";
 import {
   ArrowLeft,
   Camera,
+  Package,
+  WarningCircle,
   Truck,
   Warning,
   Check,
@@ -133,19 +135,19 @@ export function WarehouseScreen({
       ? {
           title: "Delivery confirmed",
           description: "120 crates from Northwind are in. Sam is getting paid right now.",
-          recorded: "Demo arrival receipt",
+          recorded: "Arrival confirmed by Lena",
         }
       : state === "W2.8"
         ? {
             title: "Report sent",
             description: `Northwind and Sam can see your report. The ${qty} good crates and the ${120 - Number(qty)} damaged ones are recorded.`,
-            recorded: "Demo report receipt",
+            recorded: "Report recorded on NEAR",
           }
         : state === "W2.12"
           ? {
               title: "Already confirmed",
               description:
-                "Lena confirmed shipment #1041 today at 15:36. There is nothing else to do.",
+                "Lena confirmed shipment #1041 today at 15:36. Sam is already paid. There’s nothing else to do.",
               recorded: undefined,
             }
           : state === "W2.4"
@@ -182,6 +184,7 @@ export function WarehouseScreen({
               ) : undefined
             }
             onAction={state === "W2.4" ? () => go("W2.2") : home}
+            secondary={state === "W2.4" ? { label: "Back to arrivals", onClick: home } : undefined}
           />
           {state === "W2.12" && (
             <Link
@@ -220,11 +223,17 @@ export function WarehouseScreen({
 
           {state === "W1.3" || state === "W3.2" ? (
             <Panel className="min-h-[65dvh] items-center justify-center text-center">
-              <img
-                src="/illustrations/warehouse.svg"
-                alt=""
-                className="h-140 w-180 object-contain"
-              />
+              {state === "W1.3" ? (
+                <img
+                  src="/illustrations/warehouse.svg"
+                  alt=""
+                  className="h-140 w-180 object-contain"
+                />
+              ) : (
+                <span className="grid size-72 place-items-center rounded-full bg-ds-canvas">
+                  <Package size={32} />
+                </span>
+              )}
               <h2 className="text-heading">
                 {state === "W1.3" ? "No trucks expected today" : "Nothing received yet"}
               </h2>
@@ -286,7 +295,7 @@ export function WarehouseScreen({
                     </div>
                   ))}
                 </Panel>
-                <Panel title="Heading to Harbor Hub" className="p-16 md:order-1 lg:order-2">
+                <Panel className="p-16 md:order-1 lg:order-2">
                   <DemoMap label="2 trucks on the way" twoTrucks className="h-340 md:h-380" />
                 </Panel>
               </div>
@@ -332,11 +341,25 @@ export function WarehouseScreen({
                     key={id}
                     className="flex flex-wrap items-center justify-between gap-12 border-b border-ds-line py-16 last:border-0"
                   >
-                    <div>
-                      <h2 className="text-body">{from} to Harbor City</h2>
-                      <p className="mt-4 text-caption text-ds-muted">
-                        #{id} · {driver} · {cargo}
-                      </p>
+                    <div className="flex items-center gap-12">
+                      <span
+                        className={cn(
+                          "grid size-40 shrink-0 place-items-center rounded-full bg-ds-canvas",
+                          status === "Confirmed" ? "text-ds-ink" : "text-ds-danger",
+                        )}
+                      >
+                        {status === "Confirmed" ? (
+                          <Package size={17} />
+                        ) : (
+                          <WarningCircle size={17} />
+                        )}
+                      </span>
+                      <span>
+                        <h2 className="text-body">{from} to Harbor City</h2>
+                        <p className="mt-4 text-caption text-ds-muted">
+                          #{id} · {driver} · {cargo}
+                        </p>
+                      </span>
                     </div>
                     <div className="flex flex-col items-end gap-6">
                       <span
@@ -398,7 +421,7 @@ export function WarehouseScreen({
           ) : state === "W2.2" || state === "W2.11" ? (
             <Panel className="min-h-420 items-center justify-center text-center">
               <Camera size={60} className="text-ds-muted" />
-              <h2 className="text-title">
+              <h2 className="text-heading">
                 {state === "W2.2" ? "Allow the camera" : "The camera is blocked"}
               </h2>
               <p className="max-w-400 text-body text-ds-muted">
@@ -437,13 +460,13 @@ export function WarehouseScreen({
             </Panel>
           ) : state === "W2.9" || state === "W2.10" ? (
             <Panel className="min-h-420 justify-center">
-              <h2 className="text-title">
-                {state === "W2.10" ? "That code does not match" : "Type the code"}
+              <h2 className="text-heading">
+                {state === "W2.10" ? "That code doesn’t match" : "Type the code"}
               </h2>
               <p className="text-body text-ds-muted">
                 {state === "W2.10"
-                  ? "It is not an arrival for Harbor Hub today. Check the code under the driver's QR."
-                  : "It is under the QR on the driver's phone."}
+                  ? "It isn’t an arrival for Harbor Hub today. Check the code under the driver’s QR."
+                  : "It’s under the QR on the driver’s phone."}
               </p>
               <label className="relative block rounded-small has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ds-ink">
                 <span className="sr-only">Delivery code</span>
@@ -495,7 +518,7 @@ export function WarehouseScreen({
             <>
               <Panel>
                 <fieldset>
-                  <legend className="mb-12 text-label">What is wrong?</legend>
+                  <legend className="mb-12 text-label">What’s wrong?</legend>
                   <div className="flex flex-wrap gap-8">
                     {["Damaged", "Missing items", "Wrong goods", "Other"].map((r) => (
                       <button
@@ -520,19 +543,21 @@ export function WarehouseScreen({
                 </fieldset>
                 <label className="text-label">
                   How many crates are in good shape?
-                  <input
-                    inputMode="numeric"
-                    type="number"
-                    min={0}
-                    max={120}
-                    value={qty}
-                    onChange={(e) => setQty(e.target.value)}
-                    className="focus-ring mt-8 w-full rounded-small border border-ds-warning bg-ds-bg p-16 text-heading"
-                  />
+                  <span className="mt-8 flex items-center gap-10">
+                    <input
+                      inputMode="numeric"
+                      type="number"
+                      min={0}
+                      max={120}
+                      value={qty}
+                      onChange={(e) => setQty(e.target.value)}
+                      className="focus-ring w-120 rounded-small border border-ds-warning bg-ds-bg p-16 text-heading"
+                    />
+                    <span className="text-body text-ds-muted">of 120</span>
+                  </span>
                 </label>
                 <p className="text-caption text-ds-warning">
-                  {Math.max(0, 120 - Number(qty))} crates have a problem. This goes into your
-                  report.
+                  {Math.max(0, 120 - Number(qty))} crates are damaged. This goes into your report.
                 </p>
                 <label className="text-label">
                   What happened
@@ -542,6 +567,7 @@ export function WarehouseScreen({
                     className="focus-ring mt-8 min-h-90 w-full resize-y rounded-small bg-ds-canvas p-16 text-body"
                   />
                 </label>
+                <p className="text-caption text-ds-muted">Can’t be changed after you approve.</p>
                 <div>
                   <p className="mb-8 text-label">Photos</p>
                   <div className="flex flex-wrap gap-8">
@@ -612,7 +638,7 @@ export function WarehouseScreen({
               </Panel>
               <p className="my-16 flex gap-10 rounded-row bg-ds-brand-soft p-16 text-label">
                 <Warning size={20} className="shrink-0" />
-                Sam will not be paid early until Northwind settles this with him.
+                Sam won’t be paid early until Northwind settles this with him.
               </p>
               <Button
                 icon={<PaperPlaneTilt size={17} />}
@@ -648,7 +674,7 @@ export function WarehouseScreen({
                     {
                       value: false,
                       title: "Some are missing or damaged",
-                      sub: "You will report what is wrong",
+                      sub: "You’ll report what’s wrong",
                     },
                   ].map((o) => (
                     <label
@@ -676,14 +702,11 @@ export function WarehouseScreen({
                 </fieldset>
               </Panel>
               <div className="flex flex-col-reverse gap-12 md:flex-row md:justify-end">
-                <Button
-                  variant="quiet"
-                  disabled={state === "W2.5"}
-                  className="text-ds-danger"
-                  onClick={() => go("W2.7")}
-                >
-                  Report a problem
-                </Button>
+                {state !== "W2.5" && (
+                  <Button variant="quiet" className="text-ds-danger" onClick={() => go("W2.7")}>
+                    Report a problem
+                  </Button>
+                )}
                 <Button
                   loading={state === "W2.5"}
                   loadingLabel="Saving your confirmation"

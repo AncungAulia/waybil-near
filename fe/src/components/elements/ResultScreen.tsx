@@ -14,6 +14,7 @@ export function ResultScreen({
   action,
   actionIcon,
   onAction,
+  secondary,
   fullScreen = false,
 }: {
   title: string;
@@ -27,6 +28,8 @@ export function ResultScreen({
   /** Replaces the arrow in the button's circle, for example the scanner. */
   actionIcon?: React.ReactNode;
   onAction: () => void;
+  /** The quieter way out the board draws under the main action. */
+  secondary?: { label: string; onClick: () => void };
   fullScreen?: boolean;
 }) {
   return (
@@ -64,6 +67,11 @@ export function ResultScreen({
         <Button icon={actionIcon} className="w-full justify-between" onClick={onAction}>
           {action}
         </Button>
+        {secondary && (
+          <Button variant="quiet" className="w-full justify-center" onClick={secondary.onClick}>
+            {secondary.label}
+          </Button>
+        )}
       </div>
     </section>
   );

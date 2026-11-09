@@ -57,6 +57,9 @@ function readScreen(doc, win) {
     }
     if (["NAV", "HEADER", "SCRIPT", "STYLE", "TEMPLATE", "NOSCRIPT"].includes(el.tagName)) return;
     const style = win.getComputedStyle(el);
+    /* A mobile-only block and a spoken-only label are not drawn at this width. */
+    if (style.display === "none" || style.visibility === "hidden") return;
+    if (typeof el.className === "string" && el.className.includes("sr-only")) return;
     const block = !style.display.startsWith("inline") && style.display !== "contents";
     if (block) flush();
     for (const node of el.childNodes) {
