@@ -125,18 +125,24 @@ export function ShipperDetail({
   const inPay = state.startsWith("P4");
   if (state === "P4.4")
     return (
-      <ResultScreen
-        title="Bill paid"
-        description={`You paid ${formatUsdc(BigInt(bill))} USDC one day early. Your on-time record went up.`}
-        recorded="Demo bill payment receipt"
-        action="Done"
-        onAction={() => go("P3.5")}
-      >
-        <Panel className="text-left">
-          <KeyValue label="Credit limit left" value={<Money amount="900000000" />} />
-          <KeyValue label="Paid on time" value="100% · 10 of 10 bills" />
-        </Panel>
-      </ResultScreen>
+      <>
+        <div className="mb-24">
+          <h1 className="text-title md:text-amount">Eastport to {city}</h1>
+          <p className="mt-4 text-label text-ds-muted">Shipment #{shipment.id}</p>
+        </div>
+        <ResultScreen
+          title="Bill paid"
+          description={`You paid ${formatUsdc(BigInt(bill))} USDC one day early. Your on-time record went up.`}
+          recorded="Payment sent"
+          action="Done"
+          onAction={() => go("P3.5")}
+        >
+          <Panel className="text-left">
+            <KeyValue label="Credit limit left" value="900 of 3,000 USDC" />
+            <KeyValue label="Paid on time" value="100% · 10 of 10 bills" />
+          </Panel>
+        </ResultScreen>
+      </>
     );
 
   return (
@@ -164,15 +170,26 @@ export function ShipperDetail({
         )}
       </div>
       {inPay ? (
-        <Panel className="mx-auto w-full max-w-480 gap-20 p-24 md:p-32" title="Pay this bill">
+        <Panel
+          className="mx-auto w-full max-w-480 gap-20 p-24 md:p-32"
+          title="Pay this bill"
+          action={
+            <button aria-label="Close" className="focus-ring p-4" onClick={() => go("P3.4")}>
+              <X size={18} />
+            </button>
+          }
+        >
           <p className="text-label text-ds-muted">Shipment #{shipment.id} · due Dec 11</p>
-          <Money amount={bill} className="text-display" />
-          <p className="text-label text-ds-success">Paying one day early</p>
-          <div className="rounded-row bg-ds-canvas p-16">
-            <p className="text-label">From your wallet</p>
-            <p className="mt-6 text-caption text-ds-muted">
-              <Money amount={state === "P4.3" && !funded ? "120000000" : "1250000000"} /> available
-            </p>
+          <Money amount={bill} className="text-[36px] font-medium tracking-[-0.035em]" />
+          <p className="text-caption text-ds-success">Paying 1 day early</p>
+          <div className="flex items-center gap-12 rounded-row bg-ds-canvas p-16">
+            <Wallet size={20} className="shrink-0 text-ds-muted" />
+            <span>
+              <span className="block text-[14px] font-medium">From your wallet</span>
+              <span className="mt-4 block text-caption text-ds-muted">
+                {`${formatUsdc(BigInt(state === "P4.3" && !funded ? "120000000" : "1250000000"))} USDC available`}
+              </span>
+            </span>
           </div>
           {state === "P4.2" && (
             <div className="flex flex-col gap-12">
@@ -184,15 +201,16 @@ export function ShipperDetail({
               />
               <TimelineStep
                 className="w-full"
-                state="current"
+                state="waiting"
                 title={`Send ${formatUsdc(BigInt(bill))} USDC`}
                 time="Approve it in your wallet"
               />
             </div>
           )}
           {state === "P4.3" && !funded && (
-            <p className="text-label text-ds-danger">
-              You need 180.00 USDC more. Add USDC to your wallet, then try again.
+            <p className="flex items-start gap-10 text-[13.5px] text-ds-danger">
+              <WarningCircle size={18} className="mt-1 shrink-0" />
+              <span>You need 180.00 USDC more. Add USDC to your wallet, then try again.</span>
             </p>
           )}
           <Button
@@ -210,7 +228,9 @@ export function ShipperDetail({
             </Button>
           ) : (
             <p className="text-caption text-ds-muted">
-              Investors get paid back, and your limit frees up right away.
+              {state === "P4.2"
+                ? "Two quick approvals. The first one only happens once."
+                : "Investors get paid back, and your limit frees up right away."}
             </p>
           )}
           {error && (
