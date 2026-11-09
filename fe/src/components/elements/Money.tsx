@@ -9,10 +9,10 @@ export function Money({ amount, className }: { amount: string; className?: strin
     >
       {formatUsdc(BigInt(amount))}
       {/*
-       * Half the number, as the board draws the big amounts, but never under 11 px. In a list
-       * row the number is already small and the unit sits at the same size the board uses.
+       * The board writes the amount and its unit at one size, so the unit only drops the
+       * number's tighter tracking. The amount field keeps its own smaller suffix.
        */}
-      <span className="text-[max(0.5em,11px)] font-medium tracking-normal">USDC</span>
+      <span className="font-medium tracking-normal">USDC</span>
     </span>
   );
 }
