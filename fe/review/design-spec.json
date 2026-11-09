@@ -1,5 +1,4 @@
 {
-  "_about": "Every text and icon the Desktop frames of design/waybil.pen draw, per screen code, in document order. T|<font size>|<content> and I|<icon name>. The navbar, the map internals and the board's own decoration are left out because the app does not draw them the same way. Extracted with the pencil MCP.",
   "W1.1": [
     "T|40|Good afternoon, Lena",
     "T|14|3 trucks expected at Harbor Hub today",
@@ -15,7 +14,10 @@
     "I|truck",
     "T|15|Chris Novak · from Millbrook",
     "T|13|#1050 · 40 crates of eggs · Northwind",
-    "T|14|Not left yet"
+    "T|14|Not left yet",
+    "T|18|Heading to Harbor Hub",
+    "C|52",
+    "C|42"
   ],
   "W1.2": [
     "T|40|Good afternoon, Lena",
@@ -38,13 +40,20 @@
     "I|truck",
     "T|15|Chris Novak · from Millbrook",
     "T|13|#1050 · 40 crates of eggs · Northwind",
-    "T|14|Not left yet"
+    "T|14|Not left yet",
+    "T|18|Heading to Harbor Hub",
+    "C|52",
+    "C|52",
+    "C|42"
   ],
   "W1.3": [
     "T|40|Arrivals",
     "T|14|Harbor Hub",
     "T|19|No trucks expected today",
-    "T|14|When a shipment to Harbor Hub is approved, it shows up here with the driver's name and arrival time."
+    "T|14|When a shipment to Harbor Hub is approved, it shows up here with the driver's name and arrival time.",
+    "C|94",
+    "C|19",
+    "C|19"
   ],
   "W2.1": [
     "T|40|Scan a delivery",
@@ -53,7 +62,9 @@
     "T|18|Type code",
     "T|13|6 characters, shown under the QR on the driver's phone.",
     "T|15|Find delivery",
-    "I|arrow-up-right"
+    "I|arrow-up-right",
+    "C|50",
+    "C|43"
   ],
   "W2.2": [
     "T|40|Scan a delivery",
@@ -62,7 +73,45 @@
     "T|14|Your phone asks next. Waybil only uses the camera to read the driver's QR.",
     "T|15|Continue",
     "I|arrow-up-right",
-    "T|15|Type code"
+    "T|15|Type code",
+    "C|50",
+    "C|29"
+  ],
+  "W2.9": [
+    "T|40|Scan a delivery",
+    "I|keyboard",
+    "T|22|Type the code",
+    "T|14|It's under the QR on the driver's phone.",
+    "T|22|7",
+    "T|22|K",
+    "T|22|2",
+    "T|22|Q",
+    "T|22|9",
+    "T|22|F",
+    "T|15|Confirm code",
+    "I|check",
+    "T|15|Scan instead",
+    "C|50",
+    "C|29"
+  ],
+  "W2.10": [
+    "T|40|Scan a delivery",
+    "I|circle-alert",
+    "T|22|That code doesn't match",
+    "T|14|It isn't an arrival for Harbor Hub today. Check the code under the driver's QR.",
+    "T|22|7",
+    "T|22|K",
+    "T|22|2",
+    "T|22|Q",
+    "T|22|9",
+    "T|22|F",
+    "T|22|4",
+    "T|22|N",
+    "T|15|Confirm code",
+    "I|check",
+    "T|15|Scan instead",
+    "C|50",
+    "C|29"
   ],
   "W2.3": [
     "I|arrow-left",
@@ -86,7 +135,9 @@
     "T|13|You'll report what's wrong",
     "T|15|Report a problem",
     "T|15|Confirm full delivery",
-    "I|check"
+    "I|check",
+    "C|39",
+    "C|39"
   ],
   "W2.4": [
     "I|circle-x",
@@ -118,7 +169,9 @@
     "T|13|You'll report what's wrong",
     "T|15|Saving your confirmation",
     "I|loader-circle",
-    "T|13|Takes a second. Keep this page open."
+    "T|13|Takes a second. Keep this page open.",
+    "C|39",
+    "C|39"
   ],
   "W2.6": [
     "T|30|Delivery confirmed",
@@ -128,7 +181,9 @@
     "T|12|See the record on NearBlocks",
     "I|arrow-up-right",
     "T|15|Back to arrivals",
-    "I|arrow-up-right"
+    "I|arrow-up-right",
+    "C|19",
+    "C|19"
   ],
   "W2.7": [
     "I|arrow-left",
@@ -158,7 +213,8 @@
     "T|14|Sam won't be paid early until Northwind settles this with him.",
     "T|15|Cancel",
     "T|15|Send report",
-    "I|send"
+    "I|send",
+    "C|39"
   ],
   "W2.8": [
     "I|send",
@@ -171,38 +227,6 @@
     "T|15|Back to arrivals",
     "I|arrow-up-right"
   ],
-  "W2.9": [
-    "T|40|Scan a delivery",
-    "I|keyboard",
-    "T|22|Type the code",
-    "T|14|It's under the QR on the driver's phone.",
-    "T|22|7",
-    "T|22|K",
-    "T|22|2",
-    "T|22|Q",
-    "T|22|9",
-    "T|22|F",
-    "T|15|Confirm code",
-    "I|check",
-    "T|15|Scan instead"
-  ],
-  "W2.10": [
-    "T|40|Scan a delivery",
-    "I|circle-alert",
-    "T|22|That code doesn't match",
-    "T|14|It isn't an arrival for Harbor Hub today. Check the code under the driver's QR.",
-    "T|22|7",
-    "T|22|K",
-    "T|22|2",
-    "T|22|Q",
-    "T|22|9",
-    "T|22|F",
-    "T|22|4",
-    "T|22|N",
-    "T|15|Confirm code",
-    "I|check",
-    "T|15|Scan instead"
-  ],
   "W2.11": [
     "T|40|Scan a delivery",
     "I|camera-off",
@@ -210,7 +234,9 @@
     "T|14|Turn the camera on in your settings, or type the code from the driver's phone.",
     "T|15|Type the code",
     "I|keyboard",
-    "T|15|How to turn it on"
+    "T|15|How to turn it on",
+    "C|50",
+    "C|29"
   ],
   "W2.12": [
     "I|circle-check",
@@ -248,13 +274,18 @@
     "T|15|Eastport to Harbor City",
     "T|13|#1030 · Sam · 100 of 100 sacks",
     "T|12|Confirmed",
-    "T|12|Nov 7, 09:20"
+    "T|12|Nov 7, 09:20",
+    "C|47",
+    "C|47",
+    "C|94"
   ],
   "W3.2": [
     "T|40|History",
     "T|14|Everything received at Harbor Hub",
     "I|package-check",
     "T|17|Nothing received yet",
-    "T|14|Deliveries you confirm or report show up here."
-  ]
+    "T|14|Deliveries you confirm or report show up here.",
+    "C|94"
+  ],
+  "_about": "Every text, icon and card the Desktop frames of design/waybil.pen draw, per screen code. T|<font size>|<content>, I|<icon name>, and C|<card width as a percent of the frame>. The navbar, the board's decoration and the drawn map are left out; the map is found by the Base inside it, never by its name. Extracted with the pencil MCP."
 }

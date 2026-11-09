@@ -1,6 +1,6 @@
 # Frontend review
 
-The remaining frontend batches are organized into progressive commits on `fe/shipper` for review.
+The remaining frontend batches are organized into progressive commits on `fe/design-alignment` for review.
 Progressive commits, a branch push and a review PR are authorized. Merge and deployment are deferred.
 Vercel deployment is deferred.
 The foundation and driver/warehouse batches were merged in PRs #52 and #53.
@@ -97,7 +97,16 @@ Open http://localhost:3001/dev/gallery, paste `design-spec.json` into the consol
 `await compareToDesign()` for every screen in the spec or `await compareToDesign(["W2.3"])`
 for a few.
 
-It reads text, sizes and icon counts only. Colour, spacing, motion and anything a shader
-draws still need eyes, so a clean report means the words and the pieces are right, not that
-the screen is finished. The spec covers the warehouse board so far; extend it a board at a
-time with the pencil MCP.
+It reads text, sizes, icon counts and the shape of the cards. Colour, motion and anything a
+shader draws still need eyes, so a clean report means the words, the sizes and the layout are
+right, not that the screen is finished. Never call a board done on the report alone.
+
+Two rules when extracting a board, both learned the hard way:
+
+- Skip the map by structure, not by name. A frame called `Map` can be the card that holds the
+  map and its title. Skip the inner frame, the one with `Base` in it.
+- An "extra" line means the app draws something the spec does not list. Read the design node
+  before removing anything, because the spec may be the thing that is wrong. A map title was
+  deleted from W1.1 and W1.2 exactly this way.
+
+The spec covers the warehouse board so far; extend it a board at a time with the pencil MCP.

@@ -12,9 +12,10 @@
  *        await compareToDesign()                         // every screen in the spec
  *
  * It reports, per screen: text the board draws that the app never renders, text the app
- * renders that the board does not draw, a font size that differs by more than 2 px, and a
- * different number of icons. It does not judge colour, spacing or motion, so a screen that
- * comes back clean still deserves one look.
+ * renders that the board does not draw, a font size that differs by more than 2 px, a
+ * different number of icons, and a card whose width or height is off by more than a tenth.
+ * It does not judge colour or motion, so a screen that comes back clean still deserves one
+ * look before anyone calls it done.
  */
 
 /** Set `window.__designSpec` from fe/review/design-spec.json, or serve it and set this. */
@@ -83,6 +84,21 @@ function readScreen(doc, win) {
   return rows;
 }
 
+/** The width of every card, as a share of the screen, which is how the board measures too. */
+function readCards(doc, win) {
+  const page = doc.body.getBoundingClientRect();
+  const widths = [];
+  for (const el of doc.querySelectorAll("section, div")) {
+    const style = win.getComputedStyle(el);
+    if (style.display === "none") continue;
+    if ((parseFloat(style.borderTopLeftRadius) || 0) < 20) continue;
+    const box = el.getBoundingClientRect();
+    if (box.width < 220 || box.height < 80) continue;
+    widths.push(Math.round((box.width / page.width) * 100));
+  }
+  return widths.sort((a, b) => a - b);
+}
+
 function split(rows) {
   const texts = new Map();
   let icons = 0;
@@ -114,9 +130,20 @@ async function compareToDesign(codes) {
     });
     await new Promise((r) => setTimeout(r, 450));
 
-    const want = split(spec[code]);
+    const want = split(spec[code].filter((row) => !row.startsWith("C|")));
     const got = split(readScreen(frame.contentDocument, frame.contentWindow));
     const lines = [];
+
+    const wantCards = spec[code]
+      .filter((row) => row.startsWith("C|"))
+      .map((row) => Number(row.slice(2)))
+      .sort((a, b) => a - b);
+    const gotCards = readCards(frame.contentDocument, frame.contentWindow);
+    for (const width of wantCards) {
+      const at = gotCards.findIndex((w) => Math.abs(w - width) <= 8);
+      if (at < 0) lines.push("  card      board draws one " + width + "% wide, app has none");
+      else gotCards.splice(at, 1);
+    }
 
     for (const [text, sizes] of want.texts) {
       const mine = got.texts.get(text);
