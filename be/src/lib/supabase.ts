@@ -2,11 +2,23 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Env } from "../config/env";
 import { ApiException, conflict, unavailable } from "./errors";
 import type { Snapshot, Store, Table } from "../types/db";
+import { assertLeases } from "./lease-context";
 
 export function supabaseClient(env: Env): SupabaseClient | null {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) return null;
   return createClient(String(env.SUPABASE_URL), String(env.SUPABASE_SERVICE_ROLE_KEY), {
     auth: { persistSession: false, autoRefreshToken: false },
+    global: {
+      fetch: (input, init) => {
+        assertLeases();
+        return fetch(input, {
+          ...init,
+          signal: init?.signal
+            ? AbortSignal.any([init.signal, AbortSignal.timeout(30000)])
+            : AbortSignal.timeout(30000),
+        });
+      },
+    },
   });
 }
 export function dbError(error: { code?: string } | null): void {
@@ -21,6 +33,7 @@ export function dbError(error: { code?: string } | null): void {
 export class SupabaseStore implements Store {
   constructor(private client: SupabaseClient | null) {}
   private db() {
+    assertLeases();
     return this.client ?? unavailable();
   }
   async get<T>(table: Table, id: string): Promise<Snapshot<T> | null> {

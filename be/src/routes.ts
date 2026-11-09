@@ -22,6 +22,10 @@ import { NearAI } from "./lib/near-ai";
 import { Credit } from "./modules/credit/credit.service";
 import { NearCreditWriter } from "./modules/credit/credit.writer";
 import { creditRoutes } from "./modules/credit/credit.routes";
+import { AdminNotes } from "./modules/admin/admin.service";
+import { NearPauseProof } from "./modules/admin/admin.proof";
+import { adminRoutes } from "./modules/admin/admin.routes";
+import { Jobs } from "./modules/jobs/jobs.service";
 
 export function createRuntime(deps: AppDeps) {
   const router = Router();
@@ -30,12 +34,13 @@ export function createRuntime(deps: AppDeps) {
   const provider = sdkProvider(deps.env);
   const files = new PrivateFiles(supabaseClient(deps.env));
   const emails = new Emails(deps.store, new ResendTransport(deps.env), leases);
+  const creditWriter = new NearCreditWriter(deps.env, provider);
   const credit = new Credit(
     deps.store,
     deps.chain,
     files,
     new NearAI(deps.env),
-    new NearCreditWriter(deps.env, provider),
+    creditWriter,
     leases,
     deps.env,
   );
@@ -58,20 +63,30 @@ export function createRuntime(deps: AppDeps) {
   router.use(applicationRoutes(deps, applications));
   router.use(reportRoutes(deps, reports));
   router.use(inviteRoutes(deps, invites, (accountId) => auth.subjectFor(accountId)));
+  const relay = new RelayService(
+    deps.store,
+    deps.chain,
+    new NearRelayer(deps.env, provider),
+    leases,
+    deps.env.WAYBIL_CONTRACT,
+    (shipment, hash, goodQty) => reports.validateConfirmation(shipment, hash, goodQty),
+  );
+  router.use(relayRoutes(deps, relay));
   router.use(
-    relayRoutes(
+    adminRoutes(
       deps,
-      new RelayService(
+      new AdminNotes(
         deps.store,
         deps.chain,
-        new NearRelayer(deps.env, provider),
         leases,
-        deps.env.WAYBIL_CONTRACT,
-        (shipment, hash, goodQty) => reports.validateConfirmation(shipment, hash, goodQty),
+        new NearPauseProof(provider, deps.env.WAYBIL_CONTRACT),
       ),
     ),
   );
-  return { router, credit, applications, emails, leases, files, provider };
+  const jobs = new Jobs(deps.store, deps.chain, leases, emails, applications, files, relay, () =>
+    creditWriter.time(),
+  );
+  return { router, credit, applications, emails, leases, files, provider, jobs };
 }
 
 export function createRoutes(deps: AppDeps) {

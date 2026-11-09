@@ -97,6 +97,7 @@ be/
 │  ├─ app.ts                              Express app, middlewares, routes
 │  ├─ routes.ts                           Wires feature services and routers
 │  ├─ credit-once.ts                      Runs one durable credit-review batch
+│  ├─ jobs-once.ts                        Runs scheduled work without an HTTP listener
 │  ├─ config/env.ts                       Reads and checks env (zod)
 │  ├─ middlewares/
 │  │  ├─ auth.ts                          Session check, role check
@@ -115,7 +116,8 @@ be/
 │  │  ├─ supabase.ts                      Server client (service role)
 │  │  ├─ near-sdk.ts                      Signing SDK configuration and bounded retries
 │  │  ├─ session.ts                       JWT creation and verification
-│  │  ├─ leases.ts                        Atomic database work claims
+│  │  ├─ leases.ts                        Atomic database work claims and renewal
+│  │  ├─ lease-context.ts                 Stops side effects after lease loss
 │  │  ├─ recovery.ts                      Identity-bound recovery-key encryption
 │  │  ├─ near-ai.ts                       NEAR AI Cloud client for the credit assistant
 │  │  ├─ storage.ts                       Uploads, sha256, signed links

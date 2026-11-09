@@ -9,7 +9,10 @@ export type Table =
   | "email_log"
   | "reports"
   | "report_photos"
-  | "credit_reviews";
+  | "credit_reviews"
+  | "proposal_reasons"
+  | "pause_notes"
+  | "job_runs";
 export interface Snapshot<T> {
   value: T;
   version: number;

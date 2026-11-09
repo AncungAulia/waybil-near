@@ -37,6 +37,12 @@ it("applies migrations with private domain tables and concurrent-update protecti
     ).toEqual([{ claimed: false }]);
     await db.query("select release_work_lease('sample',$1)", [other]);
     expect(
+      (await db.query("select renew_work_lease('sample',$1,300) as renewed", [other])).rows,
+    ).toEqual([{ renewed: false }]);
+    expect(
+      (await db.query("select renew_work_lease('sample',$1,300) as renewed", [owner])).rows,
+    ).toEqual([{ renewed: true }]);
+    expect(
       (await db.query("select claim_work_lease('sample',$1,300) as claimed", [other])).rows,
     ).toEqual([{ claimed: false }]);
     await db.query("select release_work_lease('sample',$1)", [owner]);
@@ -45,7 +51,31 @@ it("applies migrations with private domain tables and concurrent-update protecti
     ).toEqual([{ claimed: true }]);
     await db.exec("set role anon");
     await expect(db.query("select * from profiles")).rejects.toThrow();
+    for (const table of [
+      "invites",
+      "auth_identities",
+      "auth_challenges",
+      "applications",
+      "application_documents",
+      "reports",
+      "report_photos",
+      "credit_reviews",
+      "relay_requests",
+      "email_log",
+      "proposal_reasons",
+      "pause_notes",
+      "job_runs",
+    ])
+      await expect(db.query(`select * from ${table}`)).rejects.toThrow();
     await expect(db.query("select claim_work_lease('sample',$1,300)", [owner])).rejects.toThrow();
+    await expect(db.query("select renew_work_lease('sample',$1,300)", [owner])).rejects.toThrow();
+    await db.exec("reset role");
+    await db.query(
+      "update work_leases set expires_at=clock_timestamp()-interval '1 second' where id='sample'",
+    );
+    expect(
+      (await db.query("select renew_work_lease('sample',$1,300) as renewed", [other])).rows,
+    ).toEqual([{ renewed: false }]);
   } finally {
     await db.close();
   }

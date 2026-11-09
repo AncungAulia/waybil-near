@@ -14,6 +14,7 @@ interface RelayRecord extends RelayResponse {
   digest: string;
   accountId: string;
   bytes: string;
+  failedAttempts?: Array<{ txHash: string; bytes: string }>;
 }
 export type ReportValidator = (shipment: Shipment, hash: string, goodQty: number) => Promise<void>;
 export class RelayService {
@@ -34,17 +35,7 @@ export class RelayService {
     return this.leases.run("signer:relayer", async () => {
       const existing = await this.store.get<RelayRecord>("relay_requests", digest);
       if (existing) return this.response(await this.reconcile(existing));
-      for (const pending of await this.store.list<RelayRecord>("relay_requests", {
-        status: "pending",
-      })) {
-        const result = await this.reconcile(pending);
-        if (result.value.status === "pending")
-          throw new ApiException(
-            503,
-            "E_RELAY_PENDING",
-            "A delivery request is still being recorded. Please try again shortly.",
-          );
-      }
+      await this.settlePending();
       await this.validate(actor, signed);
       const prepared = await this.provider.prepare(signed);
       const value: RelayRecord = {
@@ -57,6 +48,51 @@ export class RelayService {
       const row = await this.store.insert("relay_requests", digest, value);
       return this.response(await this.reconcile(row));
     });
+  }
+  async markLate(id: number): Promise<RelayResponse | null> {
+    const digest = createHash("sha256").update(`waybil-job:mark-late:${id}`).digest("hex");
+    return this.leases.run("signer:relayer", async () => {
+      let existing = await this.store.get<RelayRecord>("relay_requests", digest);
+      if (existing) {
+        existing = await this.reconcile(existing);
+        if (existing.value.status !== "failed") return this.response(existing);
+      }
+      await this.settlePending();
+      const shipment = requireValue(await this.chain.view<Shipment | null>("get_shipment", { id }));
+      if (shipment.status !== "Paid" || shipment.marked_late) return null;
+      const prepared = await (this.provider.prepareLate?.(id) ?? unavailable());
+      const value: RelayRecord = {
+        ...prepared,
+        digest,
+        accountId: "internal:mark_late",
+        ...(existing
+          ? {
+              failedAttempts: [
+                ...(existing.value.failedAttempts ?? []),
+                { txHash: existing.value.txHash, bytes: existing.value.bytes },
+              ],
+            }
+          : {}),
+        status: "pending",
+        proofUrl: `https://testnet.nearblocks.io/txns/${prepared.txHash}`,
+      };
+      const row = existing
+        ? await this.store.replace("relay_requests", digest, existing.version, value)
+        : await this.store.insert("relay_requests", digest, value);
+      return this.response(await this.reconcile(row));
+    });
+  }
+  private async settlePending() {
+    for (const pending of await this.store.list<RelayRecord>("relay_requests", {
+      status: "pending",
+    })) {
+      if ((await this.reconcile(pending)).value.status === "pending")
+        throw new ApiException(
+          503,
+          "E_RELAY_PENDING",
+          "A delivery request is still being recorded. Please try again shortly.",
+        );
+    }
   }
   private signature(signed: SignedDelegate) {
     const hash = createHash("sha256").update(encodeDelegateAction(signed.delegateAction)).digest();

@@ -1,5 +1,28 @@
 import type { Role } from "./shipment";
 
+export interface ProposalReasonInput {
+  reason: "too_big_jump" | "needs_history" | "payment_risk" | "other";
+  note: string;
+}
+export interface ProposalReason extends ProposalReasonInput {
+  id: string;
+  proposalId: number;
+  actor: string;
+  createdAt: string;
+}
+export interface PauseNoteInput {
+  shipperId: string;
+  reason: "payment_risk" | "late_bills" | "other";
+  note: string;
+  txHash: string;
+}
+export interface PauseNote extends PauseNoteInput {
+  id: string;
+  actor: string;
+  proofUrl: string;
+  createdAt: string;
+}
+
 export interface CreditProof {
   model: string;
   chatId: string;

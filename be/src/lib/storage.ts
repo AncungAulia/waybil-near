@@ -2,6 +2,7 @@ import { randomUUID, createHash } from "node:crypto";
 import { fileTypeFromBuffer } from "file-type";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ApiException, unavailable } from "./errors";
+import { assertLeases } from "./lease-context";
 
 export type Bucket = "documents" | "report-photos";
 export interface StoredFile {
@@ -41,6 +42,7 @@ export async function inspectFile(bytes: Uint8Array, photoOnly = false): Promise
 export class PrivateFiles implements FileStore {
   constructor(private client: SupabaseClient | null) {}
   private bucket(name: Bucket) {
+    assertLeases();
     return (this.client ?? unavailable()).storage.from(name);
   }
   private check(error: unknown) {

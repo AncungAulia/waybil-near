@@ -1,6 +1,6 @@
 # Waybil backend
 
-Run from the repository root with Node.js 22+ and pnpm 12.3.4.
+Run from the repository root with Node.js 22.22.2+ and pnpm 12.3.4.
 
 ```sh
 pnpm install
@@ -151,3 +151,41 @@ provider credentials, a verified model key and SAMPLE documents. Seeded existing
 their off-chain application/papers imported in coordination with the seed-script owner.
 New dependency in #20 is unpdf 1.9.1, compatible with Node 22. This branch depends on
 `be/21-reports` and completes the evaluator integration required by #19.
+
+## Team notes and jobs (#22)
+
+Apply migration 008 before running the integrated backend. Team reason records require the
+member's actual reject vote. Pause notes require the member's successful finalized direct
+pause transaction. Send only the public reason code in the wallet transaction; keep the
+private note in the backend request. These routes never sign votes or pauses for the member.
+
+Enable `JOBS_WORKER_ENABLED=true` for the private one-minute scheduler, or use an external
+scheduler to invoke the one-shot runner. Late/expiry windows run hourly and reminder windows
+run daily in UTC. Avoid enabling both runner modes unless deployment needs it; database
+leases still prevent overlapping execution. No public HTTP endpoint triggers jobs.
+
+```sh
+pnpm --filter @waybil/be build
+pnpm --filter @waybil/be jobs:once
+```
+
+The runner records attempts/counts in job_runs. Late marks reuse the relayer's durable signer
+queue. Failed finalized marks retain their attempt history before a new signature is allowed.
+Uncertain marks reuse the original signed bytes and block new signer work. A bill that is
+already marked still gets its missing email queued after a crash. Discovery includes approved
+StartShipper proposals, scans all IDs up to 1,000 and pages shipments up to 5,000 per shipper.
+The 90-second scan budget fails the window for retry if exhausted; it never calls an incomplete
+scan complete. Larger deployments need an indexed chain reader in a separate task.
+
+Reminders send three UTC dates before due, with catch-up on days one/two. Their event key
+stays stable across windows. Before sending queued bill mail, the worker rechecks current
+status, due date and recipient. Repaid/stale messages are suppressed. Previously ambiguous
+sends remain uncertain if suppressed; reconcile them in Resend. Missing email configuration
+leaves unsent messages queued. Every successful send keeps its actual provider ID.
+
+Expiry updates open invites conditionally and removes expired login challenges. Failed or
+hour-old interrupted document uploads are cleaned under their application lease. Ready
+document revisions and report evidence are retained. Leases renew each minute; loss of
+ownership stops further side effects. No additional dependencies were added for #22.
+This branch depends on `be/20-credit-assistant`. Deployment and live scheduler setup are #23.
+See `docs/plans/backend-delivery-15-22.md` for branch order and integration prerequisites.

@@ -62,7 +62,7 @@ mock-USDC storage before issuing a session. No parent/admin key is returned to t
 | Method | Path | Who | What |
 |---|---|---|---|
 | POST | `/v1/auth/wallet` | Wallet users | Body: NEP-413 signed message (`accountId`, `publicKey`, `signature`, `nonce`). Checks the key belongs to the account on chain. Returns a session. |
-| POST | `/v1/auth/google` | Drivers, warehouses | Body: Google ID token, `publicKey` made in the browser, `inviteCode`. First time: creates `<name>.users.waybil.testnet` (signed by `users.waybil.testnet`) with that key as a function-call key for `app.waybil.testnet`, and registers the account on `usdc.waybil.testnet` (`storage_deposit`) so payouts can reach it. Returns the account and a session. |
+| POST | `/v1/auth/google` | Drivers, warehouses | Body: `challengeId`, Google `idToken`. The device public key and optional invite come from the challenge. Creates or recovers `<name>.users.waybil.testnet`, registers token storage and returns a session/profile. |
 | GET | `/v1/me` | Signed in | Account, role, profile |
 | PUT | `/v1/me/profile` | Signed in | Name, phone (WhatsApp), email |
 
@@ -221,13 +221,54 @@ a reported delivery. No report/folder/storage identifier is accepted as authoriz
 
 ## Team notes
 
+Proposal reason POST accepts `{reason,note}` with reason too_big_jump/needs_history/
+payment_risk/other. A current team member can record a reason only after their actual
+reject vote is present in the proposal. One immutable reason per member/proposal; identical
+retry returns the saved row. A reason by one voter does not reject the entire proposal.
+
+Pause POST accepts `{shipperId,reason,note,txHash}`, with public reason code payment_risk/
+late_bills/other and a private note up to 2,000 characters. Verify a finalized successful
+direct `pause_shipper` transaction signed by the member, addressed to this contract, with
+matching shipper/reason arguments. Private notes are never transaction arguments. Additional
+team-only `GET /v1/admin/pauses/:shipper` lists recorded notes and real receipt references.
+
 | Method | Path | Who | What |
 |---|---|---|---|
 | POST | `/v1/admin/proposals/:id/reasons` | Team | Reason chip and note for a reject vote |
 | GET | `/v1/admin/proposals/:id/reasons` | Team | All reasons for a proposal |
 | POST | `/v1/admin/pauses` | Team | Reason note for a pause, after the on-chain call |
+| GET | `/v1/admin/pauses/:shipper` | Team | Private pause history and receipt links |
 
 ## Jobs
+
+`JOBS_WORKER_ENABLED=true` starts the private scheduler. `jobs:once` runs all jobs without
+opening an HTTP listener. No public job-trigger route exists. Late/expiry jobs have UTC
+hour windows; reminders have UTC day windows. Complete windows are not repeated; failed
+ones can resume under renewed database leases. Pending signed transactions and email rows
+survive process restart. Internal mark_late transactions share the relayer signer queue,
+including its persisted original transaction and pending-nonce fence; the public relay
+allowlist remains pickup/delivery only.
+
+Leases renew every minute for up to five minutes at a time. A failed renewal or expired
+local deadline blocks subsequent database, storage, signing and email side effects. Renewal
+requires the same live owner and cannot revive an expired lease. A definitively failed late
+transaction may be signed again; the failed receipt/bytes remain in its attempt history.
+
+Shippers come from profiles/applications plus approved StartShipper proposals, discovered
+through bounded complete proposal-ID scans. All shipments are paginated and read fresh.
+Only Paid bills past due are marked; the live record is reread before notification. Reminders
+normally send three UTC dates before the due date, with catch-up on days one/two if a run
+was missed. Event keys include shipment, due date and recipient, never the scheduler window.
+The email worker rechecks bill state before sending a queued late/reminder message and
+suppresses stale mail. Missing recipient data is counted, never guessed. Unknown delivery
+outcomes remain uncertain rather than being labeled cancelled or sent.
+
+The expiry job marks expired open invitations using conditional versions, removes expired
+login challenges and retries explicitly flagged document-upload cleanup under its application
+lease. Ready document revisions and report evidence are retained. Rejection emails are
+recovered from rejected application rows if a crash occurred before email queue insertion.
+Every job window stores counts/attempts/state in job_runs. Missing credentials do not count
+as an executed transaction or a sent email. Live deployment/scheduler setup remains #23.
 
 | Job | When | What |
 |---|---|---|
@@ -238,7 +279,8 @@ a reported delivery. No report/folder/storage identifier is accepted as authoriz
 ## Database tables (Supabase)
 
 `profiles`, `invites`, `applications`, `application_documents`, `credit_reviews`,
-`reports`, `report_photos`, `proposal_reasons`, `pause_notes`, `email_log`.
+`reports`, `report_photos`, `proposal_reasons`, `pause_notes`, `email_log`,
+`auth_challenges`, `auth_identities`, `relay_requests`, `work_leases`, `job_runs`.
 Storage buckets `documents` and `report-photos` are private. Links are signed and short-lived.
 
 ## Env (`be/.env.example`)
@@ -246,4 +288,7 @@ Storage buckets `documents` and `report-photos` are private. Links are signed an
 `PORT`, `NEAR_NETWORK`, `NEAR_RPC_URL`, `WAYBIL_CONTRACT`, `USDC_CONTRACT`,
 `RELAYER_ACCOUNT`, `RELAYER_PRIVATE_KEY`, `USERS_ACCOUNT`, `USERS_PRIVATE_KEY`, `ASSISTANT_ACCOUNT`, `ASSISTANT_PRIVATE_KEY`,
 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `GOOGLE_CLIENT_ID`, `JWT_SECRET`,
-`NEAR_AI_API_KEY`, `EMAIL_API_KEY`.
+`NEAR_AI_API_KEY`, `NEAR_AI_MODEL`, `NEAR_AI_TRUSTED_SIGNERS_JSON`, `CREDIT_POLICY_JSON`,
+`CREDIT_AUTO_LIMITS`, `CREDIT_WORKER_ENABLED`, `JOBS_WORKER_ENABLED`, `EMAIL_API_KEY`,
+`EMAIL_FROM`. Additional auth/origin configuration is listed in `be/.env.example` and the
+feature sections above.

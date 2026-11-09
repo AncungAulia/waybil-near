@@ -7,6 +7,7 @@ import { allowed, ApiException, conflict, requireValue } from "../../lib/errors"
 export interface InviteRecord extends Invite {
   reservedFor: string | null;
   reservedUntil: string | null;
+  expiredAt?: string;
 }
 export class Invites {
   constructor(
@@ -102,9 +103,10 @@ export class Invites {
       throw new ApiException(409, "E_INVITE_EXPIRED", "This invitation has expired.");
   }
   private publicOwner(value: InviteRecord): Invite {
-    const { reservedFor, reservedUntil, ...invite } = value;
+    const { reservedFor, reservedUntil, expiredAt, ...invite } = value;
     void reservedFor;
     void reservedUntil;
+    void expiredAt;
     return invite;
   }
 }

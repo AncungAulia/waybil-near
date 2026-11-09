@@ -3,6 +3,7 @@ import type { Store } from "../types/db";
 import type { Leases } from "./leases";
 import { sha256 } from "./storage";
 import { conflict, requireValue } from "./errors";
+import { assertLeases } from "./lease-context";
 
 export interface EmailMessage {
   to: string;
@@ -39,6 +40,7 @@ export class ResendTransport implements EmailTransport {
     return Boolean(this.env.EMAIL_API_KEY && this.env.EMAIL_FROM);
   }
   async send(message: EmailMessage, id: string) {
+    assertLeases();
     let response: Response;
     try {
       response = await this.request("https://api.resend.com/emails", {
@@ -100,15 +102,20 @@ export class Emails {
       return (await this.store.insert("email_log", id, value)).value;
     });
   }
-  async deliver(id: string): Promise<EmailRecord> {
+  async deliver(
+    id: string,
+    eligible: () => Promise<boolean> = async () => true,
+  ): Promise<EmailRecord> {
     return this.leases.run(`email:${id}`, async () => {
       let row = requireValue(await this.store.get<EmailRecord>("email_log", id));
       if (
         row.value.state === "sent" ||
         row.value.state === "uncertain" ||
-        !this.transport.enabled()
+        row.value.error === "E_EMAIL_CANCELLED"
       )
         return row.value;
+      if (!(await eligible())) return this.cancelRow(row);
+      if (!this.transport.enabled()) return row.value;
       if (
         (row.value.ambiguous || row.value.state === "sending") &&
         row.value.firstAttemptAt &&
@@ -122,6 +129,7 @@ export class Emails {
           })
         ).value;
       const at = new Date(this.now()).toISOString();
+      const previousAmbiguous = row.value.ambiguous || row.value.state === "sending";
       row = await this.store.replace<EmailRecord>("email_log", id, row.version, {
         ...row.value,
         state: "sending",
@@ -139,7 +147,8 @@ export class Emails {
           await this.store.replace<EmailRecord>("email_log", id, row.version, {
             ...row.value,
             state: "failed",
-            ambiguous: error instanceof EmailFailure ? error.ambiguous : true,
+            ambiguous:
+              previousAmbiguous || (error instanceof EmailFailure ? error.ambiguous : true),
             error: "E_EMAIL_SEND",
           })
         ).value;
@@ -153,5 +162,27 @@ export class Emails {
         })
       ).value;
     });
+  }
+  async cancel(id: string): Promise<EmailRecord> {
+    return this.leases.run(`email:${id}`, async () => {
+      const row = requireValue(await this.store.get<EmailRecord>("email_log", id));
+      if (
+        row.value.state === "sent" ||
+        row.value.state === "uncertain" ||
+        row.value.error === "E_EMAIL_CANCELLED"
+      )
+        return row.value;
+      return this.cancelRow(row);
+    });
+  }
+  private async cancelRow(row: { value: EmailRecord; version: number }) {
+    const ambiguous = row.value.ambiguous || row.value.state === "sending";
+    return (
+      await this.store.replace<EmailRecord>("email_log", row.value.id, row.version, {
+        ...row.value,
+        state: ambiguous ? "uncertain" : "failed",
+        error: ambiguous ? "E_EMAIL_SUPERSEDED" : "E_EMAIL_CANCELLED",
+      })
+    ).value;
   }
 }

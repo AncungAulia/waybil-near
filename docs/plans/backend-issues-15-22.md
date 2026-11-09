@@ -1,6 +1,9 @@
 # Backend implementation plan for issues #15 to #22
 
-Date: 2026-11-09. Owner: Nasta. Status: draft for review before implementation.
+Date: 2026-11-09. Owner: Nasta. Status: implementation delivered on issue branches.
+
+This document preserves the original plan. Actual implementation decisions, branch order,
+validation and remaining live acceptance checks are in `backend-delivery-15-22.md`.
 
 This plan covers the eight backend issues. Railway deployment (#23) is a later task.
 Endpoint additions, tables, packages and defaults described as proposed below are planning

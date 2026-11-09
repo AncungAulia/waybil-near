@@ -4,6 +4,7 @@ import {
   baseEncode,
   decodeSignedTransaction,
   encodeTransaction,
+  type Action,
   type JsonRpcProvider,
   type SignedDelegate,
 } from "near-api-js";
@@ -18,6 +19,7 @@ export interface RelayProvider {
     signed: SignedDelegate,
   ): Promise<{ nonce: bigint; height: bigint; receiver: string; methods: string[] }>;
   prepare(signed: SignedDelegate): Promise<{ txHash: string; bytes: string }>;
+  prepareLate?(id: number): Promise<{ txHash: string; bytes: string }>;
   broadcast(bytes: string): Promise<RelayResponse["status"]>;
   status(txHash: string): Promise<RelayResponse["status"] | null>;
 }
@@ -46,14 +48,22 @@ export class NearRelayer implements RelayProvider {
     });
   }
   async prepare(signed: SignedDelegate) {
+    return this.prepareActions(signed.delegateAction.senderId, [actions.signedDelegate(signed)]);
+  }
+  async prepareLate(id: number) {
+    return this.prepareActions(this.env.WAYBIL_CONTRACT, [
+      actions.functionCall("mark_late", { id }, 30000000000000n, 0n),
+    ]);
+  }
+  private async prepareActions(receiverId: string, calls: Action[]) {
     return rpcCall(async () => {
       const outer = await sdkAccount(
         this.provider,
         this.env.RELAYER_ACCOUNT,
         this.env.RELAYER_PRIVATE_KEY,
       ).createSignedTransaction({
-        receiverId: signed.delegateAction.senderId,
-        actions: [actions.signedDelegate(signed)],
+        receiverId,
+        actions: calls,
       });
       return {
         txHash: baseEncode(

@@ -1,6 +1,7 @@
 import { Account, JsonRpcProvider, KeyPair, KeyPairSigner, type KeyPairString } from "near-api-js";
 import type { Env } from "../config/env";
 import { ApiException, unavailable } from "./errors";
+import { assertLeases } from "./lease-context";
 
 export function sdkProvider(env: Env) {
   return new JsonRpcProvider({ url: env.NEAR_RPC_URL }, { retries: 0 });
@@ -10,6 +11,7 @@ export function sdkAccount(
   accountId: string,
   secret: string | undefined,
 ) {
+  assertLeases();
   if (!secret) unavailable();
   return new Account(
     accountId,
@@ -19,6 +21,7 @@ export function sdkAccount(
 }
 export async function rpcCall<T>(work: () => Promise<T>): Promise<T> {
   try {
+    assertLeases();
     return await work();
   } catch (error) {
     if (error instanceof ApiException) throw error;

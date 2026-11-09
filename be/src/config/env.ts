@@ -58,6 +58,10 @@ export const envSchema = z
       .enum(["true", "false"])
       .default("false")
       .transform((v) => v === "true"),
+    JOBS_WORKER_ENABLED: z
+      .enum(["true", "false"])
+      .default("false")
+      .transform((v) => v === "true"),
     EMAIL_API_KEY: secret,
     EMAIL_FROM: optional(z.email()),
   })
