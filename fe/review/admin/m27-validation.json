@@ -1,0 +1,104 @@
+[
+  {
+    "width": 1440,
+    "state": "M2.7",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Northwind Freight Co.",
+    "dialog": false,
+    "pills": [
+      {
+        "text": "Delivered",
+        "background": "rgb(228, 242, 232)",
+        "color": "rgb(20, 87, 43)",
+        "radius": "3.35544e+07px"
+      },
+      {
+        "text": "On the road",
+        "background": "rgb(255, 246, 214)",
+        "color": "rgb(107, 78, 0)",
+        "radius": "3.35544e+07px"
+      },
+      {
+        "text": "On the road",
+        "background": "rgb(255, 246, 214)",
+        "color": "rgb(107, 78, 0)",
+        "radius": "3.35544e+07px"
+      },
+      {
+        "text": "Waiting for pickup",
+        "background": "rgb(242, 242, 242)",
+        "color": "rgb(61, 61, 61)",
+        "radius": "3.35544e+07px"
+      }
+    ]
+  },
+  {
+    "width": 834,
+    "state": "M2.7",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Northwind Freight Co.",
+    "dialog": false,
+    "pills": [
+      {
+        "text": "Delivered",
+        "background": "rgb(228, 242, 232)",
+        "color": "rgb(20, 87, 43)",
+        "radius": "3.35544e+07px"
+      },
+      {
+        "text": "On the road",
+        "background": "rgb(255, 246, 214)",
+        "color": "rgb(107, 78, 0)",
+        "radius": "3.35544e+07px"
+      },
+      {
+        "text": "On the road",
+        "background": "rgb(255, 246, 214)",
+        "color": "rgb(107, 78, 0)",
+        "radius": "3.35544e+07px"
+      },
+      {
+        "text": "Waiting for pickup",
+        "background": "rgb(242, 242, 242)",
+        "color": "rgb(61, 61, 61)",
+        "radius": "3.35544e+07px"
+      }
+    ]
+  },
+  {
+    "width": 390,
+    "state": "M2.7",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Northwind Freight Co.",
+    "dialog": false,
+    "pills": [
+      {
+        "text": "Delivered",
+        "background": "rgb(228, 242, 232)",
+        "color": "rgb(20, 87, 43)",
+        "radius": "3.35544e+07px"
+      },
+      {
+        "text": "On the road",
+        "background": "rgb(255, 246, 214)",
+        "color": "rgb(107, 78, 0)",
+        "radius": "3.35544e+07px"
+      },
+      {
+        "text": "On the road",
+        "background": "rgb(255, 246, 214)",
+        "color": "rgb(107, 78, 0)",
+        "radius": "3.35544e+07px"
+      },
+      {
+        "text": "Waiting for pickup",
+        "background": "rgb(242, 242, 242)",
+        "color": "rgb(61, 61, 61)",
+        "radius": "3.35544e+07px"
+      }
+    ]
+  }
+]

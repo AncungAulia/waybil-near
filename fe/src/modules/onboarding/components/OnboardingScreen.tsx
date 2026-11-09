@@ -1,27 +1,25 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
-  Wallet,
-  Truck,
   Check,
-  Warning,
-  CircleNotch,
-  WifiSlash,
-  Buildings,
-  ChartPie,
-  Clock,
-  ArrowUpRight,
   ArrowCounterClockwise,
   ArrowRight,
-  Envelope,
-  House,
   PaperPlaneTilt,
   PencilSimple,
   Plus,
   Scan,
   UserPlus,
+  CaretDown,
+  Hourglass,
+  SealCheck,
+  FileMagnifyingGlass,
+  WarningCircle,
+  LinkSimple,
+  ArrowLineDown,
+  Handshake,
   X,
 } from "@phosphor-icons/react";
 import type { Role } from "@waybil/shared";
@@ -30,8 +28,18 @@ import { Logo } from "@/components/layout/Logo";
 import { RoleShell } from "@/components/layout/RoleShell";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Money } from "@/components/elements/Money";
-import { DemoRecord } from "@/components/elements/DemoRecord";
+import { Avatar } from "@/components/elements/Avatar";
+import {
+  CircleXGlyph,
+  LoaderGlyph,
+  LinkOffGlyph,
+  MailGlyph,
+  SwapGlyph,
+  SystemGlyph,
+  WalletGlyph,
+} from "@/components/elements/icons";
 import { cn } from "@/lib/cn";
+import { BASE_POOL } from "@/lib/demo-pool";
 import {
   ONBOARDING_FIXTURES,
   SAMPLE_COMPANY,
@@ -56,8 +64,7 @@ export function OnboardingScreen({
   const [state, setState] = useState(initialState),
     [role, setRole] = useState<Role | null>(ONBOARDING_FIXTURES[initialState].role),
     [understood, setUnderstood] = useState(initialState === "E2"),
-    [copied, setCopied] = useState(false),
-    [driverName, setDriverName] = useState("Sam Carter");
+    [copied, setCopied] = useState(false);
   const [company, setCompany] = useState<CompanyDraft>(() =>
     initialState === "C1" || initialState.startsWith("A") || initialState.startsWith("B")
       ? { ...EMPTY_COMPANY }
@@ -68,10 +75,18 @@ export function OnboardingScreen({
           : { ...SAMPLE_COMPANY },
   );
   const group = state[0],
+    connect = group === "A",
+    centeredConnect = state === "A2" || state === "A5",
     documents = ["C5.1", "C5.2", "C5.3", "C6"].includes(state),
     review = ["C7", "C8", "C9"].includes(state),
     isRole = group === "B",
     driverForm = group === "D" && state !== "D6",
+    driverReady = state === "D6",
+    investor = group === "E",
+    investorReady = state === "E3",
+    invite = group === "F",
+    inviteResult = ["F3", "F4", "F6"].includes(state),
+    setup = ["A", "B", "C", "D", "E", "F", "X"].includes(group),
     system = group === "X" && !["X6", "X7"].includes(state),
     wide = (group === "C" && !review) || isRole;
   const steps =
@@ -112,25 +127,126 @@ export function OnboardingScreen({
     return () => window.removeEventListener("online", online);
   }, [state, preview, router]);
   const dashboard = (path: string) => router.push(path);
-  const actionClass = "w-full justify-between";
+  const actionClass = cn("w-full justify-between", connect && "h-52");
   const heading = (title: string, note?: string) => (
-    <div className={cn("flex flex-col gap-12", group !== "C" && group !== "D" && "text-center")}>
-      <h1 className="text-title md:text-[40px] md:leading-tight">{title}</h1>
-      {note && <p className="text-label text-ds-muted">{note}</p>}
+    <div
+      className={cn(
+        "flex flex-col gap-12",
+        ((!investor && !invite && group !== "C" && group !== "D") ||
+          review ||
+          driverReady ||
+          investorReady ||
+          inviteResult) &&
+          "text-center",
+        (connect || isRole || review || driverReady || investor || invite) && "gap-10",
+      )}
+    >
+      <h1
+        className={cn(
+          "text-title md:text-[40px] md:leading-tight",
+          (connect || isRole || review || driverReady || investor || invite) &&
+            "text-[30px] leading-[1.1] tracking-[-0.03em] md:leading-[1.1]",
+        )}
+      >
+        {connect && (state === "A2" || state === "A4") ? (
+          <>
+            {state === "A2" ? "Check your" : "Switch to the"}
+            <br className={state === "A2" ? "md:hidden" : ""} />
+            {state === "A2" ? (
+              <>
+                <span className="hidden md:inline"> </span>wallet
+              </>
+            ) : (
+              "test network"
+            )}
+          </>
+        ) : invite && ["F1", "F2", "F4", "F5"].includes(state) ? (
+          <span className="flex flex-col gap-8">
+            <span>
+              {state === "F5" ? "Receive goods" : state === "F4" ? "This link" : "Northwind wants"}
+            </span>
+            <span>
+              {state === "F5"
+                ? "for Northwind"
+                : state === "F4"
+                  ? "has expired or was used"
+                  : "to work with you"}
+            </span>
+          </span>
+        ) : investor && !investorReady ? (
+          <>
+            Before you
+            <br className="md:hidden" />
+            <span className="hidden md:inline"> </span>deposit
+          </>
+        ) : driverReady ? (
+          <>
+            You're
+            <br className="md:hidden" />
+            <span className="hidden md:inline"> </span>ready to roll
+          </>
+        ) : state === "C7" ? (
+          <span className="flex flex-col gap-8">
+            <span>We're checking</span>
+            <span>your company</span>
+          </span>
+        ) : state === "C9" ? (
+          <>
+            We need
+            <br className="md:hidden" />
+            <span className="hidden md:inline"> </span>one more thing
+          </>
+        ) : isRole ? (
+          <>
+            How will you
+            <br className="md:hidden" />
+            <span className="hidden md:inline"> </span>use waybil?
+          </>
+        ) : (
+          title
+        )}
+      </h1>
+      {note && (
+        <p
+          className={cn(
+            "text-label text-ds-muted",
+            (connect || isRole || review || driverReady || investor || invite) &&
+              "text-[14px] leading-[1.45] font-normal md:text-[15px]",
+          )}
+        >
+          {isRole ? (
+            <>
+              <span className="md:hidden">
+                Pick one. You can't change it later with the same account.
+              </span>
+              <span className="hidden md:inline">{note}</span>
+            </>
+          ) : (
+            note
+          )}
+        </p>
+      )}
     </div>
   );
-  const icon = (Icon: typeof Wallet, tone: "brand" | "soft" | "danger" = "brand") => (
+  const icon = (
+    Icon: (props: { size?: number }) => React.ReactNode,
+    tone: "brand" | "soft" | "danger" | "quiet" = "brand",
+  ) => (
     <span
       className={cn(
         "mx-auto grid size-80 shrink-0 place-content-center rounded-full",
         tone === "danger"
-          ? "bg-ds-danger-soft text-ds-danger"
+          ? connect
+            ? "bg-ds-danger-result text-ds-danger"
+            : "bg-ds-danger-soft text-ds-danger"
           : tone === "soft"
             ? "bg-ds-brand-soft text-ds-brand-deep"
-            : "bg-ds-brand text-ds-ink",
+            : tone === "quiet"
+              ? "bg-ds-canvas text-ds-ink"
+              : "bg-ds-brand text-ds-ink",
       )}
     >
-      <Icon size={32} />
+      <Icon size={34} />
     </span>
   );
   const shareLink = `${useOrigin()}/c/sam`;
@@ -165,26 +281,81 @@ export function OnboardingScreen({
       </RoleShell>
     );
   return (
-    <div className="flex min-h-dvh flex-col bg-ds-bg px-20 pt-20 pb-24 md:bg-ds-canvas md:px-40 md:pb-40">
-      <header className="relative flex h-40 shrink-0 items-center justify-between gap-20">
+    <div
+      className={cn(
+        "flex min-h-dvh flex-col bg-ds-bg px-20 pt-20 pb-24 md:bg-ds-canvas md:px-40 md:pb-40",
+        setup && "px-16 pt-12 md:px-32 md:pt-20 md:pb-32 lg:px-40 lg:pb-40",
+      )}
+    >
+      <header
+        className={cn(
+          "relative flex h-40 shrink-0 items-center justify-between gap-20",
+          setup && "h-auto min-h-56 px-4 py-8 md:px-8",
+        )}
+      >
         <Link href="/start" aria-label="Waybil sign in" className="focus-ring">
-          <Logo />
+          {setup ? (
+            <span className="flex items-center gap-12">
+              <Image
+                src="/brand/waybil-symbol.svg"
+                alt=""
+                width={37}
+                height={32}
+                className="h-32 w-37"
+                loading="eager"
+              />
+              <span className="text-[34px] leading-[1.2] font-semibold tracking-[-0.8px]">
+                waybil
+              </span>
+            </span>
+          ) : (
+            <Logo />
+          )}
         </Link>
+        {state === "A4" && (
+          <div
+            role="status"
+            className="flex shrink-0 items-center gap-10 rounded-full border border-ds-line bg-ds-bg py-5 pr-14 pl-5"
+          >
+            <span className="grid size-32 place-items-center rounded-full bg-ds-brand text-caption font-medium">
+              !
+            </span>
+            <span className="flex flex-col">
+              <span className="text-label font-semibold">Connected</span>
+              <span className="text-caption text-ds-danger">Wrong network</span>
+            </span>
+            <CaretDown size={16} className="text-ds-muted" />
+          </div>
+        )}
         {steps.length > 0 && (
           <>
-            <p className="text-caption text-ds-muted md:hidden">
+            <p className={cn("text-caption text-ds-muted md:hidden", setup && "text-label")}>
               Step {step} of {steps.length}
             </p>
-            <ol aria-label="Setup progress" className="hidden items-center gap-12 md:flex">
+            <ol
+              aria-label="Setup progress"
+              className={cn("hidden items-center gap-12 md:flex", setup && "gap-10")}
+            >
               {steps.map((label, index) => (
                 <li
                   key={label}
                   aria-current={index + 1 === step ? "step" : undefined}
-                  className="flex items-center gap-8 whitespace-nowrap text-label"
+                  className={cn(
+                    "flex items-center gap-8 whitespace-nowrap text-label",
+                    setup && "text-[14px]",
+                    setup &&
+                      (index + 1 === step
+                        ? "font-semibold"
+                        : investor && index + 1 < step
+                          ? "text-ds-ink"
+                          : "text-ds-muted"),
+                  )}
                 >
                   <span
                     className={cn(
                       "grid size-28 place-content-center rounded-full border border-ds-line",
+                      setup &&
+                        "size-26 border-[1.5px] border-ds-line-strong text-[13px] font-semibold",
                       index + 1 < step
                         ? "bg-ds-ink text-ds-bg"
                         : index + 1 === step
@@ -195,7 +366,14 @@ export function OnboardingScreen({
                     {index + 1 < step ? <Check size={14} /> : index + 1}
                   </span>
                   {label}
-                  {index < steps.length - 1 && <span className="mx-4 h-1 w-28 bg-ds-line" />}
+                  {index < steps.length - 1 && (
+                    <span
+                      className={cn(
+                        "mx-4 h-1 w-28 bg-ds-line",
+                        setup && "mx-2 h-2 rounded-full bg-ds-muted/40",
+                      )}
+                    />
+                  )}
                 </li>
               ))}
             </ol>
@@ -212,27 +390,63 @@ export function OnboardingScreen({
               : "max-w-900 md:flex-none"
             : "max-w-520 md:justify-center",
           driverForm && "md:flex-none",
+          connect &&
+            "mt-20 max-w-none gap-0 md:mt-24 md:max-w-none md:items-center md:justify-center",
+          centeredConnect && "justify-center",
+          isRole && "mt-20 gap-0 md:mt-24 md:max-w-620 lg:max-w-1040",
+          group === "C" && "mt-20 md:mt-24",
+          review && "gap-0 md:max-w-560 lg:max-w-520",
+          group === "D" && "mt-20 gap-0 md:mt-24 md:max-w-560 lg:max-w-520",
+          driverForm && "lg:mt-48",
+          investor && "mt-20 gap-0 md:mt-24 md:max-w-560 lg:max-w-520",
+          invite && "mt-20 gap-0 md:mt-24 md:max-w-560 lg:max-w-520",
+          system && "mt-20 gap-0 md:mt-24 md:max-w-560 lg:max-w-520",
         )}
       >
         <div
           className={cn(
             "flex flex-1 flex-col gap-24 md:flex-none md:rounded-card md:bg-ds-bg md:p-40",
-            isRole && "md:bg-transparent md:p-0",
+            isRole && "gap-16 px-4 md:gap-28 md:bg-transparent md:px-4 md:py-0",
             wide && !isRole && "md:gap-24",
             group === "A" && "justify-center",
             system && "justify-center",
+            connect && "gap-20 px-4 md:w-560 md:gap-24 md:rounded-[32px] md:p-40 lg:w-520",
+            connect && (centeredConnect ? "flex-none" : "justify-start"),
+            group === "C" && !review && "gap-18 px-4 md:gap-20 md:rounded-[32px] md:p-32 lg:p-40",
+            review &&
+              "gap-20 px-4 [&>span:first-child]:mt-auto md:gap-24 md:rounded-[32px] md:p-40 md:[&>span:first-child]:mt-0",
+            group === "D" && "gap-20 px-4 md:gap-24 md:rounded-[32px] md:p-40",
+            investor && "gap-20 px-4 md:gap-24 md:rounded-[32px] md:p-40",
+            invite && "gap-20 px-4 md:gap-24 md:rounded-[32px] md:p-40",
+            inviteResult && "[&>span:first-child]:mt-auto md:[&>span:first-child]:mt-0",
+            system &&
+              "gap-20 px-4 [&>span:first-child]:mt-auto md:gap-24 md:rounded-[32px] md:p-40 md:[&>span:first-child]:mt-0",
           )}
         >
           {group === "A" ? (
             <>
-              <div className="flex flex-1 flex-col justify-center gap-24 md:flex-none">
+              <div
+                className={cn(
+                  "flex flex-1 flex-col justify-center gap-20 md:flex-none md:gap-24",
+                  centeredConnect && "flex-none",
+                )}
+              >
+                {/* Each A state carries the glyph and circle design/waybil.pen draws. */}
                 {icon(
-                  state === "A3" || state === "A4"
-                    ? Warning
-                    : state === "A5"
-                      ? CircleNotch
-                      : Wallet,
-                  state === "A3" ? "danger" : state === "A4" ? "soft" : "brand",
+                  state === "A3"
+                    ? CircleXGlyph
+                    : state === "A4"
+                      ? SwapGlyph
+                      : state === "A2" || state === "A5"
+                        ? LoaderGlyph
+                        : WalletGlyph,
+                  state === "A3"
+                    ? "danger"
+                    : state === "A4"
+                      ? "soft"
+                      : state === "A2" || state === "A5"
+                        ? "quiet"
+                        : "brand",
                 )}
                 {heading(
                   state === "A1"
@@ -245,21 +459,21 @@ export function OnboardingScreen({
                           ? "Switch to the test network"
                           : "One moment",
                   state === "A1"
-                    ? "Shippers and investors connect a NEAR wallet. Drivers and warehouses continue with Google. You don’t need a password."
+                    ? "Shippers and investors connect a NEAR wallet. Drivers and warehouses continue with Google. You don't need a password."
                     : state === "A2"
                       ? "Approve the connection in your wallet to continue."
                       : state === "A3"
                         ? "The request was declined in your wallet. Nothing was shared."
                         : state === "A4"
-                          ? "Waybil runs on the test network. Switch networks to continue."
-                          : "We are looking up your account.",
+                          ? "Your wallet is on the main network. Waybil runs on the test network for now. One tap switches it."
+                          : "Looking up your account.",
                 )}
               </div>
-              <div className="mt-auto flex flex-col gap-24 pt-24 md:mt-0 md:pt-0">
+              <div className="flex flex-col gap-20 md:gap-24">
                 {state === "A1" ? (
                   <>
                     <Button
-                      icon={<Wallet size={17} />}
+                      icon={<WalletGlyph size={17} />}
                       className={actionClass}
                       onClick={() => {
                         setRole(null);
@@ -268,15 +482,15 @@ export function OnboardingScreen({
                     >
                       Connect NEAR wallet
                     </Button>
-                    <div className="flex items-center gap-12 text-caption text-ds-muted">
+                    <div className="flex items-center gap-12 text-[13px] leading-normal text-ds-muted">
                       <span className="h-1 flex-1 bg-ds-line" />
                       or
                       <span className="h-1 flex-1 bg-ds-line" />
                     </div>
                     <Button
                       variant="secondary"
-                      icon={<Envelope size={17} />}
-                      className={actionClass}
+                      icon={<MailGlyph size={17} />}
+                      className={cn(actionClass, "h-48")}
                       onClick={() => {
                         setRole("driver");
                         setState("D1");
@@ -284,7 +498,7 @@ export function OnboardingScreen({
                     >
                       Continue with Google
                     </Button>
-                    <p className="text-center text-caption text-ds-muted">
+                    <p className="text-center text-label text-ds-muted">
                       Drivers and warehouses need no wallet and pay no fees.
                     </p>
                   </>
@@ -306,7 +520,11 @@ export function OnboardingScreen({
                     >
                       Try again
                     </Button>
-                    <Button variant="quiet" onClick={() => setState("A1")}>
+                    <Button
+                      variant="quiet"
+                      className="w-full justify-center"
+                      onClick={() => setState("A1")}
+                    >
                       Use a different wallet
                     </Button>
                   </>
@@ -315,14 +533,24 @@ export function OnboardingScreen({
                     <Button className={actionClass} onClick={() => setState("B1")}>
                       Switch network
                     </Button>
-                    <Button variant="quiet" onClick={() => setState("A1")}>
+                    <Button
+                      variant="quiet"
+                      className="w-full justify-center"
+                      onClick={() => setState("A1")}
+                    >
                       Disconnect
                     </Button>
                   </>
                 ) : (
-                  <p role="status" className="text-center text-label text-ds-muted">
-                    Checking your account
-                  </p>
+                  <div
+                    role="status"
+                    aria-label="Checking your account"
+                    className="flex flex-col items-center gap-10"
+                  >
+                    <span className="h-12 w-full rounded-[6px] bg-ds-surface-3" />
+                    <span className="h-12 w-220 max-w-full rounded-[6px] bg-ds-surface-3" />
+                    <span className="h-12 w-160 max-w-full rounded-[6px] bg-ds-surface-3" />
+                  </div>
                 )}
               </div>
             </>
@@ -332,7 +560,7 @@ export function OnboardingScreen({
                 "How will you use waybil?",
                 "Pick one. Your account keeps this role, so next time you go straight to your dashboard.",
               )}
-              <fieldset className="grid gap-12 md:grid-cols-3 md:gap-20">
+              <fieldset className="grid w-full gap-10 md:gap-14 lg:mx-auto lg:max-w-1000 lg:grid-cols-3 lg:gap-20">
                 <legend className="sr-only">Choose your role</legend>
                 {[
                   {
@@ -354,27 +582,47 @@ export function OnboardingScreen({
                   <label
                     key={item.value}
                     className={cn(
-                      "relative grid cursor-pointer grid-cols-[100px_1fr] items-center gap-12 rounded-card border bg-ds-bg p-10 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ds-brand md:flex md:flex-col md:items-stretch md:p-16",
+                      "relative grid cursor-pointer grid-cols-[108px_minmax(0,1fr)_22px] items-center gap-12 rounded-[22px] border p-10 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ds-brand md:grid-cols-[136px_minmax(0,1fr)_22px] md:gap-18 md:rounded-[26px] md:p-14 lg:flex lg:flex-col lg:items-stretch lg:gap-14 lg:rounded-card lg:px-16 lg:pt-16 lg:pb-28",
                       role === item.value
-                        ? "border-ds-brand ring-1 ring-ds-brand"
-                        : "border-ds-line",
+                        ? "border-ds-ink bg-ds-ink text-ds-bg"
+                        : "border-ds-line bg-ds-bg text-ds-ink",
                     )}
                   >
-                    <img
-                      src={`/illustrations/${item.value}.svg`}
-                      alt=""
-                      className="h-80 w-100 rounded-row bg-ds-canvas object-contain p-8 md:h-210 md:w-full md:p-24"
-                    />
-                    <div className="pr-20 md:p-8">
-                      <h2 className="text-body font-medium md:text-heading">{item.title}</h2>
-                      <p className="mt-6 text-caption text-ds-muted md:text-label">{item.note}</p>
+                    <div
+                      className={cn(
+                        "h-80 w-108 overflow-hidden rounded-[14px] md:h-102 md:w-136 lg:h-210 lg:w-full lg:rounded-row",
+                        role === item.value ? "bg-ds-bg" : "bg-ds-canvas",
+                      )}
+                    >
+                      <img
+                        src={`/illustrations/${item.value}.svg`}
+                        alt=""
+                        className={cn(
+                          "h-full w-full object-contain",
+                          role !== item.value && "mix-blend-multiply",
+                        )}
+                      />
+                    </div>
+                    <div className="min-w-0 lg:px-8 lg:pt-4">
+                      <h2 className="text-[17px] font-medium tracking-[-0.4px] md:text-[20px] lg:text-[24px] lg:tracking-[-0.6px]">
+                        {item.title}
+                      </h2>
+                      <p
+                        className={cn(
+                          "mt-4 text-[12.5px] leading-[1.45] md:text-[13.5px] lg:mt-8 lg:text-[14px]",
+                          role === item.value ? "text-ds-role-selected-muted" : "text-ds-muted",
+                        )}
+                      >
+                        {item.note}
+                      </p>
                     </div>
                     <input
                       type="radio"
                       name="role"
                       value={item.value}
                       checked={role === item.value}
-                      className="absolute top-1/2 right-12 size-20 accent-ds-brand md:top-28 md:right-28"
+                      aria-label={item.title}
+                      className="peer sr-only"
                       onChange={() => {
                         setRole(item.value);
                         setState(
@@ -382,12 +630,23 @@ export function OnboardingScreen({
                         );
                       }}
                     />
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "grid size-22 shrink-0 place-items-center rounded-full border-[1.5px] lg:absolute lg:top-28 lg:right-28",
+                        role === item.value
+                          ? "border-ds-brand bg-ds-brand text-ds-ink"
+                          : "border-ds-line-strong bg-ds-bg",
+                      )}
+                    >
+                      {role === item.value && <Check size={14} weight="bold" />}
+                    </span>
                   </label>
                 ))}
               </fieldset>
-              <div className="mt-auto flex flex-col gap-16 pt-24 md:mx-auto md:mt-0 md:w-360">
+              <div className="mt-auto flex w-full flex-col gap-14 md:mx-auto md:mt-0 lg:w-360">
                 <Button
-                  className={actionClass}
+                  className={cn(actionClass, "h-52")}
                   disabled={!role}
                   onClick={() =>
                     setState(role === "shipper" ? "C1" : role === "driver" ? "D1" : "E1")
@@ -395,7 +654,7 @@ export function OnboardingScreen({
                 >
                   {role ? `Continue as ${role}` : "Choose a role"}
                 </Button>
-                <p className="text-center text-caption text-ds-muted">
+                <p className="text-center text-[12.5px] leading-[1.45] text-ds-muted">
                   Receiving goods at a warehouse? Use the invite link you got.
                 </p>
               </div>
@@ -419,16 +678,15 @@ export function OnboardingScreen({
           ) : driverForm ? (
             <DriverSetup
               state={state}
-              onFinish={(name) => {
-                setDriverName(name);
+              onFinish={() => {
                 setState("D5");
               }}
             />
           ) : group === "C" ? (
             <>
               {icon(
-                state === "C8" ? Check : state === "C9" ? Warning : Clock,
-                state === "C9" ? "soft" : "brand",
+                state === "C8" ? SealCheck : state === "C9" ? FileMagnifyingGlass : Hourglass,
+                state === "C9" ? "soft" : state === "C7" ? "quiet" : "brand",
               )}
               {heading(
                 state === "C8"
@@ -440,38 +698,46 @@ export function OnboardingScreen({
                   ? `${company.name} can now approve trips. Your drivers get paid early, up to your limit.`
                   : state === "C9"
                     ? "Your review is on hold until this is fixed."
-                    : "This usually takes one business day. We will let your contact know when it is done.",
+                    : `This usually takes one business day. We'll message ${company.contact.split(" ")[0]} on WhatsApp when it's done.`,
               )}
               {state === "C8" ? (
-                <div className="rounded-card bg-ds-ink p-24 text-center text-ds-bg">
-                  <p className="mb-12 text-label text-ds-line">Your credit limit</p>
+                <div className="bill-card flex flex-col items-center gap-6 overflow-hidden rounded-[22px] bg-ds-ink px-22 py-20 text-center text-ds-bg">
+                  <p className="text-label text-ds-role-selected-muted">Your credit limit</p>
                   <Money
                     amount={ONBOARDING_FIXTURES[state].shipper.limit}
-                    className="text-amount"
+                    className="text-[34px] leading-[1.1] font-medium tracking-[-0.035em] md:text-[40px]"
                   />
-                  <p className="mt-12 text-caption text-ds-brand">It grows as you pay on time.</p>
+                  <p className="text-[12.5px] leading-[1.45] text-ds-brand">
+                    It grows as you pay on time.
+                  </p>
                 </div>
               ) : state === "C9" ? (
-                <p className="rounded-row bg-ds-warning-soft p-20 text-label">
-                  The business registration number does not match the company name. Check the number
-                  on your registration certificate and send it again.
-                </p>
+                <div className="flex items-start gap-10 rounded-[16px] bg-ds-brand-soft px-16 py-14">
+                  <WarningCircle size={18} className="mt-1 shrink-0 text-ds-brand-deep" />
+                  <p className="text-[13.5px] leading-[1.45]">
+                    The business registration number doesn't match the company name. Check the
+                    number on your registration certificate and send it again.
+                  </p>
+                </div>
               ) : (
-                <div className="rounded-row bg-ds-canvas p-20 text-label">
+                <div className="rounded-row bg-ds-canvas px-18 py-4 [&>div]:py-9 [&>div]:text-[14px] [&>div>span:last-child]:font-medium [&>div+div]:border-t [&>div+div]:border-ds-line">
                   <Row label="Company" value={company.name} />
                   <Row label="Sent" value="Nov 11 · 14:31" />
                   <Row label="Status" value="In review" />
-                  <DemoRecord title="Demo application receipt" />
                 </div>
               )}
-              <div className="mt-auto flex flex-col gap-12">
+              <div className="mt-auto flex flex-col gap-20 md:mt-0 md:gap-24">
                 {state === "C8" ? (
                   <>
-                    <Button className={actionClass} onClick={() => dashboard("/shipper")}>
+                    <Button
+                      className={cn(actionClass, "h-52")}
+                      onClick={() => dashboard("/shipper")}
+                    >
                       Go to dashboard
                     </Button>
                     <Button
                       variant="secondary"
+                      className="h-52 w-full justify-between"
                       icon={<UserPlus size={17} />}
                       onClick={() => dashboard("/shipper/network?invite=driver")}
                     >
@@ -483,14 +749,14 @@ export function OnboardingScreen({
                     <Button
                       variant={state === "C9" ? "primary" : "secondary"}
                       icon={state === "C9" ? undefined : <PencilSimple size={17} />}
-                      className={actionClass}
+                      className={cn(actionClass, "h-52")}
                       onClick={() => setState("C2")}
                     >
                       {state === "C9" ? "Update details" : "Edit details"}
                     </Button>
                     {state === "C9" ? (
                       <a
-                        className="link focus-ring text-center text-label"
+                        className="press focus-ring flex h-48 items-center justify-center rounded-full bg-ds-canvas px-18 text-body font-medium text-ds-ink hover:bg-ds-surface-3"
                         href="https://wa.me/12075550142"
                         target="_blank"
                         rel="noreferrer"
@@ -498,7 +764,11 @@ export function OnboardingScreen({
                         Talk to us on WhatsApp ↗
                       </a>
                     ) : (
-                      <Button variant="quiet" onClick={() => setState("A1")}>
+                      <Button
+                        variant="quiet"
+                        className="w-full justify-center"
+                        onClick={() => setState("A1")}
+                      >
                         Log out
                       </Button>
                     )}
@@ -508,38 +778,64 @@ export function OnboardingScreen({
             </>
           ) : state === "D6" ? (
             <>
-              {icon(Check)}
+              <div className="mx-auto mt-auto h-210 w-280 max-w-full shrink-0 overflow-hidden rounded-row bg-ds-canvas md:mt-0">
+                <img
+                  src="/illustrations/driver.svg"
+                  alt=""
+                  className="h-full w-full object-contain mix-blend-multiply"
+                />
+              </div>
               {heading(
                 "You’re ready to roll",
-                `${driverName}, send your link to the shipping companies you work with. Once they connect, their trips show up here.`,
+                "Send your link to the shipping companies you work with. Once they connect, their trips show up here.",
               )}
-              <div className="flex items-center gap-12 rounded-row bg-ds-canvas p-16">
-                <span className="min-w-0 flex-1 break-all text-label">{shareLink}</span>
-                <Button variant="quiet" onClick={copy}>
+              <div className="flex items-center gap-10 rounded-[16px] bg-ds-canvas px-16 py-14">
+                <LinkSimple size={16} className="shrink-0" />
+                <span className="min-w-0 flex-1 break-all text-[14px] leading-[1.45]">
+                  {shareLink.replace(/^https?:\/\//, "")}
+                </span>
+                <button
+                  type="button"
+                  className="link focus-visible:outline-ds-ink shrink-0 rounded-full text-label font-semibold"
+                  onClick={copy}
+                >
                   {copied ? "Copied" : "Copy"}
+                </button>
+              </div>
+              <div className="mt-auto flex flex-col gap-20 md:mt-0 md:gap-24">
+                <ButtonLink
+                  icon={<PaperPlaneTilt size={17} />}
+                  className="h-52 w-full justify-between"
+                  href={`https://wa.me/?text=${encodeURIComponent(`Connect with me on Waybil. ${shareLink}`)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Share on WhatsApp
+                </ButtonLink>
+                <Button
+                  variant="quiet"
+                  className="w-full justify-center"
+                  onClick={() =>
+                    inviteCode || initialState === "F1" ? setState("F2") : dashboard("/driver")
+                  }
+                >
+                  {inviteCode || initialState === "F1"
+                    ? "Continue to invitation"
+                    : "Go to my trips"}
                 </Button>
               </div>
-              <ButtonLink
-                icon={<PaperPlaneTilt size={17} />}
-                className="justify-between"
-                href={`https://wa.me/?text=${encodeURIComponent(`Connect with me on Waybil. ${shareLink}`)}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                Share on WhatsApp
-              </ButtonLink>
-              <Button
-                variant="quiet"
-                onClick={() =>
-                  inviteCode || initialState === "F1" ? setState("F2") : dashboard("/driver")
-                }
-              >
-                {inviteCode || initialState === "F1" ? "Continue to invitation" : "Go to my trips"}
-              </Button>
             </>
           ) : group === "E" ? (
             <>
-              {icon(state === "E3" ? Check : ChartPie)}
+              {investorReady && (
+                <div className="mx-auto mt-auto h-210 w-280 max-w-full shrink-0 overflow-hidden rounded-row bg-ds-canvas md:mt-0">
+                  <img
+                    src="/illustrations/investor.svg"
+                    alt=""
+                    className="h-full w-full object-contain mix-blend-multiply"
+                  />
+                </div>
+              )}
               {heading(
                 state === "E3" ? "You’re in" : "Before you deposit",
                 state === "E3"
@@ -548,66 +844,92 @@ export function OnboardingScreen({
               )}
               {state === "E3" ? (
                 <>
-                  <div className="rounded-row bg-ds-canvas p-20">
-                    <Row label="Total in the pool" value={<Money amount="25000000000" />} />
-                    <Row label="Paid out early" value={<Money amount="3294000000" />} />
+                  <div className="rounded-row bg-ds-canvas px-18 py-4 [&>div]:py-9 [&>div]:text-[14px] [&>div>span:last-child]:font-medium [&>div+div]:border-t [&>div+div]:border-ds-line">
+                    <Row
+                      label="Total in the pool"
+                      value={<Money amount={BASE_POOL.total_shares} />}
+                    />
+                    <Row label="Paid out early" value={<Money amount={BASE_POOL.lent} />} />
                     <Row label="Missed payments" value="0 of 9 trips" />
                   </div>
-                  <DemoRecord title="Demo investor setup" />
-                  <Button
-                    icon={<Plus size={17} />}
-                    className={actionClass}
-                    onClick={() => dashboard("/pool?deposit=on")}
-                  >
-                    Make your first deposit
-                  </Button>
-                  <Button variant="quiet" onClick={() => dashboard("/pool")}>
-                    Look around first
-                  </Button>
+                  <div className="mt-auto flex flex-col gap-20 md:mt-0 md:gap-24">
+                    <Button
+                      icon={<Plus size={17} />}
+                      className={cn(actionClass, "h-52")}
+                      onClick={() => dashboard("/pool?deposit=on")}
+                    >
+                      Make your first deposit
+                    </Button>
+                    <Button
+                      variant="quiet"
+                      className="w-full justify-center"
+                      onClick={() => dashboard("/pool")}
+                    >
+                      Look around first
+                    </Button>
+                  </div>
                 </>
               ) : (
                 <>
-                  <div className="flex flex-col gap-20">
+                  <div className="flex flex-col gap-10">
                     {[
                       {
-                        Icon: Truck,
+                        Icon: ArrowLineDown,
                         title: "Your money pays truck owners early",
                         note: "The pool earns 1.6% of each repaid bill. You receive your share of those earnings.",
                       },
                       {
-                        Icon: Clock,
+                        Icon: Hourglass,
                         title: "Some bills get paid late",
                         note: "If a company pays late or does not pay, you could lose part of your money.",
                       },
                       {
-                        Icon: ArrowUpRight,
+                        Icon: WalletGlyph,
                         title: "Withdraw anytime",
                         note: "The free part is paid now. The rest waits until bills are repaid.",
                       },
                     ].map((item) => (
-                      <div key={item.title} className="flex gap-12">
-                        <item.Icon className="mt-4 shrink-0" size={24} />
-                        <div>
-                          <h2 className="text-label font-medium">{item.title}</h2>
-                          <p className="mt-6 text-label text-ds-muted">{item.note}</p>
+                      <div
+                        key={item.title}
+                        className="flex items-start gap-14 rounded-[18px] bg-ds-canvas p-16"
+                      >
+                        <span className="grid size-36 shrink-0 place-items-center rounded-full bg-ds-bg">
+                          <item.Icon size={17} />
+                        </span>
+                        <div className="min-w-0">
+                          <h2 className="text-body font-medium">{item.title}</h2>
+                          <p className="mt-3 text-[13px] leading-[1.45] text-ds-muted">
+                            {item.note}
+                          </p>
                         </div>
                       </div>
                     ))}
                   </div>
-                  <label className="mt-auto flex items-center gap-12 rounded-row bg-ds-canvas p-16 text-label">
+                  <label className="flex cursor-pointer items-center gap-12 p-4 text-body">
                     <input
                       type="checkbox"
-                      className="size-20 accent-ds-brand"
+                      className="peer sr-only"
                       checked={understood}
                       onChange={(e) => {
                         setUnderstood(e.target.checked);
                         setState(e.target.checked ? "E2" : "E1");
                       }}
                     />
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "grid size-22 shrink-0 place-items-center rounded-[7px] border-[1.5px] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-ds-ink",
+                        understood
+                          ? "border-ds-ink bg-ds-ink text-ds-bg"
+                          : "border-ds-line-strong bg-ds-bg",
+                      )}
+                    >
+                      {understood && <Check size={14} weight="bold" />}
+                    </span>
                     I understand how the pool works
                   </label>
                   <Button
-                    className={actionClass}
+                    className={cn(actionClass, "mt-auto h-52 shrink-0 md:mt-0")}
                     disabled={!understood}
                     onClick={() => setState("E3")}
                   >
@@ -618,8 +940,16 @@ export function OnboardingScreen({
             </>
           ) : group === "F" ? (
             <>
-              {icon(
-                state === "F3" || state === "F6" ? Check : state === "F4" ? Warning : Buildings,
+              {state === "F3" && icon(Handshake)}
+              {state === "F4" && icon(LinkOffGlyph, "quiet")}
+              {state === "F6" && (
+                <div className="mx-auto mt-auto h-210 w-280 max-w-full shrink-0 overflow-hidden rounded-row bg-ds-canvas md:mt-0">
+                  <img
+                    src="/illustrations/warehouse-invite.svg"
+                    alt=""
+                    className="h-full w-full object-contain"
+                  />
+                </div>
               )}
               {heading(
                 state === "F3"
@@ -634,7 +964,7 @@ export function OnboardingScreen({
                 state === "F3"
                   ? "Northwind can now send you trips. You will see them on your trips page."
                   : state === "F4"
-                    ? "Ask Northwind to send you a new link. Links last 7 days and work once."
+                    ? "Ask Northwind to send you a new link. It only takes them a few seconds."
                     : state === "F6"
                       ? "When a truck arrives at Harbor Hub, scan the QR on the driver’s phone to confirm."
                       : state === "F5"
@@ -642,51 +972,70 @@ export function OnboardingScreen({
                         : "Accept to get trips from them. You get paid the moment a delivery is confirmed.",
               )}
               {["F1", "F2", "F5"].includes(state) && (
-                <div className="rounded-card border border-ds-line p-20">
-                  <div className="mb-16 flex items-center gap-12">
-                    <span className="grid size-40 place-content-center rounded-full bg-ds-canvas text-label">
-                      NF
-                    </span>
-                    <div>
-                      <p className="text-label font-medium">Northwind Freight Co.</p>
-                      <p className="text-caption text-ds-success">Verified</p>
+                <div className="flex flex-col gap-12 rounded-[22px] bg-ds-canvas p-20">
+                  <div className="flex items-center gap-12">
+                    <Avatar name="Northwind Freight Co." />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[16px] leading-[1.45] font-medium">
+                        Northwind Freight Co.
+                      </p>
+                      <p className="mt-2 text-[12.5px] leading-[1.45] text-ds-muted">
+                        {state === "F5"
+                          ? "You are invited to receive goods."
+                          : "Shipping company · Eastport"}
+                      </p>
                     </div>
+                    <span className="inline-flex shrink-0 items-center gap-4 rounded-full bg-ds-success-soft px-10 py-4 text-caption font-medium text-ds-success">
+                      <SealCheck size={13} />
+                      Verified
+                    </span>
                   </div>
-                  {state === "F5" ? (
-                    <>
-                      <Row label="Destination" value="Harbor Hub" />
-                      <Row label="Address" value="9 Pier Street" />
-                    </>
-                  ) : (
-                    <>
-                      <Row label="Credit limit" value={<Money amount="3000000000" />} />
-                      <Row label="Paid on time" value="100% · 9 trips" />
-                      <Row label="You get" value="97.5% on arrival" />
-                    </>
-                  )}
+                  <div className="[&>div]:py-9 [&>div]:text-[14px] [&>div>span:last-child]:max-w-[70%] [&>div>span:last-child]:text-right [&>div>span:last-child]:font-medium [&>div+div]:border-t [&>div+div]:border-ds-line">
+                    {state === "F5" ? (
+                      <>
+                        <Row label="Destination" value="Harbor Hub" />
+                        <Row label="Address" value="9 Pier Street" />
+                      </>
+                    ) : (
+                      <>
+                        <Row label="Credit limit" value={<Money amount="3000000000" />} />
+                        <Row label="Paid on time" value="100% · 9 trips" />
+                        <Row label="Payout" value="You get 97.5% on arrival." />
+                      </>
+                    )}
+                  </div>
                 </div>
               )}
-              <div className="mt-auto flex flex-col gap-12">
+              <div className="mt-auto flex flex-col gap-20 md:mt-0 md:gap-24 [&>button:not([data-quiet])]:h-52">
                 {state === "F1" ? (
-                  <Button
-                    icon={<Envelope size={17} />}
-                    className={actionClass}
-                    onClick={() => setState("D1")}
-                  >
-                    Continue with Google
-                  </Button>
+                  <>
+                    <Button
+                      icon={<MailGlyph size={17} />}
+                      className={actionClass}
+                      onClick={() => setState("D1")}
+                    >
+                      Continue with Google
+                    </Button>
+                    <p className="text-center text-[13px] leading-[1.45] text-ds-muted md:text-left">
+                      Are you new to Waybil? Setup takes about a minute.
+                    </p>
+                  </>
                 ) : state === "F2" ? (
                   <>
                     <Button className={actionClass} onClick={() => setState("F3")}>
                       Accept
                     </Button>
-                    <Button variant="quiet" onClick={() => dashboard("/driver")}>
+                    <Button
+                      data-quiet
+                      variant="quiet"
+                      className="w-full justify-center"
+                      onClick={() => dashboard("/driver")}
+                    >
                       Not now
                     </Button>
                   </>
                 ) : state === "F3" ? (
                   <>
-                    <DemoRecord title="Demo invite acceptance" />
                     <Button className={actionClass} onClick={() => dashboard("/driver")}>
                       Go to my trips
                     </Button>
@@ -703,19 +1052,18 @@ export function OnboardingScreen({
                 ) : state === "F5" ? (
                   <>
                     <Button
-                      icon={<Envelope size={17} />}
+                      icon={<MailGlyph size={17} />}
                       className={actionClass}
                       onClick={() => setState("F6")}
                     >
                       Continue with Google
                     </Button>
-                    <p className="text-center text-caption text-ds-muted">
-                      You need no wallet, no app and no fees.
+                    <p className="text-center text-[13px] leading-[1.45] font-medium text-ds-muted">
+                      You need no wallet, no app and no fees. Waybil covers the network cost.
                     </p>
                   </>
                 ) : (
                   <>
-                    <DemoRecord title="Demo receiver setup" />
                     <Button
                       icon={<Scan size={17} />}
                       className={actionClass}
@@ -723,7 +1071,12 @@ export function OnboardingScreen({
                     >
                       Open scanner
                     </Button>
-                    <Button variant="quiet" onClick={() => dashboard("/warehouse")}>
+                    <Button
+                      data-quiet
+                      variant="quiet"
+                      className="w-full justify-center"
+                      onClick={() => dashboard("/warehouse")}
+                    >
                       I’ll do it later
                     </Button>
                   </>
@@ -766,7 +1119,16 @@ function SystemContent({
   onRetry: () => void;
   onHome: () => void;
 }) {
-  const Icon = state === "X4" ? WifiSlash : Warning;
+  const glyph =
+    state === "X1"
+      ? "compass"
+      : state === "X2"
+        ? "cloud-off"
+        : state === "X3"
+          ? "lock"
+          : state === "X4"
+            ? "wifi-off"
+            : "log-out";
   const title =
     state === "X1"
       ? "Page not found"
@@ -793,28 +1155,30 @@ function SystemContent({
         className={cn(
           "mx-auto grid size-80 place-content-center rounded-full",
           state === "X2"
-            ? "bg-ds-danger-soft text-ds-danger"
+            ? "bg-ds-danger-result text-ds-danger"
             : "bg-ds-brand-soft text-ds-brand-deep",
         )}
       >
-        <Icon size={32} />
+        <SystemGlyph name={glyph} size={34} />
       </span>
       <div className="text-center">
-        <h1 className="text-title md:text-[40px] md:leading-tight">{title}</h1>
-        <p className="mt-12 text-label text-ds-muted">{note}</p>
+        <h1 className="text-[30px] leading-[1.1] font-medium tracking-[-0.03em] md:text-[40px]">
+          {title}
+        </h1>
+        <p className="mt-10 text-[14px] leading-[1.45] text-ds-muted md:text-[15px]">{note}</p>
       </div>
-      <div className="mt-auto flex flex-col gap-12 md:mt-0">
+      <div className="mt-auto flex flex-col gap-20 md:mt-0 md:gap-24">
         <Button
           icon={
             state === "X1" || state === "X3" ? (
-              <House size={17} />
+              <SystemGlyph name="house" size={17} />
             ) : state === "X5" ? (
               <ArrowRight size={17} />
             ) : (
-              <ArrowCounterClockwise size={17} />
+              <SystemGlyph name="retry" size={17} />
             )
           }
-          className="justify-between"
+          className="h-52 w-full justify-between"
           onClick={state === "X1" || state === "X3" ? onHome : onRetry}
         >
           {state === "X1" || state === "X3"
@@ -823,19 +1187,22 @@ function SystemContent({
               ? "Continue with Google"
               : "Try again"}
         </Button>
-        <Button
-          variant="quiet"
-          onClick={
-            state === "X1"
-              ? () => {
-                  if (window.history.length > 1) window.history.back();
-                  else onHome();
-                }
-              : onHome
-          }
-        >
-          {state === "X1" ? "Go back" : "Go home"}
-        </Button>
+        {state !== "X4" && state !== "X5" && (
+          <Button
+            variant="quiet"
+            className="w-full justify-center"
+            onClick={
+              state === "X1"
+                ? () => {
+                    if (window.history.length > 1) window.history.back();
+                    else onHome();
+                  }
+                : onHome
+            }
+          >
+            {state === "X1" ? "Go back" : state === "X3" ? "Use a different wallet" : "Go home"}
+          </Button>
+        )}
       </div>
     </>
   );

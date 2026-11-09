@@ -48,3 +48,28 @@ Issue #27. Source `design/waybil.pen`. Every state below is required at 1440, 83
 - P4.2 draws two wallet approvals. NEP-141 repayments do not use ERC-20 allowances. Keep the drawn waiting state, and confirm the exact registration/signing flow with Ancung before real wallet integration. No interface changes in this batch.
 - The report uses crates from demo-data.md rather than the boxes drawn in its count cards.
 - Fixtures and local transitions remain labeled as demos. No transaction hashes or confirmations are fabricated.
+
+## Desktop alignment pass (2026-11-10)
+
+The shipper board was extracted into `design-spec.json` with the pencil MCP and every state
+was compared with `compare-to-design.js` at 1440 pixels. What the report still lists is one
+of these four, and none of them is an app defect:
+
+- Text the report cannot read. A placeholder or an input's value is not a text node, so
+  "e.g. 120 crates of coffee", "0.00", "300.00", "Search shipments", "Lakeside",
+  "9 Pier Street, Harbor City" and "lena@harborhub.com" come back missing. All of them are
+  on the screen. The same goes for the QR on P5.3, which the report skips as an image.
+- The invite link. P5.3 draws `app.waybil.xyz/join/c8F2kq`. The app shows the link that
+  actually opens the driver invitation, so the demo stays usable.
+
+### For Ancung, where the board disagrees with itself
+
+- The home list writes `#1039 · Sam · due Nov 14` while the credit card on the same screen
+  and the shipments page both write "Due in 2 days" for that bill. The app follows the two.
+- P2.1 and P2.2 write "You pay by Dec 11" with no date chosen, while P2.3 writes
+  "You pay by the due date". The app follows P2.3 until a date is picked.
+- The problem banner quotes "8 crates arrived wet, 4 torn open." while the report sheet
+  behind it writes "8 crates arrived wet, 4 of them torn open." The app shows the receiver's
+  real note in both places.
+- P6.3 and P6.4 count 3 shipments on the road, P6.1 and P6.2 count 2, from the same five
+  shipments. The app counts the data.

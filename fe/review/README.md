@@ -109,4 +109,5 @@ Two rules when extracting a board, both learned the hard way:
   before removing anything, because the spec may be the thing that is wrong. A map title was
   deleted from W1.1 and W1.2 exactly this way.
 
-The spec covers the warehouse board so far; extend it a board at a time with the pencil MCP.
+The spec covers the warehouse and shipper boards so far; extend it a board at a time with
+the pencil MCP.

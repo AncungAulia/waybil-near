@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useOrigin } from "@/hooks/useOrigin";
 import { QRCodeSVG } from "qrcode.react";
-import { PaperPlaneTilt, Plus } from "@phosphor-icons/react";
+import { LinkSimple, PaperPlaneTilt, Plus } from "@phosphor-icons/react";
 import { Panel } from "@/components/layout/Panel";
 import { ActionSheet } from "@/components/layout/ActionSheet";
 import { Input } from "@/components/ui/Input";
@@ -36,7 +36,9 @@ export function ShipperNetwork({
       </p>
       <div className="grid gap-16 md:grid-cols-2">
         <Panel
-          title={`Drivers ${empty ? 0 : 3}`}
+          title="Drivers"
+          titleClassName="text-[19px]"
+          badge={empty ? 0 : 3}
           action={
             <Button variant="secondary" icon={<Plus size={17} />} onClick={() => go("P5.3")}>
               Invite
@@ -46,19 +48,19 @@ export function ShipperNetwork({
           {empty ? (
             <div className="flex min-h-320 flex-col items-center justify-center gap-16 text-center">
               <img src="/illustrations/driver.svg" alt="" className="h-120 w-180 object-contain" />
-              <h2 className="text-heading">No drivers yet</h2>
+              <h2 className="text-body font-medium">No drivers yet</h2>
               <p className="text-body text-ds-muted">
                 Invite the truck owners you already work with. They join with one link.
               </p>
             </div>
           ) : (
             [
-              ["Sam", "NWF-204 · 12 trips with you", "Connected"],
+              ["Sam", "NWF-204 · 12 trips with you", "Connected", "Sam Carter"],
               ["Jordan Lee", "JLE-118 · 4 trips with you", "Connected"],
               ["Chris Novak", "Invited 2 h ago over WhatsApp", "Waiting"],
-            ].map(([name, meta, status]) => (
+            ].map(([name, meta, status, full]) => (
               <div key={name} className="flex items-center gap-12 py-12">
-                <Avatar name={name!} />
+                <Avatar name={full ?? name!} />
                 <div className="min-w-0 flex-1">
                   <p className="text-body">{name}</p>
                   <p className="text-caption text-ds-muted">{meta}</p>
@@ -69,7 +71,9 @@ export function ShipperNetwork({
           )}
         </Panel>
         <Panel
-          title={`Destinations ${empty ? 0 : added ? 3 : 2}`}
+          title="Destinations"
+          titleClassName="text-[19px]"
+          badge={empty ? 0 : added ? 3 : 2}
           action={
             <Button variant="secondary" icon={<Plus size={17} />} onClick={() => go("P5.4")}>
               Add
@@ -83,7 +87,7 @@ export function ShipperNetwork({
                 alt=""
                 className="h-120 w-180 object-contain"
               />
-              <h2 className="text-heading">No destinations yet</h2>
+              <h2 className="text-body font-medium">No destinations yet</h2>
               <p className="text-body text-ds-muted">
                 Add the warehouses your goods go to. Their staff confirm arrivals.
               </p>
@@ -117,9 +121,15 @@ export function ShipperNetwork({
             Send this link to the truck owner. When they open it and sign up, they show up in your
             list.
           </p>
-          <Input label="Name only you see" value={name} onChange={(e) => setName(e.target.value)} />
+          <Input
+            label="Name (only you see this)"
+            hint="Can't be changed after you approve."
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
           <div className="flex items-center justify-between gap-8 rounded-small bg-ds-canvas p-12">
-            <span className="break-all text-caption">{url}</span>
+            <LinkSimple size={18} className="shrink-0 text-ds-muted" />
+            <span className="flex-1 break-all text-[14px]">{url}</span>
             <button
               className="focus-ring shrink-0 rounded-small p-8 text-label"
               onClick={async () => {
@@ -163,12 +173,19 @@ export function ShipperNetwork({
             value={place}
             onChange={(e) => setPlace(e.target.value)}
           />
-          <Input label="Address" value={address} onChange={(e) => setAddress(e.target.value)} />
+          <Input
+            label="Address"
+            hint="Can't be changed after you approve."
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+          />
           <GateMap />
-          <p className="text-caption text-ds-muted">Pin the gate where trucks unload.</p>
+          <p className="text-[12.5px] text-ds-muted">
+            Drag the pin to the gate where trucks unload.
+          </p>
           <Input
             label="Receiver's work email"
-            hint="They receive an invite to confirm arrivals here."
+            hint="We'll send them an invite to confirm arrivals here"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}

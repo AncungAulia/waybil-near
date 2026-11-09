@@ -5,7 +5,6 @@ import { ArrowLeft, MagnifyingGlass, Plus } from "@phosphor-icons/react";
 import { RoleShell } from "@/components/layout/RoleShell";
 import { Panel } from "@/components/layout/Panel";
 import { Button } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import { ShipmentRowSkeleton } from "@/components/elements/ShipmentRow";
 import { DemoRecord } from "@/components/elements/DemoRecord";
 import { useDemoDelivery, useDemoSettlement } from "@/hooks/useDemoDelivery";
@@ -198,8 +197,9 @@ export function ShipperScreen({
               New shipment
             </Button>
           </div>
-          <Panel>
-            <div className="flex flex-wrap gap-8">
+          {/* The board puts the filters and the search side by side, above the list card. */}
+          <div className="mb-16 flex flex-wrap items-center justify-between gap-12">
+            <div className="flex flex-wrap gap-6 rounded-full bg-ds-bg p-4">
               {["All", "On the road", "Bills due", "Done"].map((label) => (
                 <button
                   key={label}
@@ -209,12 +209,17 @@ export function ShipperScreen({
                     if (state === "P6.4") go("P6.1");
                   }}
                   className={cn(
-                    "press focus-ring rounded-full px-16 py-10 text-label",
-                    filter === label ? "bg-ds-ink text-ds-bg" : "bg-ds-canvas",
+                    "press focus-ring inline-flex items-center gap-6 rounded-full px-14 py-8 text-label",
+                    filter === label ? "bg-ds-ink text-ds-bg" : "text-ds-ink-2",
                   )}
                 >
-                  {label}{" "}
-                  <span className="ml-6 opacity-60">
+                  {label}
+                  <span
+                    className={cn(
+                      "text-caption font-normal",
+                      filter === label ? "opacity-60" : "text-ds-muted",
+                    )}
+                  >
                     {label === "All"
                       ? rows.length
                       : rows.filter(
@@ -230,12 +235,18 @@ export function ShipperScreen({
                 </button>
               ))}
             </div>
-            <Input
-              label="Search shipments"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search a city, a driver or a shipment number"
-            />
+            <label className="flex h-44 w-280 max-w-full items-center gap-10 rounded-full border-[1.5px] border-transparent bg-ds-bg px-16 transition-colors duration-150 ease-base has-[:focus]:border-ds-ink">
+              <MagnifyingGlass size={16} className="shrink-0 text-ds-muted" />
+              <span className="sr-only">Search shipments</span>
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search shipments"
+                className="min-w-0 flex-1 bg-transparent text-[14px] text-ds-ink outline-none placeholder:text-ds-muted focus-visible:outline-none"
+              />
+            </label>
+          </div>
+          <Panel>
             {state === "P6.4" ? (
               <div className="flex flex-col gap-16" aria-label="Loading shipments">
                 {[1, 2, 3, 4].map((i) => (
@@ -247,10 +258,10 @@ export function ShipperScreen({
             ) : (
               <div className="flex min-h-380 flex-col items-center justify-center gap-16 text-center">
                 <MagnifyingGlass size={48} className="text-ds-muted" />
-                <h2 className="text-heading">
+                <h2 className="text-[16px] font-medium">
                   No shipments match {search ? `“${search}”` : "your search"}
                 </h2>
-                <p className="text-body text-ds-muted">
+                <p className="text-[13.5px] text-ds-muted">
                   Try a city, a driver&apos;s name, or a shipment number like #1041.
                 </p>
                 <Button

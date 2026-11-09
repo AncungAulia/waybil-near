@@ -17,6 +17,7 @@
   --color-ds-muted: #6b6b6b;
   --color-ds-brand: #ffd60a;
   --color-ds-brand-deep: #6b5600;
+  --color-ds-brand-ink: #3d3300;
   --color-ds-brand-soft: #fff8d1;
   /* Yellow on light grey needs a ring to stay visible, see the Delivered status dot. */
   --color-ds-brand-ring: #c9a800;
@@ -28,12 +29,19 @@
   --color-ds-danger-stamp: #fbe3ec;
   --color-ds-danger-result: #fbeaea;
   --color-ds-success-soft: #e3f1e7;
+  --color-ds-check-soft: #e4f2e8;
+  --color-ds-check-ink: #14572b;
+  --color-ds-report-ink: #8a1039;
+  --color-ds-vote-soft: #fff6d6;
+  --color-ds-vote-ink: #6b4e00;
   --color-ds-warning-soft: #fff1d6;
+  --color-ds-warning-ink: #8a5300;
   /* The unused part of the ruler meter, from design/shaders/ruler.glsl. */
   --color-ds-meter-empty: #cfcfcf;
   /* Second line of text on the dark toast, and the quieter one in the footer. */
   --color-ds-on-night: #a8a8a8;
   --color-ds-on-night-dim: #8c8c8c;
+  --color-ds-role-selected-muted: #c9c9c9;
 
   /* Pressed and disabled shades, read off the States board. */
   --color-ds-brand-pressed: #f0b400;

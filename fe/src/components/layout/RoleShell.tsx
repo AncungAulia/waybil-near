@@ -49,7 +49,7 @@ export function RoleShell({
     warehouse: "Harbor Hub",
     shipper: "Shipper",
     investor: "Investor",
-    admin: "Admin",
+    admin: "Waybil team",
   }[role];
   const avatar = (
     <img src={`/illustrations/${role}-avatar.svg`} alt={name} className="size-36 rounded-full" />
