@@ -14,7 +14,7 @@ import { Segmented } from "@/components/ui/Segmented";
 import { cn } from "@/lib/cn";
 import { Money } from "@/components/elements/Money";
 import { Stat } from "@/components/elements/Stat";
-import { FanMeter } from "@/components/elements/FanMeter";
+import { FanMeter, MeterLegend } from "@/components/elements/FanMeter";
 import { DemoMap } from "@/components/elements/DemoMap";
 import { ShipmentList } from "./ShipmentList";
 import { SHIPMENTS, type ShipperState } from "../data/fixtures";
@@ -67,10 +67,7 @@ export function ShipperHome({
   ];
   /* A late bill is the soft danger card on the board, an open one the ink card with the glow. */
   const bill = (
-    <Panel
-      gap={12}
-      className={cn("p-20", late ? "bg-ds-danger-soft" : "bill-card bg-ds-ink text-ds-bg")}
-    >
+    <Panel className={late ? "bg-ds-danger-soft" : "bill-card bg-ds-ink text-ds-bg"}>
       <p className={cn("text-label", late ? "text-ds-danger" : "text-ds-brand")}>
         {late ? "3 days late" : "Due in 2 days"}
       </p>
@@ -196,13 +193,11 @@ export function ShipperHome({
             empty={first}
             label={first ? "No trucks on the road yet" : "2 trucks moving"}
             twoTrucks={!first}
-            className="h-280 md:h-380 lg:h-full lg:min-h-280"
+            className="h-340 md:h-500 lg:h-full lg:min-h-600"
           />
         </Panel>
         <div className="flex flex-col gap-16">
           <Panel
-            gap={10}
-            className="p-16"
             title="Credit limit"
             titleClassName="text-body"
             action={
@@ -231,8 +226,9 @@ export function ShipperHome({
               <span>2,000</span>
               <span>3,000</span>
             </div>
-            <div className="border-t border-ds-line pt-12">
-              <h3 className={cn("mb-10", first ? "text-[14.5px] font-medium" : "text-label")}>
+            <MeterLegend value={Number(used) / 3000000000} />
+            <div className="border-t border-ds-line pt-16">
+              <h3 className={cn("mb-12", first ? "text-[14.5px] font-medium" : "text-label")}>
                 {first ? "Nothing in use yet" : "What's using it"}
               </h3>
               {first ? (
@@ -243,7 +239,7 @@ export function ShipperHome({
                 using.map((r, i) => (
                   <button
                     key={r.shipment.id}
-                    className="focus-ring mb-10 flex w-full items-center gap-10 text-left text-caption"
+                    className="focus-ring mb-12 flex w-full items-center gap-10 text-left text-caption"
                     onClick={() => open(r.shipment.id)}
                   >
                     {/* The soonest bill is marked in brand, a late one in red, the rest in ink. */}
