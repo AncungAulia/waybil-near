@@ -54,13 +54,19 @@ const PAYOUTS = [
   ["1027", "Oakdale", "Nov 1", "195000000", "Blue Ridge"],
 ] as const;
 
-function ShareLink() {
+function ShareLink({ row = false }: { row?: boolean }) {
   const url = `${useOrigin()}/c/sam`;
   const [copied, setCopied] = useState(false);
   const [failed, setFailed] = useState(false);
   return (
-    <div className="flex flex-col gap-12">
-      <div className="flex items-center gap-10 rounded-full bg-ds-canvas py-6 pr-6 pl-16">
+    /* The companies screen sets the link and the button side by side, the empty state stacks them. */
+    <div className={cn("flex flex-col gap-12", row && "md:flex-row md:items-center")}>
+      <div
+        className={cn(
+          "flex items-center gap-10 rounded-full bg-ds-canvas py-6 pr-6 pl-16",
+          row && "md:flex-1",
+        )}
+      >
         <LinkIcon size={16} className="shrink-0 text-ds-muted" />
         <span className="min-w-0 flex-1 truncate text-label">{url}</span>
         <button
@@ -509,8 +515,8 @@ export function DriverScreen({
           </Panel>
         </div>
       ) : current === "/driver/companies" ? (
-        <div className="grid gap-16 lg:grid-cols-[minmax(0,1fr)_420px]">
-          <div className="flex flex-col gap-16">
+        <div className="flex flex-col gap-16">
+          <>
             {state === "K3.4" && !accepted && (
               <Panel className="bg-ds-brand-soft">
                 <div className="flex items-center gap-12">
@@ -557,12 +563,12 @@ export function DriverScreen({
                 ),
               )}
             </Panel>
-          </div>
-          <Panel title="Work with a new company">
-            <p className="text-body text-ds-muted">
+          </>
+          <Panel title="Work with a new company" gap={12}>
+            <p className="text-label text-ds-muted">
               Send them your link. When they connect, their trips show up here.
             </p>
-            <ShareLink />
+            <ShareLink row />
           </Panel>
         </div>
       ) : (

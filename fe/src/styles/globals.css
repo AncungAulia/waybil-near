@@ -170,35 +170,27 @@
    * dots from design/shaders/halftone.glsl over it (16 px cells, white at 16%).
    */
   .bill-card {
+    position: relative;
     background-image:
-      /* The shader fades its dots away from the top right corner, so the card paints its
-         own colour back over them at the same falloff. */
-      radial-gradient(100% 100% at 100% 0%, transparent 15%, var(--color-ds-ink) 85%),
-      radial-gradient(circle, color-mix(in srgb, white 16%, transparent) 2.2px, transparent 2.3px),
       radial-gradient(
-        ellipse at top right,
+        ellipse at 83% 5%,
         color-mix(in srgb, var(--color-ds-brand) 40%, transparent),
-        transparent 62%
+        transparent 60%
       ),
-      radial-gradient(
-        ellipse at 80% 0%,
-        color-mix(in srgb, var(--color-ds-brand) 22%, transparent),
-        transparent 55%
-      );
-    background-size:
-      auto,
-      16px 16px,
-      auto,
-      auto;
+      /* The board sets a second, warmer glow low on the left. */
+        radial-gradient(
+          ellipse at 10% 94%,
+          color-mix(in srgb, var(--color-ds-brand-pressed) 22%, transparent),
+          transparent 62%
+        );
   }
   /*
-   * The driver's "Ready to get paid" card (K1.2): the same halftone, dark at 12% over the
-   * brand yellow, with a white and an amber glow in the top right.
+   * The driver's "Ready to get paid" card (K1.2) and the pool stat: the same halftone, dark
+   * over the brand yellow, with a white and an amber glow in the top right.
    */
   .ready-card {
+    position: relative;
     background-image:
-      radial-gradient(100% 100% at 100% 0%, transparent 15%, var(--color-ds-brand) 85%),
-      radial-gradient(circle, color-mix(in srgb, black 12%, transparent) 1.9px, transparent 2px),
       radial-gradient(
         ellipse at top right,
         color-mix(in srgb, white 60%, transparent),
@@ -209,11 +201,41 @@
         color-mix(in srgb, var(--color-ds-brand-pressed) 45%, transparent),
         transparent 55%
       );
-    background-size:
-      auto,
-      16px 16px,
-      auto,
-      auto;
+  }
+  /*
+   * The halftone sits over the glows and fades away from the top right corner, the way
+   * design/shaders/halftone.glsl shrinks its dots toward the text. The card's own children
+   * are lifted above it so the dots never land on a word.
+   */
+  .bill-card::after,
+  .ready-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background-size: 16px 16px;
+    -webkit-mask-image: radial-gradient(100% 100% at 100% 0%, #000 15%, transparent 85%);
+    mask-image: radial-gradient(100% 100% at 100% 0%, #000 15%, transparent 85%);
+  }
+  .bill-card::after {
+    background-image: radial-gradient(
+      circle,
+      color-mix(in srgb, white 16%, transparent) 2.2px,
+      transparent 2.3px
+    );
+  }
+  .ready-card::after {
+    background-image: radial-gradient(
+      circle,
+      color-mix(in srgb, black 12%, transparent) 1.9px,
+      transparent 2px
+    );
+  }
+  .bill-card > *,
+  .ready-card > * {
+    position: relative;
+    z-index: 1;
   }
   /*
    * Buttons get the three layer ring drawn on the States board: a brand-deep hairline on the
