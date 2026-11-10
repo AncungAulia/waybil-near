@@ -28,7 +28,9 @@ const TABS: { value: Tab; label: string }[] = [
   { value: "paid", label: "Paid early" },
   { value: "history", label: "History" },
 ];
-const done = (row: DemoShipmentRow) => ["Repaid", "Cancelled"].includes(row.shipment.status);
+/* A bill covered by the reserve left the limit, so it sits in History with the closed ones. */
+const done = (row: DemoShipmentRow) =>
+  ["Repaid", "Cancelled", "CoveredByReserve"].includes(row.shipment.status);
 const TAB_ROWS: Record<Tab, (row: DemoShipmentRow) => boolean> = {
   active: (row) => !done(row),
   paid: (row) => row.shipment.status === "Paid",
@@ -58,6 +60,12 @@ export function ShipperHome({
   const first = state === "P1.2",
     late = state === "P1.4",
     near = state === "P1.3";
+  /*
+   * A bill covered by the reserve pauses new shipments until it is settled with the team
+   * (contract.md). It uses the same paused pattern as the late bill on P1.4.
+   */
+  const covered = rows.find((row) => row.shipment.status === "CoveredByReserve");
+  const paused = late || !!covered;
   const used = first ? 0n : near ? 2790000000n : usedBefore;
   const left = (3000000000n - used).toString();
   /*
@@ -119,13 +127,28 @@ export function ShipperHome({
           <Button
             icon={<Plus size={17} />}
             className="w-full justify-between md:w-auto"
-            disabled={late}
+            disabled={paused}
             onClick={() => go("P2.1")}
           >
             New shipment
           </Button>
         </div>
       </div>
+      {!late && covered && (
+        <div className="flex items-center gap-12 rounded-row bg-ds-danger-soft p-16 text-ds-danger">
+          <WarningCircle size={20} className="shrink-0" />
+          <p className="flex-1 text-[14px]">
+            A bill was covered by the reserve. New shipments are paused until you settle it with our
+            team.
+          </p>
+          <button
+            className="focus-ring shrink-0 text-[14px] font-medium underline transition-colors duration-150 ease-base hover:text-ds-ink"
+            onClick={() => open(covered.shipment.id)}
+          >
+            See the bill
+          </button>
+        </div>
+      )}
       {late && (
         <div className="flex items-center gap-12 rounded-row bg-ds-danger-soft p-16 text-ds-danger">
           <WarningCircle size={20} className="shrink-0" />

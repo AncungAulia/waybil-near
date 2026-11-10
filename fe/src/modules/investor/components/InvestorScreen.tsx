@@ -1,7 +1,7 @@
 "use client";
 import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { FEE_BPS, formatUsdc, parseUsdc, splitBill } from "@waybil/shared";
+import { advanceFor, FEE_BPS, formatUsdc, parseUsdc, splitBill } from "@waybil/shared";
 import { RoleShell } from "@/components/layout/RoleShell";
 import { Panel } from "@/components/layout/Panel";
 import { ActionSheet } from "@/components/layout/ActionSheet";
@@ -15,6 +15,7 @@ import {
   Package,
   Plus,
   SealCheck,
+  ShieldCheck,
   Wallet,
 } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/Button";
@@ -436,8 +437,14 @@ export function InvestorScreen({
               ))}
             </Panel>
           </>
-        ) : state === "I3.2" ? (
-          <DeliveryDetails id={shipmentId} value={balance.value} total={balance.total} />
+        ) : state === "I3.2" || state === "I3.5" ? (
+          <DeliveryDetails
+            id={shipmentId}
+            value={balance.value}
+            total={balance.total}
+            reserve={fixture.pool.reserve}
+            covered={state === "I3.5"}
+          />
         ) : (
           <>
             <header>
@@ -731,7 +738,19 @@ export function InvestorScreen({
     </RoleShell>
   );
 }
-function DeliveryDetails({ id, value, total }: { id: number; value: string; total: string }) {
+function DeliveryDetails({
+  id,
+  value,
+  total,
+  reserve,
+  covered = false,
+}: {
+  id: number;
+  value: string;
+  total: string;
+  reserve: string;
+  covered?: boolean;
+}) {
   const bill = id === 1043 ? 150000000n : id === 1039 ? 120000000n : 300000000n;
   const city = id === 1041 ? "Harbor City" : id === 1039 ? "Millbrook" : "Riverton";
   const driver = id === 1043 ? "Jordan Lee" : "Sam";
@@ -740,6 +759,60 @@ function DeliveryDetails({ id, value, total }: { id: number; value: string; tota
   const pool = BigInt(total);
   const share = pool > 0n ? Number((BigInt(value) * 100n) / pool) : 0;
   const part = pool > 0n ? (split.pool * BigInt(value)) / pool : 0n;
+  /*
+   * Covered by reserve (I3.5). The bill was never repaid, so the reserve pays back the advance
+   * as far as it can and the pool shares whatever is left as a loss (docs/specs/contract.md).
+   */
+  const advance = advanceFor(bill);
+  const reservePaid = advance < BigInt(reserve) ? advance : BigInt(reserve);
+  const loss = advance - reservePaid;
+  const lossPart = pool > 0n ? (loss * BigInt(value)) / pool : 0n;
+  const money = covered
+    ? [
+        { label: `Paid early to ${driver}`, value: advance },
+        { label: "Northwind paid back", value: 0n },
+        { label: "Reserve paid the pool", value: reservePaid },
+        { label: "Pool loss", value: loss },
+        { label: `Your part of the loss (${share}%)`, value: lossPart },
+      ]
+    : [
+        { label: `Paid early to ${driver}`, value: split.driver },
+        { label: "Northwind pays back", value: bill },
+        { label: "Pool earns", value: split.pool },
+        { label: `Your part at ${share}%`, value: part },
+        { label: "Safety reserve", value: split.reserve },
+        { label: "Waybil fee", value: split.waybil },
+      ];
+  const steps = [
+    {
+      title: "Approved by Northwind",
+      who: "Hannah Brooks · Nov 12, 08:02",
+      detail: `Bill ${formatUsdc(bill)} USDC, due Dec 11`,
+      warning: false,
+    },
+    {
+      title: `Picked up by ${driver}`,
+      who: "Nov 12, 09:14 · Main warehouse, Eastport",
+      detail: "Load checked by the driver",
+      warning: false,
+    },
+    {
+      title: "Arrival confirmed by Harbor Hub",
+      who: "Lena · Nov 12, 15:36",
+      detail: "120 of 120 crates",
+      warning: false,
+    },
+    ...(covered
+      ? [
+          {
+            title: "Covered by the reserve",
+            who: "Waybil team · Dec 27, 10:20",
+            detail: "2 of 3 approved. Northwind is paused until it settles.",
+            warning: true,
+          },
+        ]
+      : []),
+  ];
   return (
     <>
       <Link
@@ -756,7 +829,7 @@ function DeliveryDetails({ id, value, total }: { id: number; value: string; tota
             #{id} · Northwind · {driver}
           </p>
         </div>
-        <StatusPill status="paidEarly" />
+        <StatusPill status={covered ? "coveredByReserve" : "paidEarly"} />
       </header>
       <div className="grid items-start gap-16 lg:grid-cols-[minmax(0,1fr)_400px]">
         <DemoMap
@@ -767,14 +840,7 @@ function DeliveryDetails({ id, value, total }: { id: number; value: string; tota
         />
         <div className="flex flex-col gap-16">
           <Panel title="Money" gap={4}>
-            {[
-              { label: `Paid early to ${driver}`, value: split.driver },
-              { label: "Northwind pays back", value: bill },
-              { label: "Pool earns", value: split.pool },
-              { label: `Your part at ${share}%`, value: part },
-              { label: "Safety reserve", value: split.reserve },
-              { label: "Waybil fee", value: split.waybil },
-            ].map((r) => (
+            {money.map((r) => (
               <div key={r.label} className="flex flex-wrap justify-between gap-8 py-9 text-label">
                 <span className="text-ds-muted">{r.label}</span>
                 <Money amount={String(r.value)} />
@@ -786,26 +852,19 @@ function DeliveryDetails({ id, value, total }: { id: number; value: string; tota
             <p className="text-caption text-ds-muted">
               These are sample steps. Each link opens the demo account, not a real transaction.
             </p>
-            {[
-              {
-                title: "Approved by Northwind",
-                who: "Hannah Brooks · Nov 12, 08:02",
-                detail: `Bill ${formatUsdc(bill)} USDC, due Dec 11`,
-              },
-              {
-                title: `Picked up by ${driver}`,
-                who: "Nov 12, 09:14 · Main warehouse, Eastport",
-                detail: "Load checked by the driver",
-              },
-              {
-                title: "Arrival confirmed by Harbor Hub",
-                who: "Lena · Nov 12, 15:36",
-                detail: "120 of 120 crates",
-              },
-            ].map((step) => (
+            {steps.map((step) => (
               <div key={step.title} className="flex gap-14 py-12">
-                <span className="mt-2 grid size-26 shrink-0 place-items-center rounded-full bg-ds-ink text-ds-bg">
-                  <Check size={14} weight="bold" />
+                <span
+                  className={cn(
+                    "mt-2 grid size-26 shrink-0 place-items-center rounded-full text-ds-bg",
+                    step.warning ? "bg-ds-warning" : "bg-ds-ink",
+                  )}
+                >
+                  {step.warning ? (
+                    <ShieldCheck size={14} weight="bold" />
+                  ) : (
+                    <Check size={14} weight="bold" />
+                  )}
                 </span>
                 <span className="min-w-0">
                   <span className="block text-label">{step.title}</span>

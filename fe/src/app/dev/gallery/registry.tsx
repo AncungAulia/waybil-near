@@ -142,11 +142,8 @@ export const ATOMS: GalleryEntry[] = [
       { label: "Paid early", node: <StatusPill status="paidEarly" /> },
       { label: "Repaid", node: <StatusPill status="repaid" /> },
       { label: "Disputed", node: <StatusPill status="disputed" /> },
-      { label: "Cancelled · not drawn yet", node: <StatusPill status="cancelled" /> },
-      {
-        label: "Paid from the reserve · not drawn yet",
-        node: <StatusPill status="coveredByReserve" />,
-      },
+      { label: "Cancelled", node: <StatusPill status="cancelled" /> },
+      { label: "Covered by reserve", node: <StatusPill status="coveredByReserve" /> },
       { label: "Loading", node: <StatusPillSkeleton /> },
     ],
   },

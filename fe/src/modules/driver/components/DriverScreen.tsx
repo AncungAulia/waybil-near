@@ -44,8 +44,15 @@ import { Switch } from "@/components/elements/Switch";
 import { useOrigin } from "@/hooks/useOrigin";
 import { useDemoDelivery, useDemoReport, useDemoSettlement } from "@/hooks/useDemoDelivery";
 import { DEMO_CODE, DEFAULT_REPORT } from "@/lib/demo-delivery";
+import { cancelMoment, useDemoCancelled } from "@/lib/demo-cancel";
 import { cn } from "@/lib/cn";
-import { DRIVER_FIXTURES, type DriverState } from "../data/fixtures";
+import {
+  DRIVER_CANCELLED_AT,
+  DRIVER_FIXTURES,
+  DRIVER_TRIPS,
+  type DriverState,
+  type DriverTrip,
+} from "../data/fixtures";
 
 /* The Westfield trip's bill. What Sam gets comes from the shared fee split. */
 const WESTFIELD_BILL = parseUsdc("210");
@@ -115,18 +122,15 @@ function ShareLink({ row = false }: { row?: boolean }) {
   );
 }
 
-function TripFacts({ westfield = false }: { westfield?: boolean }) {
+function TripFacts({ trip }: { trip: DriverTrip }) {
   return (
     <Panel title="Trip" gap={12}>
       <div>
-        <KeyValue label="Shipping company" value="Northwind Freight Co." />
-        <KeyValue label="Pickup" value="Main warehouse, 21 Dock Road" />
-        <KeyValue label="Drop-off" value={westfield ? "Westfield" : "Harbor Hub, 9 Pier Street"} />
-        <KeyValue label="Cargo" value={westfield ? "60 boxes of oil" : "120 crates of coffee"} />
-        <KeyValue
-          label="Shipping fee"
-          value={<Money amount={westfield ? "210000000" : "300000000"} />}
-        />
+        <KeyValue label="Shipping company" value={trip.companyName} />
+        <KeyValue label="Pickup" value={`${trip.pickupPlace}, ${trip.pickupAddress}`} />
+        <KeyValue label="Drop-off" value={trip.dropOff} />
+        <KeyValue label="Cargo" value={trip.cargo} />
+        <KeyValue label="Shipping fee" value={<Money amount={trip.fee} />} />
       </div>
     </Panel>
   );
@@ -187,6 +191,9 @@ export function DriverScreen({
   const delivery = useDemoDelivery();
   const savedReport = useDemoReport();
   const settlement = useDemoSettlement();
+  /* Trips the shipper cancelled before pickup. The gallery never reads the demo store. */
+  const cancelled = useDemoCancelled();
+  const westfieldCancelled = !preview && cancelled.has(1044);
   const report = preview ? DEFAULT_REPORT : savedReport;
   const settlementPaid = !preview && ["settled", "repaid"].includes(delivery) && settlement.active;
   const latest = settlementPaid ? settlement.amount : "292500000";
@@ -208,6 +215,8 @@ export function DriverScreen({
     };
   }, [preview]);
   let state = localState;
+  /* A cancelled trip can no longer be picked up, so every trip screen shows K2.14. */
+  if (!preview && cancelled.has(shipmentId) && state.startsWith("K2")) state = "K2.14";
   if (!preview && shipmentId === 1041) {
     if (state === "K1.1" && ["paid", "settled", "repaid"].includes(delivery)) state = "K1.2";
     if (["K2.4", "K2.5", "K2.6", "K2.7", "K2.9", "K2.10", "K2.13"].includes(state)) {
@@ -219,6 +228,14 @@ export function DriverScreen({
   }
   const shipment = DRIVER_FIXTURES[state];
   const westfield = shipmentId === 1044;
+  const trip = DRIVER_TRIPS[shipmentId] ?? DRIVER_TRIPS[1041]!;
+  const westfieldTrip = DRIVER_TRIPS[1044]!;
+  /* Live, the shipper's own clock time. The board and an unknown time show 09:40 UTC. */
+  const liveCancelledAt = preview ? null : (cancelled.get(shipmentId) ?? null);
+  const cancelledWhen =
+    liveCancelledAt === null
+      ? cancelMoment(DRIVER_CANCELLED_AT, "UTC")
+      : cancelMoment(liveCancelledAt);
   const go = (s: DriverState) => setState(s);
   const openReport = () => {
     setReportBack(state === "K2.11" ? "K2.11" : "K2.9");
@@ -251,9 +268,7 @@ export function DriverScreen({
           ? ["K3.1", "K3.2"].includes(state)
             ? "Payouts"
             : "Companies"
-          : westfield
-            ? "Eastport to Westfield"
-            : "Eastport to Harbor City";
+          : `${trip.from} to ${trip.to}`;
   const amount = westfield ? WESTFIELD_ADVANCE : shipment.advance;
   const bill = westfield ? WESTFIELD_BILL : BigInt(shipment.bill);
   const sheet = ["K2.2", "K2.3", "K2.10", "K2.12"].includes(state);
@@ -351,7 +366,7 @@ export function DriverScreen({
           <h1 className="text-title md:text-amount">{title}</h1>
           <p className="mt-4 text-label text-ds-muted">
             {detail
-              ? `#${shipmentId} · Northwind`
+              ? `#${shipmentId} · ${trip.company}`
               : state.startsWith("K1")
                 ? state === "K1.2"
                   ? "The money is already in your account"
@@ -369,15 +384,17 @@ export function DriverScreen({
               state === "K2.11" ? "Paid" : ["K2.9", "K2.10"].includes(state) ? "On hold" : undefined
             }
             status={
-              state === "K2.11"
-                ? "paidEarly"
-                : ["K2.9", "K2.10"].includes(state)
-                  ? "disputed"
-                  : ["K2.6", "K2.7"].includes(state)
-                    ? "delivered"
-                    : ["K2.1", "K2.2", "K2.3"].includes(state)
-                      ? "approved"
-                      : "inTransit"
+              state === "K2.14"
+                ? "cancelled"
+                : state === "K2.11"
+                  ? "paidEarly"
+                  : ["K2.9", "K2.10"].includes(state)
+                    ? "disputed"
+                    : ["K2.6", "K2.7"].includes(state)
+                      ? "delivered"
+                      : ["K2.1", "K2.2", "K2.3"].includes(state)
+                        ? "approved"
+                        : "inTransit"
             }
           />
         )}
@@ -470,23 +487,44 @@ export function DriverScreen({
                 </div>
               </Panel>
             )}
-            <Panel title="Eastport to Westfield" action={<StatusPill status="approved" />}>
-              <p className="text-caption text-ds-muted">#1044 · Northwind</p>
-              <div className="flex items-end justify-between gap-12">
-                <div>
-                  <p className="text-label text-ds-muted">You get on arrival</p>
-                  <Money amount={WESTFIELD_ADVANCE} className="text-title" />
-                </div>
-                <p className="text-caption text-ds-muted">Pickup today</p>
-              </div>
-              <Button
-                variant="secondary"
-                icon={<Package size={17} />}
-                className="w-full justify-between md:w-fit"
-                onClick={() => openTrip("K2.1", 1044)}
-              >
-                Confirm pickup
-              </Button>
+            <Panel
+              title={`${westfieldTrip.from} to ${westfieldTrip.to}`}
+              action={<StatusPill status={westfieldCancelled ? "cancelled" : "approved"} />}
+            >
+              <p className="text-caption text-ds-muted">#1044 · {westfieldTrip.company}</p>
+              {westfieldCancelled ? (
+                <>
+                  <p className="text-label text-ds-muted">
+                    {westfieldTrip.company} cancelled this trip. You don&apos;t need to pick it up.
+                  </p>
+                  <Button
+                    variant="secondary"
+                    icon={<ArrowRight size={17} />}
+                    className="w-full justify-between md:w-fit"
+                    onClick={() => openTrip("K2.14", 1044)}
+                  >
+                    See the trip
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-end justify-between gap-12">
+                    <div>
+                      <p className="text-label text-ds-muted">You get on arrival</p>
+                      <Money amount={WESTFIELD_ADVANCE} className="text-title" />
+                    </div>
+                    <p className="text-caption text-ds-muted">Pickup today</p>
+                  </div>
+                  <Button
+                    variant="secondary"
+                    icon={<Package size={17} />}
+                    className="w-full justify-between md:w-fit"
+                    onClick={() => openTrip("K2.1", 1044)}
+                  >
+                    Confirm pickup
+                  </Button>
+                </>
+              )}
             </Panel>
           </div>
           <div className="flex min-w-0 flex-col gap-16">
@@ -609,22 +647,28 @@ export function DriverScreen({
       ) : (
         <div className="grid gap-16 lg:grid-cols-[minmax(0,1fr)_420px]">
           <DemoMap
+            origin={trip.from}
+            destination={trip.dropOff.split(",")[0]}
             phase={
-              ["K2.1", "K2.2", "K2.3"].includes(state)
-                ? "pickup"
-                : ["K2.6", "K2.7", "K2.9", "K2.10", "K2.11"].includes(state)
-                  ? "arrived"
-                  : "road"
+              state === "K2.14"
+                ? "cancelled"
+                : ["K2.1", "K2.2", "K2.3"].includes(state)
+                  ? "pickup"
+                  : ["K2.6", "K2.7", "K2.9", "K2.10", "K2.11"].includes(state)
+                    ? "arrived"
+                    : "road"
             }
             className="h-290 md:h-400 lg:h-520"
             label={
-              state === "K2.13"
-                ? "Last seen 5 min ago"
-                : ["K2.1", "K2.2", "K2.3"].includes(state)
-                  ? "Pickup at Main warehouse"
-                  : ["K2.6", "K2.7", "K2.9", "K2.10", "K2.11"].includes(state)
-                    ? "At Harbor Hub"
-                    : "Sharing location"
+              state === "K2.14"
+                ? "No pickup needed"
+                : state === "K2.13"
+                  ? "Last seen 5 min ago"
+                  : ["K2.1", "K2.2", "K2.3"].includes(state)
+                    ? "Pickup at Main warehouse"
+                    : ["K2.6", "K2.7", "K2.9", "K2.10", "K2.11"].includes(state)
+                      ? "At Harbor Hub"
+                      : "Sharing location"
             }
           />
           <div className="flex min-w-0 flex-col gap-16">
@@ -635,7 +679,23 @@ export function DriverScreen({
                 state === "K2.11" && "bg-ds-success-soft",
               )}
             >
-              {["K2.1", "K2.2", "K2.3"].includes(state) ? (
+              {state === "K2.14" ? (
+                <>
+                  <p className="text-label text-ds-muted">{trip.company} cancelled this trip</p>
+                  <p className="text-amount">No pickup needed</p>
+                  <p className="text-label text-ds-muted">
+                    They cancelled on {cancelledWhen}, before you picked up the goods. You
+                    don&apos;t need to go to {trip.pickupPlace}.
+                  </p>
+                  <Button
+                    icon={<ArrowLeft size={17} />}
+                    className="w-full justify-between"
+                    onClick={trips}
+                  >
+                    Back to trips
+                  </Button>
+                </>
+              ) : ["K2.1", "K2.2", "K2.3"].includes(state) ? (
                 <>
                   <p className="text-label text-ds-muted">You get on arrival</p>
                   <Money amount={amount} className="text-amount" />
@@ -748,7 +808,7 @@ export function DriverScreen({
                 </>
               )}
             </Panel>
-            <TripFacts westfield={westfield} />
+            <TripFacts trip={trip} />
           </div>
         </div>
       )}

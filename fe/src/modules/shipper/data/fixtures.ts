@@ -26,6 +26,7 @@ export const SHIPPER_STATES = {
   "P3.9": "Settled",
   "P3.11": "Cancel shipment",
   "P3.12": "Cancelled",
+  "P3.13": "Covered by reserve",
   "P4.1": "Pay",
   "P4.2": "Approving in wallet",
   "P4.3": "Not enough USDC",
@@ -52,6 +53,8 @@ export interface DemoShipmentRow {
   driver: string;
   cargo: string;
   due: string;
+  /** When the team covered the bill from the reserve, in nanoseconds (the reserve_cover event). */
+  covered?: string;
 }
 /* Each row keeps its own due date, so "Due in 2 days" and the detail screen agree. */
 export const SHIPMENTS: DemoShipmentRow[] = [
@@ -125,6 +128,22 @@ export const LATE_SHIPMENT: DemoShipmentRow = {
   due: "3 days late",
 };
 
+/*
+ * The bill on P3.13. Sam was paid early, the bill went unpaid, and 16 days after it was due
+ * the team covered it from the reserve (contract.md allows that after 14 days). It only
+ * exists in the gallery, so the live demo never pauses Northwind's new shipments. Its own
+ * "today" is the day it was covered, so the screen reads "16 days late" as the board does.
+ */
+export const COVERED_TODAY = Date.parse("2026-12-27");
+export const COVERED_SHIPMENT: DemoShipmentRow = {
+  shipment: { ...demoShipment("CoveredByReserve"), marked_late: true },
+  city: "Harbor City",
+  driver: "Sam",
+  cargo: "120 crates of coffee",
+  due: "Covered by the reserve",
+  covered: nanos(COVERED_TODAY),
+};
+
 export const SHIPPER_FIXTURES = Object.fromEntries(
   Object.keys(SHIPPER_STATES).map((code) => [
     code,
@@ -133,13 +152,15 @@ export const SHIPPER_FIXTURES = Object.fromEntries(
         ? "Approved"
         : code === "P3.12"
           ? "Cancelled"
-          : ["P3.6", "P3.7", "P3.8", "P3.10"].includes(code)
-            ? "Reported"
-            : code === "P3.5" || code === "P4.4"
-              ? "Repaid"
-              : ["P3.4", "P3.9", "P4.1", "P4.2", "P4.3"].includes(code)
-                ? "Paid"
-                : "PickedUp",
+          : code === "P3.13"
+            ? "CoveredByReserve"
+            : ["P3.6", "P3.7", "P3.8", "P3.10"].includes(code)
+              ? "Reported"
+              : code === "P3.5" || code === "P4.4"
+                ? "Repaid"
+                : ["P3.4", "P3.9", "P4.1", "P4.2", "P4.3"].includes(code)
+                  ? "Paid"
+                  : "PickedUp",
       ["P3.4", "P3.5", "P3.6", "P3.7", "P3.8", "P3.9", "P3.10"].includes(code),
     ),
   ]),
