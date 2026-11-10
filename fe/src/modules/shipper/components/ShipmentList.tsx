@@ -1,12 +1,14 @@
 "use client";
+
 import { Truck } from "@phosphor-icons/react";
 import { Money } from "@/components/elements/Money";
 import { StatusPill } from "@/components/elements/StatusPill";
 import { statusChip } from "@/lib/status";
+import { cn } from "@/lib/cn";
 import type { DemoShipmentRow } from "../data/fixtures";
 
-/* The four columns P6 draws above the rows. The home card (P1) has no header. */
-const COLUMNS = "md:grid md:grid-cols-[minmax(0,1fr)_160px_160px_160px] md:items-center";
+const COLUMNS = "xl:grid xl:grid-cols-[minmax(0,1fr)_150px_140px_160px] xl:items-center";
+const CHIP = "gap-6 px-11 py-6 text-[12px] leading-[15px] [&>span]:size-7";
 
 export function ShipmentList({
   rows,
@@ -15,35 +17,90 @@ export function ShipmentList({
 }: {
   rows: DemoShipmentRow[];
   onOpen: (id: number) => void;
-  /**
-   * What the second line says after the number and the driver. The shipments page shows the
-   * cargo and keeps the status, fee and bill in their own columns (P6). The home card shows
-   * the due date on that line and stacks the rest (P1).
-   */
   meta?: "cargo" | "due";
 }) {
-  const table = meta === "cargo";
-  return (
-    <div className="flex flex-col">
-      {table && (
-        <div className={`hidden px-16 pb-8 text-[12.5px] text-ds-muted ${COLUMNS}`}>
+  if (meta === "cargo") {
+    return (
+      <section aria-label="Shipments" className="flex flex-col rounded-card bg-ds-bg px-20 py-8">
+        <div
+          className={cn("hidden gap-16 py-12 text-[12.5px] leading-[15px] text-ds-muted", COLUMNS)}
+        >
           <span>Shipment</span>
           <span>Status</span>
           <span>Fee</span>
           <span>Bill</span>
         </div>
-      )}
-      {rows.map(({ shipment, city, driver, cargo, due }) => (
+        {rows.map(({ shipment, city, driver, cargo, due }) => (
+          <button
+            type="button"
+            disabled={shipment.status === "Cancelled"}
+            key={shipment.id}
+            onClick={() => onOpen(shipment.id)}
+            className={cn(
+              "press focus-ring flex w-full items-center gap-16 rounded-[16px] py-14 text-left hover:bg-ds-canvas",
+              COLUMNS,
+            )}
+          >
+            <span className="flex min-w-0 flex-1 items-center gap-12">
+              <span className="grid size-40 shrink-0 place-items-center rounded-full bg-ds-canvas">
+                <svg
+                  width="17"
+                  height="17"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M1 3h14v14H1zM15 8h4l3 4v5h-7M1 17h2m4 0h9m4 0h2" />
+                  <circle cx="5" cy="17" r="2" />
+                  <circle cx="18" cy="17" r="2" />
+                </svg>
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col gap-2">
+                <span className="whitespace-nowrap text-[15px] leading-[18px] font-medium">
+                  Eastport to {city}
+                </span>
+                <span className="text-[12.5px] leading-[17px] text-ds-muted">
+                  #{shipment.id} · {driver} · {cargo}
+                </span>
+              </span>
+            </span>
+            <span className="hidden xl:block">
+              <StatusPill className={CHIP} status={statusChip(shipment)} />
+            </span>
+            <span className="hidden xl:block">
+              <Money amount={shipment.bill} className="text-[14px] leading-[17px] font-medium" />
+            </span>
+            <span
+              className={cn(
+                "hidden text-[13.5px] leading-[16px] xl:block",
+                due.startsWith("Due in") ? "font-medium text-ds-warning" : "text-ds-ink-2",
+              )}
+            >
+              {due}
+            </span>
+            <span className="flex shrink-0 flex-col items-end gap-6 xl:hidden">
+              <Money amount={shipment.bill} className="text-[14px] leading-[17px] font-medium" />
+              <StatusPill className={CHIP} status={statusChip(shipment)} />
+            </span>
+          </button>
+        ))}
+      </section>
+    );
+  }
+
+  return (
+    <div className="flex flex-col">
+      {rows.map(({ shipment, city, driver, due }) => (
         <button
           type="button"
           disabled={shipment.status === "Cancelled"}
           key={shipment.id}
           onClick={() => onOpen(shipment.id)}
-          className={`press focus-ring w-full rounded-row p-16 text-left hover:bg-ds-canvas ${
-            table
-              ? `flex flex-wrap items-center gap-12 ${COLUMNS}`
-              : "flex flex-wrap items-center gap-12"
-          }`}
+          className="press focus-ring flex w-full flex-wrap items-center gap-12 rounded-row p-16 text-left hover:bg-ds-canvas"
         >
           <span className="flex min-w-140 flex-1 items-center gap-12">
             <span className="hidden size-40 shrink-0 place-items-center rounded-full bg-ds-canvas md:grid">
@@ -52,27 +109,14 @@ export function ShipmentList({
             <span className="min-w-0 flex-1">
               <span className="block text-body font-medium">Eastport to {city}</span>
               <span className="mt-4 block text-[12.5px] text-ds-muted">
-                #{shipment.id} · {driver} · {meta === "due" ? due.replace(/^Due /, "due ") : cargo}
+                #{shipment.id} · {driver} · {due.replace(/^Due /, "due ")}
               </span>
             </span>
           </span>
-          {table ? (
-            <>
-              <StatusPill status={statusChip(shipment)} />
-              <Money amount={shipment.bill} className="text-[14px] font-medium" />
-              {/* A bill due in days is drawn in the board's warning colour. */}
-              <span
-                className={`text-[13.5px] ${due.startsWith("Due in") ? "text-ds-warning" : "text-ds-ink-2"}`}
-              >
-                {due}
-              </span>
-            </>
-          ) : (
-            <span className="flex flex-col items-end gap-6">
-              <Money amount={shipment.bill} className="text-body font-medium" />
-              <StatusPill status={statusChip(shipment)} />
-            </span>
-          )}
+          <span className="flex flex-col items-end gap-6">
+            <Money amount={shipment.bill} className="text-body font-medium" />
+            <StatusPill status={statusChip(shipment)} />
+          </span>
         </button>
       ))}
     </div>
