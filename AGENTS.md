@@ -158,7 +158,7 @@ Testnet, from the repo root (needs near-cli-rs and the `waybil.testnet` key in y
 
 | Command | What it does |
 |---|---|
-| `pnpm --filter @waybil/scripts deploy-contracts` | Creates missing accounts, builds and deploys `app.waybil.testnet` (with `migrate` as the init call once it is initialized), registers token storage. Safe to rerun. Needs the deployer key on the contract account. |
+| `pnpm --filter @waybil/scripts deploy-contracts` | Creates missing accounts, builds and deploys `app.waybil.testnet` (with `migrate` as the init call once it is initialized), registers token storage. Safe to rerun. The contract code step no longer works on `app.waybil.testnet`, which has no keys since Nov 11. Use `team-upgrade` for code. |
 | `pnpm --filter @waybil/scripts deploy-contracts --no-build` | The same with the wasm already built |
 | `pnpm --filter @waybil/scripts seed` | Seeds the demo story (wallets, pool, team approvals, credit, Northwind's network). Safe to rerun. |
 | `pnpm --filter @waybil/scripts team-upgrade --wasm <path> --proposer <member> --approver <member>` | Team upgrade (2 of 3): proposes the wasm's hash, sends the code with the second approval, prints the new version. Needs both members' keys. Safe to rerun. |

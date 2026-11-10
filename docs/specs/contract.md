@@ -178,8 +178,8 @@ bumps `version`.
 
 | Stage | Who can upgrade | How |
 |---|---|---|
-| Development | The deployer key on `app.waybil.testnet` | `cargo near deploy` with `migrate` as the init call |
-| Before the demo | Only 2 of 3 team members | See below. Then the deployer's full-access key is deleted from the contract account. |
+| Development (until Nov 11, 2026) | The deployer key on `app.waybil.testnet` | `cargo near deploy` with `migrate` as the init call |
+| Now | Only 2 of 3 team members | See below. The deployer's full-access key was deleted on Nov 11, 2026, after 0.2.0 shipped through a team upgrade. The account has no access keys. |
 
 Team upgrade flow. The code is never stored in the contract: about 300 KB of wasm would lock
 about 3 NEAR of storage on top of the deployed code (decision 0012).
