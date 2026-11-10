@@ -35,7 +35,8 @@ pnpm format:check
 pnpm --filter @waybil/be build
 ```
 
-Local lint/typecheck pass. Tests pass: 65 backend, 17 frontend and 6 shared, 88 total.
+Local lint/typecheck pass. After the 2026-11-10 policy update, tests pass: 76 backend,
+17 frontend and 6 shared, 99 total.
 The backend tests apply every migration in an isolated PGlite database and check private
 table access, conditional writes and lease ownership/renewal. Provider tests use injected
 adapters, real local cryptographic signatures and SAMPLE files; no real email or funded
@@ -65,9 +66,10 @@ chat, committed files or frontend public variables.
   adapter verifies exact-byte provider signatures and records preflight evidence; its proof
   mode is `pinned_model_signer`. It does not claim fresh Intel/NVIDIA hardware-quote validation.
   Test real SAMPLE searchable PDFs/photos and the model's image capability before live use.
-- The team has not supplied a credit formula. No rate or spending coefficient is assumed.
-  `CREDIT_AUTO_LIMITS` defaults false. Define a versioned `CREDIT_POLICY_JSON` and validate
-  expected examples before enabling automatic changes. First limits always need team approval.
+- Decision 0011 selects the opt-in USD testnet policy: 20% of mean monthly outgoings over
+  three months, capped at 10,000 test USDC with an explicit 1:1 accounting conversion.
+  The local CREDIT_POLICY_JSON is configured; provider credentials remain separate.
+  `CREDIT_AUTO_LIMITS` stays false pending live acceptance. First limits require team approval.
 - Enable the credit/jobs workers or invoke their one-shot commands from the later deployment
   task. Bounds are 1,000 proposal IDs and 5,000 shipments per shipper with a scan deadline;
   exceeding a bound returns unavailable instead of silently ignoring records.
