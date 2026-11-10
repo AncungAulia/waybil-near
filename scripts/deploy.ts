@@ -1,12 +1,14 @@
 // Creates the Waybil testnet accounts and deploys the contracts (issue #12).
-// Safe to run again: existing accounts are skipped, and an initialized contract only gets
-// its new code. Keys are saved to and read from the OS keychain by near-cli-rs.
+// Safe to run again: existing accounts are skipped, and an initialized contract gets its new
+// code with `migrate` as the init call. Keys are saved to and read from the OS keychain by
+// near-cli-rs.
 //
 //   pnpm --filter @waybil/scripts deploy-contracts             build, then deploy
 //   pnpm --filter @waybil/scripts deploy-contracts --no-build  deploy the wasm already built
 //
-// A code update must keep the stored state compatible. If the state layout changed, deploy
-// to a fresh account or add a migration (docs/specs/contract.md, Upgrades).
+// This uses the deployer key, so it only works until that key is deleted from the contract
+// account. After that, upgrades go through the team (team-upgrade.ts). A code update must
+// keep the stored state readable, or bring a migration (docs/specs/contract.md, Upgrades).
 
 import spawn from "cross-spawn";
 import { existsSync } from "node:fs";
@@ -67,8 +69,8 @@ function main() {
   step(`Contract ${APP}`);
   const initialized = tryView(APP, "get_config") !== undefined;
   if (initialized) {
-    console.log("  already initialized, updating the code only");
-    deploy(APP, wasm);
+    console.log("  already initialized, updating the code and calling migrate()");
+    deploy(APP, wasm, { method: "migrate", args: {} });
   } else {
     console.log("  first deploy, calling new()");
     deploy(APP, wasm, {
@@ -95,6 +97,7 @@ function main() {
   step("Check");
   console.log("  team:", JSON.stringify(view(APP, "get_team")));
   console.log("  pool:", JSON.stringify(view(APP, "get_pool")));
+  console.log("  code:", JSON.stringify(view(APP, "get_code_info")));
   console.log(`\nDone. See https://testnet.nearblocks.io/address/${APP}`);
 }
 

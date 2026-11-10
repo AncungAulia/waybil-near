@@ -129,6 +129,7 @@ withdrawal transfer goes back to the end of the queue (`withdraw_failed`).
 |---|---|---|
 | `propose(kind) -> u64` | Caller is a member. Counts as that member's approval. | `proposal_created`, `vote_cast` |
 | `vote(id, approve: bool)` | Member, status `Open`, not voted yet, not expired. 2 approvals execute. 2 rejections close it and, for a limit change suggested by the assistant, set `blocked_until = now + reject_cooldown_days`. | `vote_cast`, `proposal_resolved` |
+| `approve_upgrade(id, code)` | Member. Borsh input (not JSON) with the new wasm as `code`. Second approval of an `Upgrade` proposal (see Upgrades). | `vote_cast`, `proposal_resolved`, `upgrade_approved` |
 | `pause_shipper(shipper, reason)` | Any one member, takes effect at once | `shipper_paused` |
 | Unpause, start shipper, set limit, cover from reserve, config | Only through an approved proposal | `shipper_unpaused`, `limit_changed`, `reserve_cover` |
 
@@ -180,16 +181,35 @@ bumps `version`.
 | Development | The deployer key on `app.waybil.testnet` | `cargo near deploy` with `migrate` as the init call |
 | Before the demo | Only 2 of 3 team members | See below. Then the deployer's full-access key is deleted from the contract account. |
 
-Team upgrade flow:
-1. A member calls `stage_code()` with the new wasm as raw input. Allowed only for members.
-   The contract stores it and emits `code_staged` with its sha256.
-2. A member calls `propose(Upgrade{code_hash})`. Members check the hash against a build
-   from the tagged commit (`cargo near build` is reproducible).
-3. On the second approval the contract deploys the staged code to itself and calls
-   `migrate()` in the same batch. `#[private] #[init(ignore_state)] fn migrate()` reads the
-   old version and writes the new one. If migrate fails the whole batch rolls back.
+Team upgrade flow. The code is never stored in the contract: about 300 KB of wasm would lock
+about 3 NEAR of storage on top of the deployed code (decision 0012).
+1. A member calls `propose(Upgrade{code_hash})`, where `code_hash` is the base58 sha256 of
+   the new wasm. It counts as their approval. The other members check the hash against a
+   build from the tagged commit (`cargo near build` is reproducible).
+2. A second member calls `approve_upgrade(id, code)` with 300 Tgas. The input is borsh, not
+   JSON, so the wasm travels as bytes: `id` as u64 little-endian, then the wasm length as
+   u32 little-endian, then the wasm (`pnpm --filter @waybil/scripts team-upgrade` builds it).
+   The contract checks the caller is a member who hasn't voted (`E_NOT_TEAM`,
+   `E_ALREADY_VOTED`), the proposal is open (`E_NO_PROPOSAL`, `E_PROPOSAL_CLOSED`) and an
+   `Upgrade` (`E_NOT_UPGRADE`), and `sha256(code) == code_hash` (`E_CODE_HASH`). An expired
+   proposal is closed as `Expired` instead, like `vote`. It records the approval and, in one
+   batch to itself, deploys the code and calls `migrate()` with 100 Tgas, and returns that
+   batch. If migrate fails the whole batch rolls back and the old code stays.
+3. `vote(id, true)` that would be the second approval of an `Upgrade` fails with
+   `E_USE_APPROVE_UPGRADE`, because the code has to come with it. Rejections use `vote`.
 
-Event: `contract_upgraded` with the old and new hash.
+`#[private] #[init(ignore_state)] fn migrate()` reads the stored state (`E_NO_STATE`),
+requires `version <= STATE_VERSION` (`E_DOWNGRADE`), converts it when the layout changed, and
+sets `version` to the new value. The development stage calls the same `migrate` as the
+deploy's init call.
+
+Events: `upgrade_approved` (id, new hash) when the batch is sent, and `contract_upgraded`
+(old and new hash) from `migrate` in the new code. The hashes live in raw storage keys
+outside the state struct, so the state layout doesn't change: `approve_upgrade` writes the
+new hash to `code_hash_pending`, and `migrate` moves it to `code_hash` and emits the event.
+A plain deploy leaves no pending hash, so `migrate` only sets the version. View
+`get_code_info()` returns `{version, code_hash}` (`code_hash` is null until the first team
+upgrade).
 
 ## Storage
 

@@ -40,6 +40,13 @@ container_build_command = [
 [dependencies]
 near-sdk = "5.29"
 
+[features]
+# Test-only builds for the sandbox upgrade test. Never deploy them.
+# test-v2: the "next version" (STATE_VERSION = 2).
+# test-bad-migrate: a migrate that always fails, to check that the upgrade rolls back.
+test-v2 = []
+test-bad-migrate = []
+
 [dev-dependencies]
 near-sdk = { version = "5.29", features = ["unit-testing"] }
 
