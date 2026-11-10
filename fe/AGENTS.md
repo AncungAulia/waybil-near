@@ -14,8 +14,12 @@ Owner: Yeypayeyy. These rules add to the root `AGENTS.md`; they don't replace it
 
 ## Stack
 
-Next.js (App Router) in `fe/src`, TypeScript, Tailwind CSS 4, shadcn/ui restyled to the design,
+Next.js (App Router) in `fe/src`, TypeScript, Tailwind CSS 4, our own components in
+`src/components` built to the design (no shadcn/ui), Radix Dialog for sheets and dialogs,
 near-connect for wallets, MapLibre GL with OpenStreetMap tiles, browser camera for QR.
+Since there is no component library, menus, comboboxes, radio groups and the date grid follow
+the WAI-ARIA keyboard patterns by hand (see `WalletMenu`, `SearchPicker`, `DueGrid`). Copy
+those when you build a new one.
 Types and money helpers come from `@waybil/shared`. Never redo the fee math in the UI.
 
 ## Rules
