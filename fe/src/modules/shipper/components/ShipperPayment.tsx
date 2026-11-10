@@ -1,31 +1,43 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { formatUsdc } from "@waybil/shared";
+import { formatUsdc, type Shipment } from "@waybil/shared";
 import { ActionSheet } from "@/components/layout/ActionSheet";
 import { Button } from "@/components/ui/Button";
 import { Money } from "@/components/elements/Money";
 import { DemoRecord } from "@/components/elements/DemoRecord";
 import { KeyValue } from "@/components/elements/KeyValue";
-import { repayDemoBill } from "@/lib/demo-delivery";
 import { cn } from "@/lib/cn";
 import type { ShipperState } from "../data/fixtures";
+import { millis, shortDate, timing } from "../data/dates";
+import { repayDemoShipment } from "../hooks/useShipperShipments";
+
+const LIMIT = 3000000000n;
 
 export function ShipperPayment({
   state,
   bill,
-  shipmentId,
+  shipment,
   city,
   preview,
   go,
+  usedBefore,
+  record,
 }: {
   state: ShipperState;
   bill: string;
-  shipmentId: number;
+  shipment: Shipment;
   city: string;
   preview: boolean;
   go: (state: ShipperState) => void;
+  /** The limit in use. After paying it already has this bill taken off. */
+  usedBefore: bigint;
+  record: { onTime: number; total: number };
 }) {
+  const shipmentId = shipment.id;
+  /* Before paying, the timing is counted from today. After, from the day it was paid. */
+  const when = timing(shipment.due_at, millis(shipment.repaid_at));
+  const late = when.endsWith("late");
   const [funded, setFunded] = useState(false);
   const [error, setError] = useState("");
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -43,7 +55,7 @@ export function ShipperPayment({
     setError("");
     go("P4.2");
     timer.current = setTimeout(() => {
-      if (!preview && shipmentId === 1041 && !repayDemoBill()) {
+      if (!preview && !repayDemoShipment(shipmentId)) {
         setError("This bill is not ready to be paid. Open the trip again.");
         go("P4.1");
         return;
@@ -79,11 +91,18 @@ export function ShipperPayment({
         {paid ? (
           <>
             <p className="w-full text-[14px] leading-[20px] text-ds-muted">
-              You paid {formatUsdc(BigInt(bill))} USDC one day early. Your on-time record went up.
+              You paid {formatUsdc(BigInt(bill))} USDC {when}.
+              {late ? "" : " Your on-time record went up."}
             </p>
             <div className="w-full rounded-[18px] bg-ds-canvas px-16 py-4 text-left [&>div>span]:leading-[17px]">
-              <KeyValue label="Credit limit left" value="900 of 3,000 USDC" />
-              <KeyValue label="Paid on time" value="100% · 10 of 10 bills" />
+              <KeyValue
+                label="Credit limit left"
+                value={`${formatUsdc(LIMIT - usedBefore)} of ${formatUsdc(LIMIT)} USDC`}
+              />
+              <KeyValue
+                label="Paid on time"
+                value={`${Math.round((record.onTime / record.total) * 100)}% · ${record.onTime} of ${record.total} bills`}
+              />
             </div>
             <DemoRecord
               title="Payment sent"
@@ -104,14 +123,19 @@ export function ShipperPayment({
           <>
             <div className="flex flex-col gap-4 rounded-[20px] bg-ds-canvas px-20 py-18">
               <p className="text-[13px] leading-[16px] text-ds-muted">
-                Shipment #{shipmentId} · due Dec 11
+                Shipment #{shipmentId} · due {shortDate(millis(shipment.due_at)!)}
               </p>
               <Money
                 amount={bill}
                 className="text-[36px] leading-[44px] font-medium tracking-[-1.2px]"
               />
-              <p className="text-[12.5px] leading-[15px] font-medium text-ds-success">
-                Paying 1 day early
+              <p
+                className={cn(
+                  "text-[12.5px] leading-[15px] font-medium",
+                  late ? "text-ds-danger" : "text-ds-success",
+                )}
+              >
+                {when === "on the due date" ? "Paying on the due date" : `Paying ${when}`}
               </p>
             </div>
             <div

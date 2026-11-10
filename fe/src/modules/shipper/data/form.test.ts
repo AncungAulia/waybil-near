@@ -27,9 +27,20 @@ describe("shipment drafts", () => {
     expect(row.driver).toBe("Jordan Lee");
     expect(row.city).toBe("Millbrook");
   });
-  it("allows the remaining limit exactly and rejects even one extra base unit", () => {
+  it("allows the remaining limit exactly and rejects even one extra cent", () => {
     expect(draftNumbers({ ...draft, fee: "600.00" }).over).toBe(false);
-    expect(() => shipmentFromDraft({ ...draft, fee: "600.000001" })).toThrow("Invalid draft");
+    expect(draftNumbers({ ...draft, fee: "600.01" }).over).toBe(true);
+    expect(() => shipmentFromDraft({ ...draft, fee: "600.01" })).toThrow("Invalid draft");
+  });
+  it("reads a fee with at most two decimals and flags fields it can't read", () => {
+    expect(draftNumbers({ ...draft, fee: "300.005" })).toMatchObject({
+      valid: false,
+      feeError: true,
+    });
+    expect(draftNumbers({ ...draft, fee: "300.5" }).bill).toBe(300500000n);
+    expect(draftNumbers({ ...draft, fee: "" }).feeError).toBe(false);
+    expect(draftNumbers({ ...draft, cargo: "crates" }).cargoError).toBe(true);
+    expect(draftNumbers({ ...draft, cargo: "" }).cargoError).toBe(false);
   });
   it("rejects an unjoined driver, an unlinked place, missing counts and dates beyond 60 days", () => {
     for (const invalid of [

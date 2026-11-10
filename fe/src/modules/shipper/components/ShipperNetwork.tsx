@@ -53,7 +53,7 @@ export function ShipperNetwork({
       </div>
       <div
         className={cn(
-          "grid gap-16 xl:grid-cols-2",
+          "grid grid-cols-[minmax(0,1fr)] gap-16 xl:grid-cols-2",
           empty
             ? "min-h-[calc(100dvh-233px)] grid-rows-2 md:min-h-[calc(100dvh-237px)] xl:min-h-[calc(100dvh-245px)] xl:grid-rows-1"
             : "items-start",

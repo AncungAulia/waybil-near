@@ -1,5 +1,13 @@
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { createDemoShipment, cancelDemoShipment } from "../hooks/useShipperShipments";
+import {
+  cancelDemoShipment,
+  createDemoShipment,
+  paidRecord,
+  readShipperStore,
+  repayDemoShipment,
+  shipperCreditUsed,
+  shipperRows,
+} from "../hooks/useShipperShipments";
 import type { ShipmentDraft } from "./form";
 let values: Map<string, string>;
 beforeEach(() => {
@@ -32,4 +40,35 @@ it("reserves the credit of approved trips and releases it on cancellation", () =
   expect(() => createDemoShipment({ ...draft, fee: "100.01" })).toThrow("Invalid draft");
   cancelDemoShipment(first.shipment.id);
   expect(createDemoShipment({ ...draft, fee: "600.00" }).shipment.bill).toBe("600000000");
+});
+it("releases a fixture bill on cancellation and refuses shipments already on the road", () => {
+  expect(cancelDemoShipment(1041)).toBe(false);
+  expect(() => createDemoShipment({ ...draft, fee: "600.01" })).toThrow("Invalid draft");
+  expect(cancelDemoShipment(1044)).toBe(true);
+  const rows = shipperRows(readShipperStore());
+  expect(rows.find((r) => r.shipment.id === 1044)?.shipment.status).toBe("Cancelled");
+  expect(createDemoShipment({ ...draft, fee: "810.00" }).shipment.bill).toBe("810000000");
+});
+it("pays only bills whose driver was paid early and keeps the result for every shipment", () => {
+  expect(repayDemoShipment(1044)).toBe(false);
+  expect(repayDemoShipment(1041)).toBe(false);
+  const before = readShipperStore();
+  expect(shipperCreditUsed(shipperRows(before), before)).toBe(2400000000n);
+  expect(repayDemoShipment(1039)).toBe(true);
+  expect(repayDemoShipment(1039)).toBe(false);
+  const store = readShipperStore();
+  const rows = shipperRows(store);
+  expect(rows.find((r) => r.shipment.id === 1039)?.shipment.status).toBe("Repaid");
+  expect(shipperCreditUsed(rows, store)).toBe(2280000000n);
+  expect(paidRecord(rows)).toEqual({ onTime: 10, total: 10 });
+});
+it("follows the warehouse confirmation for #1041", () => {
+  values.set("waybil-demo-delivery-v1", "paid");
+  let rows = shipperRows(readShipperStore());
+  expect(rows.find((r) => r.shipment.id === 1041)?.shipment.status).toBe("Paid");
+  expect(repayDemoShipment(1041)).toBe(true);
+  const store = readShipperStore();
+  rows = shipperRows(store);
+  expect(rows.find((r) => r.shipment.id === 1041)?.shipment.status).toBe("Repaid");
+  expect(shipperCreditUsed(rows, store)).toBe(2100000000n);
 });

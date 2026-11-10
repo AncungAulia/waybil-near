@@ -12,6 +12,10 @@ export default async function Page({
   const row = SHIPMENTS.find((r) => String(r.shipment.id) === id);
   const custom = /^\d+$/.test(id) && Number.isSafeInteger(Number(id)) && Number(id) >= 1045;
   if (!row && id !== "1036" && !custom) notFound();
+  /*
+   * Only a hint for the first render. The screen follows the shipment's stored status, so
+   * "?pay=on" opens the pay sheet only when the driver was paid early (status Paid).
+   */
   const state =
     query.pay === "on"
       ? "P4.1"
