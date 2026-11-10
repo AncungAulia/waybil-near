@@ -1,8 +1,12 @@
 import { advanceFor, parseUsdc } from "@waybil/shared";
 import { demoShipment } from "@/lib/demo-delivery";
 import type { DemoShipmentRow } from "./fixtures";
+import { DEMO_TODAY } from "./dates";
 
-export const DEMO_TODAY = "2026-11-12";
+export { DEMO_TODAY };
+/** An amount with at most two decimals, the way the fee field reads it. */
+const FEE = /^\d+(\.\d{1,2})?$/;
+const CARGO = /^(\d+)\s+([a-z]+)/i;
 export interface ShipmentDraft {
   driver: string;
   destination: string;
@@ -12,24 +16,33 @@ export interface ShipmentDraft {
 }
 export function draftNumbers(draft: ShipmentDraft, usedBefore = 2400000000n) {
   let bill = 0n;
-  try {
-    bill = parseUsdc(draft.fee);
-  } catch {
-    /* An incomplete amount has no summary yet. */
+  const fee = draft.fee.trim();
+  if (FEE.test(fee)) {
+    try {
+      bill = parseUsdc(fee);
+    } catch {
+      /* An incomplete amount has no summary yet. */
+    }
   }
-  const qty = /^(\d+)\s+([a-z]+)/i.exec(draft.cargo.trim());
+  const qty = CARGO.exec(draft.cargo.trim());
   const days = (Date.parse(draft.due) - Date.parse(DEMO_TODAY)) / 86400000;
-  const valid =
-    ["Sam", "Jordan Lee"].includes(draft.driver) &&
-    ["Harbor Hub", "Millbrook depot"].includes(draft.destination) &&
+  const cargoValid =
     !!qty &&
     Number(qty[1]) > 0 &&
     Number.isSafeInteger(Number(qty[1])) &&
-    Number(qty[1]) <= 0xffffffff &&
-    bill > 0n &&
+    Number(qty[1]) <= 0xffffffff;
+  const feeValid = bill > 0n;
+  const valid =
+    ["Sam", "Jordan Lee"].includes(draft.driver) &&
+    ["Harbor Hub", "Millbrook depot"].includes(draft.destination) &&
+    cargoValid &&
+    feeValid &&
     days > 0 &&
     days <= 60;
   return {
+    /** Something is typed in the field and it can't be read. Empty fields are just unfinished. */
+    cargoError: !!draft.cargo.trim() && !cargoValid,
+    feeError: !!fee && !feeValid,
     bill,
     advance: advanceFor(bill),
     used: usedBefore + bill,
@@ -46,7 +59,7 @@ export function shipmentFromDraft(
 ): DemoShipmentRow {
   const numbers = draftNumbers(draft, usedBefore);
   if (!numbers.valid || numbers.over) throw new Error("Invalid draft");
-  const cargo = /^(\d+)\s+([a-z]+)/i.exec(draft.cargo.trim())!;
+  const cargo = CARGO.exec(draft.cargo.trim())!;
   return {
     shipment: {
       ...demoShipment("Approved"),

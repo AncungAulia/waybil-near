@@ -14,6 +14,7 @@ import { ShipmentRow, ShipmentRowSkeleton } from "@/components/elements/Shipment
 import { BalanceCard } from "@/components/elements/BalanceCard";
 import { TxToast } from "@/components/elements/TxToast";
 import { WalletMenu } from "@/modules/wallet/components/WalletMenu";
+import { CONTRACT_RECORD_URL } from "@/lib/env";
 import { SegmentedDemo } from "./SegmentedDemo";
 import { ORGANISMS } from "./organisms";
 
@@ -258,7 +259,7 @@ export const MOLECULES: GalleryEntry[] = [
               name="Sam"
               sub="Driver"
               open
-              accountUrl="https://testnet.nearblocks.io"
+              accountUrl={CONTRACT_RECORD_URL}
             />
           </div>
         ),
@@ -391,7 +392,7 @@ export const MOLECULES: GalleryEntry[] = [
       },
       {
         label: "Failed",
-        node: <TimelineStep state="failed" title="Delivery disputed" time="Early payment paused" />,
+        node: <TimelineStep state="paused" title="Delivery disputed" time="Early payment paused" />,
       },
     ],
   },

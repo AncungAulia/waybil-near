@@ -1,6 +1,6 @@
 "use client";
 import { formatUsdc } from "@waybil/shared";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Copy, Check, SignOut, GasPump, Clock, SealCheck } from "@phosphor-icons/react";
 import { ActionSheet } from "@/components/layout/ActionSheet";
@@ -9,6 +9,47 @@ import { Money } from "./Money";
 import { ArrowUpRightGlyph, SystemGlyph } from "./icons";
 import { cn } from "@/lib/cn";
 export type DemoWalletState = "G1" | "G2" | "G3" | "G4" | "G5" | "X6" | "X7";
+
+/*
+ * When the sample account last got test USDC. The balance and the one hour wait both read
+ * this one timestamp, so reopening the menu during the wait still shows the added money.
+ * A copy in memory keeps the demo working when storage is blocked.
+ */
+const FAUCET_KEY = "waybil-demo-faucet-v1";
+const FAUCET_WAIT_MS = 3600000;
+let claimedInMemory = 0;
+const claimListeners = new Set<() => void>();
+
+function readClaim(): number {
+  try {
+    return Number(localStorage.getItem(FAUCET_KEY) ?? 0) || claimedInMemory;
+  } catch {
+    return claimedInMemory;
+  }
+}
+
+function saveClaim(time: number) {
+  claimedInMemory = time;
+  try {
+    localStorage.setItem(FAUCET_KEY, String(time));
+  } catch {
+    /* The local preview still works when storage is unavailable. */
+  }
+  claimListeners.forEach((listener) => listener());
+}
+
+function subscribeClaim(listener: () => void) {
+  claimListeners.add(listener);
+  window.addEventListener("storage", listener);
+  return () => {
+    claimListeners.delete(listener);
+    window.removeEventListener("storage", listener);
+  };
+}
+
+function minutes(n: number) {
+  return n === 1 ? "1 minute" : `${n} minutes`;
+}
 export function DemoWallet({
   initialState = "G1",
   role = "shipper",
@@ -21,8 +62,11 @@ export function DemoWallet({
   const router = useRouter();
   const [state, setState] = useState(initialState),
     [copied, setCopied] = useState(false),
-    [claimed, setClaimed] = useState(false),
-    [retryMinutes, setRetryMinutes] = useState(48);
+    [retryMinutes, setRetryMinutes] = useState(48),
+    [agoMinutes, setAgoMinutes] = useState(12);
+  /* The server and the first render see no claim, so hydration always matches. */
+  const claimedAt = useSyncExternalStore(subscribeClaim, readClaim, () => 0);
+  const claimed = claimedAt > 0;
   const initialBalance = role === "investor" ? 3450000000n : role === "admin" ? 0n : 120000000n;
   const shownBalance = initialBalance + (claimed || state === "G4" ? 1000000000n : 0n);
   const account =
@@ -34,25 +78,16 @@ export function DemoWallet({
   useEffect(() => {
     if (state !== "G3" || initialState === "G3") return;
     const timer = window.setTimeout(() => {
-      try {
-        localStorage.setItem("waybil-demo-faucet-v1", String(Date.now()));
-      } catch {
-        /* The local preview still works when storage is unavailable. */
-      }
-      setClaimed(true);
+      saveClaim(Date.now());
       setState("G4");
     }, 750);
     return () => window.clearTimeout(timer);
   }, [state, initialState]);
   function claim() {
-    let last = 0;
-    try {
-      last = Number(localStorage.getItem("waybil-demo-faucet-v1") ?? 0);
-    } catch {
-      /* The local demo can still be viewed when storage is unavailable. */
-    }
-    if (Date.now() - last < 3600000) {
-      setRetryMinutes(Math.ceil((3600000 - (Date.now() - last)) / 60000));
+    const since = Date.now() - readClaim();
+    if (since < FAUCET_WAIT_MS) {
+      setRetryMinutes(Math.max(1, Math.ceil((FAUCET_WAIT_MS - since) / 60000)));
+      setAgoMinutes(Math.floor(since / 60000));
       setState("G5");
       return;
     }
@@ -200,8 +235,8 @@ export function DemoWallet({
             <div className="flex items-start gap-10 rounded-[16px] bg-ds-brand-soft px-16 py-14">
               <Clock size={18} className="mt-1 shrink-0 text-ds-brand-deep" />
               <p className="text-[13.5px] leading-[1.45]">
-                You got test USDC {60 - retryMinutes} minutes ago. You can get more in{" "}
-                {retryMinutes} minutes.
+                You got test USDC {agoMinutes < 1 ? "just now" : `${minutes(agoMinutes)} ago`}. You
+                can get more in {minutes(retryMinutes)}.
               </p>
             </div>
           )}

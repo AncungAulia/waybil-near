@@ -67,7 +67,11 @@ export function ShipperShipments({
         </Button>
       </div>
       <div className="mb-16 flex flex-col items-start justify-between gap-12 md:mb-24 md:flex-row md:items-center">
-        <div aria-label="Filter shipments" className="flex h-40 gap-6 rounded-full bg-ds-bg p-4">
+        <div
+          role="group"
+          aria-label="Filter shipments"
+          className="flex h-40 gap-6 rounded-full bg-ds-bg p-4"
+        >
           {FILTERS.map((label) => (
             <button
               type="button"

@@ -17,6 +17,8 @@ export function DemoMap({
   appearance,
   background,
   zoom: initialZoom = 1,
+  origin = "Eastport",
+  destination = "Harbor Hub",
 }: {
   /** The pill in the top left corner. `null` drops it, the way the planned route on P2 is drawn. */
   label?: string | null;
@@ -31,6 +33,10 @@ export function DemoMap({
   truckLabel?: { shipmentId: number; distance: string };
   /** How close the board holds the map. The planned route on P2 sits at 1.435. */
   zoom?: number;
+  /** Where the route starts, read out to screen readers. */
+  origin?: string;
+  /** Where the route ends, read out to screen readers. */
+  destination?: string;
 }) {
   const [zoom, setZoom] = useState(initialZoom);
   const position = (x: number, y: number) => ({
@@ -66,7 +72,7 @@ export function DemoMap({
   return (
     <div
       role={controls ? "region" : "img"}
-      aria-label={`Demo route from Eastport to Harbor Hub.${label ? ` ${label}.` : ""}`}
+      aria-label={`${empty ? "Demo map." : `Demo route from ${origin} to ${destination}.`}${label ? ` ${label}.` : ""}`}
       style={{ containerType: "size" }}
       className={cn("relative h-290 overflow-hidden rounded-[24px] bg-ds-surface-3", className)}
     >
@@ -111,7 +117,7 @@ export function DemoMap({
             )}
             {(truckLabel || paused) && phase === "road" && (
               <span style={position(truck[0]!, truck[1]!)} className="absolute hidden md:block">
-                <span className="absolute top-[-17px] left-26 flex w-max items-center gap-6 rounded-full bg-ds-bg px-12 py-7 shadow-[0_4px_12px_#0000001f]">
+                <span className="absolute top-[-17px] left-26 flex w-max items-center gap-6 rounded-full bg-ds-bg px-12 py-7 shadow-float">
                   <span className="text-[12.5px] font-medium text-ds-ink">
                     {paused ? "Last seen 25 min ago" : `#${truckLabel?.shipmentId}`}
                   </span>
@@ -136,8 +142,7 @@ export function DemoMap({
         <span
           className={cn(
             "absolute top-16 left-16 z-10 flex max-w-[calc(100%-80px)] items-center gap-8 rounded-full bg-ds-bg px-12 py-8 text-caption",
-            appearance === "shipment" &&
-              "text-[12.5px] leading-[1.2] font-medium shadow-[0_4px_12px_#0000001a]",
+            appearance === "shipment" && "text-[12.5px] leading-[1.2] font-medium shadow-float",
           )}
         >
           <span
@@ -154,12 +159,16 @@ export function DemoMap({
         </span>
       )}
       {controls && (
-        <div className="absolute top-16 right-16 z-10 flex flex-col overflow-hidden rounded-small bg-ds-bg">
+        /*
+         * No `overflow-hidden` here: it would clip the focus ring. Each button rounds its own
+         * outer corners instead, so the ring follows the control's shape.
+         */
+        <div className="absolute top-16 right-16 z-10 flex flex-col rounded-small bg-ds-bg">
           <button
             type="button"
             aria-label="Zoom in"
             disabled={zoom >= 2.5}
-            className="press focus-ring grid size-36 place-items-center disabled:text-ds-muted"
+            className="press focus-ring grid size-36 place-items-center rounded-t-small disabled:text-ds-muted"
             onClick={() => setZoom(Math.min(2.5, zoom + 0.25))}
           >
             <Plus size={16} />
@@ -168,7 +177,7 @@ export function DemoMap({
             type="button"
             aria-label="Zoom out"
             disabled={zoom <= 1}
-            className="press focus-ring grid size-36 place-items-center disabled:text-ds-muted"
+            className="press focus-ring grid size-36 place-items-center rounded-b-small disabled:text-ds-muted"
             onClick={() => setZoom(Math.max(1, zoom - 0.25))}
           >
             <Minus size={16} />

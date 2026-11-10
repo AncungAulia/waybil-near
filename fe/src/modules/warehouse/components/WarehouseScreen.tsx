@@ -31,10 +31,41 @@ import { KeyValue } from "@/components/elements/KeyValue";
 import { Stat } from "@/components/elements/Stat";
 import { DemoRecord } from "@/components/elements/DemoRecord";
 import { QrScanner } from "@/components/elements/QrScanner";
+import { useDemoDelivery } from "@/hooks/useDemoDelivery";
 import { confirmDemoDelivery, DEMO_CODE, readDemoDelivery } from "@/lib/demo-delivery";
 import { cn } from "@/lib/cn";
 import { WAREHOUSE_FIXTURES, type WarehouseState } from "../data/fixtures";
 import "./warehouse.css";
+
+/*
+ * Report photos travel to the driver's screen through localStorage, which holds only a few
+ * MB. Each photo is shrunk to a small JPEG thumbnail first, so a report always fits.
+ */
+const THUMB_SIDE = 240;
+function thumbnail(file: File) {
+  return new Promise<{ name: string; src: string }>((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new window.Image();
+    img.onload = () => {
+      const scale = Math.min(1, THUMB_SIDE / Math.max(img.width, img.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(img.width * scale));
+      canvas.height = Math.max(1, Math.round(img.height * scale));
+      const context = canvas.getContext("2d");
+      URL.revokeObjectURL(url);
+      if (!context) return reject(new Error("canvas"));
+      context.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve({ name: file.name, src: canvas.toDataURL("image/jpeg", 0.6) });
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("read"));
+    };
+    img.src = url;
+  });
+}
+/* Six thumbnails stay well under the browser's storage limit. */
+const MAX_PHOTOS = 6;
 
 export function WarehouseScreen({
   initialState = "W1.1",
@@ -59,6 +90,9 @@ export function WarehouseScreen({
   const [help, setHelp] = useState(false);
   const submitting = useRef(false);
   const router = useRouter();
+  const delivery = useDemoDelivery();
+  /* A rescan after a problem report must not say the driver was paid. */
+  const reported = !preview && (delivery === "reported" || delivery === "settled");
   const shipment = WAREHOUSE_FIXTURES[state];
   const go = (next: WarehouseState) => {
     setError("");
@@ -151,21 +185,30 @@ export function WarehouseScreen({
       ? {
           title: "Delivery confirmed",
           description: "120 crates from Northwind are in. Sam is getting paid right now.",
-          recorded: "Arrival confirmed by Lena",
+          recorded: "Demo confirmation receipt",
         }
       : state === "W2.8"
         ? {
             title: "Report sent",
             description: `Northwind and Sam can see your report. The ${qty} good crates and the ${120 - Number(qty)} damaged ones are recorded.`,
-            recorded: "Report recorded",
+            recorded: "Demo report receipt",
           }
         : state === "W2.12"
-          ? {
-              title: "Already confirmed",
-              description:
-                "Lena confirmed shipment #1041 today at 15:36. Sam is already paid. There’s nothing else to do.",
-              recorded: undefined,
-            }
+          ? reported
+            ? {
+                title: "Already reported",
+                description:
+                  delivery === "settled"
+                    ? "A problem was already reported for shipment #1041, and Northwind has settled it with Sam. There’s nothing else to do."
+                    : "A problem was already reported for shipment #1041. Sam gets paid after Northwind chooses what to pay. There’s nothing else to do.",
+                recorded: undefined,
+              }
+            : {
+                title: "Already confirmed",
+                description:
+                  "Lena confirmed shipment #1041 today at 15:36. Sam is already paid. There’s nothing else to do.",
+                recorded: undefined,
+              }
           : state === "W2.4"
             ? {
                 title: "Not for this warehouse",
@@ -195,14 +238,20 @@ export function WarehouseScreen({
                       state === "W2.4"
                         ? "bg-ds-danger-result text-ds-danger"
                         : state === "W2.12"
-                          ? "bg-ds-success-soft text-ds-success"
+                          ? reported
+                            ? "bg-ds-brand-soft text-ds-brand-deep"
+                            : "bg-ds-success-soft text-ds-success"
                           : "bg-ds-brand-soft text-ds-brand-deep",
                     )}
                   >
                     {state === "W2.4" ? (
                       <XCircle size={34} />
                     ) : state === "W2.12" ? (
-                      <SealCheck size={34} />
+                      reported ? (
+                        <WarningCircle size={34} />
+                      ) : (
+                        <SealCheck size={34} />
+                      )
                     ) : (
                       <PaperPlaneTilt size={34} />
                     )}
@@ -239,7 +288,7 @@ export function WarehouseScreen({
                       href="/warehouse/history"
                       className="focus-ring grid h-48 place-items-center rounded-full bg-ds-canvas text-[14px]"
                     >
-                      See it in history ↗
+                      See it in history
                     </Link>
                   )}
                 </div>
@@ -487,6 +536,17 @@ export function WarehouseScreen({
                     torch={torch}
                     onTorchAvailable={setTorchAvailable}
                   />
+                  {/* Closing the camera sheet leaves the camera off, so offer a way back on. */}
+                  {state === "W2.1" && !camera && !preview && (
+                    <Button
+                      variant="moment"
+                      icon={<Camera size={17} />}
+                      className="absolute top-1/2 left-1/2 z-10 -translate-x-1/2 -translate-y-1/2"
+                      onClick={() => setCamera(true)}
+                    >
+                      Turn on camera
+                    </Button>
+                  )}
                   <Button
                     variant="quiet"
                     className={cn(
@@ -557,7 +617,7 @@ export function WarehouseScreen({
                         max={120}
                         value={qty}
                         onChange={(e) => setQty(e.target.value)}
-                        className="w-full rounded-small border border-ds-warning bg-ds-bg p-16 text-heading outline-none"
+                        className="focus-ring w-full rounded-small border border-ds-warning bg-ds-bg p-16 text-heading"
                       />
                       <span className="text-body text-ds-muted">of 120</span>
                     </span>
@@ -572,7 +632,7 @@ export function WarehouseScreen({
                       wrap="off"
                       value={note}
                       onChange={(e) => setNote(e.target.value)}
-                      className="mt-8 min-h-48 w-full resize-y rounded-small bg-ds-canvas p-16 text-body outline-none"
+                      className="focus-ring mt-8 min-h-48 w-full resize-y rounded-small bg-ds-canvas p-16 text-body"
                     />
                   </label>
                   <div>
@@ -584,6 +644,7 @@ export function WarehouseScreen({
                               key={photo.name + i}
                               type="button"
                               aria-label={`Remove ${photo.name}`}
+                              className="press focus-ring rounded-small"
                               onClick={() => setPhotos(photos.filter((_, n) => n !== i))}
                             >
                               <img
@@ -614,25 +675,20 @@ export function WarehouseScreen({
                             if (
                               files.some(
                                 (f) =>
-                                  f.size > 2 * 1024 * 1024 ||
+                                  f.size > 20 * 1024 * 1024 ||
                                   !["image/jpeg", "image/png"].includes(f.type),
                               )
                             ) {
-                              setError("Choose JPG or PNG photos under 2 MB each.");
+                              setError("Choose JPG or PNG photos under 20 MB each.");
                               return;
                             }
-                            const results = await Promise.all(
-                              files.map(
-                                (file) =>
-                                  new Promise<{ name: string; src: string }>((resolve, reject) => {
-                                    const reader = new FileReader();
-                                    reader.onload = () =>
-                                      resolve({ name: file.name, src: String(reader.result) });
-                                    reader.onerror = () => reject(new Error("read"));
-                                    reader.readAsDataURL(file);
-                                  }),
-                              ),
-                            ).catch(() => null);
+                            if (photos.length + files.length > MAX_PHOTOS) {
+                              setError(`Add up to ${MAX_PHOTOS} photos.`);
+                              return;
+                            }
+                            const results = await Promise.all(files.map(thumbnail)).catch(
+                              () => null,
+                            );
                             if (results) {
                               setPhotos([...photos, ...results]);
                               setError("");

@@ -96,6 +96,9 @@
   --radius-row: 20px;
   --radius-card: 28px;
 
+  /* The soft shadow under small pills floating on the map, for example the truck label. */
+  --shadow-float: 0 4px 12px rgb(0 0 0 / 0.12);
+
   /*
    * Motion, see fe/AGENTS.md "Motion" and the Quiet rules board. These replace Tailwind's
    * own ease-out and ease-in-out on purpose. Hover and colour changes use `ease-base`.
@@ -113,7 +116,20 @@
   --spacing: 1px;
 }
 
-/* Hover effects only for real pointers. `desk` also needs a wide screen. */
+/*
+ * Hover effects only for real pointers (fe/AGENTS.md "Motion"). Tailwind 4's own `hover:`
+ * only checks `(hover: hover)`, which some touch screens also match, so the variant is
+ * redefined here. `group-hover:` and `peer-hover:` follow it too.
+ * `hover-fine` is the bare media query, kept for code that already uses it.
+ * `desk` also needs a wide screen.
+ */
+@custom-variant hover {
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      @slot;
+    }
+  }
+}
 @custom-variant hover-fine (@media (hover: hover) and (pointer: fine));
 @custom-variant desk (@media (min-width: 1024px) and (hover: hover) and (pointer: fine));
 
@@ -157,6 +173,7 @@
   [role="radio"]:not([aria-disabled="true"]),
   [role="checkbox"]:not([aria-disabled="true"]),
   [role="link"],
+  [role="gridcell"][tabindex]:not([aria-disabled="true"]),
   input[type="checkbox"]:not(:disabled),
   input[type="radio"]:not(:disabled),
   input[type="file"]:not(:disabled),
@@ -167,6 +184,17 @@
   label:has(input:not(:disabled):not([type="text"]):not([type="email"]):not([type="number"])),
   label[for]:not(:has(input[type="text"], input[type="email"], input[type="number"], textarea)) {
     cursor: pointer;
+  }
+
+  /*
+   * A button that is waiting shows the progress cursor, and anything marked off with
+   * aria-disabled keeps the plain arrow. The doubled attribute outranks the pointer rule above.
+   */
+  [aria-busy="true"][aria-busy="true"] {
+    cursor: progress;
+  }
+  [aria-disabled="true"][aria-disabled="true"]:not([aria-busy="true"]) {
+    cursor: default;
   }
 
   /* Keyboard only: a 2 px ring with a 2 px offset. */
@@ -271,13 +299,22 @@
     pointer-events: none;
   }
 
-  /* Press feedback on anything tappable. Release is faster than press. */
+  /*
+   * Press feedback on anything tappable. Release is faster than press.
+   * A `transition-colors` utility would replace this transition, because utilities win over
+   * components. Elements that also change colour use
+   * `transition-[color,background-color,border-color,transform]` instead.
+   */
   .press {
     transition: transform 100ms ease;
   }
   .press:not(:disabled):active:not(:focus-visible) {
     transform: scale(0.97);
     transition-duration: 160ms;
+  }
+  /* A waiting button doesn't react to a press. */
+  .press[aria-busy="true"]:not(:disabled):active:not(:focus-visible) {
+    transform: none;
   }
 
   /*

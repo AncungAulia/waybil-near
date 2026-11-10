@@ -21,6 +21,10 @@ export function ActionSheet({
   subtitle?: React.ReactNode;
   children: React.ReactNode;
   onClose: () => void;
+  /**
+   * Accepted for the gallery screens that pass it, but it changes nothing: the sheet always
+   * opens as a real dialog with its overlay.
+   */
   preview?: boolean;
   wide?: boolean;
   /** An icon for a permission ask or a result. It centres the sheet and drops the close button. */
@@ -33,15 +37,23 @@ export function ActionSheet({
   overlayClassName?: string;
 }) {
   const descriptionId = useId();
-  const start = useRef<{ y: number; time: number } | null>(null);
+  const start = useRef<{ y: number } | null>(null);
+  /* Recent pointer positions, so a flick is measured near the release, not over the drag. */
+  const samples = useRef<{ y: number; time: number }[]>([]);
   const content = useRef<HTMLDivElement>(null);
   const [drag, setDrag] = useState(0);
+  const [dragging, setDragging] = useState(false);
   const [openedWithKeyboard] = useState(
     () => typeof document !== "undefined" && !!document.activeElement?.matches(":focus-visible"),
   );
   const contents = hideHeader ? (
     <>
       <Dialog.Title className="sr-only">{title}</Dialog.Title>
+      {subtitle && (
+        <Dialog.Description id={descriptionId} className="sr-only">
+          {subtitle}
+        </Dialog.Description>
+      )}
       {children}
     </>
   ) : stamp ? (
@@ -67,6 +79,11 @@ export function ActionSheet({
       >
         {title}
       </Dialog.Title>
+      {subtitle && (
+        <Dialog.Description id={descriptionId} className="text-[13px] text-ds-muted">
+          {subtitle}
+        </Dialog.Description>
+      )}
       {children}
     </>
   ) : (
@@ -161,6 +178,12 @@ export function ActionSheet({
             (appearance === "shipment" || appearance === "payment") &&
               "right-8 bottom-8 left-8 md:right-auto md:bottom-auto md:left-1/2",
             appearance && "focus-visible:outline-none",
+            /*
+             * The sheet follows the finger with no lag while dragging, then snaps back on the
+             * drawer curve. Reduced motion skips the slide.
+             */
+            !dragging &&
+              "motion-safe:transition-transform motion-safe:duration-300 motion-safe:ease-drawer",
           )}
           style={{
             ...(drag ? { transform: `translateY(${drag}px)` } : {}),
@@ -170,29 +193,46 @@ export function ActionSheet({
           <div
             aria-hidden
             className={cn(
-              "mx-auto h-20 w-80 touch-none md:hidden",
+              "mx-auto h-20 w-80 cursor-grab touch-none active:cursor-grabbing md:hidden",
               appearance === "shipment" && "absolute inset-x-0 top-0 h-12 w-full",
               appearance === "payment" && "h-5 w-full",
             )}
             onPointerDown={(e) => {
               e.currentTarget.setPointerCapture(e.pointerId);
-              start.current = { y: e.clientY, time: performance.now() };
+              start.current = { y: e.clientY };
+              samples.current = [{ y: e.clientY, time: performance.now() }];
+              setDragging(true);
             }}
             onPointerMove={(e) => {
               if (start.current) {
+                const now = performance.now();
+                /* Keep only the last 100 ms of moves for the release speed. */
+                samples.current = [
+                  ...samples.current.filter((p) => now - p.time <= 100),
+                  { y: e.clientY, time: now },
+                ];
                 const delta = e.clientY - start.current.y;
                 setDrag(delta > 0 ? delta : delta * 0.15);
               }
             }}
-            onPointerUp={() => {
+            onPointerUp={(e) => {
               const s = start.current;
-              if (s && (drag > 100 || (drag > 15 && drag / (performance.now() - s.time) > 0.11)))
-                onClose();
+              const now = performance.now();
+              const recent = samples.current.filter((p) => now - p.time <= 100);
+              const first = recent[0];
+              /* Pixels per millisecond downward over the last 100 ms before release. */
+              const velocity =
+                first && now > first.time ? (e.clientY - first.y) / (now - first.time) : 0;
+              if (s && (drag > 100 || (drag > 15 && velocity > 0.11))) onClose();
               start.current = null;
+              samples.current = [];
+              setDragging(false);
               setDrag(0);
             }}
             onPointerCancel={() => {
               start.current = null;
+              samples.current = [];
+              setDragging(false);
               setDrag(0);
             }}
           >

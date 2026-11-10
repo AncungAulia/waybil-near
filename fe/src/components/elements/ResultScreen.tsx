@@ -10,7 +10,7 @@ export function ResultScreen({
   children,
   recorded,
   warning = false,
-  tone = "brand",
+  tone: toneProp,
   action,
   actionIcon,
   onAction,
@@ -22,7 +22,11 @@ export function ResultScreen({
   children?: React.ReactNode;
   recorded?: string;
   warning?: boolean;
-  /** The stamp colour the board draws: the brand yellow, or a soft warning or done tint. */
+  /**
+   * The stamp colour the board draws: the brand yellow, or a soft warning or done tint.
+   * Left out, a warning gets the soft tint and anything else the brand yellow, so a warning
+   * glyph never sits on the yellow success stamp.
+   */
   tone?: "brand" | "soft" | "danger" | "success";
   action: string;
   /** Replaces the arrow in the button's circle, for example the scanner. */
@@ -32,6 +36,7 @@ export function ResultScreen({
   secondary?: { label: string; onClick: () => void };
   fullScreen?: boolean;
 }) {
+  const tone = toneProp ?? (warning ? "soft" : "brand");
   return (
     <section
       className={cn(

@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/Button";
 import { KeyValue } from "@/components/elements/KeyValue";
 import { FanMeter } from "@/components/elements/FanMeter";
 import { cn } from "@/lib/cn";
+import { CONTRACT_RECORD_URL } from "@/lib/env";
 import type { ShipperState } from "../data/fixtures";
 
-const whole = (amount: bigint) => formatUsdc(amount).split(".")[0];
 const CARD = "rounded-[24px]";
 
 export function ShipperCredit({
@@ -118,7 +118,7 @@ export function ShipperCredit({
                 tone="ink"
                 value={Number(usedBefore) / 3000000000}
                 label="Credit limit used"
-                markerLabel={whole(usedBefore) + " used"}
+                markerLabel={`${formatUsdc(usedBefore)} USDC used`}
                 className="w-full"
               />
               <div className="flex justify-between text-[11px] leading-[13px] text-ds-muted">
@@ -129,8 +129,8 @@ export function ShipperCredit({
               </div>
             </div>
             <div className="flex flex-wrap justify-between gap-12 text-[14px] leading-[17px] text-ds-ink-2">
-              <span>Used {whole(usedBefore)} USDC</span>
-              <span>Available {whole(3000000000n - usedBefore)} USDC</span>
+              <span>Used {formatUsdc(usedBefore)} USDC</span>
+              <span>Available {formatUsdc(3000000000n - usedBefore)} USDC</span>
             </div>
             {(proposed || rejected) && (
               <div className="flex items-start gap-10 rounded-[14px] bg-ds-vote-soft p-14 text-ds-vote-ink">
@@ -208,7 +208,7 @@ export function ShipperCredit({
                 them, not even Waybil.
               </p>
               <a
-                href="https://testnet.nearblocks.io/address/app.waybil.testnet"
+                href={CONTRACT_RECORD_URL}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="focus-ring self-start rounded-small text-[13px] leading-[16px] font-semibold text-ds-brand-deep"

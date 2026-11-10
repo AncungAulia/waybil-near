@@ -34,7 +34,17 @@ import {
 import { useDemoReport, useDemoSettlement } from "@/hooks/useDemoDelivery";
 import { DEFAULT_REPORT, settleDemoReport } from "@/lib/demo-delivery";
 import { cn } from "@/lib/cn";
-import type { DemoShipmentRow, ShipperState } from "../data/fixtures";
+import { statusChip } from "@/lib/status";
+import { SHIPMENTS, type DemoShipmentRow, type ShipperState } from "../data/fixtures";
+import { demoMoment, dueSummary, millis, shortDate, timing } from "../data/dates";
+
+/* The board names each destination by its place, and the receiver who works there. */
+const PLACES: Record<string, { name: string; receiver?: string }> = {
+  "Harbor City": { name: "Harbor Hub", receiver: "Lena" },
+  Millbrook: { name: "Millbrook depot", receiver: "Chris" },
+  Riverton: { name: "Riverton branch" },
+};
+const PLATES: Record<string, string> = { Sam: "NWF-204", "Jordan Lee": "JLE-118" };
 export function ShipperDetail({
   state,
   shipment,
@@ -43,6 +53,9 @@ export function ShipperDetail({
   recorded,
   onCancel,
   trip,
+  usedBefore,
+  record,
+  cancelledAt,
 }: {
   state: ShipperState;
   shipment: Shipment;
@@ -51,22 +64,37 @@ export function ShipperDetail({
   recorded?: string;
   onCancel: () => void;
   trip?: DemoShipmentRow;
+  usedBefore: bigint;
+  record: { onTime: number; total: number };
+  /** When the shipper cancelled it, in milliseconds. Only known in the browser. */
+  cancelledAt?: number;
 }) {
   const savedReport = useDemoReport(),
     settlement = useDemoSettlement();
   const report = preview ? DEFAULT_REPORT : savedReport;
-  const city = trip?.city ?? (shipment.id === 1036 ? "Riverton" : "Harbor City");
+  const city = trip?.city ?? "Harbor City";
   const driver = trip?.driver ?? "Sam";
+  const place = PLACES[city]?.name ?? city;
+  const receiver = PLACES[city]?.receiver;
+  const unit = shipment.unit;
+  const due = millis(shipment.due_at)!;
+  const repaidAt = millis(shipment.repaid_at);
+  /* The fee stays what was approved, even after a settled report lowers the bill. */
+  const fee =
+    SHIPMENTS.find((r) => r.shipment.id === shipment.id)?.shipment.bill ??
+    trip?.shipment.bill ??
+    shipment.bill;
   const [choice, setChoice] = useState(state === "P3.10" ? "different" : "arrived");
   const [amount, setAmount] = useState("250.00");
   const [reason, setReason] = useState(
-    "Agreed with Sam on the phone. The wet crates can still be sold at a lower price.",
+    `Agreed with ${driver} on the phone. The wet ${unit} can still be sold at a lower price.`,
   );
   const [error, setError] = useState("");
   const [back, setBack] = useState<ShipperState>("P3.6");
   const approved = ["P3.1", "P3.11"].includes(state),
     road = ["P3.2", "P3.3"].includes(state),
-    repaid = state === "P3.5";
+    repaid = state === "P3.5",
+    cancelled = state === "P3.12";
   const held = ["P3.6", "P3.7", "P3.8", "P3.10"].includes(state),
     settled = state === "P3.9";
   const bill = settled ? (preview ? "280000000" : settlement.bill) : shipment.bill;
@@ -98,7 +126,7 @@ export function ShipperDetail({
             ? reason
             : choice === "full"
               ? "Northwind paid the full fee."
-              : `Northwind paid for the ${report.goodQty} good crates.`,
+              : `Northwind paid for the ${report.goodQty} good ${unit}.`,
         )
       ) {
         setError("This report has changed. Open the trip again.");
@@ -114,8 +142,10 @@ export function ShipperDetail({
       <ShipperPayment
         state={state}
         bill={bill}
-        shipmentId={shipment.id}
+        shipment={shipment}
         city={city}
+        usedBefore={usedBefore}
+        record={record}
         preview={preview}
         go={go}
       />
@@ -132,17 +162,7 @@ export function ShipperDetail({
         </div>
         <StatusPill
           className="bg-ds-bg px-12"
-          status={
-            approved
-              ? "approved"
-              : road
-                ? "inTransit"
-                : held
-                  ? "disputed"
-                  : repaid
-                    ? "repaid"
-                    : "paidEarly"
-          }
+          status={statusChip(shipment)}
           label={held ? "Problem reported" : settled ? "Settled" : undefined}
         />
       </div>
@@ -150,15 +170,15 @@ export function ShipperDetail({
         <Panel className="mb-24 gap-12 rounded-[22px] bg-ds-danger-result px-20 py-18">
           <h2 className="flex items-center gap-10 text-body font-medium">
             <WarningCircle size={20} className="shrink-0 text-ds-danger" />
-            Harbor Hub reported a problem
+            {place} reported a problem
           </h2>
           <p className="text-[14px] leading-[1.45] text-ds-ink-2">
             &ldquo;
             {preview && state !== "P3.7" ? "8 crates arrived wet, 4 torn open." : report.note}
             &rdquo;{" "}
             {state === "P3.7"
-              ? "Sam can't be paid early until this is settled."
-              : "Sam gets paid after you choose what to pay."}
+              ? `${driver} can't be paid early until this is settled.`
+              : `${driver} gets paid after you choose what to pay.`}
           </p>
           <div className="flex flex-wrap gap-10 self-start [&_button]:h-44 [&_button]:gap-32">
             {state === "P3.7" ? (
@@ -185,7 +205,7 @@ export function ShipperDetail({
             You chose what to pay
           </h2>
           <p className="text-[14px] leading-[1.45] text-ds-ink-2">
-            {`${preview ? `You paid for the ${report.goodQty} good crates.` : settlement.reason} Sam got ${formatUsdc(BigInt(preview ? "273000000" : settlement.amount))} USDC and your bill is now ${formatUsdc(BigInt(bill))} USDC.`}
+            {`${preview ? `You paid for the ${report.goodQty} good ${unit}.` : settlement.reason} ${driver} got ${formatUsdc(BigInt(preview ? "273000000" : settlement.amount))} USDC and your bill is now ${formatUsdc(BigInt(bill))} USDC.`}
           </p>
           <Button
             variant="secondary"
@@ -211,34 +231,41 @@ export function ShipperDetail({
           >
             Read the report
           </Button>
+          <DemoRecord
+            title="Choice recorded"
+            className="rounded-[18px] px-16 py-12 [&>span:first-child]:size-32 [&>span:first-child>svg]:size-16 [&>span:nth-child(2)>span:first-child]:font-semibold"
+          />
         </Panel>
       )}
       <div className="grid items-start gap-16 xl:grid-cols-[minmax(0,1fr)_400px]">
         <div className="flex min-w-0 flex-col gap-16">
           <DemoMap
             controls
+            destination={place}
             paused={state === "P3.3"}
             truckLabel={
               state === "P3.2" ? { shipmentId: shipment.id, distance: "42 km to go" } : undefined
             }
-            phase={approved ? "pickup" : road ? "road" : "arrived"}
+            phase={cancelled ? "planned" : approved ? "pickup" : road ? "road" : "arrived"}
             className="h-340 md:h-420 xl:h-560"
             appearance="shipment"
             label={
-              approved
-                ? "Waiting for pickup"
-                : state === "P3.3"
-                  ? "Driver's location is paused"
-                  : road
-                    ? "Live · updated 30 s ago"
-                    : "Trip finished"
+              cancelled
+                ? "Cancelled before pickup"
+                : approved
+                  ? "Waiting for pickup"
+                  : state === "P3.3"
+                    ? "Driver's location is paused"
+                    : road
+                      ? "Live · updated 30 s ago"
+                      : "Trip finished"
             }
           />
           {state === "P3.3" && (
             <p className="flex items-start gap-10 rounded-[16px] bg-ds-canvas px-16 py-14 text-[13.5px] leading-[1.45] text-ds-ink">
               <Info size={18} className="mt-1 shrink-0" />
               <span>
-                Sam&apos;s phone stopped sharing location. The trip is still on.
+                {driver}&apos;s phone stopped sharing location. The trip is still on.
                 <span className="hidden xl:inline">
                   {" "}
                   You&apos;ll see the next update when the app opens again.
@@ -250,7 +277,18 @@ export function ShipperDetail({
         </div>
         <div className="grid min-w-0 items-start gap-16 md:grid-cols-2 xl:flex xl:flex-col">
           <div className="flex w-full min-w-0 flex-col gap-16">
-            {!approved && !road && (
+            {cancelled && (
+              <Panel gap={12}>
+                <h2 className="flex items-center gap-10 text-body font-medium">
+                  <Wallet size={20} className="shrink-0" />
+                  {formatUsdc(BigInt(shipment.bill))} USDC is back in your limit
+                </h2>
+                <p className="text-[13.5px] leading-[1.45] text-ds-ink-2">
+                  {driver} got a WhatsApp message that the trip is off. Nothing was paid out.
+                </p>
+              </Panel>
+            )}
+            {!approved && !road && !cancelled && (
               /* Only an open bill uses the dark card. */
               <Panel
                 gap={12}
@@ -270,7 +308,11 @@ export function ShipperDetail({
                         : "text-ds-brand",
                   )}
                 >
-                  {held ? "Bill on hold" : repaid ? "Repaid on Dec 10" : "Your bill"}
+                  {held
+                    ? "Bill on hold"
+                    : repaid
+                      ? `Repaid on ${shortDate(repaidAt ?? due)}`
+                      : "Your bill"}
                 </p>
                 <Money
                   amount={bill}
@@ -288,10 +330,10 @@ export function ShipperDetail({
                   {held
                     ? "Nothing is due while the problem is open."
                     : repaid
-                      ? "One day early. Your on-time record went up."
+                      ? repaidNote(shipment.due_at, repaidAt)
                       : settled
-                        ? `Due Dec 11. It covers the ${report.goodQty} good crates.`
-                        : "Due Dec 11, 2026 · in 29 days"}
+                        ? `Due ${shortDate(due)}. It covers the ${report.goodQty} good ${unit}.`
+                        : dueSummary(shipment.due_at)}
                 </p>
                 {repaid ? (
                   <DemoRecord
@@ -313,16 +355,20 @@ export function ShipperDetail({
               </Panel>
             )}
             <Panel title="Progress" gap={4} titleClassName="text-[18px] leading-[1.2]">
-              {[
-                "Approved by you",
-                "Picked up by Sam",
-                "Arrived at Harbor Hub",
-                settled
-                  ? `Sam got ${formatUsdc(BigInt(preview ? "273000000" : settlement.amount))} USDC`
-                  : "Sam paid early",
-                "You repaid",
-              ].map((title, i) => {
-                const completed = repaid ? 5 : approved ? 1 : road ? 2 : held ? 3 : 4;
+              {(cancelled
+                ? ["Approved by you", "Cancelled by you"]
+                : [
+                    "Approved by you",
+                    `Picked up by ${driver}`,
+                    `Arrived at ${place}`,
+                    settled
+                      ? `${driver} got ${formatUsdc(BigInt(preview ? "273000000" : settlement.amount))} USDC`
+                      : `${driver} paid early`,
+                    "You repaid",
+                  ]
+              ).map((title, i, steps) => {
+                const completed =
+                  repaid || cancelled ? steps.length : approved ? 1 : road ? 2 : held ? 3 : 4;
                 const step =
                   settled && i === 4
                     ? "next"
@@ -330,27 +376,35 @@ export function ShipperDetail({
                       ? "done"
                       : i === completed
                         ? held
-                          ? "failed"
+                          ? "paused"
                           : "current"
                         : "next";
-                const times = [
-                  "Nov 12 · 08:02",
-                  approved ? "Waiting for pickup" : "Nov 12 · 09:14",
-                  road ? "About 1 h 20 min to go" : "Nov 12 · 15:36",
-                  held
-                    ? "On hold"
-                    : settled
-                      ? "Nov 13 · 10:20"
-                      : `Nov 12 · 15:37 · ${formatUsdc(BigInt(shipment.advance))} USDC`,
-                  repaid ? `Dec 10 · ${formatUsdc(BigInt(bill))} USDC` : "Due Dec 11",
-                ];
+                const times = cancelled
+                  ? ["Nov 12 · 08:02", cancelledAt ? demoMoment(cancelledAt) : "Nov 12 · 09:40"]
+                  : [
+                      "Nov 12 · 08:02",
+                      approved ? "Waiting for pickup" : "Nov 12 · 09:14",
+                      road ? "About 1 h 20 min to go" : "Nov 12 · 15:36",
+                      held
+                        ? "On hold"
+                        : settled
+                          ? "Nov 13 · 10:20"
+                          : `Nov 12 · 15:37 · ${formatUsdc(BigInt(shipment.advance))} USDC`,
+                      repaid
+                        ? `${shortDate(repaidAt ?? due)} · ${formatUsdc(BigInt(bill))} USDC`
+                        : `Due ${shortDate(due)}`,
+                    ];
                 return (
                   <div
                     key={title}
                     /* The board joins the dots with a 2 px line, ink once the step is done. */
                     className={cn(
                       "relative py-10 after:absolute after:top-38 after:left-11 after:w-2 after:rounded-[1px]",
-                      i === 4 ? "after:hidden" : i <= completed ? "after:h-27" : "after:h-16",
+                      i === steps.length - 1
+                        ? "after:hidden"
+                        : i <= completed
+                          ? "after:h-27"
+                          : "after:h-16",
                       step === "done" && !(settled && i === 3)
                         ? "after:bg-ds-ink"
                         : "after:bg-ds-line-strong",
@@ -373,7 +427,7 @@ export function ShipperDetail({
                         className={cn(
                           "w-full items-start [&>span:last-child>span]:leading-[1.2] [&>span:last-child>span:empty]:hidden",
                           step === "next" && "[&>span:last-child>span:first-child]:font-normal",
-                          step === "failed" &&
+                          step === "paused" &&
                             "[&>span:first-child]:bg-ds-danger-result [&>span:last-child>span:last-child]:text-ds-danger",
                         )}
                         state={step}
@@ -411,15 +465,12 @@ export function ShipperDetail({
             <div className="divide-y divide-ds-line [&>div>span]:leading-[1.2]">
               <KeyValue
                 label="Driver"
-                value={`${driver} · ${driver === "Jordan Lee" ? "JLE-118" : "NWF-204"}`}
+                value={PLATES[driver] ? `${driver} · ${PLATES[driver]}` : driver}
               />
               <KeyValue label="Cargo" value={trip?.cargo ?? "120 crates of coffee"} />
               <KeyValue label="From" value="Main warehouse, Eastport" />
-              <KeyValue label="To" value={city === "Harbor City" ? "Harbor Hub" : city} />
-              <KeyValue
-                label="Shipping fee"
-                value={<Money amount={trip?.shipment.bill ?? "300000000"} />}
-              />
+              <KeyValue label="To" value={place} />
+              <KeyValue label="Shipping fee" value={<Money amount={fee} />} />
             </div>
             <ButtonLink
               variant="secondary"
@@ -437,7 +488,7 @@ export function ShipperDetail({
       {state === "P3.7" && (
         <ActionSheet
           title="Problem report"
-          subtitle="From Lena at Harbor Hub · Nov 12, 15:31"
+          subtitle={`From ${receiver ? `${receiver} at ` : ""}${place} · Nov 12, 15:31`}
           appearance="shipment"
           wide
           className="gap-18 [&_h2]:text-[22px]"
@@ -482,7 +533,9 @@ export function ShipperDetail({
             ))}
           </div>
           <div className="flex flex-col gap-6">
-            <p className="text-[13px] text-ds-muted">Lena&apos;s note</p>
+            <p className="text-[13px] text-ds-muted">
+              {receiver ? `${receiver}'s note` : "The receiver's note"}
+            </p>
             <p className="text-body">&ldquo;{report.note}&rdquo;</p>
           </div>
           <DemoRecord
@@ -503,7 +556,7 @@ export function ShipperDetail({
       )}
       {(state === "P3.8" || state === "P3.10") && (
         <ActionSheet
-          title="How much should Sam get?"
+          title={`How much should ${driver} get?`}
           appearance="shipment"
           className={cn(
             "md:w-520",
@@ -512,26 +565,30 @@ export function ShipperDetail({
           onClose={() => go("P3.6")}
           subtitle={
             state === "P3.10"
-              ? "Agree on the amount with Sam first."
-              : `Harbor Hub counted ${report.goodQty} good crates out of ${shipment.qty}.`
+              ? `Agree on the amount with ${driver} first.`
+              : `${place} counted ${report.goodQty} good ${unit} out of ${shipment.qty}.`
           }
         >
-          <div className={cn("flex flex-col gap-10", state === "P3.10" && "gap-8")}>
+          <div
+            role="radiogroup"
+            aria-label="How do you want to settle it?"
+            className={cn("flex flex-col gap-10", state === "P3.10" && "gap-8")}
+          >
             {[
               {
                 id: "arrived",
                 title: "Pay for what arrived",
-                body: `Sam gets ${formatUsdc(arrivedAmount)} USDC for ${report.goodQty} of ${shipment.qty} crates. Your bill becomes ${formatUsdc(billForDriverAmount(arrivedAmount))} USDC.`,
+                body: `${driver} gets ${formatUsdc(arrivedAmount)} USDC for ${report.goodQty} of ${shipment.qty} ${unit}. Your bill becomes ${formatUsdc(billForDriverAmount(arrivedAmount))} USDC.`,
               },
               {
                 id: "full",
                 title: "Pay in full",
-                body: `Sam gets ${formatUsdc(BigInt(shipment.advance))} USDC. Your bill stays ${formatUsdc(BigInt(shipment.bill))} USDC.`,
+                body: `${driver} gets ${formatUsdc(BigInt(shipment.advance))} USDC. Your bill stays ${formatUsdc(BigInt(shipment.bill))} USDC.`,
               },
               {
                 id: "different",
                 title: "Pay a different amount",
-                body: "Agree on it with Sam first and add a short reason.",
+                body: `Agree on it with ${driver} first and add a short reason.`,
               },
             ].map((o) => (
               <div
@@ -578,7 +635,7 @@ export function ShipperDetail({
                 {o.id === "different" && choice === o.id && (
                   <div className="mt-9 flex flex-col gap-6">
                     <Input
-                      label="Sam gets"
+                      label={`${driver} gets`}
                       value={amount}
                       inputMode="decimal"
                       suffix="USDC"
@@ -589,7 +646,7 @@ export function ShipperDetail({
                           ? `Enter no more than ${formatUsdc(BigInt(shipment.advance))} USDC.`
                           : undefined
                       }
-                      hint={`Your bill becomes ${formatUsdc(billForDriverAmount(custom))} USDC. It can't be more than ${formatUsdc(BigInt(shipment.advance))}.`}
+                      hint={`${validCustom && custom <= BigInt(shipment.advance) ? `Your bill becomes ${formatUsdc(billForDriverAmount(custom))} USDC. ` : ""}It can't be more than ${formatUsdc(BigInt(shipment.advance))} USDC.`}
                     />
                     <label className="flex flex-col gap-6 text-[13px] text-ds-ink-2">
                       Reason
@@ -607,8 +664,8 @@ export function ShipperDetail({
           <p className="flex items-start gap-10 rounded-[14px] bg-ds-canvas p-14 text-[13px] leading-[1.2] font-normal text-ds-ink-2">
             <Info size={18} className="mt-1 shrink-0" />
             <span>
-              Sam and the investors see your choice. The {shipment.qty - report.goodQty} wet crates
-              stay at Harbor Hub for you to collect.
+              {driver} and the investors see your choice. The {shipment.qty - report.goodQty} wet{" "}
+              {unit} stay at {place} for you to collect.
             </span>
           </p>
           {error && (
@@ -633,7 +690,7 @@ export function ShipperDetail({
       {state === "P3.11" && (
         <ActionSheet
           title={`Cancel shipment #${shipment.id}?`}
-          subtitle="Sam hasn't picked it up yet."
+          subtitle={`${driver} hasn't picked it up yet.`}
           appearance="shipment"
           onClose={() => go("P3.1")}
         >
@@ -644,7 +701,7 @@ export function ShipperDetail({
             </p>
             <p className="flex items-start gap-10 text-[13px] leading-[1.2] font-normal text-ds-ink-2">
               <ChatCircle size={16} className="shrink-0 text-ds-ink-2" />
-              Sam gets a WhatsApp message.
+              {driver} gets a WhatsApp message.
             </p>
             <p className="flex items-start gap-10 text-[13px] leading-[1.2] font-normal text-ds-ink-2">
               <ArrowUUpLeft size={16} className="shrink-0 text-ds-ink-2" />
@@ -663,4 +720,10 @@ export function ShipperDetail({
       )}
     </>
   );
+}
+
+/** What the repaid card says under the amount, from the due date and the day it was paid. */
+function repaidNote(dueAt: string, repaidAt?: number) {
+  const when = timing(dueAt, repaidAt);
+  return when.endsWith("late") ? `Paid ${when}.` : `Paid ${when}. Your on-time record went up.`;
 }

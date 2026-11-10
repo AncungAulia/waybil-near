@@ -16,32 +16,43 @@ import { Money } from "@/components/elements/Money";
 import { Stat } from "@/components/elements/Stat";
 import { FanMeter, MeterLegend } from "@/components/elements/FanMeter";
 import { DemoMap } from "@/components/elements/DemoMap";
+import { formatUsdc } from "@waybil/shared";
 import { ShipmentList } from "./ShipmentList";
-import { SHIPMENTS, type ShipperState } from "../data/fixtures";
+import { LATE_SHIPMENT, type DemoShipmentRow, type ShipperState } from "../data/fixtures";
+import { DEMO_NOW, daysBetween, millis } from "../data/dates";
 
-/* The three tabs on the Shipments card, and which demo shipments each one shows. */
+/* The three tabs on the Shipments card, and which statuses each one shows. */
 type Tab = "active" | "paid" | "history";
 const TABS: { value: Tab; label: string }[] = [
   { value: "active", label: "Active" },
   { value: "paid", label: "Paid early" },
   { value: "history", label: "History" },
 ];
-const TAB_ROWS: Record<Tab, number[]> = {
-  active: [1041, 1043, 1039],
-  paid: [1039],
-  history: [1032],
+const done = (row: DemoShipmentRow) => ["Repaid", "Cancelled"].includes(row.shipment.status);
+const TAB_ROWS: Record<Tab, (row: DemoShipmentRow) => boolean> = {
+  active: (row) => !done(row),
+  paid: (row) => row.shipment.status === "Paid",
+  history: done,
 };
+const daysLeft = (row: DemoShipmentRow) => daysBetween(DEMO_NOW, millis(row.shipment.due_at)!);
+const byDue = (a: DemoShipmentRow, b: DemoShipmentRow) =>
+  Number(BigInt(a.shipment.due_at) - BigInt(b.shipment.due_at));
 
 export function ShipperHome({
   state,
   go,
   open,
   usedBefore = 2400000000n,
+  rows,
+  record,
 }: {
   state: ShipperState;
   go: (s: ShipperState) => void;
   open: (id: number, pay?: boolean) => void;
   usedBefore?: bigint;
+  /** The shipper's shipments as the demo state has them now. */
+  rows: DemoShipmentRow[];
+  record: { onTime: number; total: number };
 }) {
   const [tab, setTab] = useState<Tab>("active");
   const first = state === "P1.2",
@@ -53,32 +64,35 @@ export function ShipperHome({
    * What the limit is holding, soonest bill first, as P1.1 and P1.4 draw it. On a late
    * screen the overdue bill takes the top row in place of the one due next.
    */
-  const open1039 = SHIPMENTS.find((r) => r.shipment.id === 1039)!;
-  const using = [
-    late
-      ? {
-          shipment: { ...open1039.shipment, id: 1036, bill: "300000000" },
-          city: "Riverton",
-          due: "3 days late",
-        }
-      : open1039,
-    SHIPMENTS.find((r) => r.shipment.id === 1041)!,
-    SHIPMENTS.find((r) => r.shipment.id === 1043)!,
-  ];
+  const openRows = rows.filter((row) => !done(row)).sort(byDue);
+  const bills = openRows.filter((row) => row.shipment.status === "Paid");
+  const using = (late ? [LATE_SHIPMENT, ...openRows] : openRows).slice(0, 3);
+  /* The bill card shows the soonest open bill, or the late one on P1.4. */
+  const next = late ? LATE_SHIPMENT : bills[0];
+  const nextDays = next ? daysLeft(next) : 0;
+  const dueThisWeek = bills.filter((row) => daysLeft(row) <= 7);
+  const weekTotal = (late ? [LATE_SHIPMENT] : dueThisWeek).reduce(
+    (sum, row) => sum + BigInt(row.shipment.bill),
+    0n,
+  );
   /* A late bill is the soft danger card on the board, an open one the ink card with the glow. */
-  const bill = (
+  const bill = next && (
     <Panel className={late ? "bg-ds-danger-soft" : "bill-card bg-ds-ink text-ds-bg"}>
       <p className={cn("text-label", late ? "text-ds-danger" : "text-ds-brand")}>
-        {late ? "3 days late" : "Due in 2 days"}
+        {nextDays < 0
+          ? `${-nextDays} ${nextDays === -1 ? "day" : "days"} late`
+          : nextDays === 0
+            ? "Due today"
+            : `Due in ${nextDays} ${nextDays === 1 ? "day" : "days"}`}
       </p>
       <p className={cn("text-label", late ? "text-ds-ink-2" : "text-ds-on-night")}>
-        Bill for #{late ? 1036 : 1039} · Eastport to {late ? "Riverton" : "Millbrook"}
+        Bill for #{next.shipment.id} · Eastport to {next.city}
       </p>
-      <Money amount={late ? "300000000" : "120000000"} className="text-amount" />
+      <Money amount={next.shipment.bill} className="text-amount" />
       <Button
         variant={late ? "primary" : "moment"}
         className="w-full justify-between"
-        onClick={() => open(late ? 1036 : 1039, true)}
+        onClick={() => open(next.shipment.id, true)}
       >
         {late ? "Pay now" : "Pay early"}
       </Button>
@@ -136,18 +150,34 @@ export function ShipperHome({
         <Stat
           className="w-full"
           label="Due this week"
-          value={<Money amount={first ? "0" : late ? "300000000" : "120000000"} />}
-          context={first ? "No bills" : late ? "1 late bill" : "1 bill"}
+          value={<Money amount={first ? "0" : weekTotal.toString()} />}
+          context={
+            first
+              ? "No bills"
+              : late
+                ? "1 late bill"
+                : dueThisWeek.length === 1
+                  ? "1 bill"
+                  : `${dueThisWeek.length} bills`
+          }
         />
         <Stat
           className="w-full"
           label="Paid on time"
-          value={first ? "New" : late ? "90%" : "100%"}
-          context={first ? "Builds as you pay" : late ? "9 of 10 bills" : "9 of 9 bills"}
+          value={
+            first ? "New" : late ? "90%" : `${Math.round((record.onTime / record.total) * 100)}%`
+          }
+          context={
+            first
+              ? "Builds as you pay"
+              : late
+                ? "9 of 10 bills"
+                : `${record.onTime} of ${record.total} bills`
+          }
         />
       </div>
-      {!first && <div className="md:hidden">{bill}</div>}
-      <div className="grid items-stretch gap-16 lg:grid-cols-[minmax(0,1fr)_400px]">
+      {!first && bill && <div className="md:hidden">{bill}</div>}
+      <div className="grid grid-cols-[minmax(0,1fr)] items-stretch gap-16 lg:grid-cols-[minmax(0,1fr)_400px]">
         <div className="flex min-w-0 flex-col gap-16">
           {first && (
             <Panel
@@ -208,7 +238,10 @@ export function ShipperHome({
               </span>
             }
           >
-            <Money amount={left} className="text-[38px] font-medium tracking-[-0.035em]" />
+            <Money
+              amount={left}
+              className="text-[32px] font-medium min-[360px]:text-[38px] tracking-[-0.035em]"
+            />
             <p className="text-label font-normal text-ds-muted">
               left to use, out of 3,000.00 USDC
             </p>
@@ -216,11 +249,7 @@ export function ShipperHome({
               className="w-full"
               value={Number(used) / 3000000000}
               label="Credit limit used"
-              markerLabel={
-                first
-                  ? "Nothing used"
-                  : `${Math.round(Number(used) / 1000000).toLocaleString("en-US")} used`
-              }
+              markerLabel={first ? "Nothing used" : `${formatUsdc(used)} USDC used`}
             />
             <div className="flex justify-between text-caption text-ds-muted">
               <span>0</span>
@@ -252,11 +281,11 @@ export function ShipperHome({
                         i > 0 ? "bg-ds-ink" : late ? "bg-ds-danger" : "bg-ds-brand",
                       )}
                     />
-                    <span className="flex-1">
+                    <span className="min-w-0 flex-1">
                       #{r.shipment.id} Eastport to {r.city}
                       <span className="block text-ds-muted">{r.due}</span>
                     </span>
-                    <Money amount={r.shipment.bill} unit={false} />
+                    <Money amount={r.shipment.bill} />
                   </button>
                 ))
               )}
@@ -275,12 +304,14 @@ export function ShipperHome({
               <ArrowRight size={16} />
             </button>
           </Panel>
-          {!first && <div className="hidden md:block">{bill}</div>}
+          {!first && bill && <div className="hidden md:block">{bill}</div>}
         </div>
       </div>
       {!first && (
         <Panel
           title="Shipments"
+          /* On a narrow phone the tabs drop under the title instead of pushing the card wide. */
+          className="[&>div:first-child]:flex-wrap [&>div:first-child]:gap-y-12"
           action={
             <Segmented
               options={TABS}
@@ -290,11 +321,7 @@ export function ShipperHome({
             />
           }
         >
-          <ShipmentList
-            rows={TAB_ROWS[tab].map((id) => SHIPMENTS.find((r) => r.shipment.id === id)!)}
-            onOpen={open}
-            meta="due"
-          />
+          <ShipmentList rows={rows.filter(TAB_ROWS[tab])} onOpen={open} meta="due" />
         </Panel>
       )}
     </div>

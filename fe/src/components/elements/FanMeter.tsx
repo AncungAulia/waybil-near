@@ -1,4 +1,8 @@
+"use client";
+
+import { useLayoutEffect, useRef } from "react";
 import { cn } from "@/lib/cn";
+import { useChanged } from "@/hooks/useChanged";
 
 /*
  * The ruler meter from design/waybil.pen → Atom/FanMeter, drawn in the design by
@@ -50,6 +54,29 @@ export function FanMeter({
         : value > 0.8
           ? "bg-ds-warning"
           : "bg-ds-ink";
+  /*
+   * White on the amber pill is too faint for 12 px text, so the amber pill writes in ink.
+   * The ink and red pills keep white text.
+   */
+  const pillText = used === "bg-ds-warning" ? "text-ds-ink" : "text-ds-bg";
+  /* A new value crossfades. Nothing moves on first load. */
+  const changed = useChanged(value);
+  /*
+   * The pill is held inside the ruler by its own half width, so a long label near either end
+   * stops at the edge instead of pushing the card sideways. The width is measured into a CSS
+   * variable, so React never re-renders for it. Before it is measured (server render) a
+   * 46 px guess is used.
+   */
+  const pill = useRef<HTMLSpanElement>(null);
+  useLayoutEffect(() => {
+    const el = pill.current;
+    if (!el) return;
+    const measure = () => el.style.setProperty("--pill-half", `${el.offsetWidth / 2}px`);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [markerLabel]);
 
   const ruler = (
     <span
@@ -61,7 +88,8 @@ export function FanMeter({
       aria-valuetext={`${pct} percent`}
       key={value}
       className={cn(
-        "swap relative inline-flex h-34 w-320 items-end justify-between",
+        changed && "swap",
+        "relative inline-flex h-34 w-320 max-w-full items-end justify-between",
         markerLabel && "w-full",
         className,
       )}
@@ -94,16 +122,15 @@ export function FanMeter({
       {/* The pill stays at zero too: P1.2 draws "Nothing used" at the left end. */}
       {markerLabel && (
         <span aria-hidden className={cn("relative block h-26 w-full", credit && "h-32")}>
-          {/* Held a little away from both ends so the pill never pushes the card sideways. */}
           <span
+            ref={pill}
             style={{
-              left: credit
-                ? `clamp(46px, ${marker * 100}%, calc(100% - 46px))`
-                : `${Math.min(Math.max(marker, 0.08), 0.92) * 100}%`,
+              left: `clamp(var(--pill-half, 46px), ${marker * 100}%, calc(100% - var(--pill-half, 46px)))`,
             }}
             className={cn(
-              "absolute -translate-x-1/2 rounded-full px-10 py-4 text-caption whitespace-nowrap text-ds-bg",
+              "absolute -translate-x-1/2 rounded-full px-10 py-4 text-caption whitespace-nowrap",
               used,
+              pillText,
               credit &&
                 "inline-flex h-26 min-w-92 items-center justify-center py-0 text-[12px] leading-[15px] font-semibold after:absolute after:top-25 after:left-1/2 after:-translate-x-1/2 after:border-x-5 after:border-t-6 after:border-x-transparent after:border-t-ds-ink",
             )}
@@ -119,7 +146,8 @@ export function FanMeter({
 
 /** The two keys the credit cards draw under the ruler. */
 export function MeterLegend({ value, className }: { value: number; className?: string }) {
-  const used = value >= 1 ? "bg-ds-danger" : value > 0.8 ? "bg-ds-warning" : "bg-ds-ink";
+  /* The same thresholds as the bars: amber past 80%, red only over the limit. */
+  const used = value > 1 ? "bg-ds-danger" : value > 0.8 ? "bg-ds-warning" : "bg-ds-ink";
   return (
     <span aria-hidden className={cn("flex gap-16 text-caption text-ds-muted", className)}>
       <span className="flex items-center gap-6">

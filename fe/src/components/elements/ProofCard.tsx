@@ -1,6 +1,6 @@
 import { ArrowUpRight, CheckCircle, Clock, Warning } from "@phosphor-icons/react/dist/ssr";
 import { cn } from "@/lib/cn";
-import { NEAR_NETWORK } from "@/lib/env";
+import { NEARBLOCKS_URL } from "@/lib/env";
 
 /*
  * Recorded-action card from design/waybil.pen → Molecule/Proof and the States board.
@@ -15,8 +15,7 @@ const PROOF: Record<Proof, { icon: typeof CheckCircle; tile: string; glyph: stri
   failed: { icon: Warning, tile: "bg-ds-danger-soft", glyph: "text-ds-danger" },
 };
 
-const EXPLORER =
-  NEAR_NETWORK === "mainnet" ? "https://nearblocks.io" : "https://testnet.nearblocks.io";
+const EXPLORER = NEARBLOCKS_URL;
 
 export function ProofCard({
   state,
@@ -41,7 +40,7 @@ export function ProofCard({
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        "focus-ring flex w-380 items-center gap-12 rounded-[18px] bg-ds-bg px-16 py-12",
+        "focus-ring flex w-380 max-w-full items-center gap-12 rounded-[18px] bg-ds-bg px-16 py-12",
         "transition-colors duration-150 ease-base hover:bg-ds-canvas",
         className,
       )}

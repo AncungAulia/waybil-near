@@ -3,12 +3,14 @@
 import type { ComponentProps, ReactNode } from "react";
 import { ArrowUpRight, ArrowLineDown, Check, CircleNotch } from "@phosphor-icons/react";
 import { cn } from "@/lib/cn";
+import { useChanged } from "@/hooks/useChanged";
 
 /*
  * Buttons from design/waybil.pen, "1 · Foundations" → Section Buttons and the States board.
  * All five are 48 px tall pills with a 15/500 label. Primary, secondary and moment carry a
  * 36 px circle on the right; quiet and icon do not.
- * Tailwind 4 already limits `hover:` to devices that really hover, so no extra guard here.
+ * `hover:` and `group-hover:` only apply to fine pointers, because globals.css redefines the
+ * `hover` variant as `(hover: hover) and (pointer: fine)`. No extra guard is needed here.
  */
 
 type Variant = "primary" | "secondary" | "moment" | "danger" | "quiet";
@@ -23,7 +25,7 @@ const SHELL =
 const VARIANT: Record<Variant, string> = {
   primary: cn(
     "gap-12 py-6 pr-6 pl-22 bg-ds-ink text-ds-bg",
-    "active:bg-black/92",
+    "active:bg-ds-ink/92",
     "disabled:bg-ds-surface-3 disabled:text-ds-off-ink",
   ),
   secondary: cn(
@@ -106,6 +108,8 @@ export function Button({
       ? (successLabel ?? children)
       : children;
   const state = loading ? "loading" : success ? "success" : "rest";
+  /* The label only crossfades when it really swaps, never on first load. */
+  const swapped = useChanged(state);
 
   return (
     <button
@@ -115,11 +119,19 @@ export function Button({
       /*
        * While it waits the button keeps its colours, as the board draws it, and only stops
        * responding. `disabled` is kept for the buttons that are really off, and those grey out.
+       * Enter, Space and a form's implicit submit still fire a click on a submit button, so
+       * the click is cancelled here too, which also stops the form from being sent twice.
        */
       aria-disabled={loading || undefined}
       aria-busy={loading || undefined}
-      onClick={loading ? undefined : rest.onClick}
-      className={cn("group", SHELL, VARIANT[variant], loading && "pointer-events-none", className)}
+      onClick={
+        loading
+          ? (event) => {
+              event.preventDefault();
+            }
+          : rest.onClick
+      }
+      className={cn("group", SHELL, VARIANT[variant], className)}
     >
       {/*
        * The resting label stays in the flow but invisible, so the pill keeps its width when
@@ -129,7 +141,10 @@ export function Button({
         <span aria-hidden className="invisible col-start-1 row-start-1 whitespace-nowrap">
           {children}
         </span>
-        <span key={state} className="swap col-start-1 row-start-1 whitespace-nowrap">
+        <span
+          key={state}
+          className={cn("col-start-1 row-start-1 whitespace-nowrap", swapped && "swap")}
+        >
           {label}
         </span>
       </span>

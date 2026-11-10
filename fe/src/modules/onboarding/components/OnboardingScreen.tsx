@@ -22,7 +22,7 @@ import {
   Handshake,
   X,
 } from "@phosphor-icons/react";
-import type { Role } from "@waybil/shared";
+import { FEE_BPS, type Role } from "@waybil/shared";
 import { useOrigin } from "@/hooks/useOrigin";
 import { Logo } from "@/components/layout/Logo";
 import { RoleShell } from "@/components/layout/RoleShell";
@@ -47,8 +47,41 @@ import {
   type OnboardingState,
   type CompanyDraft,
 } from "../data/fixtures";
-import { CompanySetup, CompanyDocuments } from "./CompanySetup";
+import {
+  CompanySetup,
+  CompanyDocuments,
+  initialCompanyFiles,
+  type CompanyFiles,
+} from "./CompanySetup";
 import { DriverSetup } from "./DriverSetup";
+/* Shares of each bill from the shared fee split, for example "1.6%" and "97.5%". */
+const POOL_PERCENT = `${Number(FEE_BPS.pool) / 100}%`;
+const DRIVER_PERCENT = `${Number(FEE_BPS.driver) / 100}%`;
+/* Drivers and warehouses use Google. Shippers and investors use a NEAR wallet. */
+const WALLET_ROLES = [
+  {
+    value: "shipper" as const,
+    title: "I ship goods",
+    note: "Approve trips before the truck leaves and pay at the due date. Your drivers get paid on arrival.",
+  },
+  {
+    value: "investor" as const,
+    title: "I fund deliveries",
+    note: "Deposit USDC into the pool and earn when shipping companies pay their bills.",
+  },
+];
+const GOOGLE_ROLES = [
+  {
+    value: "driver" as const,
+    title: "I own a truck",
+    note: "Confirm pickup, show a QR at the destination, and get paid the moment goods arrive.",
+  },
+  {
+    value: "warehouse" as const,
+    title: "I receive goods",
+    note: "Scan the driver's QR when a truck arrives to confirm the delivery.",
+  },
+];
 export function OnboardingScreen({
   initialState = "A1",
   preview = false,
@@ -64,7 +97,10 @@ export function OnboardingScreen({
   const [state, setState] = useState(initialState),
     [role, setRole] = useState<Role | null>(ONBOARDING_FIXTURES[initialState].role),
     [understood, setUnderstood] = useState(initialState === "E2"),
-    [copied, setCopied] = useState(false);
+    [copied, setCopied] = useState(false),
+    /* B3 is the Google path with a truck owner chosen. Every other B state is the wallet path. */
+    [google, setGoogle] = useState(initialState === "B3"),
+    [files, setFiles] = useState<CompanyFiles>(() => initialCompanyFiles(initialState));
   const [company, setCompany] = useState<CompanyDraft>(() =>
     initialState === "C1" || initialState.startsWith("A") || initialState.startsWith("B")
       ? { ...EMPTY_COMPANY }
@@ -324,7 +360,8 @@ export function OnboardingScreen({
               <span className="text-label font-semibold">Connected</span>
               <span className="text-caption text-ds-danger">Wrong network</span>
             </span>
-            <CaretDown size={16} className="text-ds-muted" />
+            {/* The caret is dropped on the smallest phones so the pill fits beside the logo. */}
+            <CaretDown size={16} className="text-ds-muted max-[359px]:hidden" />
           </div>
         )}
         {steps.length > 0 && (
@@ -477,6 +514,7 @@ export function OnboardingScreen({
                       className={actionClass}
                       onClick={() => {
                         setRole(null);
+                        setGoogle(false);
                         setState("B1");
                       }}
                     >
@@ -492,8 +530,9 @@ export function OnboardingScreen({
                       icon={<MailGlyph size={17} />}
                       className={cn(actionClass, "h-48")}
                       onClick={() => {
-                        setRole("driver");
-                        setState("D1");
+                        setRole(null);
+                        setGoogle(true);
+                        setState("B1");
                       }}
                     >
                       Continue with Google
@@ -560,25 +599,9 @@ export function OnboardingScreen({
                 "How will you use waybil?",
                 "Pick one. Your account keeps this role, so next time you go straight to your dashboard.",
               )}
-              <fieldset className="grid w-full gap-10 md:gap-14 lg:mx-auto lg:max-w-1000 lg:grid-cols-3 lg:gap-20">
+              <fieldset className="grid w-full gap-10 md:gap-14 lg:mx-auto lg:max-w-680 lg:grid-cols-2 lg:gap-20">
                 <legend className="sr-only">Choose your role</legend>
-                {[
-                  {
-                    value: "shipper" as const,
-                    title: "I ship goods",
-                    note: "Approve trips before the truck leaves and pay at the due date. Your drivers get paid on arrival.",
-                  },
-                  {
-                    value: "driver" as const,
-                    title: "I own a truck",
-                    note: "Confirm pickup, show a QR at the destination, and get paid the moment goods arrive.",
-                  },
-                  {
-                    value: "investor" as const,
-                    title: "I fund deliveries",
-                    note: "Deposit USDC into the pool and earn when shipping companies pay their bills.",
-                  },
-                ].map((item) => (
+                {(google ? GOOGLE_ROLES : WALLET_ROLES).map((item) => (
                   <label
                     key={item.value}
                     className={cn(
@@ -626,7 +649,7 @@ export function OnboardingScreen({
                       onChange={() => {
                         setRole(item.value);
                         setState(
-                          item.value === "shipper" ? "B2" : item.value === "driver" ? "B3" : "B4",
+                          item.value === "shipper" ? "B2" : item.value === "investor" ? "B4" : "B3",
                         );
                       }}
                     />
@@ -649,13 +672,29 @@ export function OnboardingScreen({
                   className={cn(actionClass, "h-52")}
                   disabled={!role}
                   onClick={() =>
-                    setState(role === "shipper" ? "C1" : role === "driver" ? "D1" : "E1")
+                    setState(
+                      role === "shipper"
+                        ? "C1"
+                        : role === "driver"
+                          ? "D1"
+                          : role === "warehouse"
+                            ? "F5"
+                            : "E1",
+                    )
                   }
                 >
-                  {role ? `Continue as ${role}` : "Choose a role"}
+                  {role === "warehouse"
+                    ? "Open the sample invite"
+                    : role
+                      ? `Continue as ${role}`
+                      : "Choose a role"}
                 </Button>
                 <p className="text-center text-[12.5px] leading-[1.45] text-ds-muted">
-                  Receiving goods at a warehouse? Use the invite link you got.
+                  {!google
+                    ? "Do you own a truck or receive goods? Go back and continue with Google."
+                    : role === "warehouse"
+                      ? "Warehouses join from the invite link a shipping company sends. This demo opens a sample invite from Northwind."
+                      : "Receiving goods at a warehouse? You can also open the invite link you got."}
                 </p>
               </div>
             </>
@@ -663,6 +702,8 @@ export function OnboardingScreen({
             documents ? (
               <CompanyDocuments
                 state={state}
+                files={files}
+                setFiles={setFiles}
                 onBack={() => setState("C2")}
                 onSubmit={() => setState("C6")}
               />
@@ -876,7 +917,7 @@ export function OnboardingScreen({
                       {
                         Icon: ArrowLineDown,
                         title: "Your money pays truck owners early",
-                        note: "The pool earns 1.6% of each repaid bill. You receive your share of those earnings.",
+                        note: `The pool earns ${POOL_PERCENT} of each repaid bill. You receive your share of those earnings.`,
                       },
                       {
                         Icon: Hourglass,
@@ -1000,7 +1041,7 @@ export function OnboardingScreen({
                       <>
                         <Row label="Credit limit" value={<Money amount="3000000000" />} />
                         <Row label="Paid on time" value="100% · 9 trips" />
-                        <Row label="Payout" value="You get 97.5% on arrival." />
+                        <Row label="Payout" value={`You get ${DRIVER_PERCENT} on arrival.`} />
                       </>
                     )}
                   </div>
