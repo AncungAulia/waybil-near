@@ -7,7 +7,7 @@ export const ONBOARDING_STATES = {
   A5: "Checking your account",
   B1: "Nothing selected",
   B2: "Shipper selected",
-  B3: "Driver selected",
+  B3: "Google, truck owner selected",
   B4: "Investor selected",
   C1: "Details, empty",
   C2: "Details, ready",

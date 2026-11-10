@@ -26,6 +26,7 @@ import {
   Copy,
   MapPin,
 } from "@phosphor-icons/react";
+import { advanceFor, FEE_BPS, formatUsdc, parseUsdc } from "@waybil/shared";
 import { RoleShell } from "@/components/layout/RoleShell";
 import { Panel } from "@/components/layout/Panel";
 import { ActionSheet } from "@/components/layout/ActionSheet";
@@ -46,6 +47,11 @@ import { DEMO_CODE, DEFAULT_REPORT } from "@/lib/demo-delivery";
 import { cn } from "@/lib/cn";
 import { DRIVER_FIXTURES, type DriverState } from "../data/fixtures";
 
+/* The Westfield trip's bill. What Sam gets comes from the shared fee split. */
+const WESTFIELD_BILL = parseUsdc("210");
+const WESTFIELD_ADVANCE = advanceFor(WESTFIELD_BILL).toString();
+/* The driver's part of each bill, for example "97.5%". */
+const DRIVER_PERCENT = `${Number(FEE_BPS.driver) / 100}%`;
 const MAPS = "https://www.google.com/maps/search/?api=1&query=Harbor+Hub+9+Pier+Street";
 const PAYOUTS = [
   ["1041", "Harbor City", "Nov 12", "292500000", "Northwind"],
@@ -129,13 +135,17 @@ function TripFacts({ westfield = false }: { westfield?: boolean }) {
 function PayoutRows({
   recent = false,
   latest = "292500000",
+  /* #1041 is only listed once Harbor Hub has confirmed it and Sam was paid. */
+  paid1041 = true,
 }: {
   recent?: boolean;
   latest?: string;
+  paid1041?: boolean;
 }) {
+  const rows = PAYOUTS.filter(([id]) => paid1041 || id !== "1041");
   return (
     <div className="flex flex-col gap-20">
-      {(recent ? PAYOUTS.slice(1, 3) : PAYOUTS).map(([id, city, date, amount, company]) => (
+      {(recent ? PAYOUTS.slice(1, 3) : rows).map(([id, city, date, amount, company]) => (
         <div key={id} className="flex flex-wrap items-center gap-12">
           <span className="grid size-40 shrink-0 place-items-center rounded-full bg-ds-success-soft text-ds-success">
             <ArrowLineDown size={18} />
@@ -146,23 +156,13 @@ function PayoutRows({
               #{id} · {company} · {date}
             </p>
           </div>
-          <div className="flex flex-col items-end gap-4">
-            <span className="text-label text-ds-success">
-              +<Money amount={id === "1041" ? latest : amount} />
-            </span>
-            {!recent && (
-              <a
-                className="link focus-ring text-caption"
-                href="https://testnet.nearblocks.io/address/sam.users.waybil.testnet"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                See record ↗
-              </a>
-            )}
-          </div>
+          <span className="text-label text-ds-success">
+            +<Money amount={id === "1041" ? latest : amount} />
+          </span>
         </div>
       ))}
+      {/* Sample payouts have no transactions, so one demo receipt stands in for them. */}
+      {!recent && <DemoRecord title="Demo payout records" className="bg-ds-canvas" />}
     </div>
   );
 }
@@ -190,7 +190,11 @@ export function DriverScreen({
   const report = preview ? DEFAULT_REPORT : savedReport;
   const settlementPaid = !preview && ["settled", "repaid"].includes(delivery) && settlement.active;
   const latest = settlementPaid ? settlement.amount : "292500000";
-  const monthTotal = (604500000n + BigInt(latest)).toString();
+  /* In the gallery #1041 is shown paid. Live, it counts only after the warehouse confirmed it. */
+  const paid1041 = preview || ["paid", "settled", "repaid"].includes(delivery);
+  const latestPaid = paid1041 ? BigInt(latest) : 0n;
+  const monthTotal = (604500000n + latestPaid).toString();
+  const onHold = !preview && delivery === "reported";
   const router = useRouter();
   useEffect(() => {
     if (preview) return;
@@ -250,7 +254,8 @@ export function DriverScreen({
           : westfield
             ? "Eastport to Westfield"
             : "Eastport to Harbor City";
-  const amount = westfield ? "204750000" : shipment.advance;
+  const amount = westfield ? WESTFIELD_ADVANCE : shipment.advance;
+  const bill = westfield ? WESTFIELD_BILL : BigInt(shipment.bill);
   const sheet = ["K2.2", "K2.3", "K2.10", "K2.12"].includes(state);
 
   if (state === "K2.5")
@@ -310,7 +315,13 @@ export function DriverScreen({
           action="Back to trips"
           onAction={trips}
         >
-          <Money amount={amount} className="text-display" />
+          {/* Scales with the screen so "USDC" never runs off a 320 px phone. */}
+          <div className="@container w-full text-center">
+            <Money
+              amount={amount}
+              className="text-[clamp(32px,15.5cqw,56px)] leading-[1.07] font-medium tracking-[-0.03em]"
+            />
+          </div>
         </ResultScreen>
       </div>
     );
@@ -394,11 +405,17 @@ export function DriverScreen({
                     ? "Northwind chose what to pay"
                     : "Harbor Hub confirmed your delivery"}
                 </p>
-                <Money amount={latest} className="text-display" />
+                {/* Scales with the card so the amount and "USDC" always fit, up to the board's 56 px. */}
+                <div className="@container">
+                  <Money
+                    amount={latest}
+                    className="text-[clamp(32px,15.5cqw,56px)] leading-[1.07] font-medium tracking-[-0.03em]"
+                  />
+                </div>
                 <p className="text-label text-ds-ink-2">
                   {!preview && settlement.active
                     ? settlement.reason
-                    : "You received 97.5% of the 300.00 USDC fee for shipment #1041."}
+                    : `You received ${DRIVER_PERCENT} of the ${formatUsdc(BigInt(shipment.bill))} USDC fee for shipment #1041.`}
                 </p>
                 <Button
                   icon={<ArrowRight size={17} />}
@@ -406,6 +423,23 @@ export function DriverScreen({
                   onClick={() => openTrip("K2.8")}
                 >
                   See the payment
+                </Button>
+              </Panel>
+            ) : onHold ? (
+              <Panel title="On hold · #1041" className="bg-ds-danger-soft">
+                <p className="flex items-center gap-8 text-label">
+                  <WarningCircle size={18} className="shrink-0 text-ds-danger" />
+                  Harbor Hub reported a problem
+                </p>
+                <p className="text-body text-ds-ink-2">
+                  You get paid after Northwind chooses what to pay.
+                </p>
+                <Button
+                  icon={<ArrowRight size={17} />}
+                  className="w-full justify-between md:w-fit"
+                  onClick={() => openTrip("K2.9")}
+                >
+                  See the trip
                 </Button>
               </Panel>
             ) : (
@@ -418,7 +452,8 @@ export function DriverScreen({
                 }
                 className="p-18"
               >
-                <DemoMap className="h-300" />
+                {/* Short phones get a shorter map, so the QR button stays above the bottom nav. */}
+                <DemoMap className="h-[clamp(160px,calc(100dvh-400px),300px)] md:h-300" />
                 <div className="flex flex-col gap-12 md:flex-row">
                   <Button icon={<QrCode size={17} />} onClick={() => openTrip("K2.5")}>
                     Show QR at arrival
@@ -440,7 +475,7 @@ export function DriverScreen({
               <div className="flex items-end justify-between gap-12">
                 <div>
                   <p className="text-label text-ds-muted">You get on arrival</p>
-                  <Money amount="204750000" className="text-title" />
+                  <Money amount={WESTFIELD_ADVANCE} className="text-title" />
                 </div>
                 <p className="text-caption text-ds-muted">Pickup today</p>
               </div>
@@ -469,7 +504,7 @@ export function DriverScreen({
               title="Recent payouts"
               action={
                 <Link className="link focus-ring text-caption" href="/driver/payouts">
-                  See all ↗
+                  See all
                 </Link>
               }
             >
@@ -488,14 +523,14 @@ export function DriverScreen({
               context={
                 state === "K3.2"
                   ? "Your first payout shows up here."
-                  : "4 trips, each paid seconds after arrival."
+                  : `${paid1041 ? 4 : 3} trips, each paid seconds after arrival.`
               }
             />
             <Stat
               className="w-full"
               label="In your wallet"
               value={
-                <Money amount={state === "K3.2" ? "0" : (992100000n + BigInt(latest)).toString()} />
+                <Money amount={state === "K3.2" ? "0" : (992100000n + latestPaid).toString()} />
               }
               context="The account you signed up with"
             />
@@ -510,7 +545,7 @@ export function DriverScreen({
                 </p>
               </div>
             ) : (
-              <PayoutRows latest={latest} />
+              <PayoutRows latest={latest} paid1041={paid1041} />
             )}
           </Panel>
         </div>
@@ -605,7 +640,7 @@ export function DriverScreen({
                   <p className="text-label text-ds-muted">You get on arrival</p>
                   <Money amount={amount} className="text-amount" />
                   <p className="text-label text-ds-muted">
-                    You receive 97.5% of the fee, paid the moment Harbor Hub confirms.
+                    You receive {DRIVER_PERCENT} of the fee, paid the moment Harbor Hub confirms.
                   </p>
                   <Button
                     icon={<Package size={17} />}
@@ -624,7 +659,7 @@ export function DriverScreen({
                   <Money amount={amount} className="text-amount" />
                   <p className="text-label text-ds-ink-2">
                     {state === "K2.6"
-                      ? "It is on its way to your account. The 7.50 USDC fee pays for getting paid early."
+                      ? `It is on its way to your account. The ${formatUsdc(bill - BigInt(amount))} USDC fee pays for getting paid early.`
                       : "The network is slow right now. Your money is safe."}
                   </p>
                   <Button
@@ -668,24 +703,15 @@ export function DriverScreen({
                     {preview ? "They paid for the 112 good crates." : settlement.reason} You got{" "}
                     <Money amount={preview ? shipment.advance : settlement.amount} />.
                   </p>
-                  <div className="flex flex-wrap gap-10">
-                    <ButtonLink
-                      className="h-44"
-                      href="https://testnet.nearblocks.io/address/app.waybil.testnet"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      See record
-                    </ButtonLink>
-                    <Button
-                      variant="secondary"
-                      icon={<Image size={17} />}
-                      className="h-44"
-                      onClick={openReport}
-                    >
-                      Read the report
-                    </Button>
-                  </div>
+                  <DemoRecord title="Demo settlement receipt" />
+                  <Button
+                    variant="secondary"
+                    icon={<Image size={17} />}
+                    className="self-start"
+                    onClick={openReport}
+                  >
+                    Read the report
+                  </Button>
                 </>
               ) : (
                 <>
@@ -851,27 +877,34 @@ export function DriverScreen({
           ) : (
             <>
               <p className="text-caption text-ds-muted">Northwind gets a message right away.</p>
-              <div className="flex flex-col gap-8">
+              {/* One reason at a time, so these are radios: arrows move and pick, Tab leaves. */}
+              <fieldset className="flex flex-col gap-8">
+                <legend className="sr-only">What is the problem?</legend>
                 {[
                   { label: "Running late", icon: <ClockCountdown size={18} /> },
                   { label: "Truck broke down", icon: <Wrench size={18} /> },
                   { label: "Accident", icon: <Warning size={18} /> },
                   { label: "Something else", icon: <ChatCircle size={18} /> },
                 ].map((r) => (
-                  <button
+                  <label
                     key={r.label}
                     className={cn(
-                      "press focus-ring flex items-center gap-12 rounded-small p-14 text-left text-body",
+                      "press relative flex cursor-pointer items-center gap-12 rounded-small p-14 text-left text-body has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ds-ink",
                       r.label === reason ? "bg-ds-brand-soft" : "bg-ds-canvas",
                     )}
-                    aria-pressed={r.label === reason}
-                    onClick={() => setReason(r.label)}
                   >
+                    <input
+                      type="radio"
+                      name="problem"
+                      className="sr-only"
+                      checked={r.label === reason}
+                      onChange={() => setReason(r.label)}
+                    />
                     <span className="shrink-0">{r.icon}</span>
                     {r.label}
-                  </button>
+                  </label>
                 ))}
-              </div>
+              </fieldset>
               <label className="text-label">
                 What happened
                 <textarea

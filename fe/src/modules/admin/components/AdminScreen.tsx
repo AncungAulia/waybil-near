@@ -45,6 +45,7 @@ import { Money } from "@/components/elements/Money";
 import { DemoRecord } from "@/components/elements/DemoRecord";
 import { FanMeter } from "@/components/elements/FanMeter";
 import { cn } from "@/lib/cn";
+import { CONTRACT_RECORD_URL } from "@/lib/env";
 import { ADMIN_FIXTURES, type AdminState } from "../data/fixtures";
 import "./admin.css";
 const PEOPLE = [
@@ -52,7 +53,7 @@ const PEOPLE = [
   { name: "Operations", account: "ops.waybil.testnet" },
   { name: "Finance", account: "finance.waybil.testnet" },
 ];
-const ACCOUNT = "https://testnet.nearblocks.io/address/app.waybil.testnet";
+const ACCOUNT = CONTRACT_RECORD_URL;
 type Modal = "vote" | "decision" | "limit" | "pause" | "wallet" | "document" | null;
 export function AdminScreen({
   initialState = "M1.1",
@@ -196,23 +197,21 @@ export function AdminScreen({
                 "text-caption",
                 (i === 1 && state !== "M1.3") || (i === 0 && state === "M1.2")
                   ? "text-ds-success"
-                  : (i === 0 && state === "M1.5") || (i === 2 && state === "M1.6")
+                  : (i === 0 && ["M1.5", "M1.6"].includes(state)) || (i === 2 && state === "M1.6")
                     ? "text-ds-danger"
                     : "text-ds-muted",
               )}
             >
               {i === 0
                 ? state === "M1.2"
-                  ? "Signed"
-                  : state === "M1.5"
+                  ? "Approved"
+                  : ["M1.5", "M1.6"].includes(state)
                     ? "Rejected"
                     : "You"
                 : state === "M1.3"
                   ? "—"
                   : i === 1
-                    ? ["M1.6", "M1.7"].includes(state)
-                      ? "Approved"
-                      : "Signed"
+                    ? "Approved"
                     : state === "M1.6"
                       ? "Rejected"
                       : state === "M1.7"
@@ -226,13 +225,17 @@ export function AdminScreen({
   );
   const recent = (
     <Panel title="Recently approved" className="approval-recent">
+      {/* Sample approvals have no transaction, so the panel says where the links go. */}
+      <p className="text-caption text-ds-muted">
+        These are sample approvals. Each link opens the demo account, not a real transaction.
+      </p>
       <div>
         {[
           ...(state === "M1.3"
             ? ["Northwind · 3,000.00 → 5,000.00 USDC", "Meridian Shipping · 0 → 2,000.00 USDC"]
             : []),
           "Northwind · 0 → 2,500.00 USDC",
-          "Advance rate cap set to 98%",
+          "Advance rate cap set to 97.5%",
         ].map((t, i, rows) => (
           <div
             key={t}
@@ -241,18 +244,19 @@ export function AdminScreen({
             <div className="min-w-0">
               <p className="text-label font-medium">{t}</p>
               <p className="text-caption text-ds-muted">
-                {i === rows.length - 1 ? "3 of 3 approved" : "2 of 3 approved"}
+                {i === rows.length - 1 ? "3 of 3 approved" : "2 of 3 approved"} ·{" "}
+                {i === rows.length - 1 ? "Oct 28" : i === rows.length - 2 ? "Oct 21" : "Today"}
               </p>
+              <a
+                href={ACCOUNT}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={`See the sample record on NearBlocks for ${t}`}
+                className="link focus-ring mt-2 inline-block text-caption"
+              >
+                See the record on NearBlocks ↗
+              </a>
             </div>
-            <a
-              href={ACCOUNT}
-              target="_blank"
-              rel="noreferrer"
-              aria-label={`See the record on NearBlocks for ${t}`}
-              className="link focus-ring shrink-0 text-caption"
-            >
-              {i === rows.length - 1 ? "Oct 28" : i === rows.length - 2 ? "Oct 21" : "Today"} ↗
-            </a>
           </div>
         ))}
       </div>
@@ -375,7 +379,7 @@ export function AdminScreen({
                   ? meridianVote === "approved"
                     ? "1 of 2 approved"
                     : "1 rejected"
-                  : "0 of 2 signed"
+                  : "0 of 2 approved"
                 : state === "M1.2"
                   ? "2 of 2 approved"
                   : state === "M1.5"
@@ -672,7 +676,7 @@ export function AdminScreen({
                       setModal("document");
                     }}
                   >
-                    Open ↗
+                    Open
                   </button>
                 </div>
               ),
@@ -939,7 +943,7 @@ export function AdminScreen({
               href="/admin"
               className="link focus-ring w-fit text-[13px] leading-16 font-semibold"
             >
-              See it in Approvals ↗
+              See it in Approvals
             </Link>
           </Panel>
           <Panel title="Contact">
@@ -1035,7 +1039,6 @@ export function AdminScreen({
             </p>
             <Money
               amount={item.value}
-              hideZeroDecimals
               className={cn(
                 "relative text-[24px] leading-29 font-semibold md:text-[30px] md:leading-37 [&>span]:font-semibold",
                 i === 2 && (state === "M3.3" ? "text-ds-danger" : "text-ds-success"),
@@ -1122,11 +1125,7 @@ export function AdminScreen({
                     <p className="mt-2 text-[13px] leading-16 text-ds-muted">Since {item.date}</p>
                   </div>
                   <div className="shrink-0 text-right">
-                    <Money
-                      amount={item.amount}
-                      hideZeroDecimals
-                      className="text-[15px] leading-18"
-                    />
+                    <Money amount={item.amount} className="text-[15px] leading-18" />
                     <p className="mt-2 text-[13px] leading-16 text-ds-muted">{item.pct}</p>
                   </div>
                 </div>
@@ -1159,7 +1158,6 @@ export function AdminScreen({
                           target="_blank"
                           rel="noreferrer"
                           className="link focus-ring"
-                          title="See the record on NearBlocks ↗"
                         >
                           See the record on NearBlocks ↗
                         </a>
@@ -1167,7 +1165,7 @@ export function AdminScreen({
                     </div>
                     <span className="flex shrink-0 text-[15px] leading-18 font-medium">
                       {BigInt(item.amount) > 0n ? "+" : ""}
-                      <Money amount={item.amount} hideZeroDecimals />
+                      <Money amount={item.amount} />
                     </span>
                   </div>
                 ))}
@@ -1294,7 +1292,7 @@ export function AdminScreen({
                         href="/admin/shippers/blue-ridge.testnet"
                         className="focus-ring mt-4 inline-block text-[13px] leading-16 font-semibold hover:underline"
                       >
-                        See Blue Ridge Logistics ↗
+                        See Blue Ridge Logistics
                       </Link>
                     </div>
                   </div>
@@ -1320,18 +1318,17 @@ export function AdminScreen({
               application
             ) : (
               <>
-                {/* Tabs, so they are plain pills with no circle (design/waybil.pen, M2). */}
+                {/* Plain pills with no circle (design/waybil.pen, M2), built as toggle buttons like Segmented. */}
                 <div
                   className="admin-tabs flex gap-4 rounded-full bg-ds-line p-4 lg:hidden"
-                  role="tablist"
+                  role="group"
                   aria-label="Shippers"
                 >
                   {["Waiting", "Active"].map((t) => (
                     <button
                       key={t}
                       type="button"
-                      role="tab"
-                      aria-selected={tab === t}
+                      aria-pressed={tab === t}
                       onClick={() => setTab(t)}
                       className={cn(
                         "press focus-ring flex flex-1 items-center justify-center gap-8 rounded-full px-14 py-10 text-[14px] leading-19 font-medium",

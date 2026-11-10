@@ -175,27 +175,33 @@ export function CompanySetup({
     </>
   );
 }
-type FileInfo = { name: string; size: number };
+export type FileInfo = { name: string; size: number };
+export type CompanyFiles = Partial<Record<string, FileInfo>>;
+/* The papers each gallery state starts with. The screen keeps them when you go back. */
+export function initialCompanyFiles(state: OnboardingState): CompanyFiles {
+  return state === "C5.2" || state === "C6" || state === "C7" || state === "C8" || state === "C9"
+    ? {
+        registration: { name: "registration.pdf", size: 1258291 },
+        bank: { name: "bank-statement.pdf", size: 1468006 },
+      }
+    : state === "C5.3"
+      ? { registration: { name: "registration.pdf", size: 1258291 } }
+      : {};
+}
 export function CompanyDocuments({
   state,
+  files,
+  setFiles,
   onSubmit,
   onBack,
 }: {
   state: OnboardingState;
+  /* Held by OnboardingScreen, so "Back to details" and "Edit details" keep the uploads. */
+  files: CompanyFiles;
+  setFiles: React.Dispatch<React.SetStateAction<CompanyFiles>>;
   onSubmit: () => void;
   onBack: () => void;
 }) {
-  const ready = state === "C5.2" || state === "C6";
-  const [files, setFiles] = useState<Partial<Record<string, FileInfo>>>(() =>
-    ready
-      ? {
-          registration: { name: "registration.pdf", size: 1258291 },
-          bank: { name: "bank-statement.pdf", size: 1468006 },
-        }
-      : state === "C5.3"
-        ? { registration: { name: "registration.pdf", size: 1258291 } }
-        : {},
-  );
   const [errors, setErrors] = useState<Record<string, string | undefined>>(() =>
     state === "C5.3"
       ? { bank: "This file is 3.4 MB. Use a file up to 2 MB, or take a smaller photo." }

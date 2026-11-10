@@ -27,7 +27,7 @@ export function DeliveryCodeInput({
         autoComplete="off"
         autoCapitalize="characters"
         spellCheck={false}
-        maxLength={8}
+        /* No maxLength. A pasted "7K2Q 9F4M" has 9 characters, and onChange trims it to 8. */
         value={value}
         aria-invalid={invalid}
         onSelect={(event) => setCursor(event.currentTarget.selectionStart ?? value.length)}
