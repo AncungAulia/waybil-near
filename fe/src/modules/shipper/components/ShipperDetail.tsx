@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import {
   billForDriverAmount,
   driverAmountForGoodUnits,
@@ -16,11 +16,11 @@ import { DemoMap } from "@/components/elements/DemoMap";
 import { DemoRecord } from "@/components/elements/DemoRecord";
 import { TimelineStep } from "@/components/elements/TimelineStep";
 import { KeyValue } from "@/components/elements/KeyValue";
-import { ResultScreen } from "@/components/elements/ResultScreen";
+import { ShipperPayment } from "./ShipperPayment";
 import { StatusPill } from "@/components/elements/StatusPill";
 import {
-  Package,
   Check,
+  Pause,
   ArrowRight,
   ArrowUUpLeft,
   Info,
@@ -32,10 +32,9 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { useDemoReport, useDemoSettlement } from "@/hooks/useDemoDelivery";
-import { DEFAULT_REPORT, repayDemoBill, settleDemoReport } from "@/lib/demo-delivery";
+import { DEFAULT_REPORT, settleDemoReport } from "@/lib/demo-delivery";
 import { cn } from "@/lib/cn";
 import type { DemoShipmentRow, ShipperState } from "../data/fixtures";
-
 export function ShipperDetail({
   state,
   shipment,
@@ -64,10 +63,7 @@ export function ShipperDetail({
     "Agreed with Sam on the phone. The wet crates can still be sold at a lower price.",
   );
   const [error, setError] = useState("");
-  const [funded, setFunded] = useState(false);
   const [back, setBack] = useState<ShipperState>("P3.6");
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  useEffect(() => () => clearTimeout(timer.current), []);
   const approved = ["P3.1", "P3.11"].includes(state),
     road = ["P3.2", "P3.3"].includes(state),
     repaid = state === "P3.5";
@@ -113,527 +109,557 @@ export function ShipperDetail({
       setError("Your choice was not saved. Please try again.");
     }
   };
-  const pay = () => {
-    setError("");
-    if (!preview && shipment.id === 1041 && !repayDemoBill()) {
-      setError("This bill is not ready to be paid. Open the trip again.");
-      return;
-    }
-    go("P4.2");
-    timer.current = setTimeout(() => go("P4.4"), 600);
-  };
-  const inPay = state.startsWith("P4");
-  if (state === "P4.4")
+  if (state.startsWith("P4")) {
     return (
-      <>
-        <div className="mb-24">
-          <h1 className="text-title md:text-amount">Eastport to {city}</h1>
-          <p className="mt-4 text-label text-ds-muted">Shipment #{shipment.id}</p>
-        </div>
-        <ResultScreen
-          title="Bill paid"
-          description={`You paid ${formatUsdc(BigInt(bill))} USDC one day early. Your on-time record went up.`}
-          recorded="Payment sent"
-          action="Done"
-          onAction={() => go("P3.5")}
-        >
-          <Panel className="text-left">
-            <KeyValue label="Credit limit left" value="900 of 3,000 USDC" />
-            <KeyValue label="Paid on time" value="100% · 10 of 10 bills" />
-          </Panel>
-        </ResultScreen>
-      </>
+      <ShipperPayment
+        state={state}
+        bill={bill}
+        shipmentId={shipment.id}
+        city={city}
+        preview={preview}
+        go={go}
+      />
     );
-
+  }
   return (
     <>
-      <div className="mb-24 flex flex-wrap items-end justify-between gap-12">
+      <div className="mb-24 flex flex-col items-start justify-between gap-12 md:flex-row md:items-end">
         <div>
-          <h1 className="text-title md:text-amount">Eastport to {city}</h1>
-          <p className="mt-4 text-label text-ds-muted">Shipment #{shipment.id}</p>
+          <h1 className="text-[30px] leading-[32px] tracking-[-0.03em] md:text-[40px] md:leading-[42px]">
+            Eastport to {city}
+          </h1>
+          <p className="mt-6 text-label text-ds-muted">Shipment #{shipment.id}</p>
         </div>
-        {!inPay && (
-          <StatusPill
-            status={
-              approved
-                ? "approved"
-                : road
-                  ? "inTransit"
-                  : held
-                    ? "disputed"
-                    : repaid
-                      ? "repaid"
-                      : "paidEarly"
-            }
-            label={held ? "Problem reported" : settled ? "Settled" : undefined}
-          />
-        )}
-      </div>
-      {inPay ? (
-        <Panel
-          className="mx-auto w-full max-w-480 gap-20 p-24 md:p-32"
-          title="Pay this bill"
-          action={
-            <button aria-label="Close" className="focus-ring p-4" onClick={() => go("P3.4")}>
-              <X size={18} />
-            </button>
+        <StatusPill
+          className="bg-ds-bg px-12"
+          status={
+            approved
+              ? "approved"
+              : road
+                ? "inTransit"
+                : held
+                  ? "disputed"
+                  : repaid
+                    ? "repaid"
+                    : "paidEarly"
           }
-        >
-          <p className="text-label text-ds-muted">Shipment #{shipment.id} · due Dec 11</p>
-          <Money amount={bill} className="text-[36px] font-medium tracking-[-0.035em]" />
-          <p className="text-caption text-ds-success">Paying 1 day early</p>
-          <div className="flex items-center gap-12 rounded-row bg-ds-canvas p-16">
-            <Wallet size={20} className="shrink-0 text-ds-muted" />
-            <span>
-              <span className="block text-[14px] font-medium">From your wallet</span>
-              <span className="mt-4 block text-caption text-ds-muted">
-                {`${formatUsdc(BigInt(state === "P4.3" && !funded ? "120000000" : "1250000000"))} USDC available`}
-              </span>
-            </span>
+          label={held ? "Problem reported" : settled ? "Settled" : undefined}
+        />
+      </div>
+      {held && (
+        <Panel className="mb-24 gap-12 rounded-[22px] bg-ds-danger-result px-20 py-18">
+          <h2 className="flex items-center gap-10 text-body font-medium">
+            <WarningCircle size={20} className="shrink-0 text-ds-danger" />
+            Harbor Hub reported a problem
+          </h2>
+          <p className="text-[14px] leading-[1.45] text-ds-ink-2">
+            &ldquo;
+            {preview && state !== "P3.7" ? "8 crates arrived wet, 4 torn open." : report.note}
+            &rdquo;{" "}
+            {state === "P3.7"
+              ? "Sam can't be paid early until this is settled."
+              : "Sam gets paid after you choose what to pay."}
+          </p>
+          <div className="flex flex-wrap gap-10 self-start [&_button]:h-44 [&_button]:gap-32">
+            {state === "P3.7" ? (
+              <Button variant="secondary" icon={<ImageIcon size={17} />} onClick={openReport}>
+                Read the report
+              </Button>
+            ) : (
+              <>
+                <Button icon={<ArrowRight size={17} />} onClick={() => go("P3.8")}>
+                  Choose what to pay
+                </Button>
+                <Button variant="secondary" icon={<FileText size={17} />} onClick={openReport}>
+                  Read report
+                </Button>
+              </>
+            )}
           </div>
-          {state === "P4.2" && (
-            <div className="flex flex-col gap-12">
-              <TimelineStep
-                className="w-full"
-                state="done"
-                title="Allow the payment"
-                time="Done in your wallet"
-              />
-              <TimelineStep
-                className="w-full"
-                state="waiting"
-                title={`Send ${formatUsdc(BigInt(bill))} USDC`}
-                time="Approve it in your wallet"
-              />
-            </div>
-          )}
-          {state === "P4.3" && !funded && (
-            <p className="flex items-start gap-10 text-[13.5px] text-ds-danger">
-              <WarningCircle size={18} className="mt-1 shrink-0" />
-              <span>You need 180.00 USDC more. Add USDC to your wallet, then try again.</span>
-            </p>
-          )}
-          <Button
-            className="w-full justify-between"
-            disabled={state === "P4.3" && !funded}
-            loading={state === "P4.2"}
-            loadingLabel="Waiting for wallet"
-            onClick={pay}
-          >
-            Pay {formatUsdc(BigInt(bill))} USDC
-          </Button>
-          {state === "P4.3" && !funded ? (
-            <Button variant="quiet" onClick={() => setFunded(true)}>
-              Get test USDC
-            </Button>
-          ) : (
-            <p className="text-caption text-ds-muted">
-              {state === "P4.2"
-                ? "Two quick approvals. The first one only happens once."
-                : "Investors get paid back, and your limit frees up right away."}
-            </p>
-          )}
-          {error && (
-            <p role="alert" className="text-label text-ds-danger">
-              {error}
-            </p>
-          )}
         </Panel>
-      ) : (
-        <>
-          <div className="grid items-start gap-16 lg:grid-cols-[minmax(0,1fr)_400px]">
-            <div className="flex min-w-0 flex-col gap-16">
-              {held && (
-                <Panel className="bg-ds-danger-soft">
-                  <h2 className="flex items-center gap-10 text-body font-medium">
-                    <WarningCircle size={20} className="shrink-0 text-ds-danger" />
-                    Harbor Hub reported a problem
-                  </h2>
-                  <p className="text-body text-ds-ink-2">
-                    &ldquo;{report.note}&rdquo;{" "}
-                    {state === "P3.7"
-                      ? "Sam can't be paid early until this is settled."
-                      : "Sam gets paid after you choose what to pay."}
-                  </p>
-                  <div className="flex flex-wrap gap-12 self-start">
-                    {state === "P3.7" ? (
-                      <Button
-                        variant="secondary"
-                        icon={<ImageIcon size={17} />}
-                        onClick={openReport}
-                      >
-                        Read the report
-                      </Button>
-                    ) : (
-                      <>
-                        <Button icon={<ArrowRight size={17} />} onClick={() => go("P3.8")}>
-                          Choose what to pay
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          icon={<FileText size={17} />}
-                          onClick={openReport}
-                        >
-                          Read report
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </Panel>
-              )}
-              {settled && (
-                <Panel className="bg-ds-success-soft">
-                  <h2 className="flex items-center gap-10 text-body font-medium">
-                    <WarningCircle size={20} className="shrink-0 text-ds-success" />
-                    You chose what to pay
-                  </h2>
-                  <p className="text-body text-ds-ink-2">
-                    {`${preview ? `You paid for the ${report.goodQty} good crates.` : settlement.reason} Sam got ${formatUsdc(BigInt(preview ? "273000000" : settlement.amount))} USDC and your bill is now ${formatUsdc(BigInt(bill))} USDC.`}
-                  </p>
-                  <Button
-                    variant="secondary"
-                    icon={<ImageIcon size={17} />}
-                    className="self-start"
-                    onClick={openReport}
-                  >
-                    Read the report
-                  </Button>
-                </Panel>
-              )}
-              <DemoMap
-                controls
-                phase={approved ? "pickup" : road ? "road" : "arrived"}
-                className="h-340 md:h-460 lg:h-560"
-                label={
-                  approved
-                    ? "Waiting for pickup"
-                    : state === "P3.3"
-                      ? "Driver's location is paused"
-                      : road
-                        ? "Live · updated 30 s ago"
-                        : "Trip finished"
+      )}
+      {settled && (
+        <Panel className="mb-24 gap-12 rounded-[22px] bg-ds-check-soft px-20 py-18">
+          <h2 className="flex items-center gap-10 text-body font-medium">
+            <Check size={20} className="shrink-0 text-ds-success" />
+            You chose what to pay
+          </h2>
+          <p className="text-[14px] leading-[1.45] text-ds-ink-2">
+            {`${preview ? `You paid for the ${report.goodQty} good crates.` : settlement.reason} Sam got ${formatUsdc(BigInt(preview ? "273000000" : settlement.amount))} USDC and your bill is now ${formatUsdc(BigInt(bill))} USDC.`}
+          </p>
+          <Button
+            variant="secondary"
+            icon={
+              <svg
+                width="17"
+                height="17"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <circle cx="9" cy="9" r="2" />
+                <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
+              </svg>
+            }
+            className="h-44 gap-32 self-start"
+            onClick={openReport}
+          >
+            Read the report
+          </Button>
+        </Panel>
+      )}
+      <div className="grid items-start gap-16 xl:grid-cols-[minmax(0,1fr)_400px]">
+        <div className="flex min-w-0 flex-col gap-16">
+          <DemoMap
+            controls
+            paused={state === "P3.3"}
+            truckLabel={
+              state === "P3.2" ? { shipmentId: shipment.id, distance: "42 km to go" } : undefined
+            }
+            phase={approved ? "pickup" : road ? "road" : "arrived"}
+            className="h-340 md:h-420 xl:h-560"
+            appearance="shipment"
+            label={
+              approved
+                ? "Waiting for pickup"
+                : state === "P3.3"
+                  ? "Driver's location is paused"
+                  : road
+                    ? "Live · updated 30 s ago"
+                    : "Trip finished"
+            }
+          />
+          {state === "P3.3" && (
+            <p className="flex items-start gap-10 rounded-[16px] bg-ds-canvas px-16 py-14 text-[13.5px] leading-[1.45] text-ds-ink">
+              <Info size={18} className="mt-1 shrink-0" />
+              <span>
+                Sam&apos;s phone stopped sharing location. The trip is still on.
+                <span className="hidden xl:inline">
+                  {" "}
+                  You&apos;ll see the next update when the app opens again.
+                </span>
+              </span>
+            </p>
+          )}
+          {recorded && <DemoRecord title={recorded} />}
+        </div>
+        <div className="grid min-w-0 items-start gap-16 md:grid-cols-2 xl:flex xl:flex-col">
+          <div className="flex w-full min-w-0 flex-col gap-16">
+            {!approved && !road && (
+              /* Only an open bill uses the dark card. */
+              <Panel
+                gap={12}
+                className={
+                  held ? "bg-ds-danger-result" : repaid || settled ? "" : "bill-card bg-ds-ink"
                 }
-              />
-              {state === "P3.3" && (
-                <p className="flex items-start gap-12 rounded-row bg-ds-bg p-16 text-[13.5px] text-ds-muted">
-                  <Info size={18} className="mt-1 shrink-0" />
-                  <span>
-                    Sam&apos;s phone stopped sharing location. The trip is still on. You&apos;ll see
-                    the next update when the app opens again.
-                  </span>
-                </p>
-              )}
-              {!approved && !road && (
-                /* An open bill is the ink card with the brand glow, a held one the soft red card. */
-                <Panel className={held ? "bg-ds-danger-soft" : repaid ? "" : "bill-card bg-ds-ink"}>
-                  <p
-                    className={cn(
-                      "text-label",
-                      held ? "text-ds-danger" : repaid ? "text-ds-muted" : "text-ds-brand",
-                    )}
-                  >
-                    {held ? "Bill on hold" : repaid ? "Repaid on Dec 10" : "Your bill"}
-                  </p>
-                  <Money
-                    amount={bill}
-                    className={cn(
-                      "text-[34px] font-medium tracking-[-0.03em]",
-                      !held && !repaid && "text-ds-bg",
-                    )}
-                  />
-                  <p
-                    className={cn(
-                      "text-label",
-                      !held && !repaid ? "text-ds-on-night" : "text-ds-ink-2",
-                    )}
-                  >
-                    {held
-                      ? "Nothing is due while the problem is open."
-                      : repaid
-                        ? "One day early. Your on-time record went up."
-                        : settled
-                          ? `Due Dec 11. It covers the ${report.goodQty} good crates.`
-                          : "Due Dec 11, 2026 · in 29 days"}
-                  </p>
-                  {repaid ? (
-                    <DemoRecord title="Bill paid" />
-                  ) : (
-                    !held &&
-                    !settled && (
-                      <Button
-                        variant="moment"
-                        className="w-full justify-between md:w-fit"
-                        onClick={() => go("P4.1")}
-                      >
-                        Pay early
-                      </Button>
-                    )
+              >
+                <p
+                  className={cn(
+                    "text-label",
+                    held
+                      ? "text-ds-danger"
+                      : repaid || settled
+                        ? settled
+                          ? "text-ds-check-ink"
+                          : "text-ds-success"
+                        : "text-ds-brand",
                   )}
-                </Panel>
-              )}
-              {recorded && <DemoRecord title={recorded} />}
-            </div>
-            <div className="flex min-w-0 flex-col gap-16">
-              <Panel title="Progress">
-                {[
-                  "Approved by you",
-                  "Picked up by Sam",
-                  "Arrived at Harbor Hub",
-                  settled
-                    ? `Sam got ${formatUsdc(BigInt(preview ? "273000000" : settlement.amount))} USDC`
-                    : "Sam paid early",
-                  "You repaid",
-                ].map((title, i) => {
-                  const completed = repaid ? 5 : approved ? 1 : road ? 2 : held ? 3 : 4;
-                  const step =
-                    i < completed
+                >
+                  {held ? "Bill on hold" : repaid ? "Repaid on Dec 10" : "Your bill"}
+                </p>
+                <Money
+                  amount={bill}
+                  className={cn(
+                    "text-[34px] leading-[1.2] font-medium tracking-[-0.03em]",
+                    !held && !repaid && !settled && "text-ds-bg",
+                  )}
+                />
+                <p
+                  className={cn(
+                    "text-[13.5px] leading-[1.45] font-normal",
+                    !held && !repaid && !settled ? "text-ds-on-night" : "text-ds-ink-2",
+                  )}
+                >
+                  {held
+                    ? "Nothing is due while the problem is open."
+                    : repaid
+                      ? "One day early. Your on-time record went up."
+                      : settled
+                        ? `Due Dec 11. It covers the ${report.goodQty} good crates.`
+                        : "Due Dec 11, 2026 · in 29 days"}
+                </p>
+                {repaid ? (
+                  <DemoRecord
+                    title="Bill paid"
+                    className="bg-ds-canvas rounded-[18px] px-16 py-12 [&>span:first-child]:size-32 [&>span:first-child>svg]:size-16 [&>span:nth-child(2)>span:first-child]:font-semibold"
+                  />
+                ) : (
+                  !held &&
+                  !settled && (
+                    <Button
+                      variant="moment"
+                      className="h-52 w-full justify-between"
+                      onClick={() => go("P4.1")}
+                    >
+                      Pay early
+                    </Button>
+                  )
+                )}
+              </Panel>
+            )}
+            <Panel title="Progress" gap={4} titleClassName="text-[18px] leading-[1.2]">
+              {[
+                "Approved by you",
+                "Picked up by Sam",
+                "Arrived at Harbor Hub",
+                settled
+                  ? `Sam got ${formatUsdc(BigInt(preview ? "273000000" : settlement.amount))} USDC`
+                  : "Sam paid early",
+                "You repaid",
+              ].map((title, i) => {
+                const completed = repaid ? 5 : approved ? 1 : road ? 2 : held ? 3 : 4;
+                const step =
+                  settled && i === 4
+                    ? "next"
+                    : i < completed
                       ? "done"
                       : i === completed
                         ? held
                           ? "failed"
                           : "current"
                         : "next";
-                  const times = [
-                    "Nov 12 · 08:02",
-                    approved ? "Waiting for pickup" : "Nov 12 · 09:14",
-                    road ? "About 1 h 20 min to go" : "Nov 12 · 15:36",
-                    held
-                      ? "On hold"
-                      : settled
-                        ? "Nov 13 · 10:20"
-                        : `Nov 12 · 15:37 · ${formatUsdc(BigInt(shipment.advance))} USDC`,
-                    repaid ? `Dec 10 · ${formatUsdc(BigInt(bill))} USDC` : "Due Dec 11",
-                  ];
-                  return (
-                    <div
-                      key={title}
-                      /* The board joins the dots with a 2 px line, ink once the step is done. */
-                      className={cn(
-                        "relative pb-20 after:absolute after:top-30 after:-bottom-6 after:left-11 after:w-2 after:rounded-full last:pb-0 last:after:hidden",
-                        step === "done" ? "after:bg-ds-ink" : "after:bg-ds-line-strong",
-                      )}
-                    >
+                const times = [
+                  "Nov 12 · 08:02",
+                  approved ? "Waiting for pickup" : "Nov 12 · 09:14",
+                  road ? "About 1 h 20 min to go" : "Nov 12 · 15:36",
+                  held
+                    ? "On hold"
+                    : settled
+                      ? "Nov 13 · 10:20"
+                      : `Nov 12 · 15:37 · ${formatUsdc(BigInt(shipment.advance))} USDC`,
+                  repaid ? `Dec 10 · ${formatUsdc(BigInt(bill))} USDC` : "Due Dec 11",
+                ];
+                return (
+                  <div
+                    key={title}
+                    /* The board joins the dots with a 2 px line, ink once the step is done. */
+                    className={cn(
+                      "relative py-10 after:absolute after:top-38 after:left-11 after:w-2 after:rounded-[1px]",
+                      i === 4 ? "after:hidden" : i <= completed ? "after:h-27" : "after:h-16",
+                      step === "done" && !(settled && i === 3)
+                        ? "after:bg-ds-ink"
+                        : "after:bg-ds-line-strong",
+                    )}
+                  >
+                    {settled && i === 3 ? (
+                      <div className="flex items-start gap-14">
+                        <span className="grid size-24 shrink-0 place-items-center rounded-full bg-ds-check-soft text-ds-check-ink">
+                          <Pause size={12} weight="bold" />
+                        </span>
+                        <span className="flex min-w-0 flex-col gap-2">
+                          <span className="text-[14.5px] leading-[1.2] font-medium">{title}</span>
+                          <span className="text-[12.5px] leading-[1.2] text-ds-check-ink">
+                            {times[i]}
+                          </span>
+                        </span>
+                      </div>
+                    ) : (
                       <TimelineStep
-                        className="w-full"
+                        className={cn(
+                          "w-full items-start [&>span:last-child>span]:leading-[1.2] [&>span:last-child>span:empty]:hidden",
+                          step === "next" && "[&>span:last-child>span:first-child]:font-normal",
+                          step === "failed" &&
+                            "[&>span:first-child]:bg-ds-danger-result [&>span:last-child>span:last-child]:text-ds-danger",
+                        )}
                         state={step}
                         title={title}
                         time={i <= completed && !(settled && i === 4) ? (times[i] ?? "") : ""}
                       />
-                    </div>
-                  );
-                })}
-                {approved && state !== "P3.11" && (
-                  <Button
-                    variant="danger"
-                    icon={<X size={17} />}
-                    className="self-start"
-                    onClick={() => go("P3.11")}
-                  >
-                    Cancel shipment
-                  </Button>
-                )}
-              </Panel>
-              <Panel title="Trip">
-                <div>
-                  <KeyValue
-                    label="Driver"
-                    value={`${driver} · ${driver === "Jordan Lee" ? "JLE-118" : "NWF-204"}`}
-                  />
-                  <KeyValue label="Cargo" value={trip?.cargo ?? "120 crates of coffee"} />
-                  <KeyValue label="From" value="Main warehouse, Eastport" />
-                  <KeyValue label="To" value={city === "Harbor City" ? "Harbor Hub" : city} />
-                  <KeyValue
-                    label="Shipping fee"
-                    value={<Money amount={trip?.shipment.bill ?? "300000000"} />}
-                  />
-                </div>
-                <ButtonLink
-                  variant="secondary"
-                  icon={<ChatCircle size={17} />}
-                  className="justify-between"
-                  href="https://wa.me/?text=Hello%20Sam%2C%20about%20our%20Waybil%20shipment."
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Chat with Sam
-                </ButtonLink>
-              </Panel>
-            </div>
-          </div>
-          {state === "P3.7" && (
-            <ActionSheet title="Problem report" wide onClose={() => go(back)}>
-              <p className="text-caption text-ds-muted">From Lena at Harbor Hub · Nov 12, 15:31</p>
-              <div className="grid grid-cols-3 gap-8">
-                {report.photos.length
-                  ? report.photos.map((p, i) => (
-                      <img
-                        key={p.name + i}
-                        src={p.src}
-                        alt={p.name}
-                        className="h-120 w-full rounded-small object-cover"
-                      />
-                    ))
-                  : [1, 2, 3].map((i) => (
-                      <span
-                        key={i}
-                        className="grid h-120 place-items-center rounded-small bg-ds-canvas"
-                      >
-                        <Package size={28} className="text-ds-muted" />
-                      </span>
-                    ))}
-              </div>
-              <div className="grid grid-cols-3 gap-8">
-                {[
-                  ["Expected", 120],
-                  ["In good shape", report.goodQty],
-                  ["Damaged", 120 - report.goodQty],
-                ].map(([label, count]) => (
-                  <div key={label} className="rounded-small bg-ds-canvas p-12">
-                    <p className="text-caption text-ds-muted">{label}</p>
-                    <p className={cn("mt-4 text-[16px]", label === "Damaged" && "text-ds-danger")}>
-                      {count} boxes
-                    </p>
+                    )}
                   </div>
+                );
+              })}
+              {approved && state !== "P3.11" && (
+                <button
+                  type="button"
+                  className="focus-ring flex items-center gap-6 self-start pt-6 text-[13px] font-semibold text-ds-danger"
+                  onClick={() => go("P3.11")}
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    aria-hidden="true"
+                  >
+                    <path d="m18 6-12 12M6 6l12 12" />
+                  </svg>
+                  Cancel shipment
+                </button>
+              )}
+            </Panel>
+          </div>
+          <Panel title="Trip" titleClassName="text-[18px] leading-[1.2]" className="gap-6">
+            <div className="divide-y divide-ds-line [&>div>span]:leading-[1.2]">
+              <KeyValue
+                label="Driver"
+                value={`${driver} · ${driver === "Jordan Lee" ? "JLE-118" : "NWF-204"}`}
+              />
+              <KeyValue label="Cargo" value={trip?.cargo ?? "120 crates of coffee"} />
+              <KeyValue label="From" value="Main warehouse, Eastport" />
+              <KeyValue label="To" value={city === "Harbor City" ? "Harbor Hub" : city} />
+              <KeyValue
+                label="Shipping fee"
+                value={<Money amount={trip?.shipment.bill ?? "300000000"} />}
+              />
+            </div>
+            <ButtonLink
+              variant="secondary"
+              icon={<ChatCircle size={17} />}
+              className="mt-10 h-52 justify-between"
+              href={`https://wa.me/?text=${encodeURIComponent(`Hello ${driver}, about our Waybil shipment.`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Chat with {driver}
+            </ButtonLink>
+          </Panel>
+        </div>
+      </div>
+      {state === "P3.7" && (
+        <ActionSheet
+          title="Problem report"
+          subtitle="From Lena at Harbor Hub · Nov 12, 15:31"
+          appearance="shipment"
+          wide
+          className="gap-18 [&_h2]:text-[22px]"
+          onClose={() => go(back)}
+        >
+          <div className="grid grid-cols-3 gap-8">
+            {report.photos.length
+              ? report.photos.map((p, i) => (
+                  <img
+                    key={p.name + i}
+                    src={p.src}
+                    alt={p.name}
+                    className="h-120 w-full rounded-small object-cover"
+                  />
+                ))
+              : [1, 2, 3].map((i) => (
+                  <span
+                    key={i}
+                    className="grid h-120 place-items-center rounded-[16px] bg-ds-canvas"
+                  >
+                    <ImageIcon size={24} className="text-ds-muted" />
+                  </span>
                 ))}
-              </div>
-              <p className="text-caption text-ds-muted">Lena&apos;s note</p>
-              <p className="text-body">&ldquo;{report.note}&rdquo;</p>
-              <DemoRecord title="Report recorded on NEAR" />
-              <div className="flex justify-end gap-12">
-                <Button variant="quiet" onClick={() => go(back)}>
-                  Close
-                </Button>
-                {back !== "P3.9" && (
-                  <Button icon={<ArrowRight size={17} />} onClick={() => go("P3.8")}>
-                    Choose what to pay
-                  </Button>
-                )}
-              </div>
-            </ActionSheet>
-          )}
-          {(state === "P3.8" || state === "P3.10") && (
-            <ActionSheet title="How much should Sam get?" wide onClose={() => go("P3.6")}>
-              <p className="text-label text-ds-muted">
-                {state === "P3.10"
-                  ? "Agree on the amount with Sam first."
-                  : `Harbor Hub counted ${report.goodQty} good crates out of 120.`}
-              </p>
-              {[
-                {
-                  id: "arrived",
-                  title: "Pay for what arrived",
-                  body: `Sam gets ${formatUsdc(arrivedAmount)} USDC for ${report.goodQty} of 120 crates. Your bill becomes ${formatUsdc(billForDriverAmount(arrivedAmount))} USDC.`,
-                },
-                {
-                  id: "full",
-                  title: "Pay in full",
-                  body: `Sam gets ${formatUsdc(BigInt(shipment.advance))} USDC. Your bill stays ${formatUsdc(BigInt(shipment.bill))} USDC.`,
-                },
-                {
-                  id: "different",
-                  title: "Pay a different amount",
-                  body: "Agree on it with Sam first and add a short reason.",
-                },
-              ].map((o) => (
-                <label
-                  key={o.id}
+          </div>
+          <div className="grid grid-cols-3 gap-8">
+            {[
+              ["Expected", shipment.qty],
+              ["In good shape", report.goodQty],
+              ["Damaged", shipment.qty - report.goodQty],
+            ].map(([label, count]) => (
+              <div key={label} className="rounded-[14px] bg-ds-canvas px-14 py-12">
+                <p className="text-caption text-ds-muted">{label}</p>
+                <p
                   className={cn(
-                    "flex cursor-pointer items-start gap-12 rounded-row border p-16",
-                    choice === o.id
-                      ? "border-ds-ink bg-ds-brand-soft"
-                      : "border-transparent bg-ds-canvas",
+                    "mt-2 text-[16px] font-semibold",
+                    label === "Damaged" && "text-ds-danger",
                   )}
                 >
+                  {count} {shipment.unit}
+                </p>
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-col gap-6">
+            <p className="text-[13px] text-ds-muted">Lena&apos;s note</p>
+            <p className="text-body">&ldquo;{report.note}&rdquo;</p>
+          </div>
+          <DemoRecord
+            title="Report recorded"
+            className="rounded-[18px] px-16 py-12 [&>span:first-child]:size-32 [&>span:first-child>svg]:size-16 [&>span:nth-child(2)>span:first-child]:font-semibold"
+          />
+          <div className="flex flex-wrap justify-end gap-10 [&_button]:text-[15px]">
+            <Button variant="quiet" onClick={() => go(back)}>
+              Close
+            </Button>
+            {back !== "P3.9" && (
+              <Button icon={<ArrowRight size={17} />} onClick={() => go("P3.8")}>
+                Choose what to pay
+              </Button>
+            )}
+          </div>
+        </ActionSheet>
+      )}
+      {(state === "P3.8" || state === "P3.10") && (
+        <ActionSheet
+          title="How much should Sam get?"
+          appearance="shipment"
+          className={cn(
+            "md:w-520",
+            state === "P3.10" && "max-h-[calc(100dvh-16px)] gap-10 p-16 md:w-560",
+          )}
+          onClose={() => go("P3.6")}
+          subtitle={
+            state === "P3.10"
+              ? "Agree on the amount with Sam first."
+              : `Harbor Hub counted ${report.goodQty} good crates out of ${shipment.qty}.`
+          }
+        >
+          <div className={cn("flex flex-col gap-10", state === "P3.10" && "gap-8")}>
+            {[
+              {
+                id: "arrived",
+                title: "Pay for what arrived",
+                body: `Sam gets ${formatUsdc(arrivedAmount)} USDC for ${report.goodQty} of ${shipment.qty} crates. Your bill becomes ${formatUsdc(billForDriverAmount(arrivedAmount))} USDC.`,
+              },
+              {
+                id: "full",
+                title: "Pay in full",
+                body: `Sam gets ${formatUsdc(BigInt(shipment.advance))} USDC. Your bill stays ${formatUsdc(BigInt(shipment.bill))} USDC.`,
+              },
+              {
+                id: "different",
+                title: "Pay a different amount",
+                body: "Agree on it with Sam first and add a short reason.",
+              },
+            ].map((o) => (
+              <div
+                key={o.id}
+                className={cn(
+                  "rounded-[16px] border-[1.5px] p-16",
+                  state === "P3.10" && "p-10",
+                  choice === o.id
+                    ? "border-ds-ink bg-ds-brand-soft"
+                    : "border-transparent bg-ds-canvas",
+                )}
+              >
+                <label className="flex cursor-pointer items-start gap-12">
                   <input
                     type="radio"
                     name="settlement"
                     checked={choice === o.id}
-                    className="mt-2 size-20 shrink-0 accent-ds-ink"
+                    className="peer sr-only"
                     onChange={() => {
                       setChoice(o.id);
-                      if (o.id === "different") go("P3.10");
+                      go(o.id === "different" ? "P3.10" : "P3.8");
                     }}
                   />
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "mt-1 grid size-20 shrink-0 place-items-center rounded-full border-[1.5px] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-ds-ink",
+                      choice === o.id
+                        ? "border-ds-ink bg-ds-ink"
+                        : "border-ds-line-strong bg-ds-bg",
+                    )}
+                  >
+                    {choice === o.id && <span className="size-8 rounded-full bg-ds-brand" />}
+                  </span>
                   <span>
-                    <span className="block text-label">{o.title}</span>
-                    <span className="mt-4 block text-caption text-ds-muted">{o.body}</span>
+                    <span className="block text-[15px] leading-[1.2] font-semibold">{o.title}</span>
+                    {!(o.id === "different" && choice === o.id) && (
+                      <span className="mt-3 block text-[13px] leading-[1.2] text-ds-ink-2">
+                        {o.body}
+                      </span>
+                    )}
                   </span>
                 </label>
-              ))}
-              {choice === "different" && (
-                <>
-                  <Input
-                    label="Sam gets"
-                    value={amount}
-                    inputMode="decimal"
-                    suffix="USDC"
-                    onChange={(e) => setAmount(e.target.value)}
-                    error={
-                      !validCustom || custom > BigInt(shipment.advance)
-                        ? `Enter no more than ${formatUsdc(BigInt(shipment.advance))} USDC.`
-                        : undefined
-                    }
-                    hint={`Your bill becomes ${formatUsdc(billForDriverAmount(custom))} USDC. It can't be more than ${formatUsdc(BigInt(shipment.advance))}.`}
-                  />
-                  <Input
-                    label="Reason"
-                    value={reason}
-                    onChange={(e) => setReason(e.target.value)}
-                  />
-                </>
-              )}
-              <p className="flex items-start gap-10 text-label font-normal text-ds-muted">
-                <Info size={18} className="mt-1 shrink-0" />
-                <span>
-                  Sam and the investors see your choice. The {120 - report.goodQty} wet crates stay
-                  at Harbor Hub for you to collect.
-                </span>
-              </p>
-              {error && (
-                <p role="alert" className="text-label text-ds-danger">
-                  {error}
-                </p>
-              )}
-              <div className="flex justify-end gap-12">
-                <Button variant="quiet" onClick={() => go("P3.6")}>
-                  Cancel
-                </Button>
-                <Button
-                  icon={<Check size={17} weight="bold" />}
-                  disabled={choice === "different" && !customValid}
-                  onClick={acceptSettlement}
-                >
-                  Confirm
-                </Button>
+                {o.id === "different" && choice === o.id && (
+                  <div className="mt-9 flex flex-col gap-6">
+                    <Input
+                      label="Sam gets"
+                      value={amount}
+                      inputMode="decimal"
+                      suffix="USDC"
+                      className="gap-6 [&>div]:h-44 [&>label]:font-normal [&>label]:text-ds-ink-2 [&>div]:rounded-[12px] [&>div]:border-ds-ink [&>div]:bg-ds-bg [&>div]:px-14 [&>p]:text-ds-ink-2 [&_input]:text-[18px] [&_input]:font-semibold"
+                      onChange={(e) => setAmount(e.target.value)}
+                      error={
+                        !validCustom || custom > BigInt(shipment.advance)
+                          ? `Enter no more than ${formatUsdc(BigInt(shipment.advance))} USDC.`
+                          : undefined
+                      }
+                      hint={`Your bill becomes ${formatUsdc(billForDriverAmount(custom))} USDC. It can't be more than ${formatUsdc(BigInt(shipment.advance))}.`}
+                    />
+                    <label className="flex flex-col gap-6 text-[13px] text-ds-ink-2">
+                      Reason
+                      <textarea
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
+                        className="h-72 w-full resize-none md:h-64 rounded-[12px] border-[1.5px] border-transparent bg-ds-bg p-12 text-[13px] leading-[1.2] font-normal outline-none focus:border-ds-ink focus-visible:outline-none"
+                      />
+                    </label>
+                  </div>
+                )}
               </div>
-            </ActionSheet>
+            ))}
+          </div>
+          <p className="flex items-start gap-10 rounded-[14px] bg-ds-canvas p-14 text-[13px] leading-[1.2] font-normal text-ds-ink-2">
+            <Info size={18} className="mt-1 shrink-0" />
+            <span>
+              Sam and the investors see your choice. The {shipment.qty - report.goodQty} wet crates
+              stay at Harbor Hub for you to collect.
+            </span>
+          </p>
+          {error && (
+            <p role="alert" className="text-label text-ds-danger">
+              {error}
+            </p>
           )}
-          {state === "P3.11" && (
-            <ActionSheet title={`Cancel shipment #${shipment.id}?`} onClose={() => go("P3.1")}>
-              <p className="text-label text-ds-muted">Sam hasn&apos;t picked it up yet.</p>
-              <p className="flex items-center gap-10 text-label font-normal">
-                <Wallet size={18} className="shrink-0 text-ds-muted" />
-                The {formatUsdc(BigInt(shipment.bill))} USDC goes back to your limit.
-              </p>
-              <p className="flex items-center gap-10 text-label font-normal">
-                <ChatCircle size={18} className="shrink-0 text-ds-muted" />
-                Sam gets a WhatsApp message.
-              </p>
-              <p className="flex items-center gap-10 text-label font-normal">
-                <ArrowUUpLeft size={18} className="shrink-0 text-ds-muted" />
-                You can&apos;t undo this. You can make a new shipment anytime.
-              </p>
-              <div className="flex justify-end gap-12">
-                <Button variant="quiet" onClick={() => go("P3.1")}>
-                  Keep it
-                </Button>
-                <Button variant="danger" icon={<X size={17} />} onClick={onCancel}>
-                  Cancel shipment
-                </Button>
-              </div>
-            </ActionSheet>
-          )}
-        </>
+          <div className="flex flex-wrap justify-end gap-10 [&_button]:text-[15px]">
+            <Button variant="quiet" onClick={() => go("P3.6")}>
+              Cancel
+            </Button>
+            <Button
+              icon={<Check size={17} weight="bold" />}
+              disabled={choice === "different" && !customValid}
+              onClick={acceptSettlement}
+            >
+              Confirm
+            </Button>
+          </div>
+        </ActionSheet>
+      )}
+      {state === "P3.11" && (
+        <ActionSheet
+          title={`Cancel shipment #${shipment.id}?`}
+          subtitle="Sam hasn't picked it up yet."
+          appearance="shipment"
+          onClose={() => go("P3.1")}
+        >
+          <div className="flex flex-col gap-10 rounded-[14px] bg-ds-canvas p-16">
+            <p className="flex items-start gap-10 text-[13px] leading-[1.2] font-normal text-ds-ink-2">
+              <Wallet size={16} className="shrink-0 text-ds-ink-2" />
+              The {formatUsdc(BigInt(shipment.bill))} USDC goes back to your limit.
+            </p>
+            <p className="flex items-start gap-10 text-[13px] leading-[1.2] font-normal text-ds-ink-2">
+              <ChatCircle size={16} className="shrink-0 text-ds-ink-2" />
+              Sam gets a WhatsApp message.
+            </p>
+            <p className="flex items-start gap-10 text-[13px] leading-[1.2] font-normal text-ds-ink-2">
+              <ArrowUUpLeft size={16} className="shrink-0 text-ds-ink-2" />
+              You can&apos;t undo this. You can make a new shipment anytime.
+            </p>
+          </div>
+          <div className="flex flex-wrap justify-end gap-10 [&_button]:text-[15px]">
+            <Button variant="quiet" onClick={() => go("P3.1")}>
+              Keep it
+            </Button>
+            <Button variant="danger" icon={<X size={17} />} onClick={onCancel}>
+              Cancel shipment
+            </Button>
+          </div>
+        </ActionSheet>
       )}
     </>
   );
