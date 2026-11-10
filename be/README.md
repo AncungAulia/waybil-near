@@ -131,12 +131,20 @@ clear photo or searchable PDF rather than guessing. Company/registration and thr
 consecutive statement months are checked by server rules. Model instructions cannot write
 transactions. First limits always wait for two team members.
 
-There is no default credit formula or conversion rate. Set `CREDIT_POLICY_JSON` using the
-schema in the API spec. Leave `CREDIT_AUTO_LIMITS=false` for evidence/suggestions only.
-Enable it only after the team supplies its policy. A policy change does not mutate already
+The reviewed testnet preset is `src/config/credit-policy.testnet.json`: 20% of the three-month
+mean outgoing payments, capped at 10,000 test USDC. Copy its JSON into `CREDIT_POLICY_JSON`
+explicitly; no formula activates by default. USD statements use a 1:1 test accounting ratio;
+IDR and other currencies require a separately reviewed conversion policy. This recommendation
+uses expenditure as an activity proxy and does not prove repayment capacity. Decision 0011
+records the research, assumptions and acceptance requirements. The shipment fee stays 2.5%.
+
+Leave `CREDIT_AUTO_LIMITS=false` for evidence/suggestions only. Enable it only after provider,
+SAMPLE-document and policy acceptance. A policy change does not mutate already
 queued review snapshots. Disabling automation stops new writes; existing signed intents
 continue reconciliation. Pending proposals, weekly caps, rejection cooldowns and three-more-
-repaid-bills eligibility are checked against fresh chain views. A bounded full proposal-ID
+repaid-bills eligibility are checked against fresh chain views. Paused shippers and unpaid
+overdue bills block fresh review/signing, including bills not yet marked by the late job.
+A bounded full proposal-ID
 scan handles pending entries older than the newest 50 without a contract change.
 
 Set `CREDIT_WORKER_ENABLED=true` to process queued work every five seconds, or run:

@@ -99,6 +99,7 @@ be/
 │  ├─ credit-once.ts                      Runs one durable credit-review batch
 │  ├─ jobs-once.ts                        Runs scheduled work without an HTTP listener
 │  ├─ config/env.ts                       Reads and checks env (zod)
+│  ├─ config/credit-policy.testnet.json    Reviewed opt-in USD credit recommendation preset
 │  ├─ middlewares/
 │  │  ├─ auth.ts                          Session check, role check
 │  │  ├─ validate.ts                      zod body and params validation
