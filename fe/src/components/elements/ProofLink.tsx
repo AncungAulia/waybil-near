@@ -1,4 +1,4 @@
-import { NEAR_NETWORK } from "@/lib/env";
+import { NEARBLOCKS_URL } from "@/lib/env";
 import { cn } from "@/lib/cn";
 
 /*
@@ -6,8 +6,7 @@ import { cn } from "@/lib/cn";
  * The wording is fixed by AGENTS.md: "See the record on NearBlocks ↗", one arrow per link.
  */
 
-const EXPLORER =
-  NEAR_NETWORK === "mainnet" ? "https://nearblocks.io" : "https://testnet.nearblocks.io";
+const EXPLORER = NEARBLOCKS_URL;
 
 export function ProofLink({ tx, className }: { tx: string; className?: string }) {
   return (

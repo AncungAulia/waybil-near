@@ -1,22 +1,32 @@
+"use client";
+
 import { formatUsdc } from "@waybil/shared";
 import { cn } from "@/lib/cn";
+import { useChanged } from "@/hooks/useChanged";
 
 export function Money({
   amount,
   className,
-  hideZeroDecimals = false,
   /** A few lists on the board write the bare number, with the unit given once above. */
   unit = true,
 }: {
   amount: string;
   className?: string;
+  /**
+   * @deprecated No longer does anything. Money always shows two decimals (fe/AGENTS.md).
+   * Kept so older call sites still compile.
+   */
   hideZeroDecimals?: boolean;
   unit?: boolean;
 }) {
-  const formatted = formatUsdc(BigInt(amount));
+  /* A new amount crossfades, but nothing moves on first load (fe/AGENTS.md "Motion"). */
+  const changed = useChanged(amount);
   return (
-    <span key={amount} className={cn("swap whitespace-nowrap tabular-nums", className)}>
-      {hideZeroDecimals ? formatted.replace(/\.00$/, "") : formatted}
+    <span
+      key={amount}
+      className={cn("whitespace-nowrap tabular-nums", changed && "swap", className)}
+    >
+      {formatUsdc(BigInt(amount))}
       {/*
        * The board writes the amount and its unit as one line of text at one size, so the
        * unit stays in the same run and only drops the number's tighter tracking. A flex

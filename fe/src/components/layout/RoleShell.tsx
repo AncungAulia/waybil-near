@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { DemoWallet, type DemoWalletState } from "@/components/elements/DemoWallet";
 import {
   Truck,
@@ -35,6 +35,16 @@ export function RoleShell({
   walletPreview?: DemoWalletState;
 }) {
   const [wallet, setWallet] = useState<DemoWalletState | null>(walletPreview ?? null);
+  /* The account button that opened the sheet gets focus back when it closes. */
+  const walletTrigger = useRef<HTMLElement | null>(null);
+  const openWallet = (event: React.MouseEvent<HTMLElement>) => {
+    walletTrigger.current = event.currentTarget;
+    setWallet("G1");
+  };
+  const closeWallet = () => {
+    setWallet(null);
+    window.setTimeout(() => walletTrigger.current?.focus(), 0);
+  };
   const hasWallet = role === "shipper" || role === "investor" || role === "admin";
   const names = {
     driver: "Sam",
@@ -102,7 +112,9 @@ export function RoleShell({
             <button
               type="button"
               aria-label="Open account menu"
-              onClick={() => setWallet("G1")}
+              aria-haspopup="dialog"
+              aria-expanded={wallet !== null}
+              onClick={openWallet}
               className="press focus-ring flex items-center gap-10 rounded-full border border-ds-line px-6 py-4 pr-12"
             >
               {identity}
@@ -125,8 +137,10 @@ export function RoleShell({
           {hasWallet ? (
             <button
               aria-label="Open account menu"
+              aria-haspopup="dialog"
+              aria-expanded={wallet !== null}
               className="press focus-ring rounded-full"
-              onClick={() => setWallet("G1")}
+              onClick={openWallet}
             >
               {avatar}
             </button>
@@ -137,12 +151,7 @@ export function RoleShell({
       </header>
       <main className="mt-16 md:mt-24">{children}</main>
       {wallet && hasWallet && (
-        <DemoWallet
-          key={wallet}
-          initialState={wallet}
-          role={role}
-          onClose={() => setWallet(null)}
-        />
+        <DemoWallet key={wallet} initialState={wallet} role={role} onClose={closeWallet} />
       )}
       {!detail && (
         <nav

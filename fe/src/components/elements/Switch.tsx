@@ -25,7 +25,7 @@ export function Switch({
       aria-label={label}
       onClick={() => onChange(!checked)}
       className={cn(
-        "press focus-ring h-26 w-44 shrink-0 rounded-full p-3 transition-colors duration-150 ease-base",
+        "press focus-ring h-26 w-44 shrink-0 rounded-full p-3 transition-[color,background-color,border-color,transform] duration-150 ease-base",
         checked ? "bg-ds-ink" : "bg-ds-line-strong",
         className,
       )}

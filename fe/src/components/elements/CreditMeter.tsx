@@ -4,7 +4,7 @@ import { FanMeter } from "./FanMeter";
 /*
  * Credit limit meter from design/waybil.pen → Molecule/Meter and the States board.
  * The label and the percentage on top, the ruler in the middle, what is used and what is
- * left underneath. Past 80% the percentage turns amber, over the limit it and the amount
+ * left underneath. Past 80% the percentage turns amber (in the darker warning ink), over the limit it and the amount
  * left turn red, the way the board draws 80, 90 and 120 percent.
  */
 
@@ -30,11 +30,19 @@ export function CreditMeter({
   rulerTone?: "ink" | "auto";
 }) {
   const over = value > 1;
-  /* Text follows the threshold. The ruler can keep ink or follow the same colors. */
-  const tone = over ? "text-ds-danger" : value > 0.8 ? "text-ds-warning" : undefined;
+  /*
+   * Text follows the threshold. The ruler can keep ink or follow the same colors. Amber text
+   * uses the darker warning ink, because the bright amber is too light for small text.
+   */
+  const tone = over ? "text-ds-danger" : value > 0.8 ? "text-ds-warning-ink" : undefined;
 
   return (
-    <div className={cn("flex w-380 flex-col gap-10 rounded-[22px] bg-ds-bg p-20", className)}>
+    <div
+      className={cn(
+        "flex w-380 max-w-full flex-col gap-10 rounded-[22px] bg-ds-bg p-20",
+        className,
+      )}
+    >
       <div className="flex items-center justify-between">
         <span className="text-label font-medium text-ds-ink">{label}</span>
         <span className={cn("text-label", tone ?? "text-ds-muted")}>
@@ -66,7 +74,10 @@ export function CreditMeterSkeleton({ className }: { className?: string }) {
   return (
     <div
       aria-hidden
-      className={cn("flex w-380 flex-col gap-12 rounded-[22px] bg-ds-canvas p-20", className)}
+      className={cn(
+        "flex w-380 max-w-full flex-col gap-12 rounded-[22px] bg-ds-canvas p-20",
+        className,
+      )}
     >
       <span className="h-10 w-160 rounded-full bg-ds-surface-3" />
       <span className="h-18 w-full rounded-full bg-ds-surface-3" />

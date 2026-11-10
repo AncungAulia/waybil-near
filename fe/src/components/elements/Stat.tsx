@@ -1,5 +1,8 @@
+"use client";
+
 import type { ReactNode } from "react";
 import { cn } from "@/lib/cn";
+import { useChanged } from "@/hooks/useChanged";
 
 /*
  * Stat card from design/waybil.pen → Molecule/Stat and the States board.
@@ -35,10 +38,11 @@ export function Stat({
 }) {
   const dark = tone === "dark";
   const brand = tone === "brand";
+  const changed = useChanged(String(value));
   return (
     <div
       className={cn(
-        "flex w-280 flex-col gap-6 rounded-[22px] p-20",
+        "flex w-280 max-w-full flex-col gap-6 rounded-[22px] p-20",
         dark ? "bill-card bg-ds-ink" : brand ? "ready-card bg-ds-brand" : "bg-ds-bg",
         className,
       )}
@@ -59,7 +63,8 @@ export function Stat({
       <span
         key={String(value)}
         className={cn(
-          "swap text-[32px] font-medium",
+          changed && "swap",
+          "text-[32px] font-medium",
           dark ? "text-ds-bg" : empty && !brand ? "text-ds-off-ink" : "text-ds-ink",
         )}
       >
@@ -90,7 +95,10 @@ export function StatSkeleton({ className }: { className?: string }) {
   return (
     <div
       aria-hidden
-      className={cn("flex w-280 flex-col gap-10 rounded-[22px] bg-ds-canvas p-20", className)}
+      className={cn(
+        "flex w-280 max-w-full flex-col gap-10 rounded-[22px] bg-ds-canvas p-20",
+        className,
+      )}
     >
       <span className="h-10 w-96 rounded-full bg-ds-surface-3" />
       <span className="h-24 w-160 rounded-full bg-ds-surface-3" />

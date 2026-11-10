@@ -1,16 +1,17 @@
-import { Check, Pause, CircleNotch } from "@phosphor-icons/react/dist/ssr";
+import { Check, Pause, CircleNotch, X } from "@phosphor-icons/react/dist/ssr";
 import { cn } from "@/lib/cn";
 
 /*
  * Timeline step from design/waybil.pen → Molecule/Step and the progress cards on P3.
  * A 24 px round marker and two lines. Done is an ink dot with a tick, the step happening
- * now a plain brand dot, a step still to come an outlined white dot, and a paused one a
- * soft red dot with a pause glyph. Only done and paused carry a glyph.
+ * now a plain brand dot, a step still to come an outlined white dot, a paused one (a held
+ * delivery, "On hold") a soft red dot with a pause glyph, and a failed one a soft red dot
+ * with a cross. Only done, paused and failed carry a glyph.
  *
- * "waiting" is the wallet row P4.2 draws: a soft brand card with a spinner.
+ * "waiting" is the wallet row P4.2 draws: a soft brand card with a turning spinner.
  */
 
-type Step = "done" | "current" | "next" | "failed" | "waiting";
+type Step = "done" | "current" | "next" | "paused" | "failed" | "waiting";
 
 const STEP: Record<Step, { marker: string; icon: typeof Check | null; title: string }> = {
   done: { marker: "size-24 bg-ds-ink text-ds-bg", icon: Check, title: "text-ds-ink" },
@@ -20,7 +21,8 @@ const STEP: Record<Step, { marker: string; icon: typeof Check | null; title: str
     icon: null,
     title: "text-ds-muted",
   },
-  failed: { marker: "size-24 bg-ds-danger-soft text-ds-danger", icon: Pause, title: "text-ds-ink" },
+  paused: { marker: "size-24 bg-ds-danger-soft text-ds-danger", icon: Pause, title: "text-ds-ink" },
+  failed: { marker: "size-24 bg-ds-danger-soft text-ds-danger", icon: X, title: "text-ds-ink" },
   waiting: { marker: "size-26 bg-ds-brand text-ds-ink", icon: CircleNotch, title: "text-ds-ink" },
 };
 
@@ -41,13 +43,19 @@ export function TimelineStep({
   return (
     <div
       className={cn(
-        "flex w-380 items-center gap-14",
+        "flex w-380 max-w-full items-center gap-14",
         state === "waiting" && "gap-12 rounded-[16px] bg-ds-brand-soft px-14 py-12",
         className,
       )}
     >
       <span className={cn("grid shrink-0 place-items-center rounded-full", marker)}>
-        {Icon && <Icon size={state === "failed" ? 12 : 14} weight="bold" />}
+        {Icon && (
+          <Icon
+            size={state === "failed" || state === "paused" ? 12 : 14}
+            weight="bold"
+            className={cn(state === "waiting" && "animate-spin motion-reduce:animate-none")}
+          />
+        )}
       </span>
       <span className="flex min-w-0 flex-1 flex-col gap-2">
         <span className={cn("truncate text-[14.5px] font-medium", titleTone)}>{title}</span>
