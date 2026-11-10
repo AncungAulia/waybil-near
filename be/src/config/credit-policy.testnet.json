@@ -1,0 +1,8 @@
+{
+  "version": "waybil-testnet-usd-2026-11-v1",
+  "currency": "USD",
+  "outgoingFractionBps": 2000,
+  "usdcNumerator": "1",
+  "usdcDenominator": "1",
+  "maxLimit": "10000000000"
+}

@@ -3,6 +3,9 @@
 - Status: accepted for testnet implementation
 - Date: 2026-11-09
 
+Update 2026-11-10: decision 0011 selects an explicit testnet preset. The requirement for
+explicit configuration and all model trust rules below still apply.
+
 The team has not selected a credit formula. No default coefficient, currency conversion or
 automatic limit change is enabled. Operators must supply the versioned policy described in
 the API spec and explicitly enable automation. The assistant extracts narrow evidence;

@@ -376,6 +376,18 @@ export class Credit {
       await this.chain.view<Shipper | null>("get_shipper", { account_id: shipperId }),
     );
     const now = await this.writer.time();
+    if (shipper.paused !== null)
+      throw new ApiException(
+        409,
+        "E_CREDIT_PAUSED",
+        "The team must resume your company before another review.",
+      );
+    if (shipper.late_bills > 0)
+      throw new ApiException(
+        409,
+        "E_CREDIT_OVERDUE",
+        "Pay your overdue bills before asking for another review.",
+      );
     if (now < BigInt(shipper.blocked_until))
       throw new ApiException(
         409,
@@ -418,6 +430,12 @@ export class Credit {
         from,
         limit: 50,
       });
+      if (page.some((shipment) => shipment.status === "Paid" && now > BigInt(shipment.due_at)))
+        throw new ApiException(
+          409,
+          "E_CREDIT_OVERDUE",
+          "Pay your overdue bills before asking for another review.",
+        );
       shipments.push(...page);
       if (page.length < 50) {
         const previous = (

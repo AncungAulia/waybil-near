@@ -172,6 +172,15 @@ floor(floor(sum(three monthly amounts)/3) * usdcNumerator * outgoingFractionBps 
 `CREDIT_AUTO_LIMITS` defaults false; a missing formula or disabled automation produces no
 automatic writes. Starting limits always remain suggestions for two team approvals.
 
+The reviewed testnet preset is `be/src/config/credit-policy.testnet.json`: 20% of the
+three-month mean outgoing payments, capped at 10,000 test USDC. It accepts USD statements
+only, with one USD accounting unit mapped to one test USDC. This is an expenditure-based
+recommendation for team review, not a validated repayment-capacity model or a live FX quote.
+Other currencies require a separate reviewed conversion policy. The 2.5% shipment deduction
+is independent of this coefficient and retains its existing pool/reserve/Waybil allocation.
+The preset must still be explicitly copied into CREDIT_POLICY_JSON; no runtime fallback
+silently enables it. See decision 0011 for rationale, limits and activation requirements.
+
 Model config is `NEAR_AI_MODEL` (canonical ID), API key and `NEAR_AI_TRUSTED_SIGNERS_JSON`,
 an array of `{model,publicKey,expiresAt}` for independently verified Ed25519 model signing
 keys. Obtain/verify these using official NEAR AI verification tooling. The Node 22 adapter
@@ -187,6 +196,9 @@ checked again before a write. Discover proposal IDs through the newest ID and re
 preceding ID (maximum 1,000); evaluate TTL even if stored status is Open. Incomplete history
 fails unavailable rather than bypassing the pending-proposal gate. Writes persist their
 original signed transaction before broadcast and reconcile it without signing a replacement.
+An active review cannot start or sign a fresh limit change while the shipper is paused,
+has counted late bills or has any Paid shipment past due, even before mark_late runs.
+Existing signed intents continue reconciliation to preserve their actual outcomes.
 
 | Method | Path | Who | What |
 |---|---|---|---|

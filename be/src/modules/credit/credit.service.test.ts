@@ -9,6 +9,7 @@ import { UnreadablePapers } from "../../lib/near-ai";
 import { Credit } from "./credit.service";
 import type { CreditWriter } from "./credit.writer";
 import { creditPolicy, targetLimit, type ExtractedPapers } from "./credit.schema";
+import preset from "../../config/credit-policy.testnet.json";
 
 const now = Date.parse("2026-11-09T12:00:00Z");
 const company: CompanyInput = {
@@ -65,7 +66,7 @@ async function setup(enabled = true) {
   deps.env.CREDIT_POLICY_JSON = JSON.stringify(policy);
   const files = new MemoryFiles();
   const leases = new MemoryLeases();
-  const shipper = {
+  const shipper: Shipper = {
     limit: "2500000000",
     owed: "0",
     committed: "0",
@@ -74,7 +75,7 @@ async function setup(enabled = true) {
     blocked_until: "0",
     raise_window_start: (BigInt(now) * 1000000n).toString(),
     raise_window_base: "2500000000",
-  } satisfies Shipper;
+  };
   const shipments: Shipment[] = [];
   const proposals: Proposal[] = [];
   deps.chain.view = vi
@@ -156,6 +157,44 @@ it("uses only an explicitly configured formula and exact base-unit arithmetic", 
   deps.env.CREDIT_POLICY_JSON = "";
   const review = await deps.credit.request(profile());
   expect((await deps.credit.work(review.id)).result).toBe("no_change");
+  expect(deps.writer.prepare).not.toHaveBeenCalled();
+});
+it("returns the configured policy's recommendation without preparing a write when automation is off", async () => {
+  const deps = await setup(false);
+  deps.env.CREDIT_POLICY_JSON = JSON.stringify(preset);
+  const review = await deps.credit.request(profile());
+  const result = await deps.credit.work(review.id);
+  expect(result).toMatchObject({ result: "no_change", suggestedLimit: "2400000000" });
+  expect(deps.writer.prepare).not.toHaveBeenCalled();
+});
+it("blocks reviews for paused shippers and counted late bills", async () => {
+  const paused = await setup();
+  paused.shipper.paused = "payment_risk";
+  await expect(paused.credit.request(profile())).rejects.toMatchObject({ code: "E_CREDIT_PAUSED" });
+  const late = await setup();
+  late.shipper.late_bills = 1;
+  await expect(late.credit.request(profile())).rejects.toMatchObject({ code: "E_CREDIT_OVERDUE" });
+});
+it("finds unmarked overdue Paid bills beyond the first shipment page", async () => {
+  const deps = await setup();
+  for (let i = 0; i < 51; i++)
+    deps.shipments.push({
+      id: i + 1,
+      status: i === 50 ? "Paid" : "Repaid",
+      due_at: (BigInt(now) * 1000000n - 1n).toString(),
+      marked_late: false,
+    } as Shipment);
+  await expect(deps.credit.request(profile())).rejects.toMatchObject({ code: "E_CREDIT_OVERDUE" });
+  expect(deps.writer.prepare).not.toHaveBeenCalled();
+});
+it("checks repayment risk again after extraction and before signing", async () => {
+  const deps = await setup();
+  const review = await deps.credit.request(profile());
+  vi.mocked(deps.reader.check).mockImplementationOnce(async () => {
+    deps.shipper.paused = "late_bills";
+    return { papers: structuredClone(papers), proof };
+  });
+  expect((await deps.credit.work(review.id)).result).toBe("failed");
   expect(deps.writer.prepare).not.toHaveBeenCalled();
 });
 it("raises exactly at the weekly cap and proposes above it", async () => {
