@@ -6,6 +6,7 @@ import { cn } from "@/lib/cn";
  * height, every 5th is 78%, the rest 57%. A yellow marker line sits at the current value.
  *
  * Past 80% the filled bars turn amber, past 100% red. The marker stays yellow.
+ * `tone="ink"` keeps them ink whatever the value, the way Molecule/Meter draws its ruler.
  * Values crossfade together. fe/AGENTS.md overrides the board's older stagger note.
  *
  * The "Big fan" on the credit cards adds the value pill above the ruler and the legend
@@ -23,16 +24,32 @@ export function FanMeter({
   label,
   /** The pill above the ruler at the current value, for example "2,400 used". */
   markerLabel,
+  /** "ink" holds the bars at ink instead of letting them turn amber and red. */
+  tone,
+  appearance,
   className,
 }: {
   value: number;
   label: string;
   markerLabel?: string;
+  tone?: "ink";
+  appearance?: "credit";
   className?: string;
 }) {
+  const credit = appearance === "credit";
+  const ticks = credit ? 60 : TICKS;
+  const major = credit ? 20 : MAJOR;
+  const mid = credit ? 10 : MID;
   const pct = Math.round(value * 100);
   const marker = Math.min(Math.max(value, 0), 1);
-  const used = value >= 1 ? "bg-ds-danger" : value > 0.8 ? "bg-ds-warning" : "bg-ds-ink";
+  const used =
+    tone === "ink"
+      ? "bg-ds-ink"
+      : value > 1
+        ? "bg-ds-danger"
+        : value > 0.8
+          ? "bg-ds-warning"
+          : "bg-ds-ink";
 
   const ruler = (
     <span
@@ -49,14 +66,14 @@ export function FanMeter({
         className,
       )}
     >
-      {Array.from({ length: TICKS + 1 }, (_, i) => (
+      {Array.from({ length: ticks + 1 }, (_, i) => (
         <span
           key={i}
           aria-hidden
           style={{
-            height: `${i % MAJOR === 0 ? 100 : i % MID === 0 ? 78 : 57}%`,
+            height: `${i % major === 0 ? 100 : i % mid === 0 ? 78 : 57}%`,
           }}
-          className={cn("w-3 shrink-0", i / TICKS <= marker ? used : "bg-ds-meter-empty")}
+          className={cn("w-2 shrink-0", i / ticks <= marker ? used : "bg-ds-meter-empty")}
         />
       ))}
 
@@ -64,7 +81,7 @@ export function FanMeter({
         <span
           aria-hidden
           style={{ left: `${marker * 100}%` }}
-          className="absolute bottom-0 h-full w-4 -translate-x-1/2 bg-ds-brand"
+          className="absolute bottom-0 h-full w-3 -translate-x-1/2 bg-ds-brand"
         />
       )}
     </span>
@@ -76,13 +93,19 @@ export function FanMeter({
     <span className="flex w-full flex-col gap-6">
       {/* The pill stays at zero too: P1.2 draws "Nothing used" at the left end. */}
       {markerLabel && (
-        <span aria-hidden className="relative block h-26 w-full">
+        <span aria-hidden className={cn("relative block h-26 w-full", credit && "h-32")}>
           {/* Held a little away from both ends so the pill never pushes the card sideways. */}
           <span
-            style={{ left: `${Math.min(Math.max(marker, 0.08), 0.92) * 100}%` }}
+            style={{
+              left: credit
+                ? `clamp(46px, ${marker * 100}%, calc(100% - 46px))`
+                : `${Math.min(Math.max(marker, 0.08), 0.92) * 100}%`,
+            }}
             className={cn(
               "absolute -translate-x-1/2 rounded-full px-10 py-4 text-caption whitespace-nowrap text-ds-bg",
               used,
+              credit &&
+                "inline-flex h-26 min-w-92 items-center justify-center py-0 text-[12px] leading-[15px] font-semibold after:absolute after:top-25 after:left-1/2 after:-translate-x-1/2 after:border-x-5 after:border-t-6 after:border-x-transparent after:border-t-ds-ink",
             )}
           >
             {markerLabel}

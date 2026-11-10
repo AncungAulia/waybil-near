@@ -15,6 +15,8 @@
   --color-ds-ink: #111111;
   --color-ds-ink-2: #3d3d3d;
   --color-ds-muted: #6b6b6b;
+  --color-ds-filter-count: #bdbdbd;
+  --color-ds-map-paused: #8a8a88;
   --color-ds-brand: #ffd60a;
   --color-ds-brand-deep: #6b5600;
   --color-ds-brand-ink: #3d3300;
@@ -400,5 +402,36 @@
     .press:not(:disabled):active:not(:focus-visible) {
       transform: none;
     }
+  }
+}
+
+@keyframes shipment-shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.shipment-skeleton {
+  position: relative;
+  overflow: hidden;
+}
+.shipment-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--color-ds-bg) 55%, transparent),
+    transparent
+  );
+  animation: shipment-shimmer 2.4s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .shipment-skeleton::after {
+    animation: none;
   }
 }

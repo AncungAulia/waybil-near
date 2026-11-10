@@ -2,11 +2,9 @@
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowRight,
-  CaretUpDown,
   CaretLeft,
   CaretRight,
   MagnifyingGlass,
-  Path,
   Plus,
   UserPlus,
   Warehouse,
@@ -21,6 +19,7 @@ import { DemoMap } from "@/components/elements/DemoMap";
 import { KeyValue } from "@/components/elements/KeyValue";
 import { CreditMeter } from "@/components/elements/CreditMeter";
 import { Avatar } from "@/components/elements/Avatar";
+import { ArrowUpRightGlyph } from "@/components/elements/icons";
 import { GateMap } from "@/components/elements/GateMap";
 import { cn } from "@/lib/cn";
 import { draftNumbers, DEMO_TODAY, type ShipmentDraft } from "../data/form";
@@ -78,6 +77,10 @@ function FieldButton({
   onClick,
   children,
   disabled = false,
+  /** Nothing picked yet, so the board writes the prompt in grey. */
+  empty = false,
+  /** The list under it is open, so the board lifts the field to white with an ink border. */
+  open = false,
 }: {
   label: string;
   value: string;
@@ -85,23 +88,88 @@ function FieldButton({
   onClick?: () => void;
   children?: React.ReactNode;
   disabled?: boolean;
+  empty?: boolean;
+  open?: boolean;
 }) {
+  const field = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (event: PointerEvent) => {
+      if (!field.current?.contains(event.target as Node)) onClick?.();
+    };
+    document.addEventListener("pointerdown", close);
+    return () => document.removeEventListener("pointerdown", close);
+  }, [open, onClick]);
   return (
-    <div className="relative flex min-w-0 flex-col gap-8">
+    <div
+      ref={field}
+      className="relative flex min-w-0 flex-col gap-8"
+      onKeyDown={(event) => {
+        if (open && event.key === "Escape") {
+          event.stopPropagation();
+          onClick?.();
+          field.current?.querySelector("button")?.focus();
+        }
+      }}
+    >
       <span className="text-label">{label}</span>
       <button
         type="button"
         disabled={disabled}
         onClick={onClick}
         aria-label={label}
-        className="press focus-ring flex h-52 w-full items-center justify-between gap-12 rounded-[16px] bg-ds-canvas px-18 text-left text-body"
+        aria-expanded={onClick ? open : undefined}
+        className={cn(
+          "press flex h-52 w-full items-center justify-between gap-10 rounded-[16px] border-[1.5px] px-16 text-left text-[16px] transition-colors duration-150 ease-base focus-visible:outline-ds-ink",
+          open ? "border-ds-ink bg-ds-bg" : "border-ds-canvas bg-ds-canvas",
+        )}
       >
-        <span className="truncate">{value}</span>
-        <CaretUpDown size={16} className="shrink-0 text-ds-muted" />
+        <span className={cn("truncate", empty && "text-ds-muted")}>{value}</span>
+        <svg
+          aria-hidden
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="shrink-0 text-ds-muted"
+        >
+          <path d="m7 9 5-5 5 5M7 15l5 5 5-5" />
+        </svg>
       </button>
       {hint && <p className="text-caption text-ds-muted">{hint}</p>}
       {children}
     </div>
+  );
+}
+
+/** The search line the board draws at the top of the driver and destination lists. */
+function SearchRow({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <>
+      <label className="flex h-38 shrink-0 items-center gap-10 px-10">
+        <MagnifyingGlass size={16} className="shrink-0 text-ds-muted" />
+        <span className="sr-only">{label}</span>
+        <input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={label}
+          className="min-w-0 flex-1 bg-transparent text-[14.5px] text-ds-ink outline-none placeholder:text-ds-muted focus-visible:outline-none"
+        />
+      </label>
+      <span aria-hidden className="h-1 shrink-0 bg-ds-line" />
+    </>
   );
 }
 
@@ -145,14 +213,19 @@ export function NewShipment({
   const first = (new Date(Date.UTC(year, monthIndex - 1, 1)).getUTCDay() + 6) % 7;
   const days = new Date(Date.UTC(year, monthIndex, 0)).getUTCDate();
   const popup =
-    "absolute top-80 right-0 left-0 z-20 flex max-h-420 flex-col gap-8 overflow-y-auto rounded-row border border-ds-line bg-ds-bg p-12 shadow-lg";
-  const disabled = !numbers.valid || numbers.over || state === "P2.7";
+    "absolute top-82 right-0 left-0 z-20 flex max-h-420 flex-col gap-4 overflow-y-auto rounded-[18px] border border-ds-line bg-ds-bg p-6 shadow-lg";
+  const disabled = !numbers.valid || numbers.over;
   const approve = (
     <Button
       disabled={disabled}
       loading={state === "P2.7"}
       loadingLabel="Waiting for wallet"
-      className="w-full justify-between"
+      className={cn(
+        "h-52 w-full justify-between",
+        disabled &&
+          "disabled:text-ds-muted [&>span:last-child]:bg-ds-line-strong [&>span:last-child]:text-ds-bg",
+      )}
+      icon={<ArrowUpRightGlyph size={17} />}
       onClick={() => {
         go("P2.7");
         timer.current = setTimeout(() => {
@@ -173,6 +246,8 @@ export function NewShipment({
     state === "P2.7"
       ? "Approve the request in your wallet."
       : "Once approved, the fee and due date can’t be changed.";
+  /* The board darkens that note while the wallet waits, because it is now an instruction. */
+  const noteTone = state === "P2.7" ? "text-ds-ink" : "text-ds-muted";
   const changeMonth = (delta: number) => {
     const d = new Date(Date.UTC(year, monthIndex - 1 + delta, 1));
     setMonth(d.toISOString().slice(0, 7));
@@ -180,20 +255,31 @@ export function NewShipment({
 
   return (
     <>
-      <h1 className="text-title md:text-amount">New shipment</h1>
+      {/* The board sets this title tighter than the shared type styles: 30/32 and 40/42. */}
+      <h1 className="text-title text-[30px] leading-[32px] md:text-amount md:text-[40px] md:leading-[42px]">
+        New shipment
+      </h1>
       {error && (
         <p role="alert" className="mt-12 text-label text-ds-danger">
           {error}
         </p>
       )}
-      <p className="mt-16 mb-24 text-body text-ds-muted">
+      <p className="mt-16 mb-16 text-[14px] leading-[1.45] text-ds-muted md:mt-24 md:mb-24 md:text-[15px]">
         You approve the fee and due date now. The driver can&apos;t be paid until the goods arrive.
       </p>
       <div className="grid items-start gap-16 lg:grid-cols-[minmax(0,1fr)_400px]">
-        <Panel className="gap-24 p-24 md:p-28">
+        <Panel
+          className={cn(
+            "gap-20 p-20 md:p-28",
+            state === "P2.3" && "pb-110 md:pb-130",
+            state === "P2.4" && "pb-380 md:pb-28",
+          )}
+        >
           <FieldButton
             disabled={state === "P2.7"}
             label="Driver"
+            open={state === "P2.2"}
+            empty={!draft.driver}
             value={
               draft.driver
                 ? `${draft.driver} · ${DRIVERS.find((d) => d.name === draft.driver)?.plate ?? ""}`
@@ -207,12 +293,7 @@ export function NewShipment({
           >
             {state === "P2.2" && (
               <div className={popup}>
-                <Input
-                  prefix={<MagnifyingGlass size={16} className="shrink-0 text-ds-muted" />}
-                  label="Search name or plate"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
+                <SearchRow label="Search name or plate" value={search} onChange={setSearch} />
                 {DRIVERS.filter((d) =>
                   `${d.name} ${d.plate}`.toLowerCase().includes(search.toLowerCase()),
                 ).map((d) => (
@@ -221,12 +302,16 @@ export function NewShipment({
                     disabled={!d.plate}
                     key={d.name}
                     onClick={() => choose("driver", d.name)}
-                    className="press focus-ring flex gap-12 rounded-small p-10 text-left hover:bg-ds-canvas disabled:opacity-40"
+                    className={cn(
+                      "press flex items-center gap-12 rounded-[12px] p-10 text-left hover:bg-ds-canvas focus-visible:outline-ds-ink disabled:opacity-50",
+                      (draft.driver === d.name || (!draft.driver && d.name === DRIVERS[0].name)) &&
+                        "bg-ds-canvas",
+                    )}
                   >
                     <Avatar name={d.full} />
-                    <span>
-                      <span className="block text-label">{d.name}</span>
-                      <span className="block text-caption text-ds-muted">
+                    <span className="flex min-w-0 flex-col gap-2">
+                      <span className="truncate text-[15px] font-medium">{d.name}</span>
+                      <span className="truncate text-[12.5px] text-ds-muted">
                         {d.plate
                           ? `${d.plate} · ${d.trips} trips with you`
                           : "Invite sent, not joined yet"}
@@ -234,8 +319,9 @@ export function NewShipment({
                     </span>
                   </button>
                 ))}
+                <span aria-hidden className="h-1 shrink-0 bg-ds-line" />
                 <button
-                  className="link-ink focus-ring flex items-center gap-8 p-10 text-label"
+                  className="link focus-ring flex items-center gap-10 px-10 py-12 text-[14px] font-medium"
                   onClick={() => go("P5.3")}
                 >
                   <UserPlus size={16} />
@@ -244,11 +330,13 @@ export function NewShipment({
               </div>
             )}
           </FieldButton>
-          <div className="grid gap-24 md:grid-cols-2">
+          <div className="grid gap-20 md:grid-cols-2 md:gap-16">
             <FieldButton label="Pickup" value="Main warehouse · 21 Dock Road" disabled />
             <FieldButton
               disabled={state === "P2.7"}
               label="Destination"
+              open={state === "P2.3"}
+              empty={!draft.destination}
               value={
                 draft.destination
                   ? `${draft.destination} · ${PLACES.find((p) => p.name === draft.destination)?.street ?? ""}`
@@ -261,36 +349,48 @@ export function NewShipment({
             >
               {state === "P2.3" && (
                 <div className={popup}>
-                  <Input
-                    prefix={<MagnifyingGlass size={16} className="shrink-0 text-ds-muted" />}
-                    label="Search places"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                  />
+                  <SearchRow label="Search places" value={search} onChange={setSearch} />
                   {PLACES.filter((p) =>
                     `${p.name} ${p.address}`.toLowerCase().includes(search.toLowerCase()),
                   ).map((p) => (
                     <button
                       key={p.name}
                       disabled={!p.linked}
-                      className="press focus-ring rounded-small p-12 text-left hover:bg-ds-canvas disabled:opacity-40"
+                      className={cn(
+                        "press flex items-center gap-12 rounded-[12px] p-10 text-left hover:bg-ds-canvas focus-visible:outline-ds-ink",
+                        (draft.destination === p.name ||
+                          (!draft.destination && p.name === PLACES[0].name)) &&
+                          "bg-ds-canvas",
+                      )}
                       onClick={() => choose("destination", p.name)}
                     >
-                      <Warehouse size={18} className="mb-6 text-ds-muted" />
-                      <span className="block text-body">{p.name}</span>
-                      <span className="block text-caption text-ds-muted">{p.address}</span>
-                      <span className="block text-caption text-ds-muted">{p.meta}</span>
+                      <span className="grid size-36 shrink-0 place-items-center rounded-[10px] bg-ds-canvas">
+                        <Warehouse size={16} />
+                      </span>
+                      <span className="flex min-w-0 flex-col gap-2">
+                        <span className="truncate text-[14.5px] font-medium">{p.name}</span>
+                        <span className="truncate text-[12.5px] text-ds-ink-2">{p.address}</span>
+                        <span
+                          className={cn(
+                            "truncate text-caption",
+                            p.linked ? "text-ds-muted" : "text-ds-warning",
+                          )}
+                        >
+                          {p.meta}
+                        </span>
+                      </span>
                     </button>
                   ))}
+                  <span aria-hidden className="h-1 shrink-0 bg-ds-line" />
                   <button
-                    className="link-ink focus-ring flex items-center gap-8 p-10 text-label"
+                    className="link focus-ring flex items-center gap-10 px-10 py-12 text-[14px] font-medium"
                     onClick={() => setNewPlace(true)}
                   >
                     <Plus size={16} />
                     Add a new place
                   </button>
                   {pendingPlace && (
-                    <p className="rounded-small bg-ds-canvas p-12 text-caption text-ds-muted">
+                    <p className="rounded-[12px] bg-ds-canvas p-12 text-caption text-ds-muted">
                       {pendingPlace} is waiting for the receiver to join.
                     </p>
                   )}
@@ -302,11 +402,10 @@ export function NewShipment({
             disabled={state === "P2.7"}
             label="Cargo"
             placeholder="e.g. 120 crates of coffee"
-            hint="Can't be changed after you approve."
             value={draft.cargo}
             onChange={(e) => update("cargo", e.target.value)}
           />
-          <div className="grid gap-24 md:grid-cols-2">
+          <div className="grid gap-20 md:grid-cols-2 md:gap-16">
             <Input
               disabled={state === "P2.7"}
               label="Shipping fee"
@@ -325,17 +424,19 @@ export function NewShipment({
             <FieldButton
               disabled={state === "P2.7"}
               label="Due date"
+              open={state === "P2.4"}
+              empty={!draft.due}
               value={draft.due ? dueLabel(draft.due) : "Pick a date"}
               hint="When you pay the bill"
               onClick={() => go(state === "P2.4" ? "P2.1" : "P2.4")}
             >
               {state === "P2.4" && (
-                <div className={popup}>
-                  <div className="flex gap-6">
+                <div className={cn(popup, "gap-14 p-16")}>
+                  <div className="flex gap-8">
                     {[30, 45, 60].map((days) => (
                       <button
                         key={days}
-                        className="press focus-ring flex-1 rounded-full bg-ds-canvas py-8 text-caption"
+                        className="press focus-ring h-32 flex-1 rounded-full bg-ds-canvas text-label hover:bg-ds-surface-3"
                         onClick={() =>
                           choose(
                             "due",
@@ -349,16 +450,18 @@ export function NewShipment({
                       </button>
                     ))}
                   </div>
-                  <div className="flex items-center justify-between">
+                  {/* The board hangs the two arrows on the card's padding edge, so the
+                      tap target's own padding is pulled back out. */}
+                  <div className="-mx-8 -my-8 flex items-center justify-between">
                     <button
                       aria-label="Previous month"
-                      className="focus-ring rounded-small p-8"
+                      className="press focus-ring rounded-small p-8 text-ds-ink disabled:text-ds-muted"
                       disabled={month <= "2026-11"}
                       onClick={() => changeMonth(-1)}
                     >
-                      <CaretLeft size={16} />
+                      <CaretLeft size={18} />
                     </button>
-                    <span className="text-label">
+                    <span className="text-[14px] font-medium">
                       {new Intl.DateTimeFormat("en-US", {
                         month: "long",
                         year: "numeric",
@@ -367,16 +470,16 @@ export function NewShipment({
                     </span>
                     <button
                       aria-label="Next month"
-                      className="focus-ring rounded-small p-8"
+                      className="press focus-ring rounded-small p-8 text-ds-ink disabled:text-ds-muted"
                       disabled={month >= "2027-01"}
                       onClick={() => changeMonth(1)}
                     >
-                      <CaretRight size={16} />
+                      <CaretRight size={18} />
                     </button>
                   </div>
-                  <div className="grid grid-cols-7 gap-4">
+                  <div className="grid grid-cols-7 gap-x-4 gap-y-2">
                     {["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map((day) => (
-                      <span key={day} className="py-6 text-center text-caption text-ds-muted">
+                      <span key={day} className="py-6 text-center text-[11.5px] text-ds-muted">
                         {day}
                       </span>
                     ))}
@@ -394,7 +497,7 @@ export function NewShipment({
                           disabled={distance <= 0 || distance > 60}
                           className={cn(
                             "press focus-ring grid h-34 place-items-center rounded-[10px] text-label font-normal disabled:opacity-25",
-                            draft.due === date ? "bg-ds-brand" : "hover:bg-ds-canvas",
+                            draft.due === date ? "bg-ds-brand font-semibold" : "hover:bg-ds-canvas",
                           )}
                           onClick={() => choose("due", date)}
                         >
@@ -411,16 +514,34 @@ export function NewShipment({
             </FieldButton>
           </div>
         </Panel>
-        <Panel title="Summary">
-          <div>
-            {draft.destination ? (
-              <DemoMap phase="planned" label="Planned route" className="mb-16 h-260" />
-            ) : (
-              <div className="mb-20 flex flex-col gap-10">
-                <Path size={20} className="text-ds-muted" />
-                <p className="text-[13.5px] text-ds-muted">Fill in the trip to see the numbers.</p>
-              </div>
-            )}
+        <Panel title="Summary" titleClassName="text-[18px] leading-[1.3]">
+          {draft.destination ? (
+            <DemoMap phase="planned" label={null} zoom={1.435} className="h-260 rounded-[16px]" />
+          ) : (
+            /* The board draws the waiting summary as a grey box with the route mark centred. */
+            <div className="flex flex-col items-center gap-6 rounded-[18px] bg-ds-canvas px-16 py-28 text-center">
+              <svg
+                aria-hidden
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="text-ds-muted"
+              >
+                <circle cx="6" cy="17" r="3" />
+                <path d="M9 17h8a3 3 0 0 0 0-6H7a3.5 3.5 0 0 1 0-7h8" />
+                <circle cx="18" cy="4" r="3" />
+              </svg>
+              <p className="text-[13.5px] leading-[1.45] text-ds-muted">
+                Fill in the trip to see the numbers
+              </p>
+            </div>
+          )}
+          <div className="divide-y divide-ds-line">
             <KeyValue
               label="Shipping fee"
               value={numbers.bill > 0n ? <Money amount={numbers.bill.toString()} /> : "-"}
@@ -435,11 +556,21 @@ export function NewShipment({
                   ? `You pay by ${new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(new Date(draft.due))}`
                   : "You pay by the due date"
               }
-              value={numbers.bill > 0n ? <Money amount={numbers.bill.toString()} /> : "-"}
+              /* The board draws the amount you owe heavier than the two facts above it. */
+              value={
+                numbers.bill > 0n ? (
+                  <span className="font-semibold">
+                    <Money amount={numbers.bill.toString()} />
+                  </span>
+                ) : (
+                  "-"
+                )
+              }
             />
           </div>
           <CreditMeter
-            className="w-full p-0"
+            className="w-full p-0 [&>div:last-child]:flex-wrap [&>div:last-child]:gap-x-12 [&>div:last-child]:gap-y-6"
+            rulerTone="ink"
             label="Your limit after this trip"
             used={plain(formatUsdc(numbers.used))}
             limit="3,000"
@@ -448,20 +579,20 @@ export function NewShipment({
           />
           {numbers.over && (
             <button
-              className="link focus-ring flex items-center gap-8 text-left text-label"
+              className="link-ink focus-ring flex items-center gap-4 text-left text-label font-semibold"
               onClick={() => go("P7.1")}
             >
               See your credit
-              <ArrowRight size={16} />
+              <ArrowRight size={14} />
             </button>
           )}
           <div className="hidden md:block">{approve}</div>
-          <p className="hidden text-caption text-ds-muted md:block">{footnote}</p>
+          <p className={cn("hidden text-[12.5px] leading-[1.45] md:block", noteTone)}>{footnote}</p>
         </Panel>
       </div>
       <div className="mt-16 md:hidden">
         {approve}
-        <p className="mt-12 text-center text-caption text-ds-muted">{footnote}</p>
+        <p className={cn("mt-14 text-center text-[12.5px] leading-[1.45]", noteTone)}>{footnote}</p>
       </div>
       {newPlace && (
         <ActionSheet title="Add a destination" onClose={() => setNewPlace(false)}>
