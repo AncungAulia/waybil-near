@@ -27,6 +27,7 @@ import {
   Wallet,
   ChatCircle,
   FileText,
+  ShieldCheck,
   Image as ImageIcon,
   WarningCircle,
   X,
@@ -35,8 +36,13 @@ import { useDemoReport, useDemoSettlement } from "@/hooks/useDemoDelivery";
 import { DEFAULT_REPORT, settleDemoReport } from "@/lib/demo-delivery";
 import { cn } from "@/lib/cn";
 import { statusChip } from "@/lib/status";
-import { SHIPMENTS, type DemoShipmentRow, type ShipperState } from "../data/fixtures";
-import { demoMoment, dueSummary, millis, shortDate, timing } from "../data/dates";
+import {
+  COVERED_TODAY,
+  SHIPMENTS,
+  type DemoShipmentRow,
+  type ShipperState,
+} from "../data/fixtures";
+import { DEMO_NOW, demoMoment, dueSummary, millis, shortDate, timing } from "../data/dates";
 
 /* The board names each destination by its place, and the receiver who works there. */
 const PLACES: Record<string, { name: string; receiver?: string }> = {
@@ -90,11 +96,16 @@ export function ShipperDetail({
     `Agreed with ${driver} on the phone. The wet ${unit} can still be sold at a lower price.`,
   );
   const [error, setError] = useState("");
+  const [talk, setTalk] = useState(false);
   const [back, setBack] = useState<ShipperState>("P3.6");
   const approved = ["P3.1", "P3.11"].includes(state),
     road = ["P3.2", "P3.3"].includes(state),
     repaid = state === "P3.5",
-    cancelled = state === "P3.12";
+    cancelled = state === "P3.12",
+    covered = state === "P3.13";
+  /* The gallery's covered bill keeps its own "today", the day the reserve paid it. */
+  const coveredAt = millis(trip?.covered) ?? DEMO_NOW;
+  const now = preview && covered ? COVERED_TODAY : DEMO_NOW;
   const held = ["P3.6", "P3.7", "P3.8", "P3.10"].includes(state),
     settled = state === "P3.9";
   const bill = settled ? (preview ? "280000000" : settlement.bill) : shipment.bill;
@@ -246,7 +257,7 @@ export function ShipperDetail({
             truckLabel={
               state === "P3.2" ? { shipmentId: shipment.id, distance: "42 km to go" } : undefined
             }
-            phase={cancelled ? "planned" : approved ? "pickup" : road ? "road" : "arrived"}
+            phase={cancelled ? "cancelled" : approved ? "pickup" : road ? "road" : "arrived"}
             className="h-340 md:h-420 xl:h-560"
             appearance="shipment"
             label={
@@ -310,9 +321,11 @@ export function ShipperDetail({
                 >
                   {held
                     ? "Bill on hold"
-                    : repaid
-                      ? `Repaid on ${shortDate(repaidAt ?? due)}`
-                      : "Your bill"}
+                    : covered
+                      ? "You still owe"
+                      : repaid
+                        ? `Repaid on ${shortDate(repaidAt ?? due)}`
+                        : "Your bill"}
                 </p>
                 <Money
                   amount={bill}
@@ -333,13 +346,25 @@ export function ShipperDetail({
                       ? repaidNote(shipment.due_at, repaidAt)
                       : settled
                         ? `Due ${shortDate(due)}. It covers the ${report.goodQty} good ${unit}.`
-                        : dueSummary(shipment.due_at)}
+                        : covered
+                          ? `Due ${dueSummary(shipment.due_at, now)}`
+                          : dueSummary(shipment.due_at)}
                 </p>
                 {repaid ? (
                   <DemoRecord
                     title="Bill paid"
                     className="bg-ds-canvas rounded-[18px] px-16 py-12 [&>span:first-child]:size-32 [&>span:first-child>svg]:size-16 [&>span:nth-child(2)>span:first-child]:font-semibold"
                   />
+                ) : covered ? (
+                  /* A covered bill can't be paid in the app. The team settles it with you. */
+                  <Button
+                    variant="moment"
+                    icon={<ChatCircle size={17} />}
+                    className="h-52 w-full justify-between"
+                    onClick={() => setTalk(true)}
+                  >
+                    Talk to the Waybil team
+                  </Button>
                 ) : (
                   !held &&
                   !settled && (
@@ -364,11 +389,19 @@ export function ShipperDetail({
                     settled
                       ? `${driver} got ${formatUsdc(BigInt(preview ? "273000000" : settlement.amount))} USDC`
                       : `${driver} paid early`,
-                    "You repaid",
+                    covered ? "Covered by the reserve" : "You repaid",
                   ]
               ).map((title, i, steps) => {
                 const completed =
-                  repaid || cancelled ? steps.length : approved ? 1 : road ? 2 : held ? 3 : 4;
+                  repaid || cancelled || covered
+                    ? steps.length
+                    : approved
+                      ? 1
+                      : road
+                        ? 2
+                        : held
+                          ? 3
+                          : 4;
                 const step =
                   settled && i === 4
                     ? "next"
@@ -390,9 +423,11 @@ export function ShipperDetail({
                         : settled
                           ? "Nov 13 · 10:20"
                           : `Nov 12 · 15:37 · ${formatUsdc(BigInt(shipment.advance))} USDC`,
-                      repaid
-                        ? `${shortDate(repaidAt ?? due)} · ${formatUsdc(BigInt(bill))} USDC`
-                        : `Due ${shortDate(due)}`,
+                      covered
+                        ? `${shortDate(coveredAt)} · team approval`
+                        : repaid
+                          ? `${shortDate(repaidAt ?? due)} · ${formatUsdc(BigInt(bill))} USDC`
+                          : `Due ${shortDate(due)}`,
                     ];
                 return (
                   <div
@@ -410,7 +445,20 @@ export function ShipperDetail({
                         : "after:bg-ds-line-strong",
                     )}
                   >
-                    {settled && i === 3 ? (
+                    {covered && i === 4 ? (
+                      /* The reserve paid the pool back, so the step is done but marked in warning. */
+                      <div className="flex items-start gap-14">
+                        <span className="grid size-24 shrink-0 place-items-center rounded-full bg-ds-warning text-white">
+                          <ShieldCheck size={13} weight="bold" />
+                        </span>
+                        <span className="flex min-w-0 flex-col gap-2">
+                          <span className="text-[14.5px] leading-[1.2] font-medium">{title}</span>
+                          <span className="text-[12.5px] leading-[1.2] text-ds-muted">
+                            {times[i]}
+                          </span>
+                        </span>
+                      </div>
+                    ) : settled && i === 3 ? (
                       <div className="flex items-start gap-14">
                         <span className="grid size-24 shrink-0 place-items-center rounded-full bg-ds-check-soft text-ds-check-ink">
                           <Pause size={12} weight="bold" />
@@ -460,6 +508,15 @@ export function ShipperDetail({
                 </button>
               )}
             </Panel>
+            {covered && (
+              <div className="flex flex-col gap-4 rounded-[14px] bg-ds-canvas px-16 py-14">
+                <h2 className="text-[14.5px] font-medium">New shipments are paused</h2>
+                <p className="text-[13.5px] leading-[1.45] text-ds-ink-2">
+                  {driver} was paid and the pool is whole. Settle the {formatUsdc(BigInt(bill))}{" "}
+                  USDC with our team to ship again.
+                </p>
+              </div>
+            )}
           </div>
           <Panel title="Trip" titleClassName="text-[18px] leading-[1.2]" className="gap-6">
             <div className="divide-y divide-ds-line [&>div>span]:leading-[1.2]">
@@ -683,6 +740,24 @@ export function ShipperDetail({
               onClick={acceptSettlement}
             >
               Confirm
+            </Button>
+          </div>
+        </ActionSheet>
+      )}
+      {covered && talk && (
+        <ActionSheet
+          title="Talk to the Waybil team"
+          subtitle={`They will help you settle the ${formatUsdc(BigInt(bill))} USDC for shipment #${shipment.id}.`}
+          appearance="shipment"
+          onClose={() => setTalk(false)}
+        >
+          <p className="flex items-start gap-10 rounded-[14px] bg-ds-canvas p-16 text-[14px] leading-[1.45] text-ds-ink-2">
+            <ChatCircle size={18} className="mt-1 shrink-0 text-ds-ink" />
+            Our team will message you on WhatsApp today.
+          </p>
+          <div className="flex justify-end [&_button]:text-[15px]">
+            <Button variant="quiet" onClick={() => setTalk(false)}>
+              Close
             </Button>
           </div>
         </ActionSheet>

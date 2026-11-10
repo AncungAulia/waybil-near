@@ -3,7 +3,8 @@ import { useState } from "react";
 import { Truck, Warehouse, Plus, Minus } from "@phosphor-icons/react";
 import { cn } from "@/lib/cn";
 
-type Phase = "pickup" | "road" | "arrived" | "planned";
+/** `cancelled` keeps the grey route of a trip that never left, with no truck on it. */
+type Phase = "pickup" | "road" | "arrived" | "planned" | "cancelled";
 /** Vector geography and route exported from the design. This is a fixture, not live location data. */
 export function DemoMap({
   label = "Sharing location",
@@ -62,7 +63,7 @@ export function DemoMap({
       ? "network/gate-base.svg"
       : empty
         ? "demo-map.svg"
-        : phase === "pickup"
+        : phase === "pickup" || phase === "cancelled"
           ? "demo-route-waiting.svg"
           : phase === "planned" || phase === "arrived"
             ? "demo-route-planned.svg"
@@ -103,7 +104,7 @@ export function DemoMap({
                 <Warehouse size={appearance === "shipment" ? 15 : 16} />
               </span>
             )}
-            {phase !== "planned" && (
+            {phase !== "planned" && phase !== "cancelled" && (
               <span
                 style={position(truck[0]!, truck[1]!)}
                 className={cn(
@@ -150,9 +151,11 @@ export function DemoMap({
               "size-8 shrink-0 rounded-full",
               paused
                 ? "bg-ds-warning"
-                : appearance === "shipment" && phase !== "road"
-                  ? "bg-ds-muted"
-                  : "bg-ds-success",
+                : phase === "cancelled"
+                  ? "bg-ds-line-strong"
+                  : appearance === "shipment" && phase !== "road"
+                    ? "bg-ds-muted"
+                    : "bg-ds-success",
             )}
           />
           <span className="truncate">{label}</span>

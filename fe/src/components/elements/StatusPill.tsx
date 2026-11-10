@@ -18,8 +18,8 @@ const CHIP: Record<StatusChip, { label: string; dot: string }> = {
   paidEarly: { label: "Paid early", dot: "bg-ds-success" },
   repaid: { label: "Repaid", dot: "bg-ds-ink" },
   disputed: { label: "Disputed", dot: "bg-ds-danger" },
-  cancelled: { label: "Cancelled", dot: "bg-ds-muted" },
-  coveredByReserve: { label: "Paid from the reserve", dot: "bg-ds-warning" },
+  cancelled: { label: "Cancelled", dot: "bg-ds-line-strong" },
+  coveredByReserve: { label: "Covered by reserve", dot: "bg-ds-warning" },
 };
 
 export function StatusPill({

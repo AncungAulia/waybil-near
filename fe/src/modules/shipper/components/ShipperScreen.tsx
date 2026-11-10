@@ -11,7 +11,13 @@ import { ShipperDetail } from "./ShipperDetail";
 import { ShipperNetwork } from "./ShipperNetwork";
 import { ShipperCredit } from "./ShipperCredit";
 import { ShipperShipments } from "./ShipperShipments";
-import { LATE_SHIPMENT, SHIPMENTS, SHIPPER_FIXTURES, type ShipperState } from "../data/fixtures";
+import {
+  COVERED_SHIPMENT,
+  LATE_SHIPMENT,
+  SHIPMENTS,
+  SHIPPER_FIXTURES,
+  type ShipperState,
+} from "../data/fixtures";
 import type { ShipmentStatus } from "@waybil/shared";
 import {
   cancelDemoShipment,
@@ -40,7 +46,7 @@ const DETAIL_STATES: Record<ShipmentStatus, ShipperState[]> = {
   Paid: ["P3.4", "P4.1", "P4.2", "P4.3"],
   Repaid: ["P3.5", "P4.4"],
   Cancelled: ["P3.12"],
-  CoveredByReserve: ["P3.5"],
+  CoveredByReserve: ["P3.13"],
 };
 function detailState(state: ShipperState, status: ShipmentStatus, settled: boolean) {
   /* A settled report is a Paid shipment that keeps its own card and can reopen the report. */
@@ -78,9 +84,12 @@ export function ShipperScreen({
       ? { onTime: 10, total: 10 }
       : { onTime: 9, total: 9 }
     : live.record;
-  const row = (preview ? [...SHIPMENTS, LATE_SHIPMENT] : live.all).find(
-    (r) => r.shipment.id === shipmentId,
-  );
+  /* P3.13 draws the covered bill, which only the gallery has. */
+  const row = (
+    preview
+      ? [...(localState === "P3.13" ? [COVERED_SHIPMENT] : SHIPMENTS), LATE_SHIPMENT]
+      : live.all
+  ).find((r) => r.shipment.id === shipmentId);
   /* On real routes the detail screen follows the shipment's status, not the link it came from. */
   const state =
     !preview && row && (localState.startsWith("P3") || localState.startsWith("P4"))
