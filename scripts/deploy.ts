@@ -24,6 +24,8 @@ const TEAM = [`risk.${PARENT}`, `ops.${PARENT}`, `finance.${PARENT}`];
 const ACCOUNTS: [string, string][] = [
   [APP, "3.5"],
   [`relayer.${PARENT}`, "1"],
+  // Parent of every driver and warehouse account (sam.users.waybil.testnet and so on).
+  [`users.${PARENT}`, "1"],
   [`assistant.${PARENT}`, "0.3"],
   [`treasury.${PARENT}`, "0.2"],
   ...TEAM.map((a): [string, string] => [a, "0.2"]),
