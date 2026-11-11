@@ -1,6 +1,9 @@
+import { publicReview } from "../../lib/public-review";
 import { randomUUID } from "node:crypto";
 import type {
   Application,
+  CreditReviewInfo,
+  ApplicationListItem,
   ApplicationDetail,
   CompanyInput,
   DocumentKind,
@@ -87,7 +90,18 @@ export class Applications {
     await this.team(actor);
     return {
       applications: await Promise.all(
-        (await this.store.list<Application>("applications")).map((r) => this.refresh(r.value.id)),
+        (await this.store.list<Application>("applications")).map(
+          async (r): Promise<ApplicationListItem> => {
+            const application = await this.refresh(r.value.id);
+            const row = (
+              await this.store.list<CreditReviewInfo>("credit_reviews", {
+                applicationId: application.id,
+              })
+            ).sort((a, b) => b.value.createdAt.localeCompare(a.value.createdAt))[0];
+            const review = row ? publicReview(row.value) : null;
+            return { ...application, review };
+          },
+        ),
       ),
     };
   }

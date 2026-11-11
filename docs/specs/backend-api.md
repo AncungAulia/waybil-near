@@ -151,6 +151,55 @@ proposal id on the application.
 
 ## Credit assistant
 
+POST `/v1/credit/review` accepts an empty JSON object and queues a durable review, returning
+202 `{review}`. Initial application submissions queue the same evaluator. Reviews expose
+queued/running/writing/complete processing state separately from the final result
+raised/proposed/no_change/failed. Latest reads are owner/team scoped. Additional
+`GET /v1/credit/reviews/:id/proof` returns actual stored proof evidence to its owner/team.
+
+`CREDIT_WORKER_ENABLED=true` enables the durable runner; `credit:once` processes one batch.
+The runner validates actual file hashes, extracts searchable PDF text locally and sends
+JPG/PNG as image input only to a configured model supporting it. Scanned/unreadable PDFs
+need a clearer photo/searchable PDF and receive needs_more, never a guessed starting limit.
+The model extracts names, registration, currency and three monthly outgoing amounts. Server
+checks compare these to the form and compute amounts; document instructions cannot call tools.
+
+No credit formula is enabled by default. `CREDIT_POLICY_JSON` is an explicit versioned policy
+`{version,currency,outgoingFractionBps,usdcNumerator,usdcDenominator,maxLimit}`. Conversion ratio
+is explicit (positive integer strings), and maxLimit is base units. Recommendation equals
+floor(floor(sum(three monthly amounts)/3) * usdcNumerator * outgoingFractionBps /
+(usdcDenominator * 10000)), capped at maxLimit. No exchange rate or coefficient is assumed.
+`CREDIT_AUTO_LIMITS` defaults false; a missing formula or disabled automation produces no
+automatic writes. Starting limits always remain suggestions for two team approvals.
+
+The reviewed testnet preset is `be/src/config/credit-policy.testnet.json`: 20% of the
+three-month mean outgoing payments, capped at 10,000 test USDC. It accepts USD statements
+only, with one USD accounting unit mapped to one test USDC. This is an expenditure-based
+recommendation for team review, not a validated repayment-capacity model or a live FX quote.
+Other currencies require a separate reviewed conversion policy. The 2.5% shipment deduction
+is independent of this coefficient and retains its existing pool/reserve/Waybil allocation.
+The preset must still be explicitly copied into CREDIT_POLICY_JSON; no runtime fallback
+silently enables it. See decision 0011 for rationale, limits and activation requirements.
+
+Model config is `NEAR_AI_MODEL` (canonical ID), API key and `NEAR_AI_TRUSTED_SIGNERS_JSON`,
+an array of `{model,publicKey,expiresAt}` for independently verified Ed25519 model signing
+keys. Obtain/verify these using official NEAR AI verification tooling. The Node 22 adapter
+records preflight evidence and verifies exact-byte provider_tee signatures against these
+unexpired pins. Its proof mode is explicitly `pinned_model_signer`; it does not claim to
+perform fresh Intel/NVIDIA hardware quote verification. Gateway-only/missing/invalid proofs
+cannot authorize a limit write. Pin changes require operational review; there is no TOFU.
+
+One active review per shipper is enforced. No-change decisions under a configured policy
+require three additional Repaid shipment IDs before another review. Configuration-only
+no-change results are not credit decisions. Pending proposals and contract cooldowns are
+checked again before a write. Discover proposal IDs through the newest ID and read every
+preceding ID (maximum 1,000); evaluate TTL even if stored status is Open. Incomplete history
+fails unavailable rather than bypassing the pending-proposal gate. Writes persist their
+original signed transaction before broadcast and reconcile it without signing a replacement.
+An active review cannot start or sign a fresh limit change while the shipper is paused,
+has counted late bills or has any Paid shipment past due, even before mark_late runs.
+Existing signed intents continue reconciliation to preserve their actual outcomes.
+
 | Method | Path | Who | What |
 |---|---|---|---|
 | POST | `/v1/credit/review` | Shipper | Starts a review. Reads repayment history from the contract and the papers, sends them to NEAR AI Cloud, then calls `assistant_set_limit` or `assistant_propose`. |
@@ -250,3 +299,11 @@ Malformed multipart bodies return 400 E_VALIDATION. Email delivery stops after a
 non-retryable 4xx or five attempts. Rate limits, 5xx and ambiguous transport outcomes may retry
 with the same idempotency key within the existing 23-hour window; unresolved ambiguity ends
 as uncertain. Permanently failed rows remain available for operational inspection.
+
+Credit review requests have a 24-hour per-shipper cooldown, including failed/unclear checks
+and initial resubmissions. Repeating an active request returns the existing review. Transient
+provider, storage and configuration failures keep the review queued, retry no sooner than
+60 seconds, and stop after three processing attempts. Failed initial checks leave the
+application in_review for team handling, rather than silently returning it to draft.
+The admin applications list adds `review: CreditReviewInfo | null` to each application;
+private raw model evidence is available only through its existing authorized proof route.

@@ -96,7 +96,9 @@ be/
 │  ├─ index.ts                            Starts the server
 │  ├─ app.ts                              Express app, middlewares, routes
 │  ├─ routes.ts                           Wires feature services and routers
+│  ├─ credit-once.ts                      Runs one durable credit-review batch
 │  ├─ config/env.ts                       Reads and checks env (zod)
+│  ├─ config/credit-policy.testnet.json    Reviewed opt-in USD credit recommendation preset
 │  ├─ middlewares/
 │  │  ├─ auth.ts                          Session check, role check
 │  │  ├─ validate.ts                      zod body and params validation
