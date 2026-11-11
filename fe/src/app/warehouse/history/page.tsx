@@ -1,4 +1,4 @@
-import { WarehouseScreen } from "@/modules/warehouse/components/WarehouseScreen";
+import { Warehouse } from "@/modules/warehouse/components/Warehouse";
 export default function Page() {
-  return <WarehouseScreen initialState="W3.1" />;
+  return <Warehouse view="history" initialState="W3.1" />;
 }

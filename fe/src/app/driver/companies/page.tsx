@@ -1,4 +1,4 @@
-import { DriverScreen } from "@/modules/driver/components/DriverScreen";
+import { Driver } from "@/modules/driver/components/Driver";
 export default function Page() {
-  return <DriverScreen initialState="K3.3" />;
+  return <Driver view="companies" initialState="K3.3" />;
 }
