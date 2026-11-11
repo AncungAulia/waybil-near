@@ -178,3 +178,14 @@ it("rejects non-ABI arguments and rate limits by the authenticated account", asy
       .status,
   ).toBe(429);
 });
+
+it("releases the signer queue after a definite transaction rejection", async () => {
+  const { DefinitiveTransactionError } = await import("../../lib/near-sdk");
+  const { service, sign, provider } = await setup();
+  vi.mocked(provider.broadcast).mockRejectedValueOnce(new DefinitiveTransactionError());
+  expect((await service.relay(profile("driver"), await sign())).status).toBe("failed");
+  expect((await service.relay(profile("driver"), await sign({ nonce: 2n }))).status).toBe(
+    "confirmed",
+  );
+  expect(provider.prepare).toHaveBeenCalledTimes(2);
+});
