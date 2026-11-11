@@ -1,6 +1,6 @@
 # 0005 — Contract upgrades: deployer key now, team vote before the demo
 
-- Status: accepted
+- Status: accepted (how the code reaches the contract is changed by 0012)
 - Date: 2026-11-08
 
 ## Context

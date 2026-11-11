@@ -83,9 +83,18 @@ export type ProposalKind =
   | { StartShipper: { shipper: string; limit: string } }
   | { SetLimit: { shipper: string; limit: string } }
   | { Unpause: { shipper: string } }
-  | { CoverFromReserve: { shipment_id: number } };
+  | { CoverFromReserve: { shipment_id: number } }
+  /** `code_hash` is the base58 sha256 of the new wasm. */
+  | { Upgrade: { code_hash: string } };
 
 export type ProposalStatus = "Open" | "Approved" | "Rejected" | "Expired";
+
+/** `get_code_info`: state version and the base58 sha256 of the current code. */
+export interface CodeInfo {
+  version: number;
+  /** Null until the first team upgrade. */
+  code_hash: string | null;
+}
 
 export interface Proposal {
   id: number;

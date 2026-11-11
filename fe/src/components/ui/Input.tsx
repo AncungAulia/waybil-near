@@ -55,7 +55,8 @@ export function Input({
       <div
         className={cn(
           FIELD,
-          error && "border-ds-danger bg-ds-danger-soft hover:border-ds-danger",
+          /* The board keeps an error field white and says it with the border and the hint. */
+          error && "border-ds-danger bg-ds-bg hover:border-ds-danger",
           (disabled || locked) && "hover:border-ds-canvas",
         )}
       >

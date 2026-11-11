@@ -1,4 +1,7 @@
+"use client";
+
 import { cn } from "@/lib/cn";
+import { useChanged } from "@/hooks/useChanged";
 import type { StatusChip } from "@/lib/status";
 
 /*
@@ -15,8 +18,8 @@ const CHIP: Record<StatusChip, { label: string; dot: string }> = {
   paidEarly: { label: "Paid early", dot: "bg-ds-success" },
   repaid: { label: "Repaid", dot: "bg-ds-ink" },
   disputed: { label: "Disputed", dot: "bg-ds-danger" },
-  cancelled: { label: "Cancelled", dot: "bg-ds-muted" },
-  coveredByReserve: { label: "Paid from the reserve", dot: "bg-ds-warning" },
+  cancelled: { label: "Cancelled", dot: "bg-ds-line-strong" },
+  coveredByReserve: { label: "Covered by reserve", dot: "bg-ds-warning" },
 };
 
 export function StatusPill({
@@ -29,16 +32,19 @@ export function StatusPill({
   label?: string;
 }) {
   const { label, dot } = CHIP[status];
+  const changed = useChanged(status);
 
   return (
     /*
      * Status pills are frequent. Their values crossfade without movement, as fe/AGENTS.md
-     * requires, rather than following the older rise and pop note on the board.
+     * requires, rather than following the older rise and pop note on the board. Only a
+     * real change crossfades. The first render shows the chip at once.
      */
     <span
       key={status}
       className={cn(
-        "status-in inline-flex items-center gap-7 rounded-full bg-ds-canvas py-7 pr-14 pl-11 text-label font-medium text-ds-ink",
+        changed && "status-in",
+        "inline-flex items-center gap-7 rounded-full bg-ds-canvas py-7 pr-14 pl-11 text-label font-medium text-ds-ink",
         className,
       )}
     >

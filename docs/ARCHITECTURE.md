@@ -37,7 +37,7 @@ flowchart LR
 |---|---|---|---|
 | Main contract | `contracts/waybil` | Rust, near-sdk 5.x, cargo-near | Ancung |
 | Test token | `contracts/mock-usdc` | Rust, NEP-141, 6 decimals | Ancung |
-| Frontend | `fe/` | Next.js (App Router), TypeScript, Tailwind CSS, shadcn/ui, near-connect, MapLibre + OpenStreetMap | Yeypayeyy |
+| Frontend | `fe/` | Next.js (App Router), TypeScript, Tailwind CSS, own components with Radix Dialog, near-connect, MapLibre + OpenStreetMap | Yeypayeyy |
 | Backend | `be/` | Node.js, TypeScript, Express, near-api-js, Supabase client | Nasta |
 | Landing page | `landing-page/` | Next.js (App Router), TypeScript, Tailwind CSS | Ancung |
 | Shared types | `packages/shared` | TypeScript | everyone |

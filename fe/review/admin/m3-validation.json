@@ -1,0 +1,458 @@
+[
+  {
+    "width": 1440,
+    "state": "M3.1",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Pool",
+    "dialog": false,
+    "stats": [
+      {
+        "text": "In the pool\n\n25,000\nUSDC\n\n5 investors",
+        "background": "rgb(255, 214, 10)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      },
+      {
+        "text": "Lent out now\n\n3,294\nUSDC\n\n13% of the pool",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      },
+      {
+        "text": "Overdue\n\n0\nUSDC\n\nNothing late",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(30, 125, 62)",
+        "clipped": false
+      },
+      {
+        "text": "Reserve\n\n1,250\nUSDC\n\n5% of the pool, covers losses",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      }
+    ],
+    "emptyStates": 0,
+    "apy": true,
+    "alert": null,
+    "pills": []
+  },
+  {
+    "width": 1440,
+    "state": "M3.2",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Pool",
+    "dialog": false,
+    "stats": [
+      {
+        "text": "In the pool\n\n0\nUSDC\n\nNo investors yet",
+        "background": "rgb(255, 214, 10)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      },
+      {
+        "text": "Lent out now\n\n0\nUSDC\n\nNothing lent yet",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      },
+      {
+        "text": "Overdue\n\n0\nUSDC\n\nNothing late",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(30, 125, 62)",
+        "clipped": false
+      },
+      {
+        "text": "Reserve\n\n0\nUSDC\n\nBuilds up from fees",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      }
+    ],
+    "emptyStates": 2,
+    "apy": false,
+    "alert": null,
+    "pills": []
+  },
+  {
+    "width": 1440,
+    "state": "M3.3",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Pool",
+    "dialog": false,
+    "stats": [
+      {
+        "text": "In the pool\n\n25,000\nUSDC\n\n5 investors",
+        "background": "rgb(255, 214, 10)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      },
+      {
+        "text": "Lent out now\n\n3,294\nUSDC\n\n13% of the pool",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      },
+      {
+        "text": "Overdue\n\n292.50\nUSDC\n\n1 bill · 3 days late",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(212, 47, 52)",
+        "clipped": false
+      },
+      {
+        "text": "Reserve\n\n1,250\nUSDC\n\n5% of the pool, covers losses",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      }
+    ],
+    "emptyStates": 0,
+    "apy": true,
+    "alert": "Blue Ridge Logistics is 3 days late on bill #1037\n\nThey owe 292.50 USDC. If the bill remains unpaid for 14 days after its due date, the team can use the reserve.\n\nSee Blue Ridge Logistics ↗",
+    "pills": []
+  },
+  {
+    "width": 1440,
+    "state": "M3.4",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Pool",
+    "dialog": false,
+    "stats": [
+      {
+        "text": "In the pool\n\n6,400\nUSDC\n\n3 investors",
+        "background": "rgb(255, 214, 10)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      },
+      {
+        "text": "Lent out now\n\n6,000\nUSDC\n\n94% of the pool",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      },
+      {
+        "text": "Overdue\n\n0\nUSDC\n\nNothing late",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(30, 125, 62)",
+        "clipped": false
+      },
+      {
+        "text": "Reserve\n\n320\nUSDC\n\n5% of the pool, covers losses",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      }
+    ],
+    "emptyStates": 0,
+    "apy": true,
+    "alert": "Almost all the money is lent out\n\nOnly 400 USDC is free. New advances wait until repayments come in.",
+    "pills": []
+  },
+  {
+    "width": 834,
+    "state": "M3.1",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Pool",
+    "dialog": false,
+    "stats": [
+      {
+        "text": "In the pool\n\n25,000\nUSDC\n\n5 investors",
+        "background": "rgb(255, 214, 10)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      },
+      {
+        "text": "Lent out now\n\n3,294\nUSDC\n\n13% of the pool",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      },
+      {
+        "text": "Overdue\n\n0\nUSDC\n\nNothing late",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(30, 125, 62)",
+        "clipped": false
+      },
+      {
+        "text": "Reserve\n\n1,250\nUSDC\n\n5% of the pool, covers losses",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      }
+    ],
+    "emptyStates": 0,
+    "apy": true,
+    "alert": null,
+    "pills": []
+  },
+  {
+    "width": 834,
+    "state": "M3.2",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Pool",
+    "dialog": false,
+    "stats": [
+      {
+        "text": "In the pool\n\n0\nUSDC\n\nNo investors yet",
+        "background": "rgb(255, 214, 10)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      },
+      {
+        "text": "Lent out now\n\n0\nUSDC\n\nNothing lent yet",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      },
+      {
+        "text": "Overdue\n\n0\nUSDC\n\nNothing late",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(30, 125, 62)",
+        "clipped": false
+      },
+      {
+        "text": "Reserve\n\n0\nUSDC\n\nBuilds up from fees",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      }
+    ],
+    "emptyStates": 2,
+    "apy": false,
+    "alert": null,
+    "pills": []
+  },
+  {
+    "width": 834,
+    "state": "M3.3",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Pool",
+    "dialog": false,
+    "stats": [
+      {
+        "text": "In the pool\n\n25,000\nUSDC\n\n5 investors",
+        "background": "rgb(255, 214, 10)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      },
+      {
+        "text": "Lent out now\n\n3,294\nUSDC\n\n13% of the pool",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      },
+      {
+        "text": "Overdue\n\n292.50\nUSDC\n\n1 bill · 3 days late",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(212, 47, 52)",
+        "clipped": false
+      },
+      {
+        "text": "Reserve\n\n1,250\nUSDC\n\n5% of the pool, covers losses",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      }
+    ],
+    "emptyStates": 0,
+    "apy": true,
+    "alert": "Blue Ridge Logistics is 3 days late on bill #1037\n\nThey owe 292.50 USDC. If the bill remains unpaid for 14 days after its due date, the team can use the reserve.\n\nSee Blue Ridge Logistics ↗",
+    "pills": []
+  },
+  {
+    "width": 834,
+    "state": "M3.4",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Pool",
+    "dialog": false,
+    "stats": [
+      {
+        "text": "In the pool\n\n6,400\nUSDC\n\n3 investors",
+        "background": "rgb(255, 214, 10)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      },
+      {
+        "text": "Lent out now\n\n6,000\nUSDC\n\n94% of the pool",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      },
+      {
+        "text": "Overdue\n\n0\nUSDC\n\nNothing late",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(30, 125, 62)",
+        "clipped": false
+      },
+      {
+        "text": "Reserve\n\n320\nUSDC\n\n5% of the pool, covers losses",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      }
+    ],
+    "emptyStates": 0,
+    "apy": true,
+    "alert": "Almost all the money is lent out\n\nOnly 400 USDC is free. New advances wait until repayments come in.",
+    "pills": []
+  },
+  {
+    "width": 390,
+    "state": "M3.1",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Pool",
+    "dialog": false,
+    "stats": [
+      {
+        "text": "In the pool\n\n25,000\nUSDC\n\n5 investors",
+        "background": "rgb(255, 214, 10)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      },
+      {
+        "text": "Lent out now\n\n3,294\nUSDC\n\n13% of the pool",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      },
+      {
+        "text": "Overdue\n\n0\nUSDC\n\nNothing late",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(30, 125, 62)",
+        "clipped": false
+      },
+      {
+        "text": "Reserve\n\n1,250\nUSDC\n\n5% of the pool, covers losses",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      }
+    ],
+    "emptyStates": 0,
+    "apy": true,
+    "alert": null,
+    "pills": []
+  },
+  {
+    "width": 390,
+    "state": "M3.2",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Pool",
+    "dialog": false,
+    "stats": [
+      {
+        "text": "In the pool\n\n0\nUSDC\n\nNo investors yet",
+        "background": "rgb(255, 214, 10)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      },
+      {
+        "text": "Lent out now\n\n0\nUSDC\n\nNothing lent yet",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      },
+      {
+        "text": "Overdue\n\n0\nUSDC\n\nNothing late",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(30, 125, 62)",
+        "clipped": false
+      },
+      {
+        "text": "Reserve\n\n0\nUSDC\n\nBuilds up from fees",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      }
+    ],
+    "emptyStates": 2,
+    "apy": false,
+    "alert": null,
+    "pills": []
+  },
+  {
+    "width": 390,
+    "state": "M3.3",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Pool",
+    "dialog": false,
+    "stats": [
+      {
+        "text": "In the pool\n\n25,000\nUSDC\n\n5 investors",
+        "background": "rgb(255, 214, 10)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      },
+      {
+        "text": "Lent out now\n\n3,294\nUSDC\n\n13% of the pool",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      },
+      {
+        "text": "Overdue\n\n292.50\nUSDC\n\n1 bill · 3 days late",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(212, 47, 52)",
+        "clipped": false
+      },
+      {
+        "text": "Reserve\n\n1,250\nUSDC\n\n5% of the pool, covers losses",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      }
+    ],
+    "emptyStates": 0,
+    "apy": true,
+    "alert": "Blue Ridge Logistics is 3 days late on bill #1037\n\nThey owe 292.50 USDC. If the bill remains unpaid for 14 days after its due date, the team can use the reserve.\n\nSee Blue Ridge Logistics ↗",
+    "pills": []
+  },
+  {
+    "width": 390,
+    "state": "M3.4",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Pool",
+    "dialog": false,
+    "stats": [
+      {
+        "text": "In the pool\n\n6,400\nUSDC\n\n3 investors",
+        "background": "rgb(255, 214, 10)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      },
+      {
+        "text": "Lent out now\n\n6,000\nUSDC\n\n94% of the pool",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      },
+      {
+        "text": "Overdue\n\n0\nUSDC\n\nNothing late",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(30, 125, 62)",
+        "clipped": false
+      },
+      {
+        "text": "Reserve\n\n320\nUSDC\n\n5% of the pool, covers losses",
+        "background": "rgb(255, 255, 255)",
+        "valueColor": "rgb(17, 17, 17)",
+        "clipped": false
+      }
+    ],
+    "emptyStates": 0,
+    "apy": true,
+    "alert": "Almost all the money is lent out\n\nOnly 400 USDC is free. New advances wait until repayments come in.",
+    "pills": []
+  }
+]
