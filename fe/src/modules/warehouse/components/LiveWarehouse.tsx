@@ -1,7 +1,12 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import type { Destination, ReportReason, ReportSaved, Shipment } from "@waybil/shared";
+import type {
+  ReportReason,
+  ReportSaved,
+  Shipment,
+  WarehouseDestinationsResponse,
+} from "@waybil/shared";
 import { Camera, Check, Scan, Truck } from "@phosphor-icons/react";
 import { RoleShell } from "@/components/layout/RoleShell";
 import { Panel } from "@/components/layout/Panel";
@@ -13,33 +18,23 @@ import { ProofLink } from "@/components/elements/ProofLink";
 import { useLive } from "@/hooks/useLive";
 import { api, ApiError } from "@/lib/api";
 import { cn } from "@/lib/cn";
-import { getDestination, listShipmentsByDestination, readAll } from "@/lib/near";
+import { listShipmentsByDestination, readAll } from "@/lib/near";
+import { useNames } from "@/hooks/useNames";
 import { relay, shipmentFromCode } from "@/lib/relay";
 import { statusChip } from "@/lib/status";
 import { DeliveryCodeInput } from "./DeliveryCodeInput";
 import "./warehouse.css";
 
 /*
- * The warehouse screens on testnet (#85). There is no view that gives a warehouse its
- * destinations (#80, open question 3), so this reads destination ids from 1 until one is
- * missing and keeps the ones this account receives for. Confirmations are signed by the
- * phone's device key and relayed by the backend.
+ * The warehouse screens on testnet (#85). The backend finds this account's destinations from
+ * the warehouse invites it accepted (GET /v1/me/destinations, #80 open question 3).
+ * Confirmations are signed by the phone's device key and relayed by the backend.
  */
 
 export type WarehouseView = "arrivals" | "scan" | "history";
 
-// ponytail: one RPC call per destination ever made. Fine for testnet; add a view or an API
-// lookup by warehouse when there are hundreds of destinations.
-async function myDestinations(account: string) {
-  const mine: Destination[] = [];
-  for (let from = 1; ; from += 10) {
-    const batch = await Promise.all(Array.from({ length: 10 }, (_, i) => getDestination(from + i)));
-    mine.push(...batch.filter((d): d is Destination => d?.warehouse === account));
-    if (batch.some((d) => d === null)) return mine;
-  }
-}
-async function load(account: string) {
-  const destinations = await myDestinations(account);
+async function load() {
+  const { destinations } = await api<WarehouseDestinationsResponse>("/me/destinations");
   const lists = await Promise.all(
     destinations.map((d) =>
       readAll((from, limit) => listShipmentsByDestination(d.id, { from, limit })),
@@ -62,11 +57,7 @@ const day = (ns: string | null) =>
     : "";
 
 export function LiveWarehouse({ view, account }: { view: WarehouseView; account: string }) {
-  const { data, failed, reload } = useLive(
-    () => load(account),
-    account,
-    view === "arrivals" ? 15000 : 0,
-  );
+  const { data, failed, reload } = useLive(() => load(), account, view === "arrivals" ? 15000 : 0);
   const current =
     view === "scan" ? "/warehouse/scan" : view === "history" ? "/warehouse/history" : "/warehouse";
   return (
@@ -112,6 +103,7 @@ export function LiveWarehouse({ view, account }: { view: WarehouseView; account:
 
 /* W1 and W3. */
 function List({ history, shipments }: { history: boolean; shipments: Shipment[] }) {
+  const name = useNames(shipments.map((s) => s.driver));
   return (
     <>
       <header className="flex flex-wrap items-end justify-between gap-12">
@@ -143,7 +135,7 @@ function List({ history, shipments }: { history: boolean; shipments: Shipment[] 
               <span className="min-w-0 flex-1">
                 <span className="block text-body font-medium">Delivery #{s.id}</span>
                 <span className="block text-caption break-all text-ds-muted">
-                  {s.qty} {s.unit} · {s.driver}
+                  {s.qty} {s.unit} · {name(s.driver)}
                   {history && s.arrived_at && ` · ${day(s.arrived_at)}`}
                 </span>
               </span>
@@ -178,6 +170,7 @@ function ScanAndConfirm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<{ tx: string; reported: boolean } | null>(null);
+  const name = useNames([found?.driver]);
 
   function lookUp(value: string) {
     const id = shipmentFromCode(value);
@@ -304,7 +297,7 @@ function ScanAndConfirm({
       ) : (
         <Panel title={`Delivery #${found.id}`}>
           <p className="text-label break-all text-ds-muted">
-            {found.qty} {found.unit} from {found.driver}
+            {found.qty} {found.unit} from {name(found.driver)}
           </p>
           <Input
             label={`How many ${found.unit} arrived in good shape?`}

@@ -26,6 +26,8 @@ import { AdminNotes } from "./modules/admin/admin.service";
 import { NearPauseProof } from "./modules/admin/admin.proof";
 import { adminRoutes } from "./modules/admin/admin.routes";
 import { Jobs } from "./modules/jobs/jobs.service";
+import { Profiles } from "./modules/profiles/profiles.service";
+import { profileRoutes } from "./modules/profiles/profiles.routes";
 
 export function createRuntime(deps: AppDeps) {
   const router = Router();
@@ -63,6 +65,7 @@ export function createRuntime(deps: AppDeps) {
   router.use(applicationRoutes(deps, applications));
   router.use(reportRoutes(deps, reports));
   router.use(inviteRoutes(deps, invites, (accountId) => auth.subjectFor(accountId)));
+  router.use(profileRoutes(deps, new Profiles(deps.store, deps.chain)));
   const relay = new RelayService(
     deps.store,
     deps.chain,

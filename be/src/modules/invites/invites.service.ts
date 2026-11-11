@@ -3,6 +3,7 @@ import type { Invite, InviteCreate, Principal, PublicInvite, Shipper } from "@wa
 import type { Store } from "../../types/db";
 import type { Chain } from "../../lib/near";
 import { allowed, ApiException, conflict, requireValue } from "../../lib/errors";
+import { displayName } from "../../lib/names";
 
 export interface InviteRecord extends Invite {
   reservedFor: string | null;
@@ -26,7 +27,8 @@ export class Invites {
       ...input,
       code,
       shipperId: actor.accountId,
-      shipperName: actor.accountId,
+      /* The invite page reads "<company> invited you", so it uses the company name when there is one. */
+      shipperName: (await displayName(this.store, actor.accountId)) || actor.accountId,
       expiresAt: new Date(this.now() + 7 * 86400000).toISOString(),
       acceptedBy: null,
       acceptedAt: null,

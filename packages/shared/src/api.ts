@@ -154,6 +154,25 @@ export interface PublicInvite {
   type: "driver" | "warehouse";
   state: "open" | "used" | "expired";
 }
+/** The name other people may see for an account. No phone, email or plate. */
+export interface PublicProfile {
+  accountId: string;
+  role: Role;
+  /** The shipper's company name, or the person's own name. Empty when they set none. */
+  name: string;
+}
+export interface ProfilesResponse {
+  profiles: PublicProfile[];
+}
+/** A destination this warehouse receives for, with the shipper that added it. */
+export interface WarehouseDestination {
+  id: number;
+  shipperId: string;
+  shipperName: string;
+}
+export interface WarehouseDestinationsResponse {
+  destinations: WarehouseDestination[];
+}
 export interface Invite extends InviteCreate {
   code: string;
   shipperId: string;

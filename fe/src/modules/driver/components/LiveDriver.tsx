@@ -12,6 +12,7 @@ import { StatusPill } from "@/components/elements/StatusPill";
 import { DeliveryQr } from "@/components/elements/DeliveryQr";
 import { ProofLink } from "@/components/elements/ProofLink";
 import { useLive } from "@/hooks/useLive";
+import { useNames } from "@/hooks/useNames";
 import { ApiError } from "@/lib/api";
 import { CONTRACT_RECORD_URL } from "@/lib/env";
 import { listShipmentsByDriver, readAll } from "@/lib/near";
@@ -20,8 +21,8 @@ import { statusChip } from "@/lib/status";
 
 /*
  * The driver screens on testnet (#85). Pickup is signed by the phone's device key and
- * relayed by the backend, so the driver sees no wallet and pays no fees. Company names are
- * account ids until the API can look them up (#80, open question 1).
+ * relayed by the backend, so the driver sees no wallet and pays no fees. Company names come
+ * from GET /v1/profiles (#80, open question 1) and fall back to the account id.
  */
 
 export type DriverView = "trips" | "trip" | "payouts" | "companies";
@@ -89,6 +90,7 @@ export function LiveDriver({
 
 function Row({ s }: { s: Shipment }) {
   const router = useRouter();
+  const name = useNames([s.shipper]);
   return (
     <button
       type="button"
@@ -101,7 +103,7 @@ function Row({ s }: { s: Shipment }) {
       <span className="min-w-0 flex-1">
         <span className="block text-body font-medium">Trip #{s.id}</span>
         <span className="mt-4 block text-[12.5px] break-all text-ds-muted">
-          {s.qty} {s.unit} · {s.shipper}
+          {s.qty} {s.unit} · {name(s.shipper)}
         </span>
       </span>
       <span className="flex flex-col items-end gap-6">
@@ -167,6 +169,7 @@ function Trip({
   const [error, setError] = useState<string | null>(null);
   const [tx, setTx] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const name = useNames([s?.shipper]);
   const back = (
     <Link
       href="/driver"
@@ -211,7 +214,7 @@ function Trip({
         <div className="min-w-0">
           <h1 className="text-title">Trip #{s.id}</h1>
           <p className="mt-6 text-label break-all text-ds-muted">
-            {s.qty} {s.unit} · {s.shipper}
+            {s.qty} {s.unit} · {name(s.shipper)}
           </p>
         </div>
         <StatusPill status={statusChip(s)} />
@@ -302,6 +305,7 @@ function Trip({
 function Payouts({ trips }: { trips: Shipment[] }) {
   const paid = trips.filter((s) => s.paid_at);
   const total = paid.reduce((sum, s) => sum + BigInt(s.advance), 0n);
+  const name = useNames(paid.map((s) => s.shipper));
   return (
     <>
       <header>
@@ -326,7 +330,7 @@ function Payouts({ trips }: { trips: Shipment[] }) {
               <span className="min-w-0">
                 <span className="block text-label">Trip #{s.id}</span>
                 <span className="block text-caption break-all text-ds-muted">
-                  {day(s.paid_at)} · {s.shipper}
+                  {day(s.paid_at)} · {name(s.shipper)}
                 </span>
               </span>
               <Money amount={s.advance} className="shrink-0 text-label" />
@@ -341,6 +345,7 @@ function Payouts({ trips }: { trips: Shipment[] }) {
 /* K3.3. */
 function Companies({ trips }: { trips: Shipment[] }) {
   const companies = [...new Set(trips.map((s) => s.shipper))];
+  const name = useNames(companies);
   return (
     <>
       <header>
@@ -355,7 +360,7 @@ function Companies({ trips }: { trips: Shipment[] }) {
         ) : (
           companies.map((c) => (
             <div key={c} className="py-12">
-              <p className="text-label break-all">{c}</p>
+              <p className="text-label break-all">{name(c)}</p>
               <p className="text-caption text-ds-muted">
                 {trips.filter((s) => s.shipper === c).length} trips
               </p>
