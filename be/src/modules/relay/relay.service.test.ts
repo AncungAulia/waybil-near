@@ -38,6 +38,9 @@ async function setup() {
     devicePublicKey: key.getPublicKey().toString(),
   });
   const provider: RelayProvider = {
+    prepareLate: vi
+      .fn()
+      .mockResolvedValue({ txHash: "sample-late-hash", bytes: "sample-late-transaction" }),
     access: vi.fn().mockResolvedValue({
       nonce: 0n,
       height: 100n,
@@ -110,6 +113,7 @@ it("rejects invalid signatures, senders, receivers, methods and attached funds",
   for (const call of [
     actions.transfer(1n),
     actions.functionCall("pause_shipper", {}, 1n, 0n),
+    actions.functionCall("mark_late", { id: 1 }, 1n, 0n),
     actions.functionCall("confirm_pickup", { id: 1 }, 1n, 1n),
     actions.functionCall("confirm_pickup", { id: 1 }, 100000000000001n, 0n),
   ]) {
@@ -177,6 +181,38 @@ it("rejects non-ABI arguments and rate limits by the authenticated account", asy
     (await request(app).post("/v1/relay").auth(token, { type: "bearer" }).send({ signedDelegate }))
       .status,
   ).toBe(429);
+});
+it("shares the signer pending fence between internal late marks and public delegates", async () => {
+  const deps = await setup();
+  deps.chain.view = vi.fn().mockResolvedValue({ ...shipment, status: "Paid", marked_late: false });
+  vi.mocked(deps.provider.broadcast).mockResolvedValue("pending");
+  expect((await deps.service.markLate(1))?.status).toBe("pending");
+  expect((await deps.service.markLate(1))?.txHash).toBe("sample-late-hash");
+  expect(deps.provider.prepareLate).toHaveBeenCalledTimes(1);
+  await expect(deps.service.relay(profile("driver"), await deps.sign())).rejects.toMatchObject({
+    code: "E_RELAY_PENDING",
+  });
+  expect(deps.provider.prepare).not.toHaveBeenCalled();
+  vi.mocked(deps.provider.status).mockResolvedValue("confirmed");
+  deps.chain.view = vi.fn().mockResolvedValue(shipment);
+  expect((await deps.service.relay(profile("driver"), await deps.sign())).status).toBe("confirmed");
+  expect(deps.provider.prepare).toHaveBeenCalledTimes(1);
+});
+it("allows a fresh late-mark attempt only after a definitive failure and retains the failed receipt", async () => {
+  const deps = await setup();
+  deps.chain.view = vi.fn().mockResolvedValue({ ...shipment, status: "Paid", marked_late: false });
+  vi.mocked(deps.provider.broadcast).mockResolvedValueOnce("failed");
+  expect((await deps.service.markLate(1))?.status).toBe("failed");
+  vi.mocked(deps.provider.prepareLate!).mockResolvedValueOnce({
+    txHash: "sample-retry-hash",
+    bytes: "sample-retry-transaction",
+  });
+  expect((await deps.service.markLate(1))?.status).toBe("confirmed");
+  expect(deps.provider.prepareLate).toHaveBeenCalledTimes(2);
+  expect(
+    (await deps.store.list<{ failedAttempts: unknown[] }>("relay_requests"))[0]!.value
+      .failedAttempts,
+  ).toEqual([{ txHash: "sample-late-hash", bytes: "sample-late-transaction" }]);
 });
 
 it("releases the signer queue after a definite transaction rejection", async () => {

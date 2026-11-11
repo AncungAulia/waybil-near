@@ -59,6 +59,7 @@ export class AuthProvider implements LoginProvider {
         },
       });
     } catch (error) {
+      if (error instanceof ApiException) throw error;
       if (
         error instanceof RpcError &&
         !(error instanceof AccessKeyDoesNotExistError) &&

@@ -36,6 +36,26 @@ it("keeps unconfigured email queued and sends the actual Resend idempotency head
   expect((await emails.deliver(event.id)).state).toBe("sent");
   expect(request.mock.calls[0]![1]!.headers).toMatchObject({ "Idempotency-Key": event.id });
 });
+it("suppresses stale queued mail and preserves uncertainty after any ambiguous attempt", async () => {
+  const store = new MemoryStore();
+  const send = vi
+    .fn()
+    .mockRejectedValueOnce(new EmailFailure(true))
+    .mockRejectedValueOnce(new EmailFailure(false));
+  let now = Date.now();
+  const emails = new Emails(store, { enabled: () => true, send }, new MemoryLeases(), () => now);
+  const cancelled = await emails.queue("stale-reminder", message);
+  expect((await emails.deliver(cancelled.id, async () => false)).error).toBe("E_EMAIL_CANCELLED");
+  await emails.deliver(cancelled.id);
+  expect(send).not.toHaveBeenCalled();
+  const ambiguous = await emails.queue("uncertain-late-mail", message);
+  await emails.deliver(ambiguous.id);
+  expect((await emails.deliver(ambiguous.id)).ambiguous).toBe(true);
+  now += 23 * 3600000;
+  expect((await emails.deliver(ambiguous.id)).state).toBe("uncertain");
+  expect(send).toHaveBeenCalledTimes(2);
+  expect((await emails.cancel(ambiguous.id)).state).toBe("uncertain");
+});
 
 it("stops retrying a definite provider rejection", async () => {
   const send = vi.fn().mockRejectedValue(new EmailFailure(false));

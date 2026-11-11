@@ -1,3 +1,4 @@
+import { APPLICATION_REJECTION_REASONS } from "@waybil/shared";
 import { z } from "zod";
 const text = (length = 120) => z.string().trim().min(1).max(length);
 export const companyInput = z
@@ -27,7 +28,7 @@ export const documentInput = z
   .strict();
 export const rejectionInput = z
   .object({
-    reason: z.enum(["payment_risk", "needs_history", "unclear_documents", "other"]),
+    reason: z.enum(APPLICATION_REJECTION_REASONS),
     note: z.string().trim().max(2000).default(""),
   })
   .strict();

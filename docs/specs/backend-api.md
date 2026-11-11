@@ -62,7 +62,7 @@ mock-USDC storage before issuing a session. No parent/admin key is returned to t
 | Method | Path | Who | What |
 |---|---|---|---|
 | POST | `/v1/auth/wallet` | Wallet users | Body: NEP-413 signed message (`accountId`, `publicKey`, `signature`, `nonce`). Checks the key belongs to the account on chain. Returns a session. |
-| POST | `/v1/auth/google` | Drivers, warehouses | Body: Google ID token, `publicKey` made in the browser, `inviteCode`. First time: creates `<name>.users.waybil.testnet` (signed by `users.waybil.testnet`) with that key as a function-call key for `app.waybil.testnet`, and registers the account on `usdc.waybil.testnet` (`storage_deposit`) so payouts can reach it. Returns the account and a session. |
+| POST | `/v1/auth/google` | Drivers, warehouses | Body: `challengeId`, Google `idToken`. The device public key and optional invite come from the challenge. Creates or recovers `<name>.users.waybil.testnet`, registers token storage and returns a session/profile. |
 | GET | `/v1/me` | Signed in | Account, role, profile |
 | PUT | `/v1/me/profile` | Signed in | Name, phone (WhatsApp), email |
 
@@ -233,13 +233,54 @@ a reported delivery. No report/folder/storage identifier is accepted as authoriz
 
 ## Team notes
 
+Proposal reason POST accepts `{reason,note}` with reason too_big_jump/needs_history/
+payment_risk/other. A current team member can record a reason only after their actual
+reject vote is present in the proposal. One immutable reason per member/proposal; identical
+retry returns the saved row. A reason by one voter does not reject the entire proposal.
+
+Pause POST accepts `{shipperId,reason,note,txHash}`, with public reason code payment_risk/
+late_bills/other and a private note up to 2,000 characters. Verify a finalized successful
+direct `pause_shipper` transaction signed by the member, addressed to this contract, with
+matching shipper/reason arguments. Private notes are never transaction arguments. Additional
+team-only `GET /v1/admin/pauses/:shipper` lists recorded notes and real receipt references.
+
 | Method | Path | Who | What |
 |---|---|---|---|
 | POST | `/v1/admin/proposals/:id/reasons` | Team | Reason chip and note for a reject vote |
 | GET | `/v1/admin/proposals/:id/reasons` | Team | All reasons for a proposal |
 | POST | `/v1/admin/pauses` | Team | Reason note for a pause, after the on-chain call |
+| GET | `/v1/admin/pauses/:shipper` | Team | Private pause history and receipt links |
 
 ## Jobs
+
+`JOBS_WORKER_ENABLED=true` starts the private scheduler. `jobs:once` runs all jobs without
+opening an HTTP listener. No public job-trigger route exists. Late/expiry jobs have UTC
+hour windows; reminders have UTC day windows. Complete windows are not repeated; failed
+ones can resume under renewed database leases. Pending signed transactions and email rows
+survive process restart. Internal mark_late transactions share the relayer signer queue,
+including its persisted original transaction and pending-nonce fence; the public relay
+allowlist remains pickup/delivery only.
+
+Leases renew every minute for up to five minutes at a time. A failed renewal or expired
+local deadline blocks subsequent database, storage, signing and email side effects. Renewal
+requires the same live owner and cannot revive an expired lease. A definitively failed late
+transaction may be signed again; the failed receipt/bytes remain in its attempt history.
+
+Shippers come from profiles/applications plus approved StartShipper proposals, discovered
+through bounded complete proposal-ID scans. All shipments are paginated and read fresh.
+Only Paid bills past due are marked; the live record is reread before notification. Reminders
+normally send three UTC dates before the due date, with catch-up on days one/two if a run
+was missed. Event keys include shipment, due date and recipient, never the scheduler window.
+The email worker rechecks bill state before sending a queued late/reminder message and
+suppresses stale mail. Missing recipient data is counted, never guessed. Unknown delivery
+outcomes remain uncertain rather than being labeled cancelled or sent.
+
+The expiry job marks expired open invitations using conditional versions, removes expired
+login challenges and retries explicitly flagged document-upload cleanup under its application
+lease. Ready document revisions and report evidence are retained. Rejection emails are
+recovered from rejected application rows if a crash occurred before email queue insertion.
+Every job window stores counts/attempts/state in job_runs. Missing credentials do not count
+as an executed transaction or a sent email. Live deployment/scheduler setup remains #23.
 
 | Job | When | What |
 |---|---|---|
@@ -250,7 +291,8 @@ a reported delivery. No report/folder/storage identifier is accepted as authoriz
 ## Database tables (Supabase)
 
 `profiles`, `invites`, `applications`, `application_documents`, `credit_reviews`,
-`reports`, `report_photos`, `proposal_reasons`, `pause_notes`, `email_log`.
+`reports`, `report_photos`, `proposal_reasons`, `pause_notes`, `email_log`,
+`auth_challenges`, `auth_identities`, `relay_requests`, `work_leases`, `job_runs`.
 Storage buckets `documents` and `report-photos` are private. Links are signed and short-lived.
 
 ## Env (`be/.env.example`)
@@ -258,7 +300,10 @@ Storage buckets `documents` and `report-photos` are private. Links are signed an
 `PORT`, `NEAR_NETWORK`, `NEAR_RPC_URL`, `WAYBIL_CONTRACT`, `USDC_CONTRACT`,
 `RELAYER_ACCOUNT`, `RELAYER_PRIVATE_KEY`, `USERS_ACCOUNT`, `USERS_PRIVATE_KEY`, `ASSISTANT_ACCOUNT`, `ASSISTANT_PRIVATE_KEY`,
 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `GOOGLE_CLIENT_ID`, `JWT_SECRET`,
-`NEAR_AI_API_KEY`, `EMAIL_API_KEY`.
+`NEAR_AI_API_KEY`, `NEAR_AI_MODEL`, `NEAR_AI_TRUSTED_SIGNERS_JSON`, `CREDIT_POLICY_JSON`,
+`CREDIT_AUTO_LIMITS`, `CREDIT_WORKER_ENABLED`, `JOBS_WORKER_ENABLED`, `EMAIL_API_KEY`,
+`EMAIL_FROM`. Additional auth/origin configuration is listed in `be/.env.example` and the
+feature sections above.
 
 ## Production safety and diagnostics
 
@@ -300,10 +345,78 @@ non-retryable 4xx or five attempts. Rate limits, 5xx and ambiguous transport out
 with the same idempotency key within the existing 23-hour window; unresolved ambiguity ends
 as uncertain. Permanently failed rows remain available for operational inspection.
 
-Credit review requests have a 24-hour per-shipper cooldown, including failed/unclear checks
-and initial resubmissions. Repeating an active request returns the existing review. Transient
+Explicit limit-review requests have a 24-hour per-shipper cooldown, including failed/unclear
+results. Initial checks are keyed by submissionNumber and can run on the same day after
+corrected papers are resubmitted from needs_more. Repeating the same submission returns its
+existing review. Transient
 provider, storage and configuration failures keep the review queued, retry no sooner than
 60 seconds, and stop after three processing attempts. Failed initial checks leave the
 application in_review for team handling, rather than silently returning it to draft.
 The admin applications list adds `review: CreditReviewInfo | null` to each application;
 private raw model evidence is available only through its existing authorized proof route.
+
+Shutdown stops new scheduler ticks and HTTP accepts, then awaits current HTTP requests and
+worker promises for up to 25 seconds. Lease release runs before a normal process exit. A
+drain timeout is logged and remaining HTTP connections are closed. Expired auth challenges
+are removed by one database delete on their UTC expiry field, backed by an expiry index.
+Unknown admin routes return 404; authentication is applied only to registered admin routes.
+
+## Error code registry
+
+`ErrorCode` is the closed set of keys in shared `HTTP_ERRORS`. Routes retain their documented
+HTTP status; internal job/email rows may also store these codes. Responses use a plain message
+with no provider payload. Default messages are listed below.
+
+| Code | Default message |
+|---|---|
+| `E_VALIDATION` | Check the information and try again. |
+| `E_SESSION` | Please sign in again. |
+| `E_ACCESS` | You do not have access to this action. |
+| `E_NOT_FOUND` | This item could not be found. |
+| `E_CONFLICT` | This item changed. Please refresh and try again. |
+| `E_UNAVAILABLE` | This service is unavailable. Please try again later. |
+| `E_INTERNAL` | Something went wrong. Please try again. |
+| `E_TOO_LARGE` | Use a file up to 2 MB, or take a smaller photo. |
+| `E_RATE_LIMIT` | Please wait before trying again. |
+| `E_ACCOUNT_CONFIG` | Account setup is unavailable. Please try again later. |
+| `E_AI` | The private check could not finish. Please try again later. |
+| `E_AI_PROOF` | The private check could not be verified. |
+| `E_AI_TRUST` | The private check is not ready. |
+| `E_ALREADY_CONFIRMED` | This delivery has already been confirmed. |
+| `E_CREDIT_COOLDOWN` | The team asked for more time before another review. |
+| `E_CREDIT_HISTORY` | Pay three more bills before asking for another review. |
+| `E_CREDIT_OVERDUE` | Pay your overdue bills before asking for another review. |
+| `E_CREDIT_PAUSED` | The team must resume your company before another review. |
+| `E_CREDIT_PENDING` | The team is still reviewing a limit change. |
+| `E_CREDIT_POLICY` | The credit policy is unavailable. |
+| `E_CREDIT_RATE` | Please wait one day before asking for another private check. |
+| `E_DATABASE` | Your information could not be saved. Please try again. |
+| `E_DELEGATE` | This delivery request could not be read. |
+| `E_DELEGATE_EXPIRED` | Refresh this delivery request and try again. |
+| `E_EMAIL_CANCELLED` | This notification is no longer needed. |
+| `E_EMAIL_PERMANENT` | This email could not be sent. The team must check its settings. |
+| `E_EMAIL_RETRIES` | This email needs the team to check its delivery status. |
+| `E_EMAIL_SEND` | Email delivery could not finish. |
+| `E_EMAIL_SUPERSEDED` | This notification changed while its delivery was uncertain. |
+| `E_EMAIL_UNCERTAIN` | Email delivery has not been confirmed. |
+| `E_FILE_TYPE` | Use a PDF, JPG or PNG file. |
+| `E_INVITE_EXPIRED` | This invitation has expired. |
+| `E_INVITE_USED` | This invitation has already been used. |
+| `E_JOB` | A scheduled task could not finish. |
+| `E_LATE_PENDING` | A late bill is still being recorded. |
+| `E_LEASE_LOST` | This request stopped. Please try again. |
+| `E_PAPERS` | Upload a clear photo or a searchable PDF. |
+| `E_RECEIPT` | This approval record could not be read. |
+| `E_RELAY_PENDING` | A delivery request is still being recorded. Please try again shortly. |
+| `E_REPORT_INTEGRITY` | This delivery report could not be verified. |
+| `E_REPORT_REQUIRED` | Save a problem report before confirming this delivery. |
+| `E_ROLE_REQUIRED` | Choose your role to continue. |
+| `E_RPC` | The delivery record could not be reached. Please try again. |
+| `E_RPC_TIMEOUT` | The delivery record took too long. Please try again. |
+| `E_SHUTDOWN_TIMEOUT` | The service could not finish its work before stopping. |
+| `E_SIGNATURE` | This delivery request could not be verified. |
+| `E_SIGNER_BUSY` | Another request is being recorded. Please try again shortly. |
+| `E_SIGNUP_CAP` | Account setup is busy today. Please try again tomorrow. |
+| `E_SIGNUP_FUNDS` | Account setup is temporarily unavailable. Please try again later. |
+| `E_STORAGE` | Your file could not be saved. Please try again. |
+| `E_TX_REJECTED` | This request was not recorded. Please try again. |

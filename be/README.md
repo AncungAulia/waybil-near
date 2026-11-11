@@ -1,6 +1,6 @@
 # Waybil backend
 
-Run from the repository root with Node.js 22+ and pnpm 12.3.4.
+Run from the repository root with Node.js 22.22.2+ and pnpm 12.3.4.
 
 ```sh
 pnpm install
@@ -155,7 +155,72 @@ pnpm --filter @waybil/be credit:once
 ```
 
 Worker state and signed transaction intent survive restarts. Live acceptance still requires
-provider credentials, a verified model key and SAMPLE documents. Seeded existing shippers need
-their off-chain application/papers imported in coordination with the seed-script owner.
+provider credentials, a verified model key and SAMPLE documents. Seeded existing shippers can create their missing off-chain company record and upload papers
+through the existing application routes.
 New dependency in #20 is unpdf 1.9.1, compatible with Node 22. This branch depends on
 `be/21-reports` and completes the evaluator integration required by #19.
+
+## Team notes and jobs (#22)
+
+Apply migration 008 before running the integrated backend. Team reason records require the
+member's actual reject vote. Pause notes require the member's successful finalized direct
+pause transaction. Send only the public reason code in the wallet transaction; keep the
+private note in the backend request. These routes never sign votes or pauses for the member.
+
+Enable `JOBS_WORKER_ENABLED=true` for the private one-minute scheduler, or use an external
+scheduler to invoke the one-shot runner. Late/expiry windows run hourly and reminder windows
+run daily in UTC. Avoid enabling both runner modes unless deployment needs it; database
+leases still prevent overlapping execution. No public HTTP endpoint triggers jobs.
+
+```sh
+pnpm --filter @waybil/be build
+pnpm --filter @waybil/be jobs:once
+```
+
+The runner records attempts/counts in job_runs. Late marks reuse the relayer's durable signer
+queue. Failed finalized marks retain their attempt history before a new signature is allowed.
+Uncertain marks reuse the original signed bytes and block new signer work. A bill that is
+already marked still gets its missing email queued after a crash. Discovery includes approved
+StartShipper proposals, scans all IDs up to 1,000 and pages shipments up to 5,000 per shipper.
+The 90-second scan budget fails the window for retry if exhausted; it never calls an incomplete
+scan complete. Larger deployments need an indexed chain reader in a separate task.
+
+Reminders send three UTC dates before due, with catch-up on days one/two. Their event key
+stays stable across windows. Before sending queued bill mail, the worker rechecks current
+status, due date and recipient. Repaid/stale messages are suppressed. Previously ambiguous
+sends remain uncertain if suppressed; reconcile them in Resend. Missing email configuration
+leaves unsent messages queued. Every successful send keeps its actual provider ID.
+
+Expiry updates open invites conditionally and removes expired login challenges. Failed or
+hour-old interrupted document uploads are cleaned under their application lease. Ready
+document revisions and report evidence are retained. Leases renew each minute; loss of
+ownership stops further side effects. No additional dependencies were added for #22.
+This branch depends on `be/20-credit-assistant`. Deployment and live scheduler setup are #23.
+See `docs/plans/backend-delivery-15-22.md` for branch order and integration prerequisites.
+
+## Production checks after the backend review
+
+Use Node.js 22.22.2 or a newer 22.x release. The backend package pins that major range.
+Railway builds from the repository root with `pnpm --filter @waybil/be build` and starts
+`node be/dist/index.js`. Set NODE_ENV=production, RAILPACK_NODE_VERSION=22 and
+RAILWAY_DEPLOYMENT_DRAINING_SECONDS=30. Use one replica and /health for the health check.
+
+Production requires explicit JWT_SECRET, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
+RECOVERY_ENCRYPTION_KEY, GOOGLE_CLIENT_ID, RELAYER_PRIVATE_KEY, USERS_PRIVATE_KEY,
+APP_URL, CORS_ORIGINS and TRUST_PROXY_HOPS. Both app and browser origins must use HTTPS.
+Set TRUST_PROXY_HOPS=1 for Railway's single trusted proxy. Set APP_URL/CORS_ORIGINS to the
+actual frontend origin, not the API origin. The service exits before listening if these
+settings are missing. Development still supports disabled integrations.
+
+Apply migration 009 after 001–008 for indexed challenge expiry. Google signup funding is
+capped at 10 identities per UTC day by default; GOOGLE_SIGNUP_DAILY_LIMIT can lower it or
+set it to zero. Existing ready identities can still sign in. Monitor structured diagnostics
+for E_SIGNUP_FUNDS and E_SIGNUP_CAP. New accounts receive 0.005 NEAR for storage.
+
+Keep CREDIT_AUTO_LIMITS=false for public testing. Credit checks retry transient errors with
+a one-minute delay and at most three attempts. Explicit limit-review requests have a one-day
+shipper cooldown; initial resubmissions after needs_more can run on the same day. An AI
+failure no longer returns an application to draft. Active shippers can create their missing
+company record and replace approved papers before requesting a fresh check. Email workers
+stop permanently rejected messages and cap retries at five. Logs omit provider payloads and
+credentials. SIGTERM waits for running workers and HTTP requests for up to 25 seconds.

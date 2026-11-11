@@ -2,16 +2,30 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Env } from "../config/env";
 import { ApiException, conflict, unavailable } from "./errors";
 import type { Snapshot, Store, Table } from "../types/db";
+import { logError } from "./logger";
+import { assertLeases } from "./lease-context";
 
 export function supabaseClient(env: Env): SupabaseClient | null {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) return null;
   return createClient(String(env.SUPABASE_URL), String(env.SUPABASE_SERVICE_ROLE_KEY), {
     auth: { persistSession: false, autoRefreshToken: false },
+    global: {
+      fetch: (input, init) => {
+        assertLeases();
+        return fetch(input, {
+          ...init,
+          signal: init?.signal
+            ? AbortSignal.any([init.signal, AbortSignal.timeout(30000)])
+            : AbortSignal.timeout(30000),
+        });
+      },
+    },
   });
 }
 export function dbError(error: { code?: string } | null): void {
   if (!error) return;
   if (error.code === "23505") conflict();
+  logError("database", error);
   throw new ApiException(
     503,
     "E_DATABASE",
@@ -21,7 +35,16 @@ export function dbError(error: { code?: string } | null): void {
 export class SupabaseStore implements Store {
   constructor(private client: SupabaseClient | null) {}
   private db() {
+    assertLeases();
     return this.client ?? unavailable();
+  }
+  async removeExpiredChallenges(now: string): Promise<number> {
+    const { count, error } = await this.db()
+      .from("auth_challenges")
+      .delete({ count: "exact" })
+      .lt("data->>expiresAt", now);
+    dbError(error);
+    return count ?? 0;
   }
   async get<T>(table: Table, id: string): Promise<Snapshot<T> | null> {
     const { data, error } = await this.db()

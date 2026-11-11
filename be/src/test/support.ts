@@ -48,6 +48,19 @@ export class MemoryLeases implements Leases {
 
 export class MemoryStore implements Store {
   rows = new Map<string, Snapshot<unknown>>();
+  async removeExpiredChallenges(now: string) {
+    let count = 0;
+    for (const [key, row] of this.rows) {
+      if (
+        key.startsWith("auth_challenges/") &&
+        (row.value as { expiresAt: string }).expiresAt < now
+      ) {
+        this.rows.delete(key);
+        count++;
+      }
+    }
+    return count;
+  }
   async get<T>(table: Table, id: string): Promise<Snapshot<T> | null> {
     return structuredClone(this.rows.get(`${table}/${id}`) ?? null) as Snapshot<T> | null;
   }

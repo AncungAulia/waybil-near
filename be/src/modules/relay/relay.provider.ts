@@ -8,6 +8,7 @@ export interface RelayProvider {
   access(
     signed: SignedDelegate,
   ): Promise<{ nonce: bigint; height: bigint; receiver: string; methods: string[] }>;
+  prepareLate?(id: number): Promise<{ txHash: string; bytes: string }>;
   prepare(signed: SignedDelegate): Promise<{ txHash: string; bytes: string }>;
   broadcast(bytes: string): Promise<RelayResponse["status"]>;
   status(txHash: string): Promise<RelayResponse["status"] | null>;
@@ -41,6 +42,13 @@ export class NearRelayer implements RelayProvider {
       sdkAccount(this.provider, this.env.RELAYER_ACCOUNT, this.env.RELAYER_PRIVATE_KEY),
       signed.delegateAction.senderId,
       [actions.signedDelegate(signed)],
+    );
+  }
+  async prepareLate(id: number) {
+    return signTx(
+      sdkAccount(this.provider, this.env.RELAYER_ACCOUNT, this.env.RELAYER_PRIVATE_KEY),
+      this.env.WAYBIL_CONTRACT,
+      [actions.functionCall("mark_late", { id }, 30000000000000n, 0n)],
     );
   }
   async broadcast(bytes: string) {

@@ -335,6 +335,28 @@ it("returns unreadable initial papers for a closer look and resumes worker state
   expect((await deps.credit.tick()).processed).toBe(0);
 });
 
+it("starts the check for a same-day resubmission after a closer look", async () => {
+  const deps = await setup();
+  const row = (await deps.store.get<Application>("applications", deps.app.id))!;
+  const first = { ...row.value, state: "in_review" as const };
+  await deps.store.replace("applications", first.id, row.version, first);
+  await deps.credit.beginInitial(first);
+  vi.mocked(deps.reader.check).mockRejectedValueOnce(new UnreadablePapers());
+  expect((await deps.credit.tick()).processed).toBe(1);
+  const needsMore = (await deps.store.get<Application>("applications", first.id))!;
+  expect(needsMore.value.state).toBe("needs_more");
+  const resubmitted = {
+    ...needsMore.value,
+    state: "in_review" as const,
+    reviewId: null,
+    submissionNumber: needsMore.value.submissionNumber + 1,
+  };
+  await deps.store.replace("applications", first.id, needsMore.version, resubmitted);
+  deps.advance(60000);
+  const second = await deps.credit.beginInitial(resubmitted);
+  expect((await deps.credit.work(second)).state).toBe("complete");
+  expect(deps.reader.check).toHaveBeenCalledTimes(2);
+});
 it("retries a transient initial check without sending the application back to draft", async () => {
   const deps = await setup(false);
   const row = (await deps.store.get<Application>("applications", deps.app.id))!;

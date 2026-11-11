@@ -11,5 +11,4 @@ export const accountId = z
   .max(64)
   .regex(/^[a-z0-9]+(?:[-_.][a-z0-9]+)*$/)
   .refine((v) => v.endsWith(".testnet") || /^[a-f0-9]{64}$/.test(v));
-export const idParam = z.object({ id: z.string().min(1).max(128) });
 export const shipmentId = z.coerce.number().int().positive().max(Number.MAX_SAFE_INTEGER);

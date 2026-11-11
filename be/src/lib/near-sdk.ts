@@ -4,6 +4,7 @@ import { Account, JsonRpcProvider, KeyPair, KeyPairSigner, type KeyPairString } 
 import { logError } from "./logger";
 import type { Env } from "../config/env";
 import { ApiException, unavailable } from "./errors";
+import { assertLeases } from "./lease-context";
 
 const deadlines = new AsyncLocalStorage<AbortSignal>();
 export class DefinitiveTransactionError extends ApiException {
@@ -18,12 +19,14 @@ export function sdkProvider(env: Env) {
       const value: unknown = Reflect.get(target, key, receiver);
       if (typeof value !== "function") return value;
       return (...args: unknown[]) => {
+        assertLeases();
         if (deadlines.getStore()?.aborted)
           throw new ApiException(
             503,
             "E_RPC_TIMEOUT",
             "The delivery record took too long. Please try again.",
           );
+        if (key === "sendJsonRpc") return boundedRpc(() => Reflect.apply(value, receiver, args));
         return Reflect.apply(value, receiver, args);
       };
     },
@@ -34,6 +37,7 @@ export function sdkAccount(
   accountId: string,
   secret: string | undefined,
 ) {
+  assertLeases();
   if (!secret) unavailable();
   return new Account(
     accountId,
@@ -41,34 +45,38 @@ export function sdkAccount(
     new KeyPairSigner(KeyPair.fromString(secret as KeyPairString)),
   );
 }
+async function boundedRpc<T>(work: () => Promise<T>): Promise<T> {
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      deadlines.run(
+        deadlines.getStore()
+          ? AbortSignal.any([deadlines.getStore()!, controller.signal])
+          : controller.signal,
+        work,
+      ),
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => {
+          controller.abort();
+          reject(
+            new ApiException(
+              503,
+              "E_RPC_TIMEOUT",
+              "The delivery record took too long. Please try again.",
+            ),
+          );
+        }, 15000);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
 export async function rpcCall<T>(work: () => Promise<T>): Promise<T> {
   try {
-    const controller = new AbortController();
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    try {
-      return await Promise.race([
-        deadlines.run(
-          deadlines.getStore()
-            ? AbortSignal.any([deadlines.getStore()!, controller.signal])
-            : controller.signal,
-          work,
-        ),
-        new Promise<never>((_resolve, reject) => {
-          timer = setTimeout(() => {
-            controller.abort();
-            reject(
-              new ApiException(
-                503,
-                "E_RPC_TIMEOUT",
-                "The delivery record took too long. Please try again.",
-              ),
-            );
-          }, 15000);
-        }),
-      ]);
-    } finally {
-      clearTimeout(timer);
-    }
+    assertLeases();
+    return await boundedRpc(work);
   } catch (error) {
     logError("near_rpc", error);
     if (error instanceof ApiException) throw error;
