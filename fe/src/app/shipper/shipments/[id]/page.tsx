@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { ShipperScreen } from "@/modules/shipper/components/ShipperScreen";
+import { Shipper } from "@/modules/shipper/components/Shipper";
+import { LIVE } from "@/lib/env";
 import { SHIPMENTS } from "@/modules/shipper/data/fixtures";
 export default async function Page({
   params,
@@ -11,7 +12,8 @@ export default async function Page({
   const [{ id }, query] = await Promise.all([params, searchParams]);
   const row = SHIPMENTS.find((r) => String(r.shipment.id) === id);
   const custom = /^\d+$/.test(id) && Number.isSafeInteger(Number(id)) && Number(id) >= 1045;
-  if (!row && id !== "1036" && !custom) notFound();
+  /* Live accepts any shipment id. The demo only has its sample and locally made ones. */
+  if (LIVE ? !/^\d+$/.test(id) : !row && id !== "1036" && !custom) notFound();
   /*
    * Only a hint for the first render. The screen follows the shipment's stored status, so
    * "?pay=on" opens the pay sheet only when the driver was paid early (status Paid).
@@ -27,7 +29,8 @@ export default async function Page({
             ? "P3.4"
             : "P3.2";
   return (
-    <ShipperScreen
+    <Shipper
+      view="detail"
       key={id + state}
       shipmentId={Number(id)}
       initialState={state}

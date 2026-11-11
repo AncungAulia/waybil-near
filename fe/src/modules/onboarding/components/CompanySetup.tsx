@@ -175,7 +175,8 @@ export function CompanySetup({
     </>
   );
 }
-export type FileInfo = { name: string; size: number };
+/** `file` is kept on the live path so the papers can be uploaded. */
+export type FileInfo = { name: string; size: number; file?: File };
 export type CompanyFiles = Partial<Record<string, FileInfo>>;
 /* The papers each gallery state starts with. The screen keeps them when you go back. */
 export function initialCompanyFiles(state: OnboardingState): CompanyFiles {
@@ -308,7 +309,7 @@ export function CompanyDocuments({
                   setFiles((prev) => {
                     const next = { ...prev };
                     delete next[slot.key];
-                    if (!error) next[slot.key] = { name: file.name, size: file.size };
+                    if (!error) next[slot.key] = { name: file.name, size: file.size, file };
                     return next;
                   });
                   e.target.value = "";

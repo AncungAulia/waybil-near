@@ -1,4 +1,4 @@
-import { ShipperScreen } from "@/modules/shipper/components/ShipperScreen";
+import { Shipper } from "@/modules/shipper/components/Shipper";
 export default async function Page({
   searchParams,
 }: {
@@ -6,7 +6,8 @@ export default async function Page({
 }) {
   const query = await searchParams;
   return (
-    <ShipperScreen
+    <Shipper
+      view="shipments"
       initialState="P6.1"
       initialReceipt={
         query.cancelled &&
