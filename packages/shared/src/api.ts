@@ -1,5 +1,25 @@
 import type { Role } from "./shipment";
 
+export interface InviteCreate {
+  type: "driver" | "warehouse";
+  name: string;
+  phone: string;
+  address?: string;
+}
+export interface PublicInvite {
+  shipperName: string;
+  type: "driver" | "warehouse";
+  state: "open" | "used" | "expired";
+}
+export interface Invite extends InviteCreate {
+  code: string;
+  shipperId: string;
+  shipperName: string;
+  expiresAt: string;
+  acceptedBy: string | null;
+  acceptedAt: string | null;
+}
+
 export interface ApiError {
   error: { code: `E_${string}`; message: string };
 }

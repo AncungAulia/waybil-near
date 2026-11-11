@@ -37,3 +37,12 @@ Runtime dependencies added in #15: Express, zod, Supabase client, jose, cors and
 Development dependencies include tsx, tsup, supertest and PGlite plus type packages.
 This backend implementation uses AI assistance. Shared API types live in `packages/shared`;
 this work does not wire frontend screens or modify contracts.
+
+## Invitations (#18)
+
+The invitation routes create, list, read and accept seven-day invitations. Warehouse invites
+require an address. Public reads omit contact data; acceptance is conditional and returns
+`networkLinkRequired` because the shipper must still sign its network change. Signup
+reservations protect the invitation for five minutes without consuming it. Google identity
+resolution is connected by #16; until then the production accept route fails unavailable.
+This branch depends on `be/15-scaffold`. No additional dependencies were added for #18.

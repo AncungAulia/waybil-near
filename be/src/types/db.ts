@@ -1,4 +1,4 @@
-export type Table = "profiles";
+export type Table = "profiles" | "invites";
 export interface Snapshot<T> {
   value: T;
   version: number;
