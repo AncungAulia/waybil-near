@@ -222,3 +222,15 @@ insufficient balance) completes the saved intent as failed and releases the sign
 Transport failures, timeouts and unknown execution remain pending. Signer contention returns
 503 E_SIGNER_BUSY with a retry message rather than a client edit conflict. A finalized false
 function result is failed, including mark_late returning false; incomplete outcomes stay pending.
+
+Application reads do not acquire a write lease. Approval is reconciled using a conditional
+version update after checking the live shipper; concurrent edits do not fail the whole list.
+A matching executed proposal may be linked after an interrupted initial check, including a
+draft or needs_more row. An active shipper may create its missing off-chain company record
+and replace ready papers on an approved record for a subsequent credit review. Existing review
+snapshots remain immutable. These operations never register a shipper or change a chain limit.
+
+Malformed multipart bodies return 400 E_VALIDATION. Email delivery stops after a definite
+non-retryable 4xx or five attempts. Rate limits, 5xx and ambiguous transport outcomes may retry
+with the same idempotency key within the existing 23-hour window; unresolved ambiguity ends
+as uncertain. Permanently failed rows remain available for operational inspection.

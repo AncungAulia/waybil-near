@@ -13,7 +13,7 @@ import type { Chain } from "../../lib/near";
 import type { Leases } from "../../lib/leases";
 import type { Emails } from "../../lib/email";
 import { inspectFile, sha256, type FileStore, type StoredFile } from "../../lib/storage";
-import { allowed, conflict, requireValue, unavailable } from "../../lib/errors";
+import { allowed, ApiException, conflict, requireValue, unavailable } from "../../lib/errors";
 
 export interface ApplicationDocument extends StoredFile {
   id: string;
@@ -36,9 +36,9 @@ export class Applications {
   async create(actor: Principal, company: CompanyInput) {
     allowed(actor.role === "shipper");
     return this.leases.run(`applicant:${actor.accountId}`, async () => {
-      allowed(
-        !(await this.chain.view<Shipper | null>("get_shipper", { account_id: actor.accountId })),
-      );
+      const active = await this.chain.view<Shipper | null>("get_shipper", {
+        account_id: actor.accountId,
+      });
       const existing = (
         await this.store.list<Application>("applications", { shipperId: actor.accountId })
       ).find((r) => r.value.state !== "rejected");
@@ -51,7 +51,7 @@ export class Applications {
         id: randomUUID(),
         shipperId: actor.accountId,
         company,
-        state: "draft",
+        state: active ? "approved" : "draft",
         documents: {},
         proposalId: null,
         reviewId: null,
@@ -99,7 +99,7 @@ export class Applications {
     const inspected = await inspectFile(bytes);
     return this.leases.run(`application:${id}`, async () => {
       const app = await this.owned(actor, id);
-      this.editable(app.value);
+      if (app.value.state !== "approved") this.editable(app.value);
       const documentId = sha256(`${id}:${kind}:${inspected.sha256}`);
       let row = await this.store.get<ApplicationDocument>("application_documents", documentId);
       if (!row)
@@ -175,7 +175,13 @@ export class Applications {
     await this.team(actor);
     return this.leases.run(`application:${id}`, async () => {
       const row = requireValue(await this.store.get<Application>("applications", id));
-      allowed(row.value.state === "in_review");
+      allowed(
+        row.value.state === "in_review" ||
+          (row.value.state !== "rejected" &&
+            (await this.chain.view<Shipper | null>("get_shipper", {
+              account_id: row.value.shipperId,
+            }))),
+      );
       const proposal = requireValue(
         await this.chain.view<Proposal | null>("get_proposal", { id: proposalId }),
       );
@@ -271,9 +277,13 @@ export class Applications {
     return { application, documents };
   }
   private async refresh(id: string): Promise<Application> {
-    return this.leases.run(`application:${id}`, async () => {
-      const row = requireValue(await this.store.get<Application>("applications", id));
-      if (row.value.state !== "in_review" || !row.value.proposalId) return row.value;
+    const row = requireValue(await this.store.get<Application>("applications", id));
+    if (row.value.state === "approved" || row.value.state === "rejected") return row.value;
+    const active = await this.chain.view<Shipper | null>("get_shipper", {
+      account_id: row.value.shipperId,
+    });
+    if (!active) return row.value;
+    if (row.value.proposalId) {
       const proposal = requireValue(
         await this.chain.view<Proposal | null>("get_proposal", { id: row.value.proposalId }),
       );
@@ -281,11 +291,9 @@ export class Applications {
         "StartShipper" in proposal.kind &&
           proposal.kind.StartShipper.shipper === row.value.shipperId,
       );
-      if (
-        proposal.status !== "Approved" ||
-        !(await this.chain.view<Shipper | null>("get_shipper", { account_id: row.value.shipperId }))
-      )
-        return row.value;
+      if (proposal.status !== "Approved") return row.value;
+    }
+    try {
       return (
         await this.store.replace("applications", id, row.version, {
           ...row.value,
@@ -293,6 +301,9 @@ export class Applications {
           updatedAt: new Date(this.now()).toISOString(),
         })
       ).value;
-    });
+    } catch (error) {
+      if (!(error instanceof ApiException && error.code === "E_CONFLICT")) throw error;
+      return requireValue(await this.store.get<Application>("applications", id)).value;
+    }
   }
 }
