@@ -8,7 +8,6 @@ import { ActionSheet } from "@/components/layout/ActionSheet";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import {
   ArrowRight,
-  ArrowLeft,
   Bank,
   Truck,
   Check,
@@ -45,6 +44,8 @@ import { Money } from "@/components/elements/Money";
 import { DemoRecord } from "@/components/elements/DemoRecord";
 import { FanMeter } from "@/components/elements/FanMeter";
 import { cn } from "@/lib/cn";
+import { BackLink } from "@/components/elements/BackLink";
+import { Segmented } from "@/components/ui/Segmented";
 import { CONTRACT_RECORD_URL } from "@/lib/env";
 import { ADMIN_FIXTURES, type AdminState } from "../data/fixtures";
 import "./admin.css";
@@ -493,7 +494,7 @@ export function AdminScreen({
             <Link
               key={c.account}
               href={`/admin/shippers/${c.account}`}
-              className="admin-company-row focus-ring flex items-center justify-between gap-12 rounded-small py-10"
+              className="tap focus-ring flex items-center justify-between gap-12 rounded-small py-10 hover:bg-ds-canvas"
             >
               <div className="min-w-0">
                 <p className="text-[15px] leading-18 font-medium">{c.name}</p>
@@ -1210,12 +1211,7 @@ export function AdminScreen({
       >
         <div className="flex flex-col gap-24">
           {(activeDetail || applicationDetail) && (
-            <Link
-              href="/admin/shippers"
-              className="focus-ring flex w-fit items-center gap-6 text-[13px] leading-16 text-ds-muted"
-            >
-              <ArrowLeft size={16} /> Shippers
-            </Link>
+            <BackLink href="/admin/shippers">Shippers</BackLink>
           )}
           <header className="flex flex-wrap items-center justify-between gap-12 md:items-end">
             <div>
@@ -1290,7 +1286,7 @@ export function AdminScreen({
                       </p>
                       <Link
                         href="/admin/shippers/blue-ridge.testnet"
-                        className="focus-ring mt-4 inline-block text-[13px] leading-16 font-semibold hover:underline"
+                        className="link focus-ring mt-4 inline-block text-[13px] leading-16 font-semibold"
                       >
                         See Blue Ridge Logistics
                       </Link>
@@ -1318,35 +1314,16 @@ export function AdminScreen({
               application
             ) : (
               <>
-                {/* Plain pills with no circle (design/waybil.pen, M2), built as toggle buttons like Segmented. */}
-                <div
-                  className="admin-tabs flex gap-4 rounded-full bg-ds-line p-4 lg:hidden"
-                  role="group"
-                  aria-label="Shippers"
-                >
-                  {["Waiting", "Active"].map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      aria-pressed={tab === t}
-                      onClick={() => setTab(t)}
-                      className={cn(
-                        "press focus-ring flex flex-1 items-center justify-center gap-8 rounded-full px-14 py-10 text-[14px] leading-19 font-medium",
-                        tab === t ? "bg-ds-ink text-ds-bg" : "text-ds-muted",
-                      )}
-                    >
-                      {t}{" "}
-                      <span
-                        className={cn(
-                          "rounded-full px-8 py-2 text-[12px] leading-15",
-                          tab === t ? "bg-ds-bg/15" : "bg-ds-bg",
-                        )}
-                      >
-                        {t === "Waiting" ? waitingCount : state === "M2.9" ? 0 : 3}
-                      </span>
-                    </button>
-                  ))}
-                </div>
+                <Segmented
+                  label="Shippers"
+                  className="admin-tabs w-full lg:hidden"
+                  value={tab}
+                  onChange={setTab}
+                  options={[
+                    { value: "Waiting", label: `Waiting · ${waitingCount}` },
+                    { value: "Active", label: `Active · ${state === "M2.9" ? 0 : 3}` },
+                  ]}
+                />
                 <div className="grid items-start gap-24 lg:grid-cols-[1fr_420px]">
                   <div
                     className={cn("flex flex-col gap-20", tab !== "Waiting" && "hidden lg:flex")}

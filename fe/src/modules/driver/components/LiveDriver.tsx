@@ -3,7 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatUsdc, type Shipment } from "@waybil/shared";
-import { ArrowLeft, Copy, Package, Truck } from "@phosphor-icons/react";
+import { Copy, Package, Truck } from "@phosphor-icons/react";
 import { RoleShell } from "@/components/layout/RoleShell";
 import { Panel } from "@/components/layout/Panel";
 import { Button } from "@/components/ui/Button";
@@ -11,6 +11,7 @@ import { Money } from "@/components/elements/Money";
 import { StatusPill } from "@/components/elements/StatusPill";
 import { DeliveryQr } from "@/components/elements/DeliveryQr";
 import { ProofLink } from "@/components/elements/ProofLink";
+import { BackLink } from "@/components/elements/BackLink";
 import { useLive } from "@/hooks/useLive";
 import { useNames } from "@/hooks/useNames";
 import { ApiError } from "@/lib/api";
@@ -95,7 +96,7 @@ function Row({ s }: { s: Shipment }) {
     <button
       type="button"
       onClick={() => router.push(`/driver/trips/${s.id}`)}
-      className="press focus-ring flex w-full items-center gap-12 rounded-row p-16 text-left hover:bg-ds-canvas"
+      className="tap focus-ring flex w-full items-center gap-12 rounded-row p-16 text-left hover:bg-ds-canvas"
     >
       <span className="grid size-40 shrink-0 place-items-center rounded-full bg-ds-canvas">
         <Truck size={18} />
@@ -170,15 +171,7 @@ function Trip({
   const [tx, setTx] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const name = useNames([s?.shipper]);
-  const back = (
-    <Link
-      href="/driver"
-      className="focus-ring flex w-fit items-center gap-8 text-label text-ds-muted"
-    >
-      <ArrowLeft size={18} />
-      Trips
-    </Link>
-  );
+  const back = <BackLink href="/driver">Trips</BackLink>;
   if (!s)
     return (
       <>
@@ -290,10 +283,10 @@ function Trip({
         </Panel>
       )}
       <a
-        className="link focus-ring w-fit text-caption"
+        className="link focus-ring inline-flex w-fit items-center gap-4 text-[14px] font-medium"
         href={CONTRACT_RECORD_URL}
         target="_blank"
-        rel="noreferrer"
+        rel="noopener noreferrer"
       >
         See the record on NearBlocks ↗
       </a>
@@ -325,7 +318,7 @@ function Payouts({ trips }: { trips: Shipment[] }) {
             <Link
               key={s.id}
               href={`/driver/trips/${s.id}`}
-              className="focus-ring flex items-center justify-between gap-12 py-12"
+              className="tap focus-ring -mx-12 flex items-center justify-between gap-12 rounded-row px-12 py-12 hover:bg-ds-canvas"
             >
               <span className="min-w-0">
                 <span className="block text-label">Trip #{s.id}</span>

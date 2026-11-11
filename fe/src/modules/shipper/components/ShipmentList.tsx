@@ -37,7 +37,7 @@ export function ShipmentList({
             key={shipment.id}
             onClick={() => onOpen(shipment.id)}
             className={cn(
-              "press focus-ring flex w-full items-center gap-16 rounded-[16px] py-14 text-left hover:bg-ds-canvas",
+              "tap focus-ring flex w-full items-center gap-16 rounded-[16px] py-14 text-left hover:bg-ds-canvas",
               COLUMNS,
             )}
           >
@@ -100,7 +100,7 @@ export function ShipmentList({
           disabled={shipment.status === "Cancelled"}
           key={shipment.id}
           onClick={() => onOpen(shipment.id)}
-          className="press focus-ring flex w-full flex-wrap items-center gap-12 rounded-row p-16 text-left hover:bg-ds-canvas"
+          className="tap focus-ring flex w-full flex-wrap items-center gap-12 rounded-row p-16 text-left hover:bg-ds-canvas"
         >
           <span className="flex min-w-140 flex-1 items-center gap-12">
             <span className="hidden size-40 shrink-0 place-items-center rounded-full bg-ds-canvas md:grid">

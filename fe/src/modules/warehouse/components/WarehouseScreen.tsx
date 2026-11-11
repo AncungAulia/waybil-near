@@ -4,7 +4,6 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowLeft,
   Camera,
   CameraSlash,
   Package,
@@ -31,6 +30,7 @@ import { KeyValue } from "@/components/elements/KeyValue";
 import { Stat } from "@/components/elements/Stat";
 import { DemoRecord } from "@/components/elements/DemoRecord";
 import { QrScanner } from "@/components/elements/QrScanner";
+import { BackLink } from "@/components/elements/BackLink";
 import { useDemoDelivery } from "@/hooks/useDemoDelivery";
 import { confirmDemoDelivery, DEMO_CODE, readDemoDelivery } from "@/lib/demo-delivery";
 import { cn } from "@/lib/cn";
@@ -223,7 +223,11 @@ export function WarehouseScreen({
       <RoleShell role="warehouse" current={current} detail={detail}>
         {result ? (
           <>
-            <section className="warehouse-result">
+            <section className="warehouse-result relative">
+              {/* Pinned to the corner so the result stays centred. */}
+              <BackLink onClick={home} className="absolute top-0 left-0 z-10">
+                Back to arrivals
+              </BackLink>
               <div className="warehouse-result-body">
                 {state === "W2.6" ? (
                   <img
@@ -264,34 +268,27 @@ export function WarehouseScreen({
                     <DemoRecord title={result.recorded} />
                   </div>
                 )}
-                <div className="warehouse-result-actions">
-                  <Button
-                    icon={
-                      state === "W2.4" ? (
-                        <Scan size={17} />
-                      ) : state === "W2.12" ? (
-                        <ArrowLeft size={17} />
-                      ) : undefined
-                    }
-                    className="h-52 w-full"
-                    onClick={state === "W2.4" ? () => go("W2.2") : home}
-                  >
-                    {state === "W2.4" ? "Scan another QR" : "Back to arrivals"}
-                  </Button>
-                  {state === "W2.4" && (
-                    <Button variant="quiet" className="w-full justify-center" onClick={home}>
-                      Back to arrivals
-                    </Button>
-                  )}
-                  {state === "W2.12" && (
-                    <Link
-                      href="/warehouse/history"
-                      className="focus-ring grid h-48 place-items-center rounded-full bg-ds-canvas text-[14px]"
-                    >
-                      See it in history
-                    </Link>
-                  )}
-                </div>
+                {(state === "W2.4" || state === "W2.12") && (
+                  <div className="warehouse-result-actions">
+                    {state === "W2.4" && (
+                      <Button
+                        icon={<Scan size={17} />}
+                        className="h-52 w-full"
+                        onClick={() => go("W2.2")}
+                      >
+                        Scan another QR
+                      </Button>
+                    )}
+                    {state === "W2.12" && (
+                      <Link
+                        href="/warehouse/history"
+                        className="tap focus-ring grid h-48 place-items-center rounded-full bg-ds-canvas text-[14px] hover:bg-ds-canvas-hover"
+                      >
+                        See it in history
+                      </Link>
+                    )}
+                  </div>
+                )}
               </div>
             </section>
           </>
@@ -304,13 +301,9 @@ export function WarehouseScreen({
             )}
           >
             {detail && !scanning && (
-              <button
-                className="press focus-ring mb-20 flex items-center gap-8 rounded-small text-label text-ds-muted"
-                onClick={state === "W2.7" ? () => go("W2.3") : home}
-              >
-                <ArrowLeft size={18} />
+              <BackLink onClick={state === "W2.7" ? () => go("W2.3") : home} className="mb-20">
                 {state === "W2.7" ? "Confirm delivery" : "Arrivals"}
-              </button>
+              </BackLink>
             )}
             <h1 className="text-title md:text-amount">{title}</h1>
             {!asking && (
@@ -509,7 +502,7 @@ export function WarehouseScreen({
                 >
                   <button
                     className={cn(
-                      "focus-ring flex h-50 shrink-0 items-center gap-8 self-start px-20 text-[15px] text-ds-bg md:hidden",
+                      "press focus-ring flex h-50 shrink-0 items-center gap-8 self-start px-20 text-[15px] text-ds-bg md:hidden",
                       asking && "hidden",
                     )}
                     onClick={home}
@@ -523,7 +516,7 @@ export function WarehouseScreen({
                       aria-pressed={torch}
                       disabled={!torchAvailable}
                       onClick={() => setTorch(!torch)}
-                      className="warehouse-torch focus-ring absolute top-20 right-20 z-10 text-ds-bg disabled:text-ds-muted md:hidden"
+                      className="warehouse-torch press focus-ring absolute top-20 right-20 z-10 text-ds-bg before:absolute before:-inset-10 disabled:text-ds-muted md:hidden"
                     >
                       <Lightning size={22} weight={torch ? "fill" : "regular"} />
                     </button>
@@ -597,8 +590,10 @@ export function WarehouseScreen({
                             )
                           }
                           className={cn(
-                            "press focus-ring rounded-full px-16 py-10 text-label",
-                            reasons.includes(r) ? "bg-ds-ink text-ds-bg" : "bg-ds-canvas",
+                            "tap focus-ring rounded-full px-16 py-10 text-label",
+                            reasons.includes(r)
+                              ? "bg-ds-ink text-ds-bg"
+                              : "bg-ds-canvas hover:bg-ds-canvas-hover",
                           )}
                         >
                           {reasons.includes(r) && <Check size={14} className="mr-6 inline" />}

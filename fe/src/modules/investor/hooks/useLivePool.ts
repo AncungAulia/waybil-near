@@ -29,7 +29,8 @@ async function allShipments() {
 }
 const BATCH = 10;
 
-let cache: { accountId: string; at: number; promise: Promise<LivePool> } | null = null;
+/* One fresh read per account, so switching wallets never shows another account's pool. */
+const cache = new Map<string, { at: number; promise: Promise<LivePool> }>();
 
 async function load(accountId: string): Promise<LivePool> {
   const [pool, investor, wallet, queue, shipments] = await Promise.all([
@@ -59,29 +60,46 @@ async function load(accountId: string): Promise<LivePool> {
 
 /** The investor's pool, position and wallet from testnet. Pass no account to stay idle. */
 export function useLivePool(accountId: string | undefined) {
-  const [data, setData] = useState<LivePool | null>(null);
-  const [failed, setFailed] = useState(false);
+  const [state, setState] = useState<{
+    accountId: string;
+    data: LivePool | null;
+    failed: boolean;
+  } | null>(null);
   const [version, setVersion] = useState(0);
   useEffect(() => {
     if (!accountId) return;
     let stale = false;
     /* Moving between pool pages reuses a fresh read. Refresh (version > 0) reads again. */
-    if (!cache || cache.accountId !== accountId || version > 0 || Date.now() - cache.at > 15000)
-      cache = { accountId, at: Date.now(), promise: load(accountId) };
-    const { promise } = cache;
+    let entry = cache.get(accountId);
+    if (!entry || version > 0 || Date.now() - entry.at > 15000) {
+      entry = { at: Date.now(), promise: load(accountId) };
+      cache.set(accountId, entry);
+    }
+    const { promise } = entry;
     promise.catch(() => {
-      if (cache?.promise === promise) cache = null;
+      if (cache.get(accountId)?.promise === promise) cache.delete(accountId);
     });
     promise
       .then((value) => {
-        if (stale) return;
-        setData(value);
-        setFailed(false);
+        if (!stale) setState({ accountId, data: value, failed: false });
       })
-      .catch(() => !stale && setFailed(true));
+      .catch(() => {
+        if (stale) return;
+        setState((s) => ({
+          accountId,
+          data: s?.accountId === accountId ? s.data : null,
+          failed: true,
+        }));
+      });
     return () => {
       stale = true;
     };
   }, [accountId, version]);
-  return { data, failed, refresh: useCallback(() => setVersion((v) => v + 1), []) };
+  /* Data read for another account is never shown. */
+  const current = accountId && state?.accountId === accountId ? state : null;
+  return {
+    data: current?.data ?? null,
+    failed: current?.failed ?? false,
+    refresh: useCallback(() => setVersion((v) => v + 1), []),
+  };
 }

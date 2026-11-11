@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   formatUsdc,
@@ -21,13 +21,14 @@ import {
   type Shipment,
   type Shipper,
 } from "@waybil/shared";
-import { ArrowLeft, ArrowRight, Check, FileText, Pause, Scales, X } from "@phosphor-icons/react";
+import { ArrowRight, Check, FileText, Pause, Scales, X } from "@phosphor-icons/react";
 import { RoleShell } from "@/components/layout/RoleShell";
 import { Panel } from "@/components/layout/Panel";
 import { ActionSheet } from "@/components/layout/ActionSheet";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Money } from "@/components/elements/Money";
 import { ProofLink } from "@/components/elements/ProofLink";
+import { BackLink } from "@/components/elements/BackLink";
 import { api, ApiError } from "@/lib/api";
 import { useNames } from "@/hooks/useNames";
 import { cn } from "@/lib/cn";
@@ -105,7 +106,9 @@ const asInput = (units: bigint) => String(Number(units) / 1000000);
 /** Loads once per key and on reload. Errors become a plain sentence. */
 function useLoad<T>(load: () => Promise<T>, key: string) {
   const loader = useRef(load);
-  loader.current = load;
+  useEffect(() => {
+    loader.current = load;
+  });
   const [result, setResult] = useState<{ key: string; data?: T; error?: string } | null>(null);
   const [version, setVersion] = useState(0);
   useEffect(() => {
@@ -129,7 +132,11 @@ function useLoad<T>(load: () => Promise<T>, key: string) {
     };
   }, [key, version]);
   const current = result?.key === key ? result : null;
-  return { data: current?.data, error: current?.error, reload: () => setVersion((v) => v + 1) };
+  return {
+    data: current?.data,
+    error: current?.error,
+    reload: useCallback(() => setVersion((v) => v + 1), []),
+  };
 }
 
 /** What a proposal changes, in plain words. */
@@ -563,7 +570,7 @@ function Shippers() {
                   <Link
                     key={account}
                     href={`/admin/shippers/${account}`}
-                    className="admin-company-row focus-ring flex items-center justify-between gap-12 rounded-small py-10"
+                    className="tap focus-ring flex items-center justify-between gap-12 rounded-small py-10 hover:bg-ds-canvas"
                   >
                     <p className="min-w-0 text-[15px] leading-18 font-medium break-all">
                       {account}
@@ -798,14 +805,7 @@ function ShipperDetail({ account }: { account: string }) {
   const [sheetError, setSheetError] = useState<string | null>(null);
   const [proof, setProof] = useState<string | null>(null);
 
-  const back = (
-    <Link
-      href="/admin/shippers"
-      className="focus-ring flex w-fit items-center gap-6 text-[13px] leading-16 text-ds-muted"
-    >
-      <ArrowLeft size={16} /> Shippers
-    </Link>
-  );
+  const back = <BackLink href="/admin/shippers">Shippers</BackLink>;
   if (error)
     return (
       <>
@@ -1048,7 +1048,7 @@ function ShipperDetail({ account }: { account: string }) {
                         target="_blank"
                         rel="noreferrer"
                       >
-                        Open ↗
+                        Open the paper ↗
                       </a>
                     </div>
                   ))}

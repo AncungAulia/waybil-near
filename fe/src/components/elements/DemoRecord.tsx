@@ -29,7 +29,7 @@ export function DemoRecord({
       target="_blank"
       rel="noopener noreferrer"
       className={cn(
-        "focus-ring flex w-full items-center gap-12 rounded-row bg-ds-bg p-16 text-left",
+        "tap focus-ring flex w-full items-center gap-12 rounded-row bg-ds-bg p-16 text-left hover:bg-ds-canvas",
         className,
       )}
     >

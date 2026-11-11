@@ -489,7 +489,7 @@ export function ShipperDetail({
               {approved && state !== "P3.11" && (
                 <button
                   type="button"
-                  className="focus-ring flex items-center gap-6 self-start pt-6 text-[13px] font-semibold text-ds-danger"
+                  className="link focus-ring -mt-6 -mb-12 flex items-center gap-6 self-start rounded-small py-12 text-[13px] font-semibold text-ds-danger hover:text-ds-ink"
                   onClick={() => go("P3.11")}
                 >
                   <svg

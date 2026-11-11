@@ -1,6 +1,7 @@
 "use client";
 
 import type { ComponentProps, ReactNode } from "react";
+import Link from "next/link";
 import { ArrowUpRight, ArrowLineDown, Check, CircleNotch } from "@phosphor-icons/react";
 import { cn } from "@/lib/cn";
 import { useChanged } from "@/hooks/useChanged";
@@ -45,7 +46,7 @@ const VARIANT: Record<Variant, string> = {
   ),
   quiet: cn(
     "gap-8 px-18 bg-ds-canvas text-ds-ink",
-    "hover:bg-ds-surface-3",
+    "hover:bg-ds-canvas-hover",
     "disabled:bg-ds-canvas disabled:text-ds-off-ink",
   ),
 };
@@ -208,10 +209,23 @@ export function ButtonLink({
   className,
   ...rest
 }: ButtonLinkProps) {
-  return (
-    <a {...rest} className={cn("group", SHELL, VARIANT[variant], className)}>
+  const inner = (
+    <>
       <span className="whitespace-nowrap">{children}</span>
       <ButtonCircle variant={variant} loading={false} success={false} icon={icon} />
+    </>
+  );
+  const classes = cn("group", SHELL, VARIANT[variant], className);
+  /* A route inside the app moves without reloading the page. Other addresses stay plain links. */
+  if (typeof rest.href === "string" && rest.href.startsWith("/"))
+    return (
+      <Link {...rest} href={rest.href} className={classes}>
+        {inner}
+      </Link>
+    );
+  return (
+    <a {...rest} className={classes}>
+      {inner}
     </a>
   );
 }

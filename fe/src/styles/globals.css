@@ -10,6 +10,8 @@
   --color-ds-canvas: #f2f2f2;
   --color-ds-surface-2: #f7f7f7;
   --color-ds-surface-3: #ededed;
+  /* Hover on things that already rest on canvas grey. surface-3 is too close to see. */
+  --color-ds-canvas-hover: #e4e4e4;
   --color-ds-line: #e6e6e6;
   --color-ds-line-strong: #d6d6d6;
   --color-ds-ink: #111111;
@@ -382,6 +384,28 @@
       color: var(--color-ds-brand-deep);
     }
   }
+
+  /*
+   * `tap` is `press` for things that also change colour on hover: clickable cards, list rows,
+   * chips and tabs. It eases colour, background and border (150 ms, plain ease) and keeps the
+   * press, which a `transition-colors` utility would cancel, so never add one next to it.
+   * The hover colours stay utilities on the element, for example a clickable white row uses
+   * `tap hover:border-ds-ink hover:bg-ds-canvas`, and a grey one `hover:bg-ds-canvas-hover`.
+   */
+  .tap {
+    transition:
+      color 150ms var(--ease-base),
+      background-color 150ms var(--ease-base),
+      border-color 150ms var(--ease-base),
+      transform 100ms ease;
+  }
+  .tap:not(:disabled):active:not(:focus-visible) {
+    transform: scale(0.98);
+    transition-duration: 150ms, 150ms, 150ms, 160ms;
+  }
+  .tap[aria-busy="true"]:not(:disabled):active:not(:focus-visible) {
+    transform: none;
+  }
 }
 
 /* Enter: a fade plus an 8 px rise. Sheets, dialogs and opened screens use it. */
@@ -477,6 +501,7 @@
     .action-sheet {
       animation: fade 200ms ease backwards;
     }
+    .tap:not(:disabled):active:not(:focus-visible),
     .press:not(:disabled):active:not(:focus-visible) {
       transform: none;
     }

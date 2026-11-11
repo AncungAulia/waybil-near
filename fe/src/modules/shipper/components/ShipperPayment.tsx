@@ -193,7 +193,7 @@ export function ShipperPayment({
             {insufficient ? (
               <button
                 type="button"
-                className="focus-ring self-start rounded-small text-[13px] leading-[16px] font-semibold text-ds-brand-deep"
+                className="link focus-ring -my-12 self-start rounded-small py-12 text-[13px] leading-[16px] font-semibold"
                 onClick={() => setFunded(true)}
               >
                 Get test USDC

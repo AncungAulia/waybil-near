@@ -29,7 +29,8 @@ let cache: { account: string; at: number; promise: Promise<LiveShipperData> } | 
 /** The signed-in shipper's testnet and backend data. Pass no account to stay idle. */
 export function useLiveShipper(account: string | undefined) {
   const [data, setData] = useState<LiveShipperData | null>(null);
-  const [failed, setFailed] = useState(false);
+  /* Which account the last read failed for, so a failure never shows under another account. */
+  const [failedFor, setFailedFor] = useState<string | null>(null);
   const [version, setVersion] = useState(0);
   useEffect(() => {
     if (!account) return;
@@ -44,12 +45,17 @@ export function useLiveShipper(account: string | undefined) {
       .then((value) => {
         if (stale) return;
         setData(value);
-        setFailed(false);
+        setFailedFor(null);
       })
-      .catch(() => !stale && setFailed(true));
+      .catch(() => !stale && setFailedFor(account));
     return () => {
       stale = true;
     };
   }, [account, version]);
-  return { data, failed, refresh: useCallback(() => setVersion((v) => v + 1), []) };
+  return {
+    /* Data read for another account is never shown while this one loads. */
+    data: account && data?.account === account ? data : null,
+    failed: !!account && failedFor === account,
+    refresh: useCallback(() => setVersion((v) => v + 1), []),
+  };
 }

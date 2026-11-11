@@ -6,7 +6,6 @@ import { RoleShell } from "@/components/layout/RoleShell";
 import { Panel } from "@/components/layout/Panel";
 import { ActionSheet } from "@/components/layout/ActionSheet";
 import {
-  ArrowLeft,
   ArrowLineDown,
   ArrowUpRight,
   Check,
@@ -28,6 +27,7 @@ import { StatusPill } from "@/components/elements/StatusPill";
 import { Stat } from "@/components/elements/Stat";
 import { cn } from "@/lib/cn";
 import { ProofLink } from "@/components/elements/ProofLink";
+import { BackLink } from "@/components/elements/BackLink";
 import { CONTRACT_RECORD_URL, LIVE, USDC_CONTRACT, WAYBIL_CONTRACT } from "@/lib/env";
 import { callContract, ensureUsdcStorage } from "@/lib/wallet";
 import { useAuth } from "@/providers/AuthProvider";
@@ -200,7 +200,8 @@ export function InvestorScreen({
     preview && !receipt ? (deposit ? "6009720000" : "4009720000") : balance.value;
   const settledTotal =
     preview && !receipt ? (deposit ? "26000000000" : "24000000000") : balance.total;
-  const settledShare = Math.round((Number(settledValue) / Number(settledTotal)) * 100);
+  const settledShare =
+    Number(settledTotal) > 0 ? Math.round((Number(settledValue) / Number(settledTotal)) * 100) : 0;
   async function submitLive(accountId: string) {
     setTxError(null);
     setPending(true);
@@ -471,7 +472,7 @@ export function InvestorScreen({
                 <Link
                   key={h.title}
                   href="/pool/history"
-                  className="focus-ring flex items-center gap-12 py-12"
+                  className="tap focus-ring flex items-center gap-12 py-12 hover:bg-ds-canvas"
                 >
                   <span className="grid size-36 shrink-0 place-items-center rounded-full bg-ds-canvas">
                     {h.icon}
@@ -584,7 +585,7 @@ export function InvestorScreen({
                     type="button"
                     onClick={() => setFilter(f.label)}
                     className={cn(
-                      "press focus-ring flex items-center gap-6 rounded-full px-14 py-8 text-label transition-colors duration-150 ease-base",
+                      "tap focus-ring flex items-center gap-6 rounded-full px-14 py-8 text-label",
                       filter === f.label
                         ? "bg-ds-ink text-ds-bg"
                         : "text-ds-ink-2 hover:bg-ds-canvas",
@@ -632,7 +633,7 @@ export function InvestorScreen({
                     <Link
                       href={`/pool/deliveries/${r.id}`}
                       key={r.id}
-                      className="focus-ring grid items-center gap-10 py-14 md:grid-cols-[1fr_140px_130px_170px] md:gap-16"
+                      className="tap focus-ring grid items-center gap-10 py-14 hover:bg-ds-canvas md:grid-cols-[1fr_140px_130px_170px] md:gap-16"
                     >
                       <span className="flex items-center gap-12">
                         <span className="grid size-40 shrink-0 place-items-center rounded-full bg-ds-canvas">
@@ -734,7 +735,7 @@ export function InvestorScreen({
                     type="button"
                     disabled={waiting}
                     onClick={() => quick(n)}
-                    className="press focus-ring rounded-full bg-ds-canvas px-12 py-6 text-caption hover:bg-ds-surface-3 disabled:text-ds-off-ink"
+                    className="tap focus-ring rounded-full bg-ds-canvas px-12 py-6 text-caption hover:bg-ds-canvas-hover disabled:text-ds-off-ink"
                   >
                     {n === 100 ? (deposit ? "Max" : "Max now") : `${n}%`}
                   </button>
@@ -948,13 +949,7 @@ function DeliveryDetails({
   ];
   return (
     <>
-      <Link
-        href="/pool/deliveries"
-        className="focus-ring flex items-center gap-8 text-label text-ds-muted"
-      >
-        <ArrowLeft size={18} />
-        Deliveries
-      </Link>
+      <BackLink href="/pool/deliveries">Deliveries</BackLink>
       <header className="flex flex-wrap items-center justify-between gap-12">
         <div>
           <h1 className="text-title">Eastport to {city}</h1>

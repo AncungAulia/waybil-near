@@ -9,7 +9,7 @@ import {
   type QueueEntry,
   type Shipment,
 } from "@waybil/shared";
-import { ArrowLeft, ArrowLineDown, Clock, Package, SealCheck } from "@phosphor-icons/react";
+import { ArrowLineDown, Clock, Package, SealCheck } from "@phosphor-icons/react";
 import { Panel } from "@/components/layout/Panel";
 import { Money } from "@/components/elements/Money";
 import { FanMeter } from "@/components/elements/FanMeter";
@@ -19,7 +19,9 @@ import { cn } from "@/lib/cn";
 import { api } from "@/lib/api";
 import { useLive } from "@/hooks/useLive";
 import { useNames } from "@/hooks/useNames";
-import { CONTRACT_RECORD_URL, nearblocksUrl } from "@/lib/env";
+import { CONTRACT_RECORD_URL } from "@/lib/env";
+import { BackLink } from "@/components/elements/BackLink";
+import { ProofLink } from "@/components/elements/ProofLink";
 import { statusChip } from "@/lib/status";
 import { latestEvents, poolStats, type LivePool } from "../data/live";
 
@@ -117,7 +119,7 @@ export function LiveSections({ data }: { data: LivePool | null }) {
             <Link
               key={`${kind}-${s.id}`}
               href={`/pool/deliveries/${s.id}`}
-              className="focus-ring flex items-center gap-12 py-12"
+              className="tap focus-ring flex items-center gap-12 py-12 hover:bg-ds-canvas"
             >
               <span className="grid size-36 shrink-0 place-items-center rounded-full bg-ds-canvas">
                 {kind === "paid" ? <ArrowLineDown size={16} /> : <SealCheck size={16} />}
@@ -171,7 +173,7 @@ export function LiveDeliveries({ deliveries }: { deliveries: Shipment[] }) {
               type="button"
               onClick={() => setFilter(f.label)}
               className={cn(
-                "press focus-ring flex items-center gap-6 rounded-full px-14 py-8 text-label transition-colors duration-150 ease-base",
+                "tap focus-ring flex items-center gap-6 rounded-full px-14 py-8 text-label",
                 filter === f.label ? "bg-ds-ink text-ds-bg" : "text-ds-ink-2 hover:bg-ds-canvas",
               )}
             >
@@ -215,7 +217,7 @@ export function LiveDeliveries({ deliveries }: { deliveries: Shipment[] }) {
               <Link
                 href={`/pool/deliveries/${s.id}`}
                 key={s.id}
-                className="focus-ring grid items-center gap-10 py-14 md:grid-cols-[1fr_140px_150px_170px] md:gap-16"
+                className="tap focus-ring grid items-center gap-10 py-14 hover:bg-ds-canvas md:grid-cols-[1fr_140px_150px_170px] md:gap-16"
               >
                 <span className="flex min-w-0 items-center gap-12">
                   <span className="grid size-40 shrink-0 place-items-center rounded-full bg-ds-canvas">
@@ -259,15 +261,7 @@ export function LiveDelivery({
   total: string;
 }) {
   const name = useNames([s?.shipper, s?.driver]);
-  const back = (
-    <Link
-      href="/pool/deliveries"
-      className="focus-ring flex items-center gap-8 text-label text-ds-muted"
-    >
-      <ArrowLeft size={18} />
-      Deliveries
-    </Link>
-  );
+  const back = <BackLink href="/pool/deliveries">Deliveries</BackLink>;
   if (!s)
     return (
       <>
@@ -435,14 +429,7 @@ export function LiveHistory({ accountId, queue }: { accountId: string; queue: Qu
               <span className="min-w-0 flex-1">
                 <span className="block text-body">{KIND[item.kind].label}</span>
                 <span className="block text-caption text-ds-muted">{isoDay(item.at)}</span>
-                <a
-                  className="link focus-ring text-caption"
-                  href={nearblocksUrl(`/txns/${item.txHash}`)}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  See the record on NearBlocks ↗
-                </a>
+                <ProofLink tx={item.txHash} className="text-caption" />
               </span>
               <span className="shrink-0 text-label tabular-nums">
                 {KIND[item.kind].sign}

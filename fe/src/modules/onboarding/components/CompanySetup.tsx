@@ -8,7 +8,8 @@ import { useRegions } from "../data/regions";
 import { PhoneInput } from "./PhoneInput";
 import { SearchPicker } from "./SearchPicker";
 import { cn } from "@/lib/cn";
-import { UploadSimple, FileX, FileText, Check, ArrowLeft } from "@phosphor-icons/react";
+import { UploadSimple, FileX, FileText, Check } from "@phosphor-icons/react";
+import { BackLink } from "@/components/elements/BackLink";
 export function CompanySetup({
   state,
   draft,
@@ -236,6 +237,10 @@ export function CompanyDocuments({
   const waiting = state === "C6";
   return (
     <>
+      {/* Back sits at the top-left, where people look for it, not under the main action. */}
+      <BackLink onClick={onBack} disabled={waiting} className="-mb-8">
+        Back to details
+      </BackLink>
       <div className="flex flex-col gap-10">
         <h1 className="text-[30px] leading-[1.1] font-medium tracking-[-0.03em] md:text-[40px]">
           Add your
@@ -261,12 +266,15 @@ export function CompanyDocuments({
           },
           { key: "tax", label: "Tax ID", hint: "You can skip this. It helps us check faster." },
         ].map((slot) => (
-          <div
+          /* The whole row picks a file, not only the word on the right. */
+          <label
             key={slot.key}
             className={cn(
-              "flex items-center gap-14 rounded-[16px] border border-ds-line p-16",
-              !files[slot.key] && "border-[1.5px] border-ds-line-strong bg-ds-canvas",
+              "tap flex cursor-pointer items-center gap-14 rounded-[16px] border border-ds-line p-16 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ds-brand hover:border-ds-ink",
+              !files[slot.key] &&
+                "border-[1.5px] border-ds-line-strong bg-ds-canvas hover:bg-ds-canvas-hover",
               errors[slot.key] && "border-ds-danger bg-ds-danger-result",
+              waiting && "pointer-events-none opacity-60",
             )}
           >
             <span
@@ -313,12 +321,7 @@ export function CompanyDocuments({
                     : slot.hint)}
               </p>
             </div>
-            <label
-              className={cn(
-                "focus-ring shrink-0 cursor-pointer rounded-full py-8 text-[14px] font-semibold has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-ds-brand",
-                waiting && "pointer-events-none opacity-50",
-              )}
-            >
+            <span className="shrink-0 rounded-full py-8 text-[14px] font-semibold">
               <span>{errors[slot.key] ? "Try again" : files[slot.key] ? "Replace" : "Upload"}</span>
               <input
                 aria-label={slot.label}
@@ -340,8 +343,8 @@ export function CompanyDocuments({
                   e.target.value = "";
                 }}
               />
-            </label>
-          </div>
+            </span>
+          </label>
         ))}
         <p className="text-[13px] leading-[1.45] text-ds-muted">
           You can upload a PDF or a photo. Each file can be up to 2 MB.
@@ -363,14 +366,6 @@ export function CompanyDocuments({
           Send for review
         </Button>
       </div>
-      <button
-        type="button"
-        disabled={waiting}
-        onClick={onBack}
-        className="link-ink focus-ring flex w-fit items-center gap-6 rounded-full text-label disabled:opacity-50"
-      >
-        <ArrowLeft size={16} /> Back to details
-      </button>
     </>
   );
 }

@@ -42,7 +42,7 @@ export function Segmented<T extends string>({
             aria-pressed={on}
             onClick={() => onChange(option.value)}
             className={cn(
-              "focus-ring rounded-full px-16 py-8 text-label font-medium transition-colors duration-150 ease-base",
+              "tap focus-ring rounded-full px-16 py-8 text-label font-medium",
               on ? "bg-ds-ink text-ds-bg" : "text-ds-muted hover:bg-ds-canvas hover:text-ds-ink",
             )}
           >

@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import Link from "next/link";
+import { BackLink } from "@/components/elements/BackLink";
 import type {
   ReportReason,
   ReportSaved,
@@ -227,6 +227,9 @@ function ScanAndConfirm({
   if (done)
     return (
       <Panel className="items-center gap-16 text-center">
+        <BackLink href="/warehouse" className="self-start">
+          Back to arrivals
+        </BackLink>
         <span className="grid size-64 place-items-center rounded-full bg-ds-brand text-ds-ink">
           <Check size={30} weight="bold" />
         </span>
@@ -252,9 +255,6 @@ function ScanAndConfirm({
         >
           Scan another delivery
         </Button>
-        <Link className="link focus-ring text-label" href="/warehouse">
-          Back to arrivals
-        </Link>
       </Panel>
     );
 
@@ -330,8 +330,10 @@ function ScanAndConfirm({
                     <label
                       key={r.value}
                       className={cn(
-                        "press flex cursor-pointer items-center gap-6 rounded-full px-14 py-8 text-[13px] font-medium",
-                        reasons.includes(r.value) ? "bg-ds-ink text-ds-bg" : "bg-ds-canvas",
+                        "tap flex cursor-pointer items-center gap-6 rounded-full px-14 py-8 text-[13px] font-medium",
+                        reasons.includes(r.value)
+                          ? "bg-ds-ink text-ds-bg"
+                          : "bg-ds-canvas hover:bg-ds-canvas-hover",
                       )}
                     >
                       <input
@@ -359,7 +361,7 @@ function ScanAndConfirm({
                   className="min-h-96 rounded-[14px] bg-ds-canvas p-12 text-[14px] outline-none focus-visible:outline-2 focus-visible:outline-ds-ink"
                 />
               </label>
-              <label className="press focus-ring flex w-fit cursor-pointer items-center gap-8 rounded-full bg-ds-canvas px-14 py-10 text-label">
+              <label className="tap focus-ring flex w-fit cursor-pointer items-center gap-8 rounded-full bg-ds-canvas px-14 py-10 text-label hover:bg-ds-canvas-hover">
                 <Camera size={17} />
                 {photos.length ? `${photos.length} photos added` : "Add photos"}
                 <input

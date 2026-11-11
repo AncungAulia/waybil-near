@@ -177,7 +177,7 @@ export function DemoWallet({
           <button
             type="button"
             aria-label={copied ? "Address copied" : "Copy address"}
-            className="press focus-ring grid size-32 shrink-0 place-items-center rounded-full text-ds-muted hover:bg-ds-canvas"
+            className="press focus-ring grid size-32 shrink-0 place-items-center rounded-full text-ds-muted before:absolute before:-inset-6 hover:bg-ds-canvas hover:text-ds-ink"
             onClick={async () => {
               try {
                 await navigator.clipboard.writeText(account);

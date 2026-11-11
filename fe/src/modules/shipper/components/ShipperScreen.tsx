@@ -1,8 +1,8 @@
 "use client";
 import { useState, useSyncExternalStore } from "react";
 import { notFound, usePathname, useRouter } from "next/navigation";
-import { ArrowLeft } from "@phosphor-icons/react";
 import { RoleShell } from "@/components/layout/RoleShell";
+import { BackLink } from "@/components/elements/BackLink";
 import { ShipmentRowSkeleton } from "@/components/elements/ShipmentRow";
 import { useDemoDelivery } from "@/hooks/useDemoDelivery";
 import { ShipperHome } from "./ShipperHome";
@@ -139,13 +139,9 @@ export function ShipperScreen({
   return (
     <RoleShell role="shipper" current={current} detail={detail}>
       {detail && (
-        <button
-          className="press focus-ring mb-24 flex items-center gap-8 rounded-small text-label text-ds-muted"
-          onClick={() => go("P6.1")}
-        >
-          <ArrowLeft size={18} />
-          Shipments
-        </button>
+        <div className="mb-24">
+          <BackLink onClick={() => go("P6.1")}>Shipments</BackLink>
+        </div>
       )}
       {state.startsWith("P1") ? (
         <ShipperHome

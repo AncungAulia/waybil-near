@@ -211,7 +211,7 @@ export function ShipperCredit({
                 href={CONTRACT_RECORD_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="focus-ring self-start rounded-small text-[13px] leading-[16px] font-semibold text-ds-brand-deep"
+                className="link focus-ring -my-12 self-start rounded-small py-12 text-[13px] leading-[16px] font-semibold"
               >
                 See the record on NearBlocks ↗
               </a>
