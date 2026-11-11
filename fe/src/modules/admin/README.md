@@ -4,6 +4,9 @@ Issue #31. The 23 M1–M3 states live in `components/AdminScreen.tsx` with share
 and Pool fixtures in `data/fixtures.ts`. Routes are `/admin`, `/admin/shippers`,
 `/admin/shippers/[account]` and `/admin/pool`.
 
+`components/AdminActionFields.tsx` contains the approval, rejection, limit and pause
+forms. `components/admin.css` scopes the design layouts to the Admin role and its dialogs.
+
 The logged-in person in the design is Risk lead. The first Northwind proposal already has
 Operations' approval. Approving it reaches two votes; rejecting it produces a split vote.
 Further votes by the same person are disabled. Rejected and expired gallery fixtures are closed.
@@ -20,3 +23,5 @@ show only the summary data supplied by the fixtures.
 
 M2.6 and M2.9 have separate tablet and mobile drawings. Desktop keeps both company lists visible.
 No dependencies were added. Screenshots and validation are in `fe/review/investor-admin/`.
+The latest Admin-only comparison and browser checks are in `fe/review/admin-design.md`
+and `fe/review/admin/`.

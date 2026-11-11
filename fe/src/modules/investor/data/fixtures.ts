@@ -17,6 +17,7 @@ export const INVESTOR_STATES = {
   "I3.2": "One delivery",
   "I3.3": "History",
   "I3.4": "No deliveries yet",
+  "I3.5": "Covered by reserve",
 } as const;
 export type InvestorState = keyof typeof INVESTOR_STATES;
 export const BASE_INVESTOR: Investor = { shares: "5000000000", value: "5009720000", queued: "0" };
@@ -29,7 +30,7 @@ export const INVESTOR_FIXTURES = Object.fromEntries(
         ...(code === "I1.3" || code === "I2.6" ? { cash: "2000000000", lent: "23000000000" } : {}),
       },
       investor: { ...BASE_INVESTOR, ...(code === "I1.2" ? { shares: "0", value: "0" } : {}) },
-      shipment: demoShipment("Paid"),
+      shipment: demoShipment(code === "I3.5" ? "CoveredByReserve" : "Paid"),
     },
   ]),
 ) as Record<InvestorState, { pool: Pool; investor: Investor; shipment: Shipment }>;

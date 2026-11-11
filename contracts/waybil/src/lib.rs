@@ -16,25 +16,33 @@ mod pool;
 mod shipment;
 mod shipper;
 mod team;
+mod upgrade;
 mod views;
 
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
 mod tests_money;
+#[cfg(test)]
+mod tests_upgrade;
 
 pub use index::Index;
 pub use pool::{InvestorView, Pool, QueueEntry};
 pub use shipment::{Shipment, Status};
 pub use shipper::{Destination, Network, Shipper};
 pub use team::{Proposal, ProposalKind, ProposalStatus};
+pub use upgrade::CodeInfo;
 
 /// One day in nanoseconds.
 pub const DAY_NS: u64 = 86_400 * 1_000_000_000;
 /// 100% in basis points.
 pub const BPS: u128 = 10_000;
 /// Version of the stored state. Bump it with every migration.
+#[cfg(not(feature = "test-v2"))]
 pub const STATE_VERSION: u16 = 1;
+/// Test-only build that the sandbox upgrade test deploys as "V2". Never deploy it.
+#[cfg(feature = "test-v2")]
+pub const STATE_VERSION: u16 = 2;
 
 pub(crate) const GAS_FT_TRANSFER: Gas = Gas::from_tgas(10);
 pub(crate) const GAS_CALLBACK: Gas = Gas::from_tgas(10);
