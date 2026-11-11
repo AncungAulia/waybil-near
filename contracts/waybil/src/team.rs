@@ -2,9 +2,11 @@
 
 use crate::events::emit;
 use crate::{Contract, ContractExt, DAY_NS, Shipper};
-use near_sdk::json_types::{U64, U128};
+use near_sdk::json_types::{Base58CryptoHash, U64, U128};
 use near_sdk::serde_json::json;
-use near_sdk::{AccountId, env, near, require};
+use near_sdk::{
+    AccountId, CryptoHash, Gas, NearToken, Promise, PromiseOrValue, env, near, require,
+};
 
 #[near(serializers = [json, borsh])]
 #[derive(Clone, Debug, PartialEq)]
@@ -24,6 +26,12 @@ pub enum ProposalKind {
     /// The reserve covers a bill still unpaid `reserve_cover_after_days` after its due date.
     CoverFromReserve {
         shipment_id: u64,
+    },
+    /// Replace the contract code with the wasm whose sha256 is `code_hash`.
+    /// The second approval comes with the code through `approve_upgrade` (decision 0012).
+    /// Keep this the last variant: stored proposals depend on the variant order.
+    Upgrade {
+        code_hash: Base58CryptoHash,
     },
 }
 
@@ -53,6 +61,15 @@ pub struct Proposal {
 /// Votes needed to approve or reject.
 pub const QUORUM: usize = 2;
 
+/// Raw storage key for the hash of the code an approved upgrade is deploying.
+/// `migrate` in the new code moves it to `CODE_HASH_KEY`. Raw keys leave the state struct
+/// unchanged, so the stored state stays readable by older and newer code.
+pub(crate) const CODE_HASH_PENDING_KEY: &[u8] = b"code_hash_pending";
+/// Raw storage key for the hash of the current code, written by `migrate`.
+pub(crate) const CODE_HASH_KEY: &[u8] = b"code_hash";
+/// Gas for `migrate` in the new code, in the same batch as the deploy.
+const GAS_MIGRATE: Gas = Gas::from_tgas(100);
+
 #[near]
 impl Contract {
     /// A team member proposes a change. Their proposal counts as their approval.
@@ -69,6 +86,54 @@ impl Contract {
     pub fn vote(&mut self, id: u64, approve: bool) -> ProposalStatus {
         let member = self.assert_team_member();
         self.cast(id, member, approve)
+    }
+
+    /// Second approval of an `Upgrade` proposal, sent with the new code (decision 0012).
+    /// The input is borsh `(id: u64, code: Vec<u8>)`, not JSON, so the wasm travels as bytes.
+    /// At 2 of 3 the contract deploys the code to itself and calls `migrate` in one batch,
+    /// and returns that batch. If `migrate` fails the batch rolls back and the old code stays.
+    /// A call on an expired proposal closes it as `Expired` instead of failing.
+    pub fn approve_upgrade(
+        &mut self,
+        #[serializer(borsh)] id: u64,
+        #[serializer(borsh)] code: Vec<u8>,
+    ) -> PromiseOrValue<ProposalStatus> {
+        let member = self.assert_team_member();
+        let Some(mut p) = self.open_for_vote(id, &member) else {
+            return PromiseOrValue::Value(ProposalStatus::Expired);
+        };
+        let code_hash = match &p.kind {
+            ProposalKind::Upgrade { code_hash } => *code_hash,
+            _ => env::panic_str("E_NOT_UPGRADE"),
+        };
+        let hash = CryptoHash::from(code_hash);
+        require!(env::sha256_array(&code) == hash, "E_CODE_HASH");
+        Self::record_vote(&mut p, member, true);
+        if p.approvals.len() < QUORUM {
+            self.proposals.insert(id, p);
+            return PromiseOrValue::Value(ProposalStatus::Open);
+        }
+        p.status = ProposalStatus::Approved;
+        self.proposals.insert(id, p);
+        emit(
+            "proposal_resolved",
+            json!({ "id": id, "status": ProposalStatus::Approved }),
+        );
+        emit(
+            "upgrade_approved",
+            json!({ "id": id, "code_hash": code_hash }),
+        );
+        env::storage_write(CODE_HASH_PENDING_KEY, &hash);
+        PromiseOrValue::Promise(
+            Promise::new(env::current_account_id())
+                .deploy_contract(code)
+                .function_call(
+                    "migrate".to_string(),
+                    b"{}".to_vec(),
+                    NearToken::from_yoctonear(0),
+                    GAS_MIGRATE,
+                ),
+        )
     }
 
     /// Emergency brake: any one member stops a shipper's new shipments at once.
@@ -112,6 +177,8 @@ impl Contract {
                 let wait = self.config.reserve_cover_after_days as u64 * DAY_NS;
                 require!(Self::now() > s.due_at.0 + wait, "E_TOO_EARLY");
             }
+            // The hash is 32 bytes by type. Members check it against a reproducible build.
+            ProposalKind::Upgrade { .. } => {}
         }
     }
 
@@ -143,38 +210,55 @@ impl Contract {
         id
     }
 
-    /// Records one vote and resolves the proposal when it reaches 2 of 3.
-    fn cast(&mut self, id: u64, member: AccountId, approve: bool) -> ProposalStatus {
+    /// Loads an open proposal that `member` may still vote on. An expired one is closed as
+    /// `Expired` and `None` is returned, so the caller returns instead of failing.
+    fn open_for_vote(&mut self, id: u64, member: &AccountId) -> Option<Proposal> {
         let mut p = self
             .proposals
             .get(&id)
             .cloned()
             .unwrap_or_else(|| env::panic_str("E_NO_PROPOSAL"));
         require!(p.status == ProposalStatus::Open, "E_PROPOSAL_CLOSED");
-        let now = Self::now();
         let ttl = self.config.proposal_ttl_days as u64 * DAY_NS;
-        if now > p.created_at.0 + ttl {
+        if Self::now() > p.created_at.0 + ttl {
             p.status = ProposalStatus::Expired;
             self.proposals.insert(id, p);
             emit(
                 "proposal_resolved",
                 json!({ "id": id, "status": "Expired" }),
             );
-            return ProposalStatus::Expired;
+            return None;
         }
         require!(
-            !p.approvals.contains(&member) && !p.rejections.contains(&member),
+            !p.approvals.contains(member) && !p.rejections.contains(member),
             "E_ALREADY_VOTED"
         );
-        if approve {
-            p.approvals.push(member.clone());
-        } else {
-            p.rejections.push(member.clone());
-        }
+        Some(p)
+    }
+
+    fn record_vote(p: &mut Proposal, member: AccountId, approve: bool) {
         emit(
             "vote_cast",
-            json!({ "id": id, "member": member, "approve": approve }),
+            json!({ "id": p.id, "member": member, "approve": approve }),
         );
+        if approve {
+            p.approvals.push(member);
+        } else {
+            p.rejections.push(member);
+        }
+    }
+
+    /// Records one vote and resolves the proposal when it reaches 2 of 3.
+    fn cast(&mut self, id: u64, member: AccountId, approve: bool) -> ProposalStatus {
+        let Some(mut p) = self.open_for_vote(id, &member) else {
+            return ProposalStatus::Expired;
+        };
+        // The approval that deploys an upgrade must carry the code.
+        if approve && matches!(p.kind, ProposalKind::Upgrade { .. }) {
+            require!(p.approvals.len() + 1 < QUORUM, "E_USE_APPROVE_UPGRADE");
+        }
+        Self::record_vote(&mut p, member, approve);
+        let now = Self::now();
 
         if p.approvals.len() >= QUORUM {
             // Re-check: the state may have changed since the proposal was made.
@@ -230,6 +314,8 @@ impl Contract {
                 emit("shipper_unpaused", json!({ "shipper": shipper }));
             }
             ProposalKind::CoverFromReserve { shipment_id } => self.cover_from_reserve(*shipment_id),
+            // Never runs: `cast` sends the deciding approval of an upgrade to `approve_upgrade`.
+            ProposalKind::Upgrade { .. } => env::panic_str("E_USE_APPROVE_UPGRADE"),
         }
     }
 

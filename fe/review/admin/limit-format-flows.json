@@ -1,0 +1,6 @@
+[
+  "The initial limit displays 2,000",
+  "Grouping preserves decimal input",
+  "The grouped decimal amount submits",
+  "The exact decimal amount is preserved"
+]
