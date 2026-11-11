@@ -14,3 +14,18 @@ export const USDC_CONTRACT = process.env.NEXT_PUBLIC_USDC_CONTRACT ?? "usdc.wayb
 
 /** The public landing page, used by the logo link and the footer. */
 export const LANDING_URL = process.env.NEXT_PUBLIC_LANDING_URL ?? "http://localhost:3000";
+
+/** The NearBlocks explorer for NEAR_NETWORK, without a trailing slash. */
+export const NEARBLOCKS_URL =
+  NEAR_NETWORK === "mainnet" ? "https://nearblocks.io" : "https://testnet.nearblocks.io";
+
+/** A NearBlocks page, for example `nearblocksUrl("/txns/<hash>")`. */
+export function nearblocksUrl(path = "") {
+  return `${NEARBLOCKS_URL}${path}`;
+}
+
+/**
+ * The main contract's account page. Sample data has no transaction hash, so demo receipts
+ * link here and say they are a sample.
+ */
+export const CONTRACT_RECORD_URL = nearblocksUrl(`/address/${WAYBIL_CONTRACT}`);

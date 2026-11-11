@@ -8,8 +8,8 @@ import type { Shipment, ShipmentStatus } from "@waybil/shared";
  *   status at `PickedUp`; only the payout callback moves it to `Paid`. So a shipment that has
  *   arrived but is not paid yet is Delivered. It is usually a moment, but it stays there if
  *   the payout promise fails, and that is money, so the chip has to exist.
- * - `Cancelled` and `CoveredByReserve` are not drawn yet. They follow the same pattern
- *   (neutral pill, coloured dot, plain words) and are waiting on the design file.
+ * - `Cancelled` (P3.12, K2.14) and `CoveredByReserve` (P3.13, I3.5) follow the same pattern:
+ *   neutral pill, coloured dot, plain words.
  */
 export type StatusChip =
   | "approved"
