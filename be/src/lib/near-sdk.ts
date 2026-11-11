@@ -26,6 +26,7 @@ export function sdkProvider(env: Env) {
             "E_RPC_TIMEOUT",
             "The delivery record took too long. Please try again.",
           );
+        if (key === "sendJsonRpc") return boundedRpc(() => Reflect.apply(value, receiver, args));
         return Reflect.apply(value, receiver, args);
       };
     },
@@ -44,35 +45,38 @@ export function sdkAccount(
     new KeyPairSigner(KeyPair.fromString(secret as KeyPairString)),
   );
 }
+async function boundedRpc<T>(work: () => Promise<T>): Promise<T> {
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      deadlines.run(
+        deadlines.getStore()
+          ? AbortSignal.any([deadlines.getStore()!, controller.signal])
+          : controller.signal,
+        work,
+      ),
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => {
+          controller.abort();
+          reject(
+            new ApiException(
+              503,
+              "E_RPC_TIMEOUT",
+              "The delivery record took too long. Please try again.",
+            ),
+          );
+        }, 15000);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
 export async function rpcCall<T>(work: () => Promise<T>): Promise<T> {
   try {
     assertLeases();
-    const controller = new AbortController();
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    try {
-      return await Promise.race([
-        deadlines.run(
-          deadlines.getStore()
-            ? AbortSignal.any([deadlines.getStore()!, controller.signal])
-            : controller.signal,
-          work,
-        ),
-        new Promise<never>((_resolve, reject) => {
-          timer = setTimeout(() => {
-            controller.abort();
-            reject(
-              new ApiException(
-                503,
-                "E_RPC_TIMEOUT",
-                "The delivery record took too long. Please try again.",
-              ),
-            );
-          }, 15000);
-        }),
-      ]);
-    } finally {
-      clearTimeout(timer);
-    }
+    return await boundedRpc(work);
   } catch (error) {
     logError("near_rpc", error);
     if (error instanceof ApiException) throw error;

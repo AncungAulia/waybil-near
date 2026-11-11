@@ -136,7 +136,7 @@ it("retries an incomplete job window, then flushes a failed email using the same
   expect(deps.send).not.toHaveBeenCalled();
   const run = await deps.makeJobs().run("late");
   expect(run).toMatchObject({ state: "complete", attempts: 2 });
-  deps.send.mockRejectedValueOnce(new EmailFailure(false));
+  deps.send.mockRejectedValueOnce(new EmailFailure(false, true));
   expect(await deps.jobs.flushEmails()).toEqual({ failed: 1 });
   expect(await deps.makeJobs().flushEmails()).toEqual({ sent: 1 });
   expect(deps.send.mock.calls[0]![1]).toBe(deps.send.mock.calls[1]![1]);

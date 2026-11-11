@@ -1,3 +1,4 @@
+import { readProposals, readShipperShipments } from "../../lib/contract-reads";
 import { DefinitiveTransactionError } from "../../lib/near-sdk";
 import { logError } from "../../lib/logger";
 import { randomUUID } from "node:crypto";
@@ -8,14 +9,13 @@ import type {
   Principal,
   Shipper,
   Shipment,
-  Proposal,
 } from "@waybil/shared";
 import { z } from "zod";
 import type { Store, Snapshot } from "../../types/db";
 import type { Chain } from "../../lib/near";
 import type { Leases } from "../../lib/leases";
 import type { Env } from "../../config/env";
-import { allowed, ApiException, requireValue, unavailable } from "../../lib/errors";
+import { allowed, ApiException, requireValue } from "../../lib/errors";
 import { sha256, type FileStore } from "../../lib/storage";
 import { UnreadablePapers, type PaperReader, type ProofEvidence } from "../../lib/near-ai";
 import type { ApplicationDocument } from "../applications/applications.service";
@@ -421,73 +421,50 @@ export class Credit {
         "The team asked for more time before another review.",
       );
     const config = configSchema.parse(await this.chain.view("get_config"));
-    const head = await this.chain.view<Proposal[]>("list_proposals", { limit: 1 });
-    const newest = head[0]?.id ?? 0;
-    if (!Number.isSafeInteger(newest) || newest > 1000) unavailable();
     const deadline = Date.now() + 90000;
-    for (let first = 1; first <= newest; first += 25) {
-      if (Date.now() > deadline) unavailable();
-      const proposals = await Promise.all(
-        Array.from({ length: Math.min(25, newest - first + 1) }, (_v, i) =>
-          this.chain.view<Proposal | null>("get_proposal", { id: first + i }),
-        ),
-      );
-      if (
-        proposals.some(
-          (p) =>
-            p &&
-            p.status === "Open" &&
-            "SetLimit" in p.kind &&
-            p.kind.SetLimit.shipper === shipperId &&
-            BigInt(p.created_at) + BigInt(config.proposal_ttl_days) * 86400000000000n >= now,
-        )
+    const proposals = await readProposals(this.chain, deadline);
+    if (
+      proposals.some(
+        (p) =>
+          p.status === "Open" &&
+          "SetLimit" in p.kind &&
+          p.kind.SetLimit.shipper === shipperId &&
+          BigInt(p.created_at) + BigInt(config.proposal_ttl_days) * 86400000000000n >= now,
       )
-        throw new ApiException(
-          409,
-          "E_CREDIT_PENDING",
-          "The team is still reviewing a limit change.",
-        );
-    }
-    const shipments: Shipment[] = [];
-    for (let from = 0; from < 5000; from += 50) {
-      if (Date.now() > deadline) unavailable();
-      const page = await this.chain.view<Shipment[]>("list_shipments_by_shipper", {
-        account_id: shipperId,
-        from,
-        limit: 50,
-      });
-      if (page.some((shipment) => shipment.status === "Paid" && now > BigInt(shipment.due_at)))
-        throw new ApiException(
-          409,
-          "E_CREDIT_OVERDUE",
-          "Pay your overdue bills before asking for another review.",
-        );
-      shipments.push(...page);
-      if (page.length < 50) {
-        const previous = (
-          await this.store.list<CreditRow>("credit_reviews", {
-            shipperId,
-            kind: "review",
-            state: "complete",
-          })
-        )
-          .filter((r) => r.value.result === "no_change" && r.value.decision)
-          .sort((a, b) => b.value.createdAt.localeCompare(a.value.createdAt))[0];
-        if (
-          previous &&
-          shipments.filter(
-            (s) => s.status === "Repaid" && !previous.value.baselineRepaid.includes(s.id),
-          ).length < 3
-        )
-          throw new ApiException(
-            409,
-            "E_CREDIT_HISTORY",
-            "Pay three more bills before asking for another review.",
-          );
-        return shipments;
-      }
-    }
-    return unavailable();
+    )
+      throw new ApiException(
+        409,
+        "E_CREDIT_PENDING",
+        "The team is still reviewing a limit change.",
+      );
+    const shipments = await readShipperShipments(this.chain, shipperId, deadline);
+    if (shipments.some((shipment) => shipment.status === "Paid" && now > BigInt(shipment.due_at)))
+      throw new ApiException(
+        409,
+        "E_CREDIT_OVERDUE",
+        "Pay your overdue bills before asking for another review.",
+      );
+    const previous = (
+      await this.store.list<CreditRow>("credit_reviews", {
+        shipperId,
+        kind: "review",
+        state: "complete",
+      })
+    )
+      .filter((r) => r.value.result === "no_change" && r.value.decision)
+      .sort((a, b) => b.value.createdAt.localeCompare(a.value.createdAt))[0];
+    if (
+      previous &&
+      shipments.filter(
+        (s) => s.status === "Repaid" && !previous.value.baselineRepaid.includes(s.id),
+      ).length < 3
+    )
+      throw new ApiException(
+        409,
+        "E_CREDIT_HISTORY",
+        "Pay three more bills before asking for another review.",
+      );
+    return shipments;
   }
   private async cooldown(shipperId: string) {
     const rows = await this.store.list<CreditRow>("credit_reviews", { shipperId });

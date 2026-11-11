@@ -2,6 +2,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Env } from "../config/env";
 import { ApiException, conflict, unavailable } from "./errors";
 import type { Snapshot, Store, Table } from "../types/db";
+import { logError } from "./logger";
 import { assertLeases } from "./lease-context";
 
 export function supabaseClient(env: Env): SupabaseClient | null {
@@ -24,6 +25,7 @@ export function supabaseClient(env: Env): SupabaseClient | null {
 export function dbError(error: { code?: string } | null): void {
   if (!error) return;
   if (error.code === "23505") conflict();
+  logError("database", error);
   throw new ApiException(
     503,
     "E_DATABASE",
@@ -35,6 +37,14 @@ export class SupabaseStore implements Store {
   private db() {
     assertLeases();
     return this.client ?? unavailable();
+  }
+  async removeExpiredChallenges(now: string): Promise<number> {
+    const { count, error } = await this.db()
+      .from("auth_challenges")
+      .delete({ count: "exact" })
+      .lt("data->>expiresAt", now);
+    dbError(error);
+    return count ?? 0;
   }
   async get<T>(table: Table, id: string): Promise<Snapshot<T> | null> {
     const { data, error } = await this.db()

@@ -1,3 +1,4 @@
+import { logError } from "./logger";
 import type { Env } from "../config/env";
 import type { Store } from "../types/db";
 import type { Leases } from "./leases";
@@ -163,6 +164,12 @@ export class Emails {
       try {
         providerId = await this.transport.send(row.value.message, id);
       } catch (error) {
+        logError("email_delivery", error, {
+          code:
+            error instanceof EmailFailure && !error.retryable
+              ? "E_EMAIL_PERMANENT"
+              : "E_EMAIL_SEND",
+        });
         return (
           await this.store.replace<EmailRecord>("email_log", id, row.version, {
             ...row.value,

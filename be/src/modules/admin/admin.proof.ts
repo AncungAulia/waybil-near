@@ -1,3 +1,4 @@
+import { outcome } from "../../lib/near-tx";
 import type { JsonRpcProvider } from "near-api-js";
 import { z } from "zod";
 import { allowed, ApiException } from "../../lib/errors";
@@ -18,13 +19,7 @@ export class NearPauseProof implements PauseProof {
         receipt.transaction.signer_id === actor &&
         receipt.transaction.receiver_id === this.contract,
     );
-    allowed(
-      typeof receipt.status === "object" &&
-        "SuccessValue" in receipt.status &&
-        !receipt.receipts_outcome.some(
-          (r) => typeof r.outcome.status === "object" && "Failure" in r.outcome.status,
-        ),
-    );
+    allowed(outcome(receipt) === "confirmed");
     const action = receipt.transaction.actions[0];
     allowed(
       receipt.transaction.actions.length === 1 &&

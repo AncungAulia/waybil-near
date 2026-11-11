@@ -21,6 +21,7 @@ export class AdminNotes {
     private chain: Chain,
     private leases: Leases,
     private pauses: PauseProof,
+    private now = () => Date.now(),
   ) {}
   async saveReason(
     actor: Principal,
@@ -45,7 +46,7 @@ export class AdminNotes {
         proposalId,
         actor: actor.accountId,
         ...input,
-        createdAt: new Date().toISOString(),
+        createdAt: new Date(this.now()).toISOString(),
       };
       return (await this.store.insert("proposal_reasons", id, value)).value;
     });
@@ -73,7 +74,7 @@ export class AdminNotes {
         id: input.txHash,
         actor: actor.accountId,
         proofUrl: `https://testnet.nearblocks.io/txns/${input.txHash}`,
-        createdAt: new Date().toISOString(),
+        createdAt: new Date(this.now()).toISOString(),
       };
       return (await this.store.insert("pause_notes", note.id, note)).value;
     });

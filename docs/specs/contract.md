@@ -33,7 +33,7 @@ fn new(usdc: AccountId, assistant: AccountId, treasury: AccountId,
 
 ```rust
 struct Shipper { limit: U128, owed: U128, committed: U128, paused: Option<String>,
-                 late_bills: u32, last_raise_at: u64, raised_in_window: U128,
+                 late_bills: u32, raise_window_start: u64, raise_window_base: U128,
                  blocked_until: u64 }      // assistant cooldown after a rejection
 struct Destination { id: u32, shipper: AccountId, warehouse: AccountId }
 enum Status { Approved, PickedUp, Reported, Paid, Repaid, Cancelled, CoveredByReserve }

@@ -352,3 +352,69 @@ provider, storage and configuration failures keep the review queued, retry no so
 application in_review for team handling, rather than silently returning it to draft.
 The admin applications list adds `review: CreditReviewInfo | null` to each application;
 private raw model evidence is available only through its existing authorized proof route.
+
+Shutdown stops new scheduler ticks and HTTP accepts, then awaits current HTTP requests and
+worker promises for up to 25 seconds. Lease release runs before a normal process exit. A
+drain timeout is logged and remaining HTTP connections are closed. Expired auth challenges
+are removed by one database delete on their UTC expiry field, backed by an expiry index.
+Unknown admin routes return 404; authentication is applied only to registered admin routes.
+
+## Error code registry
+
+`ErrorCode` is the closed set of keys in shared `HTTP_ERRORS`. Routes retain their documented
+HTTP status; internal job/email rows may also store these codes. Responses use a plain message
+with no provider payload. Default messages are listed below.
+
+| Code | Default message |
+|---|---|
+| `E_VALIDATION` | Check the information and try again. |
+| `E_SESSION` | Please sign in again. |
+| `E_ACCESS` | You do not have access to this action. |
+| `E_NOT_FOUND` | This item could not be found. |
+| `E_CONFLICT` | This item changed. Please refresh and try again. |
+| `E_UNAVAILABLE` | This service is unavailable. Please try again later. |
+| `E_INTERNAL` | Something went wrong. Please try again. |
+| `E_TOO_LARGE` | Use a file up to 2 MB, or take a smaller photo. |
+| `E_RATE_LIMIT` | Please wait before trying again. |
+| `E_ACCOUNT_CONFIG` | Account setup is unavailable. Please try again later. |
+| `E_AI` | The private check could not finish. Please try again later. |
+| `E_AI_PROOF` | The private check could not be verified. |
+| `E_AI_TRUST` | The private check is not ready. |
+| `E_ALREADY_CONFIRMED` | This delivery has already been confirmed. |
+| `E_CREDIT_COOLDOWN` | The team asked for more time before another review. |
+| `E_CREDIT_HISTORY` | Pay three more bills before asking for another review. |
+| `E_CREDIT_OVERDUE` | Pay your overdue bills before asking for another review. |
+| `E_CREDIT_PAUSED` | The team must resume your company before another review. |
+| `E_CREDIT_PENDING` | The team is still reviewing a limit change. |
+| `E_CREDIT_POLICY` | The credit policy is unavailable. |
+| `E_CREDIT_RATE` | Please wait one day before asking for another private check. |
+| `E_DATABASE` | Your information could not be saved. Please try again. |
+| `E_DELEGATE` | This delivery request could not be read. |
+| `E_DELEGATE_EXPIRED` | Refresh this delivery request and try again. |
+| `E_EMAIL_CANCELLED` | This notification is no longer needed. |
+| `E_EMAIL_PERMANENT` | This email could not be sent. The team must check its settings. |
+| `E_EMAIL_RETRIES` | This email needs the team to check its delivery status. |
+| `E_EMAIL_SEND` | Email delivery could not finish. |
+| `E_EMAIL_SUPERSEDED` | This notification changed while its delivery was uncertain. |
+| `E_EMAIL_UNCERTAIN` | Email delivery has not been confirmed. |
+| `E_FILE_TYPE` | Use a PDF, JPG or PNG file. |
+| `E_INVITE_EXPIRED` | This invitation has expired. |
+| `E_INVITE_USED` | This invitation has already been used. |
+| `E_JOB` | A scheduled task could not finish. |
+| `E_LATE_PENDING` | A late bill is still being recorded. |
+| `E_LEASE_LOST` | This request stopped. Please try again. |
+| `E_PAPERS` | Upload a clear photo or a searchable PDF. |
+| `E_RECEIPT` | This approval record could not be read. |
+| `E_RELAY_PENDING` | A delivery request is still being recorded. Please try again shortly. |
+| `E_REPORT_INTEGRITY` | This delivery report could not be verified. |
+| `E_REPORT_REQUIRED` | Save a problem report before confirming this delivery. |
+| `E_ROLE_REQUIRED` | Choose your role to continue. |
+| `E_RPC` | The delivery record could not be reached. Please try again. |
+| `E_RPC_TIMEOUT` | The delivery record took too long. Please try again. |
+| `E_SHUTDOWN_TIMEOUT` | The service could not finish its work before stopping. |
+| `E_SIGNATURE` | This delivery request could not be verified. |
+| `E_SIGNER_BUSY` | Another request is being recorded. Please try again shortly. |
+| `E_SIGNUP_CAP` | Account setup is busy today. Please try again tomorrow. |
+| `E_SIGNUP_FUNDS` | Account setup is temporarily unavailable. Please try again later. |
+| `E_STORAGE` | Your file could not be saved. Please try again. |
+| `E_TX_REJECTED` | This request was not recorded. Please try again. |

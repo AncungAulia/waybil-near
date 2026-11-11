@@ -115,6 +115,12 @@ be/
 │  ├─ lib/
 │  │  ├─ near.ts                          RPC, contract calls, account creation
 │  │  ├─ supabase.ts                      Server client (service role)
+│  │  ├─ bootstrap.ts                     Shared server and one-shot initialization
+│  │  ├─ worker.ts                        Non-overlapping work and bounded shutdown
+│  │  ├─ logger.ts                        Diagnostic metadata without provider payloads
+│  │  ├─ near-tx.ts                       Signing, reconciliation and receipt outcomes
+│  │  ├─ contract-reads.ts                Bounded proposal and shipment pagination
+│  │  ├─ public-review.ts                 Public credit-review projection
 │  │  ├─ near-sdk.ts                      Signing SDK configuration and bounded retries
 │  │  ├─ session.ts                       JWT creation and verification
 │  │  ├─ leases.ts                        Atomic database work claims and renewal

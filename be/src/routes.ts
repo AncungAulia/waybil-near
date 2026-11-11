@@ -86,9 +86,5 @@ export function createRuntime(deps: AppDeps) {
   const jobs = new Jobs(deps.store, deps.chain, leases, emails, applications, files, relay, () =>
     creditWriter.time(),
   );
-  return { router, credit, applications, emails, leases, files, provider, jobs };
-}
-
-export function createRoutes(deps: AppDeps) {
-  return createRuntime(deps).router;
+  return { router, credit, jobs };
 }

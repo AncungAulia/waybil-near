@@ -155,8 +155,8 @@ pnpm --filter @waybil/be credit:once
 ```
 
 Worker state and signed transaction intent survive restarts. Live acceptance still requires
-provider credentials, a verified model key and SAMPLE documents. Seeded existing shippers need
-their off-chain application/papers imported in coordination with the seed-script owner.
+provider credentials, a verified model key and SAMPLE documents. Seeded existing shippers can create their missing off-chain company record and upload papers
+through the existing application routes.
 New dependency in #20 is unpdf 1.9.1, compatible with Node 22. This branch depends on
 `be/21-reports` and completes the evaluator integration required by #19.
 
@@ -197,3 +197,29 @@ document revisions and report evidence are retained. Leases renew each minute; l
 ownership stops further side effects. No additional dependencies were added for #22.
 This branch depends on `be/20-credit-assistant`. Deployment and live scheduler setup are #23.
 See `docs/plans/backend-delivery-15-22.md` for branch order and integration prerequisites.
+
+## Production checks after the backend review
+
+Use Node.js 22.22.2 or a newer 22.x release. The backend package pins that major range.
+Railway builds from the repository root with `pnpm --filter @waybil/be build` and starts
+`node be/dist/index.js`. Set NODE_ENV=production, RAILPACK_NODE_VERSION=22 and
+RAILWAY_DEPLOYMENT_DRAINING_SECONDS=30. Use one replica and /health for the health check.
+
+Production requires explicit JWT_SECRET, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
+RECOVERY_ENCRYPTION_KEY, GOOGLE_CLIENT_ID, RELAYER_PRIVATE_KEY, USERS_PRIVATE_KEY,
+APP_URL, CORS_ORIGINS and TRUST_PROXY_HOPS. Both app and browser origins must use HTTPS.
+Set TRUST_PROXY_HOPS=1 for Railway's single trusted proxy. Set APP_URL/CORS_ORIGINS to the
+actual frontend origin, not the API origin. The service exits before listening if these
+settings are missing. Development still supports disabled integrations.
+
+Apply migration 009 after 001–008 for indexed challenge expiry. Google signup funding is
+capped at 10 identities per UTC day by default; GOOGLE_SIGNUP_DAILY_LIMIT can lower it or
+set it to zero. Existing ready identities can still sign in. Monitor structured diagnostics
+for E_SIGNUP_FUNDS and E_SIGNUP_CAP. New accounts receive 0.005 NEAR for storage.
+
+Keep CREDIT_AUTO_LIMITS=false for public testing. Credit checks retry transient errors with
+a one-minute delay, at most three attempts, and enforce a one-day shipper cooldown. An AI
+failure no longer returns an application to draft. Active shippers can create their missing
+company record and replace approved papers before requesting a fresh check. Email workers
+stop permanently rejected messages and cap retries at five. Logs omit provider payloads and
+credentials. SIGTERM waits for running workers and HTTP requests for up to 25 seconds.

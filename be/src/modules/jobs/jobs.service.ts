@@ -1,8 +1,9 @@
+import { readProposals, readShipperShipments } from "../../lib/contract-reads";
+import { logError } from "../../lib/logger";
 import {
   formatUsdc,
   type Application,
   type Profile,
-  type Proposal,
   type RelayResponse,
   type Shipment,
 } from "@waybil/shared";
@@ -11,7 +12,7 @@ import type { Chain } from "../../lib/near";
 import type { Leases } from "../../lib/leases";
 import type { Emails, EmailRecord } from "../../lib/email";
 import type { FileStore } from "../../lib/storage";
-import { ApiException, unavailable } from "../../lib/errors";
+import { ApiException } from "../../lib/errors";
 import type { Applications, ApplicationDocument } from "../applications/applications.service";
 import type { InviteRecord } from "../invites/invites.service";
 
@@ -32,7 +33,9 @@ export interface LateMarker {
 }
 const DAY = 86400000;
 const activeEmail = (r: EmailRecord) =>
-  r.state !== "sent" && r.state !== "uncertain" && r.error !== "E_EMAIL_CANCELLED";
+  r.state !== "sent" &&
+  r.state !== "uncertain" &&
+  !["E_EMAIL_CANCELLED", "E_EMAIL_PERMANENT", "E_EMAIL_RETRIES"].includes(r.error ?? "");
 
 export class Jobs {
   constructor(
@@ -52,12 +55,14 @@ export class Jobs {
       try {
         jobs.push(await this.run(kind));
       } catch (error) {
+        logError(`job_${kind}`, error);
         jobs.push({ kind, state: "failed", error: this.errorCode(error) });
       }
     }
     try {
       return { jobs, email: await this.flushEmails() };
     } catch (error) {
+      logError("email_flush", error);
       return { jobs, email: { error: this.errorCode(error) } };
     }
   }
@@ -169,36 +174,15 @@ export class Jobs {
     for (const r of await this.store.list<Profile>("profiles", { role: "shipper" }))
       ids.add(r.value.accountId);
     for (const r of await this.store.list<Application>("applications")) ids.add(r.value.shipperId);
-    const head = await this.chain.view<Proposal[]>("list_proposals", { limit: 1 });
-    const newest = head[0]?.id ?? 0;
-    if (!Number.isSafeInteger(newest) || newest < 0 || newest > 1000) unavailable();
-    for (let from = 1; from <= newest; from += 25) {
-      if (Date.now() > deadline) unavailable();
-      const proposals = await Promise.all(
-        Array.from({ length: Math.min(25, newest - from + 1) }, (_, i) =>
-          this.chain.view<Proposal | null>("get_proposal", { id: from + i }),
-        ),
-      );
-      for (const p of proposals)
-        if (p?.status === "Approved" && "StartShipper" in p.kind)
-          ids.add(p.kind.StartShipper.shipper);
-    }
+    for (const p of await readProposals(this.chain, deadline))
+      if (p.status === "Approved" && "StartShipper" in p.kind) ids.add(p.kind.StartShipper.shipper);
     return ids;
   }
   private async shipments(shipper: string, deadline: number) {
     const results = new Map<number, Shipment>();
-    for (let from = 0; from < 5000; from += 50) {
-      if (Date.now() > deadline) unavailable();
-      const page = await this.chain.view<Shipment[]>("list_shipments_by_shipper", {
-        account_id: shipper,
-        from,
-        limit: 50,
-      });
-      for (const shipment of page)
-        if (shipment.shipper === shipper) results.set(shipment.id, shipment);
-      if (page.length < 50) return [...results.values()];
-    }
-    return unavailable();
+    for (const shipment of await readShipperShipments(this.chain, shipper, deadline))
+      if (shipment.shipper === shipper) results.set(shipment.id, shipment);
+    return [...results.values()];
   }
   private billEligible(kind: "late" | "reminders", s: Shipment, now: bigint) {
     return (
@@ -252,15 +236,7 @@ export class Jobs {
         if (!(error instanceof ApiException && error.code === "E_CONFLICT")) throw error;
       }
     }
-    for (const row of await this.store.list<{ id: string; expiresAt: string }>("auth_challenges")) {
-      if (Date.parse(row.value.expiresAt) > now) continue;
-      try {
-        await this.store.remove("auth_challenges", row.value.id, row.version);
-        this.count(counts, "challenges");
-      } catch (error) {
-        if (!(error instanceof ApiException && error.code === "E_CONFLICT")) throw error;
-      }
-    }
+    counts.challenges = await this.store.removeExpiredChallenges(new Date(now).toISOString());
     for (const row of await this.store.list<ApplicationDocument>("application_documents")) {
       if (
         row.value.state !== "cleanup" &&

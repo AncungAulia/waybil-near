@@ -143,3 +143,14 @@ it("protects team routes and keeps pause notes immutable and separate from the r
     ).status,
   ).toBe(400);
 });
+
+it("returns 404 for unknown admin paths without authenticating an unrelated route", async () => {
+  const request = (await import("supertest")).default;
+  const { createApp } = await import("../../app");
+  const { adminRoutes } = await import("./admin.routes");
+  const deps = testDeps();
+  const notes = new AdminNotes(deps.store, deps.chain, new MemoryLeases(), { assert: vi.fn() });
+  expect(
+    (await request(createApp(deps, adminRoutes(deps, notes))).get("/v1/admin/unknown")).status,
+  ).toBe(404);
+});

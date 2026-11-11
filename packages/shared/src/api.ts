@@ -1,3 +1,4 @@
+import type { ErrorCode } from "./codes";
 import type { Role } from "./shipment";
 
 export interface ProposalReasonInput {
@@ -163,7 +164,7 @@ export interface Invite extends InviteCreate {
 }
 
 export interface ApiError {
-  error: { code: `E_${string}`; message: string };
+  error: { code: ErrorCode; message: string };
 }
 export interface Profile {
   accountId: string;
@@ -204,4 +205,42 @@ export interface ApplicationResponse {
 }
 export interface CreditReviewResponse {
   review: CreditReviewInfo;
+}
+
+export const APPLICATION_REJECTION_REASONS = [
+  "payment_risk",
+  "needs_history",
+  "unclear_documents",
+  "other",
+] as const;
+export type ApplicationRejectionReason = (typeof APPLICATION_REJECTION_REASONS)[number];
+export interface ApplicationRejectionInput {
+  reason: ApplicationRejectionReason;
+  note: string;
+}
+export type EmailStatus = "queued" | "sending" | "sent" | "failed" | "uncertain";
+export interface ApplicationRejectionResponse {
+  application: Application;
+  emailStatus: EmailStatus;
+}
+export type DocumentUploaded = Omit<DocumentInfo, "signedUrl">;
+export interface InviteCreatedResponse {
+  invite: Invite;
+  link: string;
+}
+export interface InvitesResponse {
+  invites: Invite[];
+}
+export interface InviteAcceptedResponse {
+  invite: Invite;
+  networkLinkRequired: true;
+}
+export interface LogoutResponse {
+  revoked: true;
+}
+export interface ProposalReasonsResponse {
+  reasons: ProposalReason[];
+}
+export interface PauseNotesResponse {
+  notes: PauseNote[];
 }

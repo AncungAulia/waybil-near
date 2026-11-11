@@ -42,3 +42,52 @@ it("bounds a hung RPC operation", async () => {
     vi.useRealTimers();
   }
 });
+it("classifies definite SDK rejection separately from a transport failure", async () => {
+  const { InvalidNonceError, TransactionExpiredError } = await import("near-api-js/rpc-errors");
+  for (const error of [
+    new InvalidNonceError(1, 2, "test-tx", "test-block"),
+    new TransactionExpiredError("test-tx", "test-block"),
+  ])
+    await expect(
+      rpcCall(async () => {
+        throw error;
+      }),
+    ).rejects.toMatchObject({ code: "E_TX_REJECTED" });
+  await expect(
+    rpcCall(async () => {
+      throw new Error("connection lost");
+    }),
+  ).rejects.toMatchObject({ code: "E_RPC" });
+});
+it("does not start another SDK call after its enclosing operation times out", async () => {
+  vi.useFakeTimers();
+  const request = vi.fn<typeof fetch>();
+  vi.stubGlobal("fetch", request);
+  try {
+    const provider = sdkProvider(testEnv());
+    let resume!: () => void;
+    let continuationError: unknown;
+    const pending = expect(
+      rpcCall(async () => {
+        await new Promise<void>((resolve) => {
+          resume = resolve;
+        });
+        try {
+          return await provider.sendJsonRpc("status", {});
+        } catch (error) {
+          continuationError = error;
+          throw error;
+        }
+      }),
+    ).rejects.toMatchObject({ code: "E_RPC_TIMEOUT" });
+    await vi.advanceTimersByTimeAsync(15000);
+    await pending;
+    resume();
+    await vi.advanceTimersByTimeAsync(1);
+    expect(request).not.toHaveBeenCalled();
+    expect(continuationError).toMatchObject({ code: "E_RPC_TIMEOUT" });
+  } finally {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  }
+});

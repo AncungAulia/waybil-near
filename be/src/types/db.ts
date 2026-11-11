@@ -18,6 +18,7 @@ export interface Snapshot<T> {
   version: number;
 }
 export interface Store {
+  removeExpiredChallenges(now: string): Promise<number>;
   get<T>(table: Table, id: string): Promise<Snapshot<T> | null>;
   list<T>(table: Table, filter?: Record<string, unknown>): Promise<Array<Snapshot<T>>>;
   insert<T>(table: Table, id: string, value: T): Promise<Snapshot<T>>;
