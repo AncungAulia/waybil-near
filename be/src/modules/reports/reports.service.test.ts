@@ -1,3 +1,6 @@
+import request from "supertest";
+import { createApp } from "../../app";
+import { reportRoutes } from "./reports.routes";
 import { it, expect, vi } from "vitest";
 import { KeyPair, KeyPairSigner, DelegateAction, actions, encodeSignedDelegate } from "near-api-js";
 import type { Shipment, ReportInput } from "@waybil/shared";
@@ -165,4 +168,28 @@ it("connects a stored report to an actual signed warehouse delegate", async () =
     ).status,
   ).toBe("confirmed");
   expect((await deps.reports.read(profile("shipper"), 1)).recorded).toBe(true);
+});
+
+it("exercises multipart report creation and shipment access through HTTP", async () => {
+  const deps = setup();
+  const warehouse = profile("warehouse");
+  const outsider = profile("investor");
+  await deps.store.insert("profiles", warehouse.accountId, warehouse);
+  await deps.store.insert("profiles", outsider.accountId, outsider);
+  const token = (await deps.sessions.issue(warehouse)).token;
+  const otherToken = (await deps.sessions.issue(outsider)).token;
+  const app = createApp(deps, reportRoutes(deps, deps.reports));
+  const created = await request(app)
+    .post("/v1/reports")
+    .auth(token, { type: "bearer" })
+    .field("report", JSON.stringify(input))
+    .attach("photos", Buffer.from(samplePng), "sample.png");
+  expect(created.status).toBe(201);
+  expect(created.body.confirmArgs.report_hash).toBe(created.body.reportHash);
+  expect(
+    (await request(app).get("/v1/reports/1").auth(otherToken, { type: "bearer" })).status,
+  ).toBe(403);
+  expect((await request(app).get("/v1/reports/1").auth(token, { type: "bearer" })).status).toBe(
+    200,
+  );
 });
