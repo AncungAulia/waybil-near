@@ -161,6 +161,22 @@ Result fields include the model's attestation reference for the "See proof" link
 
 ## Problem reports
 
+POST is multipart with a JSON `report` field `{shipmentId,goodQty,reasons,note}` and zero to
+five `photos`. Reasons are damaged/missing/wrong_goods/other; a note is required (2,000 chars
+max). Photos are detected JPG/PNG, 2 MiB each. Counts use the current shipment quantity.
+Response is `{reportHash,confirmArgs:{id,good_qty,report_hash}}`; the warehouse still signs
+the actual confirmation. Saving files never changes the shipment status or pays the driver.
+
+Hash format v1 is SHA-256 of compact UTF-8 JSON with fields in this exact order:
+`{version:1,shipmentId,warehouseId,goodQty,reasons,note,photos}`. Reasons are unique and sorted,
+note is trimmed/NFC-normalized, photos preserve upload order as `{sha256,mime,size}`. The
+hash excludes filenames, URLs and request time, so retrying identical content is stable.
+Reports are immutable, including after a failed confirmation. Identical retries resume
+incomplete uploads; changed content returns 409. Reads include signed photo links and a
+`recorded` flag derived from the actual chain report hash. A mismatch is an integrity error.
+The relayer verifies the stored ready report, hash, warehouse and quantity before sponsoring
+a reported delivery. No report/folder/storage identifier is accepted as authorization.
+
 | Method | Path | Who | What |
 |---|---|---|---|
 | POST | `/v1/reports` | Warehouse | Shipment id, reasons, good count, note, photos. Stores everything and returns `reportHash` (sha256 over the JSON and photo hashes). The warehouse then calls `confirm_delivery` with that hash. |
