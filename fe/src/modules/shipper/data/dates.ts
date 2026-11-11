@@ -1,8 +1,13 @@
+import { LIVE } from "@/lib/env";
+
 /*
  * Dates on the shipper screens. Shipments store times as nanoseconds (contract.md), and
  * the demo runs on a fixed "today" so the server and the browser draw the same words.
+ * The live path uses the real day instead.
  */
-export const DEMO_TODAY = "2026-11-12";
+// ponytail: the live day is read once when the module loads, so a tab left open past
+// midnight keeps yesterday until reload. Read Date.now() per render if that matters.
+export const DEMO_TODAY = LIVE ? new Date().toISOString().slice(0, 10) : "2026-11-12";
 export const DEMO_NOW = Date.parse(DEMO_TODAY);
 const DAY = 86400000;
 

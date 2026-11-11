@@ -1,10 +1,22 @@
 // Public values only. Never put a secret in a NEXT_PUBLIC_* variable.
 
-/** Where the backend API lives, for example http://localhost:4000 */
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+/*
+ * The browser calls the backend through `/api/*`, which next.config.ts proxies to the
+ * server-only `API_URL`. Production CORS only allows the deployed app, so this is also what
+ * makes localhost work.
+ */
+
+/**
+ * "on" turns on the live path: role guards and the real clock. Off, every screen keeps the
+ * demo story, so the app stays usable until sign-in lands.
+ */
+export const LIVE = process.env.NEXT_PUBLIC_LIVE === "on";
 
 /** NEAR network for the RPC and the explorer links. */
 export const NEAR_NETWORK = process.env.NEXT_PUBLIC_NEAR_NETWORK ?? "testnet";
+
+/** JSON-RPC endpoint for contract views. */
+export const NEAR_RPC_URL = process.env.NEXT_PUBLIC_NEAR_RPC_URL || "https://test.rpc.fastnear.com";
 
 /** The main contract: shipments, credit, pool and team votes. */
 export const WAYBIL_CONTRACT = process.env.NEXT_PUBLIC_WAYBIL_CONTRACT ?? "app.waybil.testnet";
