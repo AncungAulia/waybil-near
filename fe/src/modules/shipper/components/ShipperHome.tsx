@@ -178,7 +178,7 @@ export function ShipperHome({
             team.
           </p>
           <button
-            className="focus-ring shrink-0 text-[14px] font-medium underline transition-colors duration-150 ease-base hover:text-ds-ink"
+            className="link focus-ring -my-12 shrink-0 py-12 text-[14px] font-medium text-ds-danger hover:text-ds-ink"
             onClick={() => open(covered.shipment.id)}
           >
             See the bill
@@ -253,7 +253,7 @@ export function ShipperHome({
               ].map(([title, note, next], i) => (
                 <button
                   key={title}
-                  className="press focus-ring flex items-center gap-12 rounded-[16px] bg-ds-canvas px-14 py-12 text-left"
+                  className="tap focus-ring flex items-center gap-12 rounded-[16px] bg-ds-canvas px-14 py-12 text-left hover:bg-ds-canvas-hover"
                   onClick={() => go(next as ShipperState)}
                 >
                   {/* Only the step that is done is filled with a tick. The rest keep an empty circle. */}
@@ -381,7 +381,7 @@ export function ShipperHome({
                 using.map((r, i) => (
                   <button
                     key={r.shipment.id}
-                    className="focus-ring mb-12 flex w-full items-center gap-10 text-left text-[13.5px] font-medium"
+                    className="tap focus-ring -mx-8 mb-6 flex w-[calc(100%+16px)] items-center gap-10 rounded-[12px] px-8 py-6 text-left text-[13.5px] font-medium hover:bg-ds-canvas"
                     onClick={() => open(r.shipment.id)}
                   >
                     {/* The soonest bill is marked in brand, a late one in red, the rest in ink. */}

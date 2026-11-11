@@ -82,9 +82,11 @@ export function ShipperShipments({
                 if (state === "P6.4") go("P6.1");
               }}
               className={cn(
-                "press focus-ring inline-flex items-center gap-6 rounded-full px-10 py-8 text-[13px] leading-[16px] font-medium md:px-14",
+                "tap focus-ring inline-flex items-center gap-6 rounded-full px-10 py-8 text-[13px] leading-[16px] font-medium md:px-14",
                 label === "Done" && "hidden md:inline-flex",
-                filter === label ? "bg-ds-ink text-ds-bg" : "text-ds-ink-2",
+                filter === label
+                  ? "bg-ds-ink text-ds-bg"
+                  : "text-ds-ink-2 hover:bg-ds-canvas hover:text-ds-ink",
               )}
             >
               {label}
@@ -150,7 +152,7 @@ export function ShipperShipments({
           </p>
           <button
             type="button"
-            className="press focus-ring rounded-small text-[13px] leading-[16px] font-medium text-ds-brand-deep"
+            className="link focus-ring -my-12 rounded-small py-12 text-[13px] leading-[16px] font-medium"
             onClick={clear}
           >
             Clear search

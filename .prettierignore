@@ -10,3 +10,5 @@ pnpm-lock.yaml
 *.md
 .claude
 .github
+# Generated place data, kept minified
+fe/public/places

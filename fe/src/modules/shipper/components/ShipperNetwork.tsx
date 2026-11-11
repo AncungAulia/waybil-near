@@ -166,7 +166,7 @@ export function ShipperNetwork({
             </span>
             <button
               type="button"
-              className="focus-ring shrink-0 rounded-small text-[13px] leading-[16px] font-semibold text-ds-brand-deep"
+              className="link focus-ring -my-12 shrink-0 rounded-small py-12 text-[13px] leading-[16px] font-semibold"
               onClick={copy}
             >
               {copied ? "Copied" : "Copy"}

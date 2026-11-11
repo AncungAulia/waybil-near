@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ArrowLeft,
   ArrowDown,
   ArrowRight,
   NavigationArrow,
@@ -38,6 +37,7 @@ import { DemoMap } from "@/components/elements/DemoMap";
 import { DemoRecord } from "@/components/elements/DemoRecord";
 import { DeliveryQr } from "@/components/elements/DeliveryQr";
 import { ResultScreen } from "@/components/elements/ResultScreen";
+import { BackLink } from "@/components/elements/BackLink";
 import { StatusPill } from "@/components/elements/StatusPill";
 import { Avatar } from "@/components/elements/Avatar";
 import { Switch } from "@/components/elements/Switch";
@@ -84,7 +84,7 @@ function ShareLink({ row = false }: { row?: boolean }) {
         <span className="min-w-0 flex-1 truncate text-label">{url}</span>
         <button
           type="button"
-          className="press focus-ring grid size-34 shrink-0 place-items-center rounded-full bg-ds-bg"
+          className="press focus-ring relative grid size-34 shrink-0 place-items-center rounded-full bg-ds-bg before:absolute before:-inset-4"
           aria-label="Copy your link"
           onClick={async () => {
             try {
@@ -297,7 +297,7 @@ export function DriverScreen({
             <button
               type="button"
               aria-label="Copy the code"
-              className="press focus-ring rounded-small p-4 text-ds-muted"
+              className="press focus-ring relative rounded-small p-4 text-ds-muted before:absolute before:-inset-8"
               onClick={() => navigator.clipboard?.writeText(westfield ? "WSTF1044" : DEMO_CODE)}
             >
               <Copy size={18} />
@@ -321,14 +321,18 @@ export function DriverScreen({
     );
   if (state === "K2.8")
     return (
-      <div className="min-h-dvh bg-ds-canvas px-24">
+      <div className="relative min-h-dvh bg-ds-canvas px-24">
+        {/* Pinned to the corner so the full-screen stamp stays centred. */}
+        <BackLink onClick={trips} className="absolute top-16 left-24 z-10">
+          Back to trips
+        </BackLink>
         <ResultScreen
           fullScreen
           title="You got paid"
           description="Sent to your account seconds after Lena confirmed."
           recorded="Demo payment receipt"
-          action="Back to trips"
-          onAction={trips}
+          action="See your payouts"
+          onAction={() => (preview ? go("K3.1") : router.push("/driver/payouts"))}
         >
           {/* Scales with the screen so "USDC" never runs off a 320 px phone. */}
           <div className="@container w-full text-center">
@@ -344,13 +348,9 @@ export function DriverScreen({
   return (
     <RoleShell role="driver" current={current} detail={detail}>
       {detail && (
-        <button
-          className="press focus-ring mb-20 flex items-center gap-8 rounded-small text-label text-ds-muted"
-          onClick={trips}
-        >
-          <ArrowLeft size={18} />
+        <BackLink onClick={trips} className="mb-20">
           Trips
-        </button>
+        </BackLink>
       )}
       {state === "K2.13" && (
         <p
@@ -463,7 +463,10 @@ export function DriverScreen({
               <Panel
                 title="On the road · #1041"
                 action={
-                  <button className="link focus-ring text-caption" onClick={() => openTrip("K2.4")}>
+                  <button
+                    className="link focus-ring relative text-caption before:absolute before:-inset-x-8 before:-inset-y-12"
+                    onClick={() => openTrip("K2.4")}
+                  >
                     Details
                   </button>
                 }
@@ -541,7 +544,10 @@ export function DriverScreen({
             <Panel
               title="Recent payouts"
               action={
-                <Link className="link focus-ring text-caption" href="/driver/payouts">
+                <Link
+                  className="link focus-ring relative text-caption before:absolute before:-inset-x-8 before:-inset-y-12"
+                  href="/driver/payouts"
+                >
                   See all
                 </Link>
               }
@@ -687,13 +693,6 @@ export function DriverScreen({
                     They cancelled on {cancelledWhen}, before you picked up the goods. You
                     don&apos;t need to go to {trip.pickupPlace}.
                   </p>
-                  <Button
-                    icon={<ArrowLeft size={17} />}
-                    className="w-full justify-between"
-                    onClick={trips}
-                  >
-                    Back to trips
-                  </Button>
                 </>
               ) : ["K2.1", "K2.2", "K2.3"].includes(state) ? (
                 <>
@@ -949,8 +948,10 @@ export function DriverScreen({
                   <label
                     key={r.label}
                     className={cn(
-                      "press relative flex cursor-pointer items-center gap-12 rounded-small p-14 text-left text-body has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ds-ink",
-                      r.label === reason ? "bg-ds-brand-soft" : "bg-ds-canvas",
+                      "tap relative flex cursor-pointer items-center gap-12 rounded-small p-14 text-left text-body has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ds-ink",
+                      r.label === reason
+                        ? "bg-ds-brand-soft"
+                        : "bg-ds-canvas hover:bg-ds-canvas-hover",
                     )}
                   >
                     <input

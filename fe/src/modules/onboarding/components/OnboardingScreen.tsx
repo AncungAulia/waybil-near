@@ -295,8 +295,12 @@ export function OnboardingScreen({
       .then((s) => setStartLimit(s?.limit ?? null))
       .catch(() => setStartLimit(null));
   }, [liveCompany, state, profile]);
+  const [savingDetails, setSavingDetails] = useState(false);
+  const [accepting, setAccepting] = useState(false);
   async function saveDetails() {
+    if (savingDetails) return;
     setApplicationError(null);
+    setSavingDetails(true);
     try {
       setApplication(await saveApplication(application, company));
       /*
@@ -315,6 +319,8 @@ export function OnboardingScreen({
       setState("C5.1");
     } catch (e) {
       setApplicationError(e instanceof ApiError ? e.message : "Your details could not be saved.");
+    } finally {
+      setSavingDetails(false);
     }
   }
   async function submitPapers() {
@@ -423,7 +429,10 @@ export function OnboardingScreen({
                 : "F1",
         );
       })
-      .catch(() => setState("F4"));
+      /* Only a missing invite is "used or expired". A dropped connection shows the retry screen. */
+      .catch((error: unknown) =>
+        error instanceof ApiError && error.status === 404 ? setState("F4") : setState("X2"),
+      );
     // The invite is read once per code. A later sign-in moves on through acceptInvite.
   }, [liveInvite, inviteCode]);
   async function acceptInvite() {
@@ -868,13 +877,13 @@ export function OnboardingScreen({
                           aria-expanded={value === "warehouse" ? warehouseHelp : undefined}
                           onClick={() => start(value)}
                           className={cn(
-                            "press focus-ring flex w-full items-center gap-14 rounded-row border p-14 text-left transition-colors duration-150 ease-base",
+                            "group tap focus-ring flex w-full items-center gap-14 rounded-row border p-14 text-left hover:border-ds-ink hover:bg-ds-canvas",
                             value === "warehouse" && warehouseHelp
-                              ? "border-ds-ink bg-ds-bg"
-                              : "border-ds-line bg-ds-bg hover:border-ds-line-strong",
+                              ? "border-ds-ink bg-ds-canvas"
+                              : "border-ds-line bg-ds-bg",
                           )}
                         >
-                          <span className="grid size-40 shrink-0 place-items-center rounded-full bg-ds-canvas">
+                          <span className="grid size-40 shrink-0 place-items-center rounded-full bg-ds-canvas transition-colors duration-150 ease-base group-hover:bg-ds-brand">
                             <Icon size={19} />
                           </span>
                           <span className="min-w-0 flex-1">
@@ -883,7 +892,10 @@ export function OnboardingScreen({
                               {note}
                             </span>
                           </span>
-                          <CaretRight size={16} className="shrink-0 text-ds-muted" />
+                          <CaretRight
+                            size={16}
+                            className="shrink-0 text-ds-muted transition-[translate,color] duration-150 ease-base group-hover:translate-x-2 group-hover:text-ds-ink motion-reduce:transition-none"
+                          />
                         </button>
                       ))}
                     </div>
@@ -996,7 +1008,7 @@ export function OnboardingScreen({
                   <label
                     key={item.value}
                     className={cn(
-                      "relative grid cursor-pointer grid-cols-[108px_minmax(0,1fr)_22px] items-center gap-12 rounded-[22px] border p-10 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ds-brand md:grid-cols-[136px_minmax(0,1fr)_22px] md:gap-18 md:rounded-[26px] md:p-14 lg:flex lg:flex-col lg:items-stretch lg:gap-14 lg:rounded-card lg:px-16 lg:pt-16 lg:pb-28",
+                      "tap relative grid cursor-pointer grid-cols-[108px_minmax(0,1fr)_22px] items-center gap-12 rounded-[22px] border p-10 hover:border-ds-ink has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ds-brand md:grid-cols-[136px_minmax(0,1fr)_22px] md:gap-18 md:rounded-[26px] md:p-14 lg:flex lg:flex-col lg:items-stretch lg:gap-14 lg:rounded-card lg:px-16 lg:pt-16 lg:pb-28",
                       role === item.value
                         ? "border-ds-ink bg-ds-ink text-ds-bg"
                         : "border-ds-line bg-ds-bg text-ds-ink",
@@ -1113,6 +1125,7 @@ export function OnboardingScreen({
                   draft={company}
                   setDraft={setCompany}
                   onContinue={() => (liveCompany ? void saveDetails() : setState("C5.1"))}
+                  saving={savingDetails}
                 />
               )}
             </>
@@ -1233,7 +1246,7 @@ export function OnboardingScreen({
                     )}
                     {state === "C9" ? (
                       <a
-                        className="press focus-ring flex h-48 items-center justify-center rounded-full bg-ds-canvas px-18 text-body font-medium text-ds-ink hover:bg-ds-surface-3"
+                        className="press focus-ring flex h-48 items-center justify-center rounded-full bg-ds-canvas px-18 text-body font-medium text-ds-ink hover:bg-ds-canvas-hover"
                         href="https://wa.me/12075550142"
                         target="_blank"
                         rel="noreferrer"
@@ -1273,7 +1286,7 @@ export function OnboardingScreen({
                 </span>
                 <button
                   type="button"
-                  className="link focus-visible:outline-ds-ink shrink-0 rounded-full text-label font-semibold"
+                  className="link focus-ring shrink-0 rounded-full px-8 py-8 text-label font-semibold"
                   onClick={copy}
                 >
                   {copied ? "Copied" : "Copy"}
@@ -1508,23 +1521,27 @@ export function OnboardingScreen({
                   <>
                     <Button
                       className={actionClass}
-                      onClick={() =>
-                        liveInvite
-                          ? void acceptInvite().catch((error: unknown) => {
-                              if (
-                                error instanceof ApiError &&
-                                ["E_INVITE_USED", "E_INVITE_EXPIRED"].includes(error.code)
-                              )
-                                setState("F4");
-                              else
-                                setSignInError(
-                                  error instanceof ApiError
-                                    ? error.message
-                                    : "The invite could not be accepted. Try again.",
-                                );
-                            })
-                          : setState("F3")
-                      }
+                      loading={accepting}
+                      loadingLabel="Accepting"
+                      onClick={() => {
+                        if (!liveInvite) return setState("F3");
+                        setAccepting(true);
+                        void acceptInvite()
+                          .catch((error: unknown) => {
+                            if (
+                              error instanceof ApiError &&
+                              ["E_INVITE_USED", "E_INVITE_EXPIRED"].includes(error.code)
+                            )
+                              setState("F4");
+                            else
+                              setSignInError(
+                                error instanceof ApiError
+                                  ? error.message
+                                  : "The invite could not be accepted. Try again.",
+                              );
+                          })
+                          .finally(() => setAccepting(false));
+                      }}
                     >
                       Accept
                     </Button>

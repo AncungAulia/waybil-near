@@ -150,8 +150,10 @@ function FieldButton({
         aria-describedby={hint ? `${id}-hint` : undefined}
         aria-expanded={onClick ? open : undefined}
         className={cn(
-          "press flex h-52 w-full items-center justify-between gap-10 rounded-[16px] border-[1.5px] px-16 text-left text-[16px] transition-colors duration-150 ease-base focus-visible:outline-ds-ink",
-          open ? "border-ds-ink bg-ds-bg" : "border-ds-canvas bg-ds-canvas",
+          "tap focus-ring flex h-52 w-full items-center justify-between gap-10 rounded-[16px] border-[1.5px] px-16 text-left text-[16px]",
+          open
+            ? "border-ds-ink bg-ds-bg"
+            : "border-ds-canvas bg-ds-canvas hover:border-ds-canvas-hover hover:bg-ds-canvas-hover",
         )}
       >
         <span id={`${id}-value`} className={cn("min-w-0 truncate", empty && "text-ds-muted")}>
@@ -314,8 +316,9 @@ function DueGrid({
                 aria-disabled={blocked || undefined}
                 aria-label={`${SPOKEN_DATE.format(new Date(date))}${blocked ? ", not available" : ""}`}
                 className={cn(
-                  "focus-ring grid h-34 place-items-center rounded-[10px] text-label font-normal",
-                  blocked ? "opacity-25" : "press",
+                  /* The hit area reaches 40 px tall without making the day bigger. */
+                  "focus-ring grid h-34 place-items-center rounded-[10px] text-label font-normal before:absolute before:inset-x-0 before:-inset-y-3",
+                  blocked ? "opacity-25" : "tap",
                   due === date ? "bg-ds-brand font-semibold" : !blocked && "hover:bg-ds-canvas",
                 )}
                 onClick={(event) => {
@@ -495,7 +498,7 @@ export function NewShipment({
                     key={d.name}
                     onClick={() => choose("driver", d.name)}
                     className={cn(
-                      "press flex items-center gap-12 rounded-[12px] p-10 text-left hover:bg-ds-canvas focus-visible:outline-ds-ink disabled:opacity-50",
+                      "tap focus-ring flex items-center gap-12 rounded-[12px] p-10 text-left hover:bg-ds-canvas disabled:opacity-50",
                       (draft.driver === d.name || (!draft.driver && d.name === DRIVERS[0].name)) &&
                         "bg-ds-canvas",
                     )}
@@ -549,7 +552,7 @@ export function NewShipment({
                       key={p.name}
                       disabled={!p.linked}
                       className={cn(
-                        "press flex items-center gap-12 rounded-[12px] p-10 text-left hover:bg-ds-canvas focus-visible:outline-ds-ink",
+                        "tap focus-ring flex items-center gap-12 rounded-[12px] p-10 text-left hover:bg-ds-canvas",
                         (draft.destination === p.name ||
                           (!draft.destination && p.name === PLACES[0].name)) &&
                           "bg-ds-canvas",
@@ -637,7 +640,7 @@ export function NewShipment({
                     {[30, 45, 60].map((days) => (
                       <button
                         key={days}
-                        className="press focus-ring h-32 flex-1 rounded-full bg-ds-canvas text-label hover:bg-ds-surface-3"
+                        className="tap focus-ring h-32 flex-1 rounded-full bg-ds-canvas text-label before:absolute before:inset-x-0 before:-inset-y-4 hover:bg-ds-canvas-hover"
                         onClick={(event) =>
                           pickDue(
                             new Date(Date.parse(DEMO_TODAY) + days * 86400000)
@@ -653,7 +656,7 @@ export function NewShipment({
                   </div>
                   {/* The board hangs the two arrows on the card's padding edge, so the
                       tap target's own padding is pulled back out. */}
-                  <div className="-mx-8 -my-8 flex items-center justify-between">
+                  <div className="-mx-11 -my-11 flex items-center justify-between">
                     <button
                       aria-label="Previous month"
                       className="press focus-ring rounded-small p-8 text-ds-ink disabled:text-ds-muted"

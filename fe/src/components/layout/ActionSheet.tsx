@@ -115,9 +115,10 @@ export function ActionSheet({
           onClick={onClose}
           aria-label="Close"
           className={cn(
-            "press grid size-40 place-items-center rounded-full bg-ds-canvas",
+            "press relative grid size-40 place-items-center rounded-full bg-ds-canvas hover:bg-ds-canvas-hover",
             appearance ? "focus-visible:outline-ds-ink" : "focus-ring",
-            appearance && "size-24 shrink-0 bg-transparent text-ds-muted",
+            appearance &&
+              "size-24 shrink-0 bg-transparent text-ds-muted before:absolute before:-inset-8 hover:bg-ds-canvas hover:text-ds-ink",
             appearance === "shipment" && "text-ds-ink",
           )}
         >

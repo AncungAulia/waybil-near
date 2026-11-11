@@ -10,13 +10,15 @@ import {
   type CreditReviewResponse,
   type InviteCreatedResponse,
 } from "@waybil/shared";
-import { ArrowLeft, Copy, Plus, UserPlus, Warning } from "@phosphor-icons/react";
+import { Copy, Plus, UserPlus, Warning } from "@phosphor-icons/react";
 import { RoleShell } from "@/components/layout/RoleShell";
 import { Panel } from "@/components/layout/Panel";
 import { ActionSheet } from "@/components/layout/ActionSheet";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Money } from "@/components/elements/Money";
+import { BackLink } from "@/components/elements/BackLink";
+import { Segmented } from "@/components/ui/Segmented";
 import { CreditMeter } from "@/components/elements/CreditMeter";
 import { ProofLink } from "@/components/elements/ProofLink";
 import { Stat } from "@/components/elements/Stat";
@@ -93,15 +95,7 @@ export function LiveShipper({
   return (
     <RoleShell role="shipper" current={current} detail={detail}>
       <div className="flex flex-col gap-24">
-        {detail && (
-          <Link
-            href="/shipper/shipments"
-            className="focus-ring flex w-fit items-center gap-8 text-label text-ds-muted"
-          >
-            <ArrowLeft size={18} />
-            Shipments
-          </Link>
-        )}
+        {detail && <BackLink href="/shipper/shipments">Shipments</BackLink>}
         {failed ? (
           <Panel className={cn("grid place-content-center gap-12 text-center", FULL)}>
             <p className="text-label text-ds-muted">
@@ -279,22 +273,13 @@ function Shipments({ data }: { data: LiveShipperData }) {
           New shipment
         </ButtonLink>
       </header>
-      <div className="flex w-fit flex-wrap gap-6 rounded-full bg-ds-bg p-4">
-        {FILTERS.map((f) => (
-          <button
-            key={f}
-            type="button"
-            aria-pressed={filter === f}
-            onClick={() => setFilter(f)}
-            className={cn(
-              "press focus-ring rounded-full px-14 py-8 text-label",
-              filter === f ? "bg-ds-ink text-ds-bg" : "text-ds-ink-2 hover:bg-ds-canvas",
-            )}
-          >
-            {f}
-          </button>
-        ))}
-      </div>
+      <Segmented
+        options={FILTERS.map((f) => ({ value: f, label: f }))}
+        value={filter}
+        onChange={setFilter}
+        label="Filter shipments"
+        className="w-fit flex-wrap"
+      />
       {rows.length === 0 ? (
         <Panel className="grid min-h-240 place-content-center text-center">
           <p className="text-label text-ds-muted">No shipments match this filter.</p>

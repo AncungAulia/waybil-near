@@ -171,7 +171,7 @@ export function DemoMap({
             type="button"
             aria-label="Zoom in"
             disabled={zoom >= 2.5}
-            className="press focus-ring grid size-36 place-items-center rounded-t-small disabled:text-ds-muted"
+            className="press focus-ring grid size-40 place-items-center rounded-t-small hover:bg-ds-canvas disabled:text-ds-muted"
             onClick={() => setZoom(Math.min(2.5, zoom + 0.25))}
           >
             <Plus size={16} />
@@ -180,7 +180,7 @@ export function DemoMap({
             type="button"
             aria-label="Zoom out"
             disabled={zoom <= 1}
-            className="press focus-ring grid size-36 place-items-center rounded-b-small disabled:text-ds-muted"
+            className="press focus-ring grid size-40 place-items-center rounded-b-small hover:bg-ds-canvas disabled:text-ds-muted"
             onClick={() => setZoom(Math.max(1, zoom - 0.25))}
           >
             <Minus size={16} />
