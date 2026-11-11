@@ -69,7 +69,8 @@ export class Credit {
     return this.leases.run(`review-request:${app.shipperId}`, async () => {
       const existing = await this.store.get<CreditRow>("credit_reviews", id);
       if (existing) return id;
-      await this.cooldown(app.shipperId);
+      // No cooldown here. Each submission has its own id, and a resubmission is only
+      // possible after a review asked for clearer papers.
       const documents = await this.documents(app);
       await this.store.insert(
         "credit_reviews",
