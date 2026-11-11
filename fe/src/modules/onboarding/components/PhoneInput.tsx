@@ -4,18 +4,11 @@ import { Input } from "@/components/ui/Input";
 import { SearchPicker } from "./SearchPicker";
 import { countryForDialCode, dialCode, PHONE_COUNTRIES } from "../data/validation";
 import { cn } from "@/lib/cn";
-/* Drawn flags for the countries the demo uses most. Every other country shows its emoji flag. */
-const FLAG_IMAGES: Record<string, string> = {
-  ID: "/flags/id.svg",
-  US: "/flags/us.svg",
-  MY: "/flags/my.svg",
-  SG: "/flags/sg.svg",
-  PH: "/flags/ph.svg",
-  TH: "/flags/th.svg",
-  VN: "/flags/vn.svg",
-};
-const emojiFlag = (iso2: string) =>
-  String.fromCodePoint(...[...iso2].map((letter) => 0x1f1a5 + letter.charCodeAt(0)));
+/*
+ * Every country with a phone code has a drawn flag in `public/flags` (see its README).
+ * Images, not emoji, because Windows shows emoji flags as two letters.
+ */
+const flagFor = (iso2: string) => `/flags/${iso2.toLowerCase()}.svg`;
 /*
  * A phone field with a searchable country code picker that lists every country.
  * `code` is the dial code ("+62"). Pass `country` (ISO2) as well when several countries
@@ -87,7 +80,7 @@ export function PhoneInput({
             value: c.iso2,
             label: appearance === "company" ? c.name : `${c.name} ${c.code}`,
             detail: c.code,
-            flag: FLAG_IMAGES[c.iso2] ?? emojiFlag(c.iso2),
+            flag: flagFor(c.iso2),
           }))}
           onChange={(next) => {
             setPicked(next);

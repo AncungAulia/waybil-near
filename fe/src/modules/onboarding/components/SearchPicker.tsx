@@ -21,6 +21,8 @@ function Flag({ flag }: { flag: string }) {
     <img
       src={flag}
       alt=""
+      loading="lazy"
+      decoding="async"
       width={22}
       height={15}
       className="h-15 w-22 shrink-0 rounded-[3px] object-cover ring-1 ring-ds-ink/10"
