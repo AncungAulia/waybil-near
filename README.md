@@ -48,7 +48,11 @@ To run the landing page, copy `landing-page/.env.example` to `landing-page/.env.
 To run the frontend, use `pnpm --filter @waybil/fe dev` and open
 http://localhost:3001/driver or http://localhost:3001/warehouse. These screens use labeled
 demo fixtures while the backend and sign-in are being built. See [fe/README.md](fe/README.md)
-for the gallery and production build commands. Backend run instructions will be added when it lands.
+for the gallery and production build commands.
+
+To run the backend, copy `be/.env.example` to `be/.env`, then run
+`pnpm --filter @waybil/be dev`. Its health route is http://localhost:4000/health.
+See [be/README.md](be/README.md) for configuration, migrations, tests and production commands.
 
 ## NEAR technology used
 

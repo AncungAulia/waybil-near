@@ -1,0 +1,66 @@
+import { z } from "zod";
+
+const optional = <T extends z.ZodType>(schema: T) =>
+  z.preprocess((v) => (v === "" ? undefined : v), schema.optional());
+const secret = optional(z.string().min(1));
+export const envSchema = z
+  .object({
+    PORT: z.coerce.number().int().min(0).max(65535).default(4000),
+    NEAR_NETWORK: z.literal("testnet").default("testnet"),
+    NEAR_RPC_URL: z.url().default("https://rpc.testnet.near.org"),
+    WAYBIL_CONTRACT: z.literal("app.waybil.testnet").default("app.waybil.testnet"),
+    USDC_CONTRACT: z.literal("usdc.waybil.testnet").default("usdc.waybil.testnet"),
+    APP_URL: z.url().default("http://localhost:3001"),
+    CORS_ORIGINS: z.string().default("http://localhost:3001"),
+    TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(3).default(0),
+    JWT_ISSUER: z.string().default("waybil-api"),
+    JWT_AUDIENCE: z.string().default("waybil-app"),
+    JWT_SECRET: optional(z.string().min(32)),
+    SUPABASE_URL: optional(z.url()),
+    SUPABASE_SERVICE_ROLE_KEY: secret,
+    RELAYER_ACCOUNT: z.string().default("relayer.waybil.testnet"),
+    RELAYER_PRIVATE_KEY: secret,
+    USERS_ACCOUNT: z.literal("users.waybil.testnet").default("users.waybil.testnet"),
+    USERS_PRIVATE_KEY: secret,
+    ASSISTANT_ACCOUNT: z.string().default("assistant.waybil.testnet"),
+    ASSISTANT_PRIVATE_KEY: secret,
+    GOOGLE_CLIENT_ID: secret,
+    NEAR_AI_API_KEY: secret,
+    EMAIL_API_KEY: secret,
+  })
+  .superRefine((v, ctx) => {
+    if (Boolean(v.SUPABASE_URL) !== Boolean(v.SUPABASE_SERVICE_ROLE_KEY))
+      ctx.addIssue({ code: "custom", message: "Configure both Supabase values." });
+    if (v.CORS_ORIGINS.split(",").some((s) => !z.url().safeParse(s.trim()).success))
+      ctx.addIssue({ code: "custom", path: ["CORS_ORIGINS"], message: "Use explicit origins." });
+  });
+export type Env = z.infer<typeof envSchema>;
+export function readEnv(input: NodeJS.ProcessEnv = process.env): Env {
+  const values = Object.fromEntries(Object.entries(input).filter(([, v]) => v !== ""));
+  const parsed = envSchema.parse(values);
+  if (input.NODE_ENV === "production") {
+    const required = [
+      "JWT_SECRET",
+      "SUPABASE_URL",
+      "SUPABASE_SERVICE_ROLE_KEY",
+      "RECOVERY_ENCRYPTION_KEY",
+      "GOOGLE_CLIENT_ID",
+      "RELAYER_PRIVATE_KEY",
+      "USERS_PRIVATE_KEY",
+      "APP_URL",
+      "CORS_ORIGINS",
+      "TRUST_PROXY_HOPS",
+    ];
+    const missing = required.filter((key) => !values[key]?.trim());
+    if (missing.length) throw new Error(`Missing production configuration: ${missing.join(", ")}`);
+    if (
+      new URL(parsed.APP_URL).protocol !== "https:" ||
+      parsed.CORS_ORIGINS.split(",").some((origin) => new URL(origin.trim()).protocol !== "https:")
+    )
+      throw new Error("Production application and browser origins must use HTTPS.");
+  }
+  parsed.CORS_ORIGINS = parsed.CORS_ORIGINS.split(",")
+    .map((origin) => new URL(origin.trim()).origin)
+    .join(",");
+  return parsed;
+}
