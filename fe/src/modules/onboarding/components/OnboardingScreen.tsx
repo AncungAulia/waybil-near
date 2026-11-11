@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -40,6 +40,10 @@ import {
 } from "@/components/elements/icons";
 import { cn } from "@/lib/cn";
 import { BASE_POOL } from "@/lib/demo-pool";
+import { ApiError } from "@/lib/api";
+import { LIVE } from "@/lib/env";
+import { connectWallet, disconnectWallet, walletSignIn } from "@/lib/wallet";
+import { useAuth } from "@/providers/AuthProvider";
 import {
   ONBOARDING_FIXTURES,
   SAMPLE_COMPANY,
@@ -70,6 +74,14 @@ const WALLET_ROLES = [
     note: "Deposit USDC into the pool and earn when shipping companies pay their bills.",
   },
 ];
+/* Where each role lands after sign-in. */
+const HOME: Partial<Record<Role, string>> = {
+  shipper: "/shipper",
+  investor: "/pool",
+  admin: "/admin",
+  driver: "/driver",
+  warehouse: "/warehouse",
+};
 const GOOGLE_ROLES = [
   {
     value: "driver" as const,
@@ -163,6 +175,55 @@ export function OnboardingScreen({
     return () => window.removeEventListener("online", online);
   }, [state, preview, router]);
   const dashboard = (path: string) => router.push(path);
+
+  /*
+   * Live wallet sign-in (#82). A new account has no role yet, so the server answers
+   * E_ROLE_REQUIRED, B1 asks for one, and the wallet signs a second challenge with it.
+   */
+  const { signIn } = useAuth();
+  const [signInError, setSignInError] = useState<string | null>(null);
+  const pending = useRef<Awaited<ReturnType<typeof connectWallet>> | null>(null);
+  /* Cancel on A2 abandons the attempt that is still waiting on the wallet. */
+  const attempt = useRef(0);
+  async function walletFlow(role?: "shipper" | "investor") {
+    const id = ++attempt.current;
+    setSignInError(null);
+    setState("A2");
+    try {
+      pending.current ??= await connectWallet();
+      const { wallet, accountId } = pending.current;
+      const session = await walletSignIn(wallet, accountId, role);
+      if (id !== attempt.current) return;
+      signIn(session);
+      pending.current = null;
+      if (role) setState(role === "shipper" ? "C1" : "E1");
+      else dashboard(HOME[session.profile.role] ?? "/start");
+    } catch (error) {
+      if (id !== attempt.current) return;
+      if (error instanceof ApiError && error.code === "E_ROLE_REQUIRED") {
+        setRole(null);
+        setGoogle(false);
+        setState("B1");
+        return;
+      }
+      setSignInError(
+        !(error instanceof ApiError)
+          ? null
+          : error.status === 403
+            ? "This account signs in with Google. Go back and continue with Google instead."
+            : error.status === 401
+              ? "Your sign-in request expired. Try again to get a new one."
+              : error.message,
+      );
+      setState("A3");
+    }
+  }
+  async function switchWallet() {
+    attempt.current++;
+    pending.current = null;
+    await disconnectWallet();
+    setState("A1");
+  }
   const actionClass = cn("w-full justify-between", connect && "h-52");
   const heading = (title: string, note?: string) => (
     <div
@@ -500,7 +561,8 @@ export function OnboardingScreen({
                     : state === "A2"
                       ? "Approve the connection in your wallet to continue."
                       : state === "A3"
-                        ? "The request was declined in your wallet. Nothing was shared."
+                        ? (signInError ??
+                          "The request was declined in your wallet. Nothing was shared.")
                         : state === "A4"
                           ? "Your wallet is on the main network. Waybil runs on the test network for now. One tap switches it."
                           : "Looking up your account.",
@@ -513,6 +575,7 @@ export function OnboardingScreen({
                       icon={<WalletGlyph size={17} />}
                       className={actionClass}
                       onClick={() => {
+                        if (LIVE) return void walletFlow();
                         setRole(null);
                         setGoogle(false);
                         setState("B1");
@@ -546,7 +609,10 @@ export function OnboardingScreen({
                     variant="secondary"
                     icon={<X size={17} />}
                     className={actionClass}
-                    onClick={() => setState("A1")}
+                    onClick={() => {
+                      attempt.current++;
+                      setState("A1");
+                    }}
                   >
                     Cancel
                   </Button>
@@ -555,14 +621,14 @@ export function OnboardingScreen({
                     <Button
                       icon={<ArrowCounterClockwise size={17} />}
                       className={actionClass}
-                      onClick={() => setState("A1")}
+                      onClick={() => (LIVE ? void walletFlow() : setState("A1"))}
                     >
                       Try again
                     </Button>
                     <Button
                       variant="quiet"
                       className="w-full justify-center"
-                      onClick={() => setState("A1")}
+                      onClick={() => (LIVE ? void switchWallet() : setState("A1"))}
                     >
                       Use a different wallet
                     </Button>
@@ -672,15 +738,17 @@ export function OnboardingScreen({
                   className={cn(actionClass, "h-52")}
                   disabled={!role}
                   onClick={() =>
-                    setState(
-                      role === "shipper"
-                        ? "C1"
-                        : role === "driver"
-                          ? "D1"
-                          : role === "warehouse"
-                            ? "F5"
-                            : "E1",
-                    )
+                    LIVE && pending.current && (role === "shipper" || role === "investor")
+                      ? void walletFlow(role)
+                      : setState(
+                          role === "shipper"
+                            ? "C1"
+                            : role === "driver"
+                              ? "D1"
+                              : role === "warehouse"
+                                ? "F5"
+                                : "E1",
+                        )
                   }
                 >
                   {role === "warehouse"
@@ -1136,9 +1204,12 @@ export function OnboardingScreen({
             />
           ) : null}
         </div>
-        <p className="mt-4 text-center text-caption text-ds-muted">
-          This is a local demo. No sign-in, wallet connection or application is submitted.
-        </p>
+        {/* Live wallet sign-in is real, so the demo note stays off the sign-in steps. */}
+        {!(LIVE && (group === "A" || group === "B")) && (
+          <p className="mt-4 text-center text-caption text-ds-muted">
+            This is a local demo. No sign-in, wallet connection or application is submitted.
+          </p>
+        )}
       </main>
     </div>
   );

@@ -8,6 +8,10 @@ import { Button } from "@/components/ui/Button";
 import { Money } from "./Money";
 import { ArrowUpRightGlyph, SystemGlyph } from "./icons";
 import { cn } from "@/lib/cn";
+import { USDC_CONTRACT } from "@/lib/env";
+import { usdcBalance, view } from "@/lib/near";
+import { callContract, disconnectWallet } from "@/lib/wallet";
+import { useAuth } from "@/providers/AuthProvider";
 export type DemoWalletState = "G1" | "G2" | "G3" | "G4" | "G5" | "X6" | "X7";
 
 /*
@@ -48,18 +52,44 @@ function subscribeClaim(listener: () => void) {
 }
 
 function minutes(n: number) {
+  if (n >= 60) {
+    const hours = Math.round(n / 60);
+    return hours === 1 ? "1 hour" : `${hours} hours`;
+  }
   return n === 1 ? "1 minute" : `${n} minutes`;
+}
+
+/** The real USDC balance. `refresh` reads it again after a transaction. */
+function useUsdcBalance(accountId: string | undefined) {
+  const [balance, setBalance] = useState<bigint | null>(null);
+  const [version, setVersion] = useState(0);
+  useEffect(() => {
+    if (!accountId) return;
+    let stale = false;
+    usdcBalance(accountId)
+      .then((value) => !stale && setBalance(BigInt(value)))
+      .catch(() => !stale && setBalance(null));
+    return () => {
+      stale = true;
+    };
+  }, [accountId, version]);
+  return { balance, refresh: () => setVersion((v) => v + 1) };
 }
 export function DemoWallet({
   initialState = "G1",
   role = "shipper",
+  live,
   onClose,
 }: {
   initialState?: DemoWalletState;
   role?: "shipper" | "investor" | "admin";
+  /** The signed-in account. Without it the menu shows the sample account. */
+  live?: { accountId: string; name: string };
   onClose: () => void;
 }) {
   const router = useRouter();
+  const { signOut } = useAuth();
+  const real = useUsdcBalance(live?.accountId);
   const [state, setState] = useState(initialState),
     [copied, setCopied] = useState(false),
     [retryMinutes, setRetryMinutes] = useState(48),
@@ -68,22 +98,47 @@ export function DemoWallet({
   const claimedAt = useSyncExternalStore(subscribeClaim, readClaim, () => 0);
   const claimed = claimedAt > 0;
   const initialBalance = role === "investor" ? 3450000000n : role === "admin" ? 0n : 120000000n;
-  const shownBalance = initialBalance + (claimed || state === "G4" ? 1000000000n : 0n);
-  const account =
-    role === "investor"
+  const shownBalance = live
+    ? (real.balance ?? 0n)
+    : initialBalance + (claimed || state === "G4" ? 1000000000n : 0n);
+  const account = live
+    ? live.accountId
+    : role === "investor"
       ? "maya-harper.testnet"
       : role === "admin"
         ? "risk.waybil.testnet"
         : "northwind-freight.testnet";
   useEffect(() => {
-    if (state !== "G3" || initialState === "G3") return;
+    if (live || state !== "G3" || initialState === "G3") return;
     const timer = window.setTimeout(() => {
       saveClaim(Date.now());
       setState("G4");
     }, 750);
     return () => window.clearTimeout(timer);
   }, [state, initialState]);
+  async function claimLive(accountId: string) {
+    try {
+      const at = Number(
+        BigInt(
+          await view<string>("faucet_available_at", { account_id: accountId }, USDC_CONTRACT),
+        ) / 1000000n,
+      );
+      if (at > Date.now()) {
+        setRetryMinutes(Math.max(1, Math.ceil((at - Date.now()) / 60000)));
+        setAgoMinutes(Math.floor((Date.now() - (at - 86400000)) / 60000));
+        setState("G5");
+        return;
+      }
+      setState("G3");
+      await callContract(USDC_CONTRACT, "faucet", {});
+      real.refresh();
+      setState("G4");
+    } catch (error) {
+      setState(/reject|cancel|denied|closed/i.test(String(error)) ? "X6" : "X7");
+    }
+  }
   function claim() {
+    if (live) return void claimLive(live.accountId);
     const since = Date.now() - readClaim();
     if (since < FAUCET_WAIT_MS) {
       setRetryMinutes(Math.max(1, Math.ceil((FAUCET_WAIT_MS - since) / 60000)));
@@ -106,11 +161,13 @@ export function DemoWallet({
         <div className="flex items-center gap-12 p-4">
           <div className="min-w-0 flex-1">
             <p className="text-body font-medium">
-              {role === "investor"
-                ? "Maya Harper"
-                : role === "admin"
-                  ? "Risk lead"
-                  : "Northwind Freight Co."}
+              {live
+                ? live.name || live.accountId
+                : role === "investor"
+                  ? "Maya Harper"
+                  : role === "admin"
+                    ? "Risk lead"
+                    : "Northwind Freight Co."}
             </p>
             <p className="mt-2 break-words text-[12.5px] leading-[1.45] text-ds-muted">
               {role === "admin" ? "Admin" : role === "investor" ? "Investor" : "Shipper"} ·{" "}
@@ -162,8 +219,12 @@ export function DemoWallet({
         <button
           type="button"
           className="press focus-ring flex items-center gap-12 rounded-[14px] p-12 text-left hover:bg-ds-canvas"
-          onClick={() => {
+          onClick={async () => {
             onClose();
+            if (live) {
+              await signOut().catch(() => {});
+              await disconnectWallet();
+            }
             router.push("/start");
           }}
         >
@@ -172,9 +233,11 @@ export function DemoWallet({
           </span>
           <span className="text-[14.5px] font-medium text-ds-danger">Disconnect</span>
         </button>
-        <p className="text-caption text-ds-muted">
-          This preview shows a sample account. No wallet is connected.
-        </p>
+        {!live && (
+          <p className="text-caption text-ds-muted">
+            This preview shows a sample account. No wallet is connected.
+          </p>
+        )}
       </ActionSheet>
     );
   return (
@@ -201,8 +264,8 @@ export function DemoWallet({
       {state === "G4" ? (
         <>
           <p className="text-[14px] leading-[1.45] text-ds-muted">
-            Your sample balance is now {formatUsdc(shownBalance)} USDC. Test money has no real
-            value.
+            Your {live ? "" : "sample "}balance is now {formatUsdc(shownBalance)} USDC. Test money
+            has no real value.
           </p>
           <Button className="h-52 w-full justify-between" onClick={onClose}>
             Done
@@ -223,7 +286,7 @@ export function DemoWallet({
               <Money amount="1000000000" className="text-[17px] leading-[1.45] font-medium" />
             </div>
           )}
-          {(state === "G2" || state === "G3") && (
+          {!live && (state === "G2" || state === "G3") && (
             <div className="flex items-center gap-10 rounded-[16px] border border-ds-line px-14 py-12">
               <GasPump size={16} className="shrink-0" />
               <p className="text-[13px] leading-[1.45]">
@@ -264,7 +327,9 @@ export function DemoWallet({
           </Button>
           {state === "G3" && (
             <p className="text-center text-[12.5px] leading-[1.45] text-ds-muted">
-              Approve it in your wallet. Waybil covers the network fees.
+              {live
+                ? "Approve it in your wallet."
+                : "Approve it in your wallet. Waybil covers the network fees."}
             </p>
           )}
           {(state === "X6" || state === "X7") && (
@@ -274,9 +339,11 @@ export function DemoWallet({
                 : "If it keeps failing, wait a few minutes."}
             </p>
           )}
-          <p className="text-caption text-ds-muted">
-            This local demo changes no real balance and sends no wallet request.
-          </p>
+          {!live && (
+            <p className="text-caption text-ds-muted">
+              This local demo changes no real balance and sends no wallet request.
+            </p>
+          )}
         </>
       )}
     </ActionSheet>
