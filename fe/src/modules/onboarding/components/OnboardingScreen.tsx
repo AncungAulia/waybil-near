@@ -295,8 +295,12 @@ export function OnboardingScreen({
       .then((s) => setStartLimit(s?.limit ?? null))
       .catch(() => setStartLimit(null));
   }, [liveCompany, state, profile]);
+  const [savingDetails, setSavingDetails] = useState(false);
+  const [accepting, setAccepting] = useState(false);
   async function saveDetails() {
+    if (savingDetails) return;
     setApplicationError(null);
+    setSavingDetails(true);
     try {
       setApplication(await saveApplication(application, company));
       /*
@@ -315,6 +319,8 @@ export function OnboardingScreen({
       setState("C5.1");
     } catch (e) {
       setApplicationError(e instanceof ApiError ? e.message : "Your details could not be saved.");
+    } finally {
+      setSavingDetails(false);
     }
   }
   async function submitPapers() {
@@ -1113,6 +1119,7 @@ export function OnboardingScreen({
                   draft={company}
                   setDraft={setCompany}
                   onContinue={() => (liveCompany ? void saveDetails() : setState("C5.1"))}
+                  saving={savingDetails}
                 />
               )}
             </>
@@ -1508,23 +1515,27 @@ export function OnboardingScreen({
                   <>
                     <Button
                       className={actionClass}
-                      onClick={() =>
-                        liveInvite
-                          ? void acceptInvite().catch((error: unknown) => {
-                              if (
-                                error instanceof ApiError &&
-                                ["E_INVITE_USED", "E_INVITE_EXPIRED"].includes(error.code)
-                              )
-                                setState("F4");
-                              else
-                                setSignInError(
-                                  error instanceof ApiError
-                                    ? error.message
-                                    : "The invite could not be accepted. Try again.",
-                                );
-                            })
-                          : setState("F3")
-                      }
+                      loading={accepting}
+                      loadingLabel="Accepting"
+                      onClick={() => {
+                        if (!liveInvite) return setState("F3");
+                        setAccepting(true);
+                        void acceptInvite()
+                          .catch((error: unknown) => {
+                            if (
+                              error instanceof ApiError &&
+                              ["E_INVITE_USED", "E_INVITE_EXPIRED"].includes(error.code)
+                            )
+                              setState("F4");
+                            else
+                              setSignInError(
+                                error instanceof ApiError
+                                  ? error.message
+                                  : "The invite could not be accepted. Try again.",
+                              );
+                          })
+                          .finally(() => setAccepting(false));
+                      }}
                     >
                       Accept
                     </Button>

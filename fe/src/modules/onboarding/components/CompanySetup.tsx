@@ -14,11 +14,14 @@ export function CompanySetup({
   draft,
   setDraft,
   onContinue,
+  saving = false,
 }: {
   state: OnboardingState;
   draft: CompanyDraft;
   setDraft: (draft: CompanyDraft) => void;
   onContinue: () => void;
+  /** The details are being saved, so Continue shows it and can't be sent twice. */
+  saving?: boolean;
 }) {
   const regions = useRegions(draft.country, draft.province);
   /* The phone country follows the company's country until someone picks another one. */
@@ -186,6 +189,8 @@ export function CompanySetup({
           <Button
             type="submit"
             disabled={!!Object.keys(errors).length}
+            loading={saving}
+            loadingLabel="Saving"
             className="h-52 w-full justify-between md:w-240 md:shrink-0"
           >
             Continue
