@@ -21,6 +21,7 @@ import { Navbar } from "./Navbar";
 import { Logo } from "./Logo";
 import { cn } from "@/lib/cn";
 import { useAuth } from "@/providers/AuthProvider";
+import { useNames } from "@/hooks/useNames";
 
 const LABELS = {
   driver: "Driver",
@@ -65,7 +66,12 @@ export function RoleShell({
   /* The signed-in person, when this shell is their own role. Otherwise the demo names. */
   const { profile } = useAuth();
   const live = profile?.role === role ? profile : null;
-  const name = live ? live.name || live.accountId : names[role];
+  /*
+   * The person's own name first. A shipper who has not saved a contact person yet shows the
+   * company name from its application, and the account id only when there is neither.
+   */
+  const publicName = useNames([live && !live.name ? live.accountId : null]);
+  const name = live ? live.name || publicName(live.accountId) : names[role];
   const sub = live
     ? LABELS[role]
     : {
@@ -82,8 +88,8 @@ export function RoleShell({
   const identity = (
     <>
       {avatar}
-      <span className="flex flex-col text-label">
-        {name}
+      <span className="flex max-w-200 min-w-0 flex-col items-start text-left text-label">
+        <span className="max-w-full truncate">{name}</span>
         <span className="text-caption text-ds-muted">{sub}</span>
       </span>
     </>

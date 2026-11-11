@@ -45,7 +45,7 @@ import {
 } from "@/components/elements/icons";
 import { cn } from "@/lib/cn";
 import { BASE_POOL } from "@/lib/demo-pool";
-import { api, ApiError } from "@/lib/api";
+import { api, ApiError, readSession, saveSession } from "@/lib/api";
 import { LIVE } from "@/lib/env";
 import { connectWallet, disconnectWallet, walletSignIn } from "@/lib/wallet";
 import { getShipper } from "@/lib/near";
@@ -55,6 +55,7 @@ import type {
   Application,
   ApplicationResponse,
   ChallengeResponse,
+  Profile,
   PublicInvite,
   SessionResponse,
 } from "@waybil/shared";
@@ -110,6 +111,14 @@ const GOOGLE_ROLES = [
     note: "Scan the driver's QR when a truck arrives to confirm the delivery.",
   },
 ];
+/** A shipper the team started on chain. A failed read counts as active, so nobody is sent back by mistake. */
+async function activeShipper(accountId: string) {
+  try {
+    return !!(await getShipper(accountId));
+  } catch {
+    return true;
+  }
+}
 /*
  * A1 asks what the person does first, then signs them in the way that role uses, so a truck
  * owner never lands on the wallet path. Shippers and investors use a NEAR wallet, drivers use
@@ -238,6 +247,35 @@ export function OnboardingScreen({
   const [applicationError, setApplicationError] = useState<string | null>(null);
   const [startLimit, setStartLimit] = useState<string | null>(null);
   const loadedApplication = useRef(false);
+  /*
+   * The company form is kept in this browser while it is being filled in, per account, so a
+   * reload or a closed tab doesn't lose it. Picked files can't be kept, so those are chosen
+   * again. The copy is removed once the papers are sent.
+   */
+  const draftKey = liveCompany && profile ? `waybil-company-draft-v1:${profile.accountId}` : null;
+  const draftRestored = useRef(false);
+  const hasLocalDraft = useRef(false);
+  useEffect(() => {
+    if (!draftKey || draftRestored.current) return;
+    draftRestored.current = true;
+    try {
+      const saved = localStorage.getItem(draftKey);
+      if (!saved) return;
+      hasLocalDraft.current = true;
+      setCompany({ ...EMPTY_COMPANY, ...(JSON.parse(saved) as Partial<CompanyDraft>) });
+    } catch {
+      /* Private mode or a broken copy. The form starts empty. */
+    }
+  }, [draftKey]);
+  useEffect(() => {
+    if (!draftKey || !draftRestored.current || !["C1", "C2", "C3", "C4", "C5"].includes(state))
+      return;
+    try {
+      localStorage.setItem(draftKey, JSON.stringify(company));
+    } catch {
+      /* Storage is full or blocked. The form still works, it just isn't kept. */
+    }
+  }, [draftKey, company, state]);
   useEffect(() => {
     if (!liveCompany || group !== "C" || loadedApplication.current) return;
     loadedApplication.current = true;
@@ -245,7 +283,8 @@ export function OnboardingScreen({
       .then((found) => {
         if (!found) return;
         setApplication(found.application);
-        setCompany(fromCompanyInput(found.application.company));
+        /* Edits kept in this browser are newer than the saved application. */
+        if (!hasLocalDraft.current) setCompany(fromCompanyInput(found.application.company));
         setState(LIVE_STATE[found.application.state]);
       })
       .catch((e: unknown) => setApplicationError(e instanceof ApiError ? e.message : null));
@@ -260,6 +299,19 @@ export function OnboardingScreen({
     setApplicationError(null);
     try {
       setApplication(await saveApplication(application, company));
+      /*
+       * A wallet profile starts without a name. The contact person becomes the name the
+       * navbar shows, and the company name stays what other people see.
+       */
+      const contact = company.contact.trim();
+      if (contact && profile && profile.name !== contact) {
+        const updated = await api<Profile>("/me/profile", {
+          method: "PUT",
+          body: { name: contact.slice(0, 120) },
+        }).catch(() => null);
+        const current = readSession();
+        if (updated && current) saveSession({ ...current, profile: updated });
+      }
       setState("C5.1");
     } catch (e) {
       setApplicationError(e instanceof ApiError ? e.message : "Your details could not be saved.");
@@ -271,6 +323,12 @@ export function OnboardingScreen({
     setState("C6");
     try {
       setApplication(await sendPapers(application.id, files));
+      if (draftKey)
+        try {
+          localStorage.removeItem(draftKey);
+        } catch {
+          /* Nothing to clean up. */
+        }
       setState("C7");
     } catch (e) {
       setApplicationError(e instanceof ApiError ? e.message : "Your papers could not be sent.");
@@ -313,6 +371,9 @@ export function OnboardingScreen({
       signIn(session);
       pending.current = null;
       if (role) setState(role === "shipper" ? "C1" : "E1");
+      else if (session.profile.role === "shipper" && !(await activeShipper(accountId)))
+        /* A shipper who signed up but hasn't finished applying goes back to the application. */
+        router.push("/onboarding/shipper");
       else dashboard(HOME[session.profile.role] ?? "/start");
     } catch (error) {
       if (id !== attempt.current) return;

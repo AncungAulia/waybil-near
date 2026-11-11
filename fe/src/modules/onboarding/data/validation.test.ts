@@ -1,12 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { companyErrors, documentError, driverErrors, phoneError } from "./validation";
+import {
+  companyErrors,
+  countryForDialCode,
+  documentError,
+  driverErrors,
+  phoneError,
+  toE164,
+} from "./validation";
 import { SAMPLE_COMPANY, EMPTY_COMPANY } from "./fixtures";
 describe("onboarding validation", () => {
   it("requires every company field and accepts the sample company", () => {
-    expect(Object.keys(companyErrors(EMPTY_COMPANY, "+1"))).toHaveLength(
-      Object.keys(EMPTY_COMPANY).length,
+    /* Every field but the phone country, which the form fills from the company's country. */
+    expect(Object.keys(companyErrors(EMPTY_COMPANY, "US"))).toHaveLength(
+      Object.keys(EMPTY_COMPANY).length - 1,
     );
-    expect(companyErrors(SAMPLE_COMPANY, "+1")).toEqual({});
+    expect(companyErrors(EMPTY_COMPANY, "US").phoneCountry).toBeUndefined();
+    expect(companyErrors(SAMPLE_COMPANY, "US")).toEqual({});
     expect(
       companyErrors(
         {
@@ -16,7 +25,7 @@ describe("onboarding validation", () => {
           email: "hannah@",
           spend: "NaN",
         },
-        "+1",
+        "US",
       ),
     ).toMatchObject({
       registration: expect.any(String),
@@ -29,6 +38,16 @@ describe("onboarding validation", () => {
     expect(phoneError("207 555 0199", "+1")).toBeUndefined();
     expect(phoneError("207 55", "+1")).toBeTruthy();
     expect(phoneError("9123 4567", "+65")).toBeUndefined();
+    expect(phoneError("0812 3456 7890", "ID")).toBeUndefined();
+    expect(phoneError("812 34", "ID")).toBe("Enter a valid phone number for Indonesia.");
+    expect(phoneError("207 555", "GB")).toBeTruthy();
+  });
+  it("sends phone numbers in E.164 and finds the main country for a shared code", () => {
+    expect(toE164("0812-3456-7890", "ID")).toBe("+6281234567890");
+    expect(toE164("(207) 555-0142", "+1")).toBe("+12075550142");
+    expect(toE164("812 34", "ID")).toBeUndefined();
+    expect(countryForDialCode("+1")).toBe("US");
+    expect(countryForDialCode("+62")).toBe("ID");
     expect(
       driverErrors({ name: "Sam Carter", phone: "207 555 0199", plate: "AB1234" }, "+1").plate,
     ).toBeTruthy();

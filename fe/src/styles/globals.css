@@ -182,6 +182,22 @@
   }
 
   /*
+   * Chrome paints autofilled fields light blue. Our fields are transparent inside a grey box
+   * that turns white on focus, so the autofill colour is held back and the box shows through.
+   */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  textarea:-webkit-autofill,
+  select:-webkit-autofill {
+    -webkit-text-fill-color: var(--color-ds-ink);
+    caret-color: var(--color-ds-ink);
+    transition:
+      background-color 600000s 0s,
+      color 600000s 0s;
+  }
+
+  /*
    * Tailwind 4 drops the browser's own pointer on a button, so anything tappable asks for it
    * back here rather than every component repeating `cursor-pointer`. A button that is off
    * keeps the plain arrow.

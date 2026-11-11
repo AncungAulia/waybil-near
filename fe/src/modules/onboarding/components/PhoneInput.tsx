@@ -1,22 +1,33 @@
 "use client";
+import { useState } from "react";
 import { Input } from "@/components/ui/Input";
 import { SearchPicker } from "./SearchPicker";
-import { COUNTRIES } from "../data/fixtures";
+import { countryForDialCode, dialCode, PHONE_COUNTRIES } from "../data/validation";
 import { cn } from "@/lib/cn";
-const COUNTRY_FLAGS: Record<string, string> = {
-  "+62": "/flags/id.svg",
-  "+1": "/flags/us.svg",
-  "+60": "/flags/my.svg",
-  "+65": "/flags/sg.svg",
-  "+63": "/flags/ph.svg",
-  "+66": "/flags/th.svg",
-  "+84": "/flags/vn.svg",
+/* Drawn flags for the countries the demo uses most. Every other country shows its emoji flag. */
+const FLAG_IMAGES: Record<string, string> = {
+  ID: "/flags/id.svg",
+  US: "/flags/us.svg",
+  MY: "/flags/my.svg",
+  SG: "/flags/sg.svg",
+  PH: "/flags/ph.svg",
+  TH: "/flags/th.svg",
+  VN: "/flags/vn.svg",
 };
+const emojiFlag = (iso2: string) =>
+  String.fromCodePoint(...[...iso2].map((letter) => 0x1f1a5 + letter.charCodeAt(0)));
+/*
+ * A phone field with a searchable country code picker that lists every country.
+ * `code` is the dial code ("+62"). Pass `country` (ISO2) as well when several countries
+ * share a code, like "+1". Without it the main country for the code is shown.
+ */
 export function PhoneInput({
   value,
   onChange,
   code,
   onCodeChange,
+  country,
+  onCountryChange,
   error,
   disabled = false,
   initialOpen = false,
@@ -28,6 +39,8 @@ export function PhoneInput({
   onChange: (value: string) => void;
   code: string;
   onCodeChange: (value: string) => void;
+  country?: string;
+  onCountryChange?: (iso2: string) => void;
   error?: string;
   disabled?: boolean;
   initialOpen?: boolean;
@@ -35,6 +48,13 @@ export function PhoneInput({
   showHint?: boolean;
   popoverAlign?: "start" | "end";
 }) {
+  /* Remembers the pick when the parent only keeps the dial code. */
+  const [picked, setPicked] = useState<string>();
+  const iso2 =
+    country ||
+    (picked && dialCode(picked) === code ? picked : undefined) ||
+    countryForDialCode(code) ||
+    "";
   return (
     <Input
       label="Phone or WhatsApp"
@@ -42,7 +62,9 @@ export function PhoneInput({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       inputMode="tel"
-      placeholder={code === "+62" ? "812 3456 7890" : "207 555 0142"}
+      placeholder={
+        iso2 === "ID" ? "812 3456 7890" : iso2 === "US" ? "207 555 0142" : "Phone number"
+      }
       error={error}
       disabled={disabled}
       hint={
@@ -60,13 +82,18 @@ export function PhoneInput({
           appearance={appearance}
           popoverAlign={popoverAlign}
           label="Phone code"
-          value={code}
-          options={COUNTRIES.map((c) => ({
-            value: c.code,
+          value={iso2}
+          options={PHONE_COUNTRIES.map((c) => ({
+            value: c.iso2,
             label: appearance === "company" ? c.name : `${c.name} ${c.code}`,
-            flag: COUNTRY_FLAGS[c.code],
+            detail: c.code,
+            flag: FLAG_IMAGES[c.iso2] ?? emojiFlag(c.iso2),
           }))}
-          onChange={onCodeChange}
+          onChange={(next) => {
+            setPicked(next);
+            onCountryChange?.(next);
+            onCodeChange(dialCode(next));
+          }}
           initialOpen={initialOpen}
           disabled={disabled}
         />

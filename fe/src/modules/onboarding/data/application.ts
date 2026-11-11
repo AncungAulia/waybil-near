@@ -7,7 +7,9 @@ import {
 } from "@waybil/shared";
 import { api } from "@/lib/api";
 import type { CompanyFiles } from "../components/CompanySetup";
-import { COUNTRIES, type CompanyDraft } from "./fixtures";
+import { parsePhoneNumberFromString } from "libphonenumber-js";
+import type { CompanyDraft } from "./fixtures";
+import { countryForName, dialCode, toE164 } from "./validation";
 import type { OnboardingState } from "./fixtures";
 
 /* The live shipper application (#84): the form's draft to and from the backend's shape. */
@@ -21,8 +23,8 @@ export const LIVE_STATE: Record<Application["state"], OnboardingState> = {
   rejected: "C9",
 };
 
-const codeFor = (country: string) =>
-  COUNTRIES.find((c) => c.name === country)?.code ?? COUNTRIES[0].code;
+/** The picked phone country, else the company's country, else the United States. */
+const phoneCountryOf = (c: CompanyDraft) => c.phoneCountry || countryForName(c.country) || "US";
 
 /** The form's draft as the backend wants it: 13 digits, E.164 phone, USDC base units. */
 export function toCompanyInput(c: CompanyDraft): CompanyInput {
@@ -36,9 +38,9 @@ export function toCompanyInput(c: CompanyDraft): CompanyInput {
     postal: c.postal.trim(),
     contact: c.contact.trim(),
     job: c.job.trim(),
-    // ponytail: the phone code follows the country. A number from another country needs the
-    // picker's code passed up from CompanySetup.
-    phone: `${codeFor(c.country)}${c.phone.replace(/\D/g, "")}`,
+    phone:
+      toE164(c.phone, phoneCountryOf(c)) ??
+      `${dialCode(phoneCountryOf(c))}${c.phone.replace(/\D/g, "")}`,
     email: c.email.trim(),
     trips: Number(c.trips),
     shippingSpend: String(parseUsdc(c.spend.replace(/,/g, ""))),
@@ -48,7 +50,7 @@ export function toCompanyInput(c: CompanyDraft): CompanyInput {
 
 /** A saved application back in the form's shape. */
 export function fromCompanyInput(c: CompanyInput): CompanyDraft {
-  const code = codeFor(c.country);
+  const parsed = parsePhoneNumberFromString(c.phone);
   return {
     name: c.name,
     registration: c.registration,
@@ -59,7 +61,8 @@ export function fromCompanyInput(c: CompanyInput): CompanyDraft {
     postal: c.postal,
     contact: c.contact,
     job: c.job,
-    phone: c.phone.startsWith(code) ? c.phone.slice(code.length) : c.phone,
+    phone: parsed ? String(parsed.nationalNumber) : c.phone,
+    phoneCountry: parsed?.country ?? countryForName(c.country) ?? "",
     email: c.email,
     trips: String(c.trips),
     spend: String(Number(BigInt(c.shippingSpend)) / 1000000),
