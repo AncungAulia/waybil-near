@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { dbError } from "./supabase";
-import { conflict, unavailable } from "./errors";
+import { ApiException, conflict, unavailable } from "./errors";
 
 export interface Leases {
   run<T>(key: string, work: () => Promise<T>): Promise<T>;
@@ -17,7 +17,15 @@ export class DatabaseLeases implements Leases {
       ttl_seconds: 300,
     });
     dbError(error);
-    if (!data) conflict();
+    if (!data) {
+      if (key.startsWith("signer:"))
+        throw new ApiException(
+          503,
+          "E_SIGNER_BUSY",
+          "Another request is being recorded. Please try again shortly.",
+        );
+      conflict();
+    }
     try {
       return await work();
     } finally {

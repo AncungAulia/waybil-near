@@ -36,3 +36,20 @@ it("keeps unconfigured email queued and sends the actual Resend idempotency head
   expect((await emails.deliver(event.id)).state).toBe("sent");
   expect(request.mock.calls[0]![1]!.headers).toMatchObject({ "Idempotency-Key": event.id });
 });
+
+it("stops retrying a definite provider rejection", async () => {
+  const send = vi.fn().mockRejectedValue(new EmailFailure(false));
+  const emails = new Emails(new MemoryStore(), { enabled: () => true, send }, new MemoryLeases());
+  const row = await emails.queue("permanent", message);
+  expect((await emails.deliver(row.id)).error).toBe("E_EMAIL_PERMANENT");
+  await emails.deliver(row.id);
+  expect(send).toHaveBeenCalledTimes(1);
+});
+it("caps ambiguous retries without inventing a delivery outcome", async () => {
+  const send = vi.fn().mockRejectedValue(new EmailFailure(true));
+  const emails = new Emails(new MemoryStore(), { enabled: () => true, send }, new MemoryLeases());
+  const row = await emails.queue("retry-cap", message);
+  for (let i = 0; i < 8; i++) await emails.deliver(row.id);
+  expect(send).toHaveBeenCalledTimes(5);
+  expect((await emails.deliver(row.id)).state).toBe("uncertain");
+});

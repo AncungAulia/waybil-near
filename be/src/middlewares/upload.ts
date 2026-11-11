@@ -15,7 +15,7 @@ export function uploadFiles(field: string, count: number): RequestHandler {
             error.code === "LIMIT_FILE_SIZE" ? "E_TOO_LARGE" : "E_VALIDATION",
           ),
         );
-      else next(error);
+      else next(error ? new ApiException(400, "E_VALIDATION") : undefined);
     });
   };
 }

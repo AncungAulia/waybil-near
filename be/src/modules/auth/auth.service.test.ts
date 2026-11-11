@@ -174,3 +174,29 @@ it("binds encrypted keys to identity and rejects role/account profile edits", as
     { code: "E_ACCESS" },
   );
 });
+
+it("caps daily signup funding globally while leaving existing logins available", async () => {
+  const { service, provider, env } = setup();
+  env.GOOGLE_SIGNUP_DAILY_LIMIT = 1;
+  const login = async () => {
+    const challenge = await service.challenge({ kind: "google", publicKey: key() });
+    return service.google({ challengeId: challenge.id, idToken: "test" });
+  };
+  await login();
+  await login();
+  vi.mocked(provider.verifyGoogle).mockImplementation(async (_token, nonce) => ({
+    sub: "subject-2",
+    nonce,
+    name: "Other",
+    email: "other@example.com",
+  }));
+  await expect(login()).rejects.toMatchObject({ code: "E_SIGNUP_CAP" });
+  expect(provider.ensureAccount).toHaveBeenCalledTimes(1);
+});
+it("logout increments the session version", async () => {
+  const { service, store } = setup();
+  const p = profile();
+  await store.insert("profiles", p.accountId, p);
+  expect(await service.logout(p.accountId)).toEqual({ revoked: true });
+  expect((await store.get<typeof p>("profiles", p.accountId))!.value.sessionVersion).toBe(1);
+});

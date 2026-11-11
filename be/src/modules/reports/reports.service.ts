@@ -48,6 +48,7 @@ export class Reports {
     private chain: Chain,
     private files: FileStore,
     private leases: Leases,
+    private now = () => Date.now(),
   ) {}
   async create(actor: Principal, input: ReportInput, uploads: Uint8Array[]): Promise<ReportSaved> {
     allowed(actor.role === "warehouse" && actor.authMethod === "google");
@@ -88,7 +89,7 @@ export class Reports {
           canonical,
           photoIds: photos.map((_p, position) => sha256(`${reportHash}:${position}`)),
           state: "uploading",
-          createdAt: new Date().toISOString(),
+          createdAt: new Date(this.now()).toISOString(),
         } satisfies ReportRecord);
       for (let position = 0; position < photos.length; position++) {
         const photoId = row.value.photoIds[position]!;

@@ -29,6 +29,7 @@ export interface Identity {
   role: "driver" | "warehouse";
   ready: boolean;
   pendingKey: string | null;
+  provisioningDay?: string;
 }
 export const subjectHash = (sub: string) => createHash("sha256").update(sub).digest("hex");
 export class AuthService {
@@ -131,12 +132,30 @@ export class AuthService {
       let id = row.value;
       const recoverySecret = this.recovery.open(id.recovery, hash);
       if (!id.ready && !id.pendingKey)
-        await this.provider.ensureAccount(
-          id.accountId,
-          id.devicePublicKey,
-          recoverySecret,
-          id.role,
-        );
+        await this.leases.run("signup:budget", async () => {
+          const day = new Date(this.now()).toISOString().slice(0, 10);
+          if (row!.value.provisioningDay !== day) {
+            const reserved = await this.store.list<Identity>("auth_identities", {
+              provisioningDay: day,
+            });
+            if (reserved.length >= this.env.GOOGLE_SIGNUP_DAILY_LIMIT)
+              throw new ApiException(
+                503,
+                "E_SIGNUP_CAP",
+                "Account setup is busy today. Please try again tomorrow.",
+              );
+            row = await this.store.replace("auth_identities", hash, row!.version, {
+              ...row!.value,
+              provisioningDay: day,
+            });
+          }
+          await this.provider.ensureAccount(
+            id.accountId,
+            id.devicePublicKey,
+            recoverySecret,
+            id.role,
+          );
+        });
       let profileRow = await this.store.get<Profile>("profiles", id.accountId);
       if (!profileRow) {
         profileRow = await this.store.insert("profiles", id.accountId, {
@@ -197,6 +216,16 @@ export class AuthService {
           ready: true,
         });
       return this.sessions.issue(profileRow.value);
+    });
+  }
+  async logout(accountId: string) {
+    return this.leases.run(`account:${accountId}`, async () => {
+      const row = requireValue(await this.store.get<Profile>("profiles", accountId));
+      await this.store.replace("profiles", accountId, row.version, {
+        ...row.value,
+        sessionVersion: row.value.sessionVersion + 1,
+      });
+      return { revoked: true };
     });
   }
   async updateProfile(accountId: string, input: ProfileUpdate) {
