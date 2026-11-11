@@ -299,3 +299,11 @@ Malformed multipart bodies return 400 E_VALIDATION. Email delivery stops after a
 non-retryable 4xx or five attempts. Rate limits, 5xx and ambiguous transport outcomes may retry
 with the same idempotency key within the existing 23-hour window; unresolved ambiguity ends
 as uncertain. Permanently failed rows remain available for operational inspection.
+
+Credit review requests have a 24-hour per-shipper cooldown, including failed/unclear checks
+and initial resubmissions. Repeating an active request returns the existing review. Transient
+provider, storage and configuration failures keep the review queued, retry no sooner than
+60 seconds, and stop after three processing attempts. Failed initial checks leave the
+application in_review for team handling, rather than silently returning it to draft.
+The admin applications list adds `review: CreditReviewInfo | null` to each application;
+private raw model evidence is available only through its existing authorized proof route.
