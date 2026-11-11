@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { type CompanyDraft, type OnboardingState } from "../data/fixtures";
 import { companyErrors, countryForName, dialCode, documentError } from "../data/validation";
-import { useRegions } from "../data/regions";
+import { shortPlace, useRegions } from "../data/regions";
 import { PhoneInput } from "./PhoneInput";
 import { SearchPicker } from "./SearchPicker";
 import { cn } from "@/lib/cn";
@@ -122,7 +122,7 @@ export function CompanySetup({
                   : "Select province"
                 : "Pick a country first"
             }
-            options={regions.provinces.map((p) => ({ value: p.name, label: p.name }))}
+            options={regions.provinces.map((p) => ({ value: p.name, label: shortPlace(p.name) }))}
             allowCustom={!regions.loadingCountries}
             emptyText={
               regions.loadingCountries
@@ -139,7 +139,7 @@ export function CompanySetup({
             value={draft.city}
             disabled={!draft.province}
             placeholder={draft.province ? "Select city" : "Pick a province first"}
-            options={regions.cities.map((c) => ({ value: c, label: c }))}
+            options={regions.cities.map((c) => ({ value: c, label: shortPlace(c) }))}
             allowCustom={!regions.loadingCities}
             emptyText={regions.loadingCities ? "Loading cities." : "Type the name of your city."}
             onChange={(value) => edit("city", value)}

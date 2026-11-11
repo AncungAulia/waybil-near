@@ -107,3 +107,19 @@ export function useRegions(country: string, province: string) {
     failed: indexFailed || citiesFailed,
   };
 }
+
+/*
+ * Short display names for Indonesian provinces and regencies, the way people write them.
+ * The official name stays the stored value and still matches a search. "Kota" is kept, since
+ * a city and a regency can share a name (Kota Bandung and Kab. Bandung).
+ */
+const SHORT_PROVINCES: Record<string, string> = {
+  "Daerah Khusus Ibukota Jakarta": "DKI Jakarta",
+  "Daerah Istimewa Yogyakarta": "DI Yogyakarta",
+};
+export function shortPlace(name: string) {
+  return (
+    SHORT_PROVINCES[name] ??
+    name.replace(/^(Kota|Kabupaten) Administrasi /, "").replace(/^Kabupaten /, "Kab. ")
+  );
+}
