@@ -12,7 +12,8 @@ export function DriverSetup({
   onFinish,
 }: {
   state: OnboardingState;
-  onFinish: (name: string) => void;
+  /** `phone` is in E.164, for example "+12075550199". */
+  onFinish: (driver: { name: string; phone: string; plate: string }) => void;
 }) {
   const filled = state !== "D1";
   const [draft, setDraft] = useState({
@@ -43,7 +44,12 @@ export function DriverSetup({
         className="flex flex-1 flex-col gap-20 md:flex-none md:gap-24"
         onSubmit={(e) => {
           e.preventDefault();
-          if (!Object.values(errors).some(Boolean)) onFinish(draft.name);
+          if (!Object.values(errors).some(Boolean))
+            onFinish({
+              name: draft.name.trim(),
+              phone: `${phoneCode}${draft.phone.replace(/\D/g, "")}`,
+              plate: draft.plate.trim(),
+            });
         }}
       >
         <Input
