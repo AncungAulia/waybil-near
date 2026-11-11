@@ -117,7 +117,7 @@ export function base64ToBytes(value: string) {
 }
 
 const BASE58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-function base58ToBytes(value: string) {
+export function base58ToBytes(value: string) {
   let n = 0n;
   for (const c of value) {
     const digit = BASE58.indexOf(c);

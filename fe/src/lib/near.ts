@@ -15,24 +15,9 @@ import { NEAR_RPC_URL, USDC_CONTRACT, WAYBIL_CONTRACT } from "./env";
 
 export class ViewError extends Error {}
 
-/** Calls a view method and returns its JSON result. */
-export async function view<T>(
-  method: string,
-  args: object = {},
-  contract = WAYBIL_CONTRACT,
-): Promise<T> {
-  const body = JSON.stringify({
-    jsonrpc: "2.0",
-    id: method,
-    method: "query",
-    params: {
-      request_type: "call_function",
-      finality: "final",
-      account_id: contract,
-      method_name: method,
-      args_base64: btoa(JSON.stringify(args)),
-    },
-  });
+/** One `query` call to the RPC. Contract errors come back as ViewError. */
+export async function query<T extends { error?: string }>(params: object): Promise<T> {
+  const body = JSON.stringify({ jsonrpc: "2.0", id: "waybil", method: "query", params });
   /*
    * The public RPC drops bursts: a 429, or a network error because the 429 has no CORS
    * headers. Two retries with a short wait cover a page that reads many views at once.
@@ -50,12 +35,38 @@ export async function view<T>(
   if (!res?.ok) throw new ViewError(`RPC answered ${res?.status ?? "no response"}`);
   const data = (await res.json()) as {
     error?: { message?: string; cause?: { name?: string } };
-    result?: { result?: number[]; error?: string };
+    result?: T;
   };
   const failure = data.error?.cause?.name ?? data.error?.message ?? data.result?.error;
-  if (failure || !data.result?.result) throw new ViewError(failure ?? "Empty RPC result");
-  return JSON.parse(new TextDecoder().decode(new Uint8Array(data.result.result))) as T;
+  if (failure || !data.result) throw new ViewError(failure ?? "Empty RPC result");
+  return data.result;
 }
+
+/** Calls a view method and returns its JSON result. */
+export async function view<T>(
+  method: string,
+  args: object = {},
+  contract = WAYBIL_CONTRACT,
+): Promise<T> {
+  const result = await query<{ result?: number[]; error?: string }>({
+    request_type: "call_function",
+    finality: "final",
+    account_id: contract,
+    method_name: method,
+    args_base64: btoa(JSON.stringify(args)),
+  });
+  if (!result.result) throw new ViewError("Empty RPC result");
+  return JSON.parse(new TextDecoder().decode(new Uint8Array(result.result))) as T;
+}
+
+/** The access key's nonce and the block it was read at. */
+export const accessKey = (account_id: string, public_key: string) =>
+  query<{ nonce: number; block_height: number; error?: string }>({
+    request_type: "view_access_key",
+    finality: "final",
+    account_id,
+    public_key,
+  });
 
 /** Contract lists return at most 50 items, so this reads page after page with `from`. */
 export async function readAll<T>(page: (from: number, limit: number) => Promise<T[]>) {
