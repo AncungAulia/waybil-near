@@ -15,6 +15,9 @@ export const LIVE = process.env.NEXT_PUBLIC_LIVE === "on";
 /** NEAR network for the RPC and the explorer links. */
 export const NEAR_NETWORK = process.env.NEXT_PUBLIC_NEAR_NETWORK ?? "testnet";
 
+/** Google sign-in for drivers and warehouses. The same client id the backend checks. */
+export const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? "";
+
 /** JSON-RPC endpoint for contract views. */
 export const NEAR_RPC_URL = process.env.NEXT_PUBLIC_NEAR_RPC_URL || "https://test.rpc.fastnear.com";
 

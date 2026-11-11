@@ -44,7 +44,15 @@ import { api, ApiError } from "@/lib/api";
 import { LIVE } from "@/lib/env";
 import { connectWallet, disconnectWallet, walletSignIn } from "@/lib/wallet";
 import { getShipper } from "@/lib/near";
-import type { Application, ApplicationResponse } from "@waybil/shared";
+import { googleIdToken } from "@/lib/google";
+import { deviceKey } from "@/lib/relay";
+import type {
+  Application,
+  ApplicationResponse,
+  ChallengeResponse,
+  PublicInvite,
+  SessionResponse,
+} from "@waybil/shared";
 import { fromCompanyInput, LIVE_STATE, saveApplication, sendPapers } from "../data/application";
 import { useAuth } from "@/providers/AuthProvider";
 import {
@@ -167,7 +175,7 @@ export function OnboardingScreen({
             : 2
           : 1;
   useEffect(() => {
-    if (preview || !["C6", "D5"].includes(state) || (LIVE && state === "C6")) return;
+    if (preview || !["C6", "D5"].includes(state) || LIVE) return;
     const timer = setTimeout(() => setState(state === "C6" ? "C7" : "D6"), 350);
     return () => clearTimeout(timer);
   }, [state, preview]);
@@ -238,6 +246,7 @@ export function OnboardingScreen({
   /* Cancel on A2 abandons the attempt that is still waiting on the wallet. */
   const attempt = useRef(0);
   async function walletFlow(role?: "shipper" | "investor") {
+    lastFlow.current = "wallet";
     const id = ++attempt.current;
     setSignInError(null);
     setState("A2");
@@ -270,6 +279,104 @@ export function OnboardingScreen({
       setState("A3");
     }
   }
+  /*
+   * Live Google sign-in (#83) for drivers and warehouses. The phone's device key goes with the
+   * challenge, Google signs the challenge's nonce into the ID token, and the backend sets up
+   * the account. An invite code makes a warehouse, or links a driver to a shipper.
+   */
+  const googleSlot = useRef<HTMLDivElement>(null);
+  const lastFlow = useRef<"wallet" | "google" | "invite">("wallet");
+  const [googleWaiting, setGoogleWaiting] = useState(false);
+  const [publicInvite, setPublicInvite] = useState<PublicInvite | null>(null);
+  const liveInvite = LIVE && !preview && !!inviteCode;
+  const shipperName = liveInvite ? (publicInvite?.shipperName ?? "the company") : "Northwind";
+  useEffect(() => {
+    if (!liveInvite) return;
+    api<PublicInvite>(`/invites/${inviteCode}`)
+      .then((found) => {
+        setPublicInvite(found);
+        setState(
+          found.state !== "open"
+            ? "F4"
+            : found.type === "warehouse"
+              ? "F5"
+              : profile?.role === "driver"
+                ? "F2"
+                : "F1",
+        );
+      })
+      .catch(() => setState("F4"));
+    // The invite is read once per code. A later sign-in moves on through acceptInvite.
+  }, [liveInvite, inviteCode]);
+  async function acceptInvite() {
+    await api(`/invites/${inviteCode}/accept`, { body: {} });
+    setState(publicInvite?.type === "warehouse" ? "F6" : "F3");
+  }
+  async function googleFlow(withInvite = false) {
+    lastFlow.current = withInvite ? "invite" : "google";
+    const id = ++attempt.current;
+    setSignInError(null);
+    setGoogleWaiting(true);
+    setState("A2");
+    try {
+      const key = await deviceKey().catch(() => {
+        throw new Error("This browser can’t keep a sign-in key. Update it or try Chrome.");
+      });
+      const challenge = await api<ChallengeResponse>("/auth/challenge", {
+        body: {
+          kind: "google",
+          publicKey: key.publicKey,
+          ...(withInvite && inviteCode && { inviteCode }),
+        },
+      });
+      const idToken = await googleIdToken(challenge.nonce, () => googleSlot.current);
+      const session = await api<SessionResponse>("/auth/google", {
+        body: { challengeId: challenge.id, idToken },
+      });
+      if (id !== attempt.current) return;
+      signIn(session);
+      setGoogleWaiting(false);
+      if (withInvite && inviteCode) await acceptInvite();
+      else if (session.profile.role === "driver" && !session.profile.truckPlate) setState("D1");
+      else dashboard(HOME[session.profile.role] ?? "/start");
+    } catch (error) {
+      if (id !== attempt.current) return;
+      setGoogleWaiting(false);
+      if (
+        error instanceof ApiError &&
+        (error.code === "E_INVITE_USED" || error.code === "E_INVITE_EXPIRED")
+      ) {
+        setState("F4");
+        return;
+      }
+      setSignInError(
+        error instanceof ApiError
+          ? error.status === 403
+            ? "This Google account signs in another way. Ask the company for a new link."
+            : error.message
+          : error instanceof Error && error.message.startsWith("This browser")
+            ? error.message
+            : "Google sign-in did not finish. Try again.",
+      );
+      setState("A3");
+    }
+  }
+  async function saveDriver(driver: { name: string; phone: string; plate: string }) {
+    setSignInError(null);
+    setState("D5");
+    try {
+      await api("/me/profile", {
+        method: "PUT",
+        body: { name: driver.name, phone: driver.phone, truckPlate: driver.plate },
+      });
+      setState("D6");
+    } catch (error) {
+      setSignInError(
+        error instanceof ApiError ? error.message : "Your details could not be saved.",
+      );
+      setState("D2");
+    }
+  }
   async function switchWallet() {
     attempt.current++;
     pending.current = null;
@@ -299,11 +406,12 @@ export function OnboardingScreen({
       >
         {connect && (state === "A2" || state === "A4") ? (
           <>
-            {state === "A2" ? "Check your" : "Switch to the"}
+            {state === "A2" ? (googleWaiting ? "Continue with" : "Check your") : "Switch to the"}
             <br className={state === "A2" ? "md:hidden" : ""} />
             {state === "A2" ? (
               <>
-                <span className="hidden md:inline"> </span>wallet
+                <span className="hidden md:inline"> </span>
+                {googleWaiting ? "Google" : "wallet"}
               </>
             ) : (
               "test network"
@@ -312,11 +420,15 @@ export function OnboardingScreen({
         ) : invite && ["F1", "F2", "F4", "F5"].includes(state) ? (
           <span className="flex flex-col gap-8">
             <span>
-              {state === "F5" ? "Receive goods" : state === "F4" ? "This link" : "Northwind wants"}
+              {state === "F5"
+                ? "Receive goods"
+                : state === "F4"
+                  ? "This link"
+                  : `${shipperName} wants`}
             </span>
             <span>
               {state === "F5"
-                ? "for Northwind"
+                ? `for ${shipperName}`
                 : state === "F4"
                   ? "has expired or was used"
                   : "to work with you"}
@@ -602,7 +714,9 @@ export function OnboardingScreen({
                   state === "A1"
                     ? "Welcome to waybil"
                     : state === "A2"
-                      ? "Check your wallet"
+                      ? googleWaiting
+                        ? "Continue with Google"
+                        : "Check your wallet"
                       : state === "A3"
                         ? "Not connected"
                         : state === "A4"
@@ -611,7 +725,9 @@ export function OnboardingScreen({
                   state === "A1"
                     ? "Shippers and investors connect a NEAR wallet. Drivers and warehouses continue with Google. You don't need a password."
                     : state === "A2"
-                      ? "Approve the connection in your wallet to continue."
+                      ? googleWaiting
+                        ? "Pick your Google account to continue."
+                        : "Approve the connection in your wallet to continue."
                       : state === "A3"
                         ? (signInError ??
                           "The request was declined in your wallet. Nothing was shared.")
@@ -645,6 +761,7 @@ export function OnboardingScreen({
                       icon={<MailGlyph size={17} />}
                       className={cn(actionClass, "h-48")}
                       onClick={() => {
+                        if (LIVE) return void googleFlow();
                         setRole(null);
                         setGoogle(true);
                         setState("B1");
@@ -657,23 +774,34 @@ export function OnboardingScreen({
                     </p>
                   </>
                 ) : state === "A2" ? (
-                  <Button
-                    variant="secondary"
-                    icon={<X size={17} />}
-                    className={actionClass}
-                    onClick={() => {
-                      attempt.current++;
-                      setState("A1");
-                    }}
-                  >
-                    Cancel
-                  </Button>
+                  <>
+                    {/* Google draws its own button here when it can't show its account picker. */}
+                    {googleWaiting && <div ref={googleSlot} className="flex justify-center" />}
+                    <Button
+                      variant="secondary"
+                      icon={<X size={17} />}
+                      className={actionClass}
+                      onClick={() => {
+                        attempt.current++;
+                        setGoogleWaiting(false);
+                        setState(lastFlow.current === "invite" && publicInvite ? "F1" : "A1");
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </>
                 ) : state === "A3" ? (
                   <>
                     <Button
                       icon={<ArrowCounterClockwise size={17} />}
                       className={actionClass}
-                      onClick={() => (LIVE ? void walletFlow() : setState("A1"))}
+                      onClick={() =>
+                        !LIVE
+                          ? setState("A1")
+                          : lastFlow.current === "wallet"
+                            ? void walletFlow()
+                            : void googleFlow(lastFlow.current === "invite")
+                      }
                     >
                       Try again
                     </Button>
@@ -844,12 +972,17 @@ export function OnboardingScreen({
               )}
             </>
           ) : driverForm ? (
-            <DriverSetup
-              state={state}
-              onFinish={() => {
-                setState("D5");
-              }}
-            />
+            <>
+              {LIVE && signInError && (
+                <p role="alert" className="rounded-row bg-ds-danger-result p-14 text-label">
+                  {signInError}
+                </p>
+              )}
+              <DriverSetup
+                state={state}
+                onFinish={(driver) => (LIVE ? void saveDriver(driver) : setState("D5"))}
+              />
+            </>
           ) : group === "C" ? (
             <>
               {icon(
@@ -1158,14 +1291,18 @@ export function OnboardingScreen({
                     : state === "F6"
                       ? "You’re all set"
                       : state === "F5"
-                        ? "Receive goods for Northwind"
-                        : "Northwind wants to work with you",
+                        ? `Receive goods for ${shipperName}`
+                        : `${shipperName} wants to work with you`,
                 state === "F3"
-                  ? "Northwind can now send you trips. You will see them on your trips page."
+                  ? liveInvite
+                    ? `${shipperName} adds you to their network next. Then their trips show up on your trips page.`
+                    : "Northwind can now send you trips. You will see them on your trips page."
                   : state === "F4"
-                    ? "Ask Northwind to send you a new link. It only takes them a few seconds."
+                    ? `Ask ${shipperName} to send you a new link. It only takes them a few seconds.`
                     : state === "F6"
-                      ? "When a truck arrives at Harbor Hub, scan the QR on the driver’s phone to confirm."
+                      ? liveInvite
+                        ? `When ${shipperName} adds this address, scan the QR on the driver’s phone as each truck arrives.`
+                        : "When a truck arrives at Harbor Hub, scan the QR on the driver’s phone to confirm."
                       : state === "F5"
                         ? "You will confirm deliveries that arrive at this address."
                         : "Accept to get trips from them. You get paid the moment a delivery is confirmed.",
@@ -1173,10 +1310,10 @@ export function OnboardingScreen({
               {["F1", "F2", "F5"].includes(state) && (
                 <div className="flex flex-col gap-12 rounded-[22px] bg-ds-canvas p-20">
                   <div className="flex items-center gap-12">
-                    <Avatar name="Northwind Freight Co." />
+                    <Avatar name={liveInvite ? shipperName : "Northwind Freight Co."} />
                     <div className="min-w-0 flex-1">
                       <p className="text-[16px] leading-[1.45] font-medium">
-                        Northwind Freight Co.
+                        {liveInvite ? shipperName : "Northwind Freight Co."}
                       </p>
                       <p className="mt-2 text-[12.5px] leading-[1.45] text-ds-muted">
                         {state === "F5"
@@ -1189,7 +1326,10 @@ export function OnboardingScreen({
                       Verified
                     </span>
                   </div>
-                  <div className="[&>div]:py-9 [&>div]:text-[14px] [&>div>span:last-child]:max-w-[70%] [&>div>span:last-child]:text-right [&>div>span:last-child]:font-medium [&>div+div]:border-t [&>div+div]:border-ds-line">
+                  <div
+                    data-live={liveInvite || undefined}
+                    className="data-[live]:hidden [&>div]:py-9 [&>div]:text-[14px] [&>div>span:last-child]:max-w-[70%] [&>div>span:last-child]:text-right [&>div>span:last-child]:font-medium [&>div+div]:border-t [&>div+div]:border-ds-line"
+                  >
                     {state === "F5" ? (
                       <>
                         <Row label="Destination" value="Harbor Hub" />
@@ -1211,7 +1351,7 @@ export function OnboardingScreen({
                     <Button
                       icon={<MailGlyph size={17} />}
                       className={actionClass}
-                      onClick={() => setState("D1")}
+                      onClick={() => (liveInvite ? void googleFlow(true) : setState("D1"))}
                     >
                       Continue with Google
                     </Button>
@@ -1221,7 +1361,26 @@ export function OnboardingScreen({
                   </>
                 ) : state === "F2" ? (
                   <>
-                    <Button className={actionClass} onClick={() => setState("F3")}>
+                    <Button
+                      className={actionClass}
+                      onClick={() =>
+                        liveInvite
+                          ? void acceptInvite().catch((error: unknown) => {
+                              if (
+                                error instanceof ApiError &&
+                                ["E_INVITE_USED", "E_INVITE_EXPIRED"].includes(error.code)
+                              )
+                                setState("F4");
+                              else
+                                setSignInError(
+                                  error instanceof ApiError
+                                    ? error.message
+                                    : "The invite could not be accepted. Try again.",
+                                );
+                            })
+                          : setState("F3")
+                      }
+                    >
                       Accept
                     </Button>
                     <Button
@@ -1253,7 +1412,7 @@ export function OnboardingScreen({
                     <Button
                       icon={<MailGlyph size={17} />}
                       className={actionClass}
-                      onClick={() => setState("F6")}
+                      onClick={() => (liveInvite ? void googleFlow(true) : setState("F6"))}
                     >
                       Continue with Google
                     </Button>
@@ -1294,8 +1453,8 @@ export function OnboardingScreen({
             />
           ) : null}
         </div>
-        {/* Live wallet sign-in is real, so the demo note stays off the sign-in steps. */}
-        {!(LIVE && (group === "A" || group === "B")) && (
+        {/* Live sign-in, driver details and invites are real, so the demo note stays off them. */}
+        {!(LIVE && ["A", "B", "D", "F"].includes(group)) && (
           <p className="mt-4 text-center text-caption text-ds-muted">
             This is a local demo. No sign-in, wallet connection or application is submitted.
           </p>
