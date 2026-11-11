@@ -11,17 +11,23 @@ export function Panel({
   title,
   /** Shown next to the title, for example the segmented tabs. */
   action,
+  /** A small count the board draws right after the title, for example "3". */
+  badge,
   gap = 16,
+  /** The board draws the card title at 15, 17, 18 or 20 px, depending on the card. */
+  titleClassName = "text-heading",
   children,
   className,
 }: {
   title?: string;
   action?: ReactNode;
-  gap?: 12 | 16 | 18;
+  badge?: ReactNode;
+  gap?: 4 | 12 | 16 | 18;
+  titleClassName?: string;
   children: ReactNode;
   className?: string;
 }) {
-  const gaps = { 12: "gap-12", 16: "gap-16", 18: "gap-18" } as const;
+  const gaps = { 4: "gap-4", 12: "gap-12", 16: "gap-16", 18: "gap-18" } as const;
 
   return (
     <section
@@ -29,7 +35,11 @@ export function Panel({
     >
       {(title || action) && (
         <div className="flex items-center justify-between gap-16">
-          {title && <h2 className="text-heading">{title}</h2>}
+          <span className="flex items-center gap-8">
+            {title && <h2 className={cn("font-medium", titleClassName)}>{title}</h2>}
+            {/* A zero is a real count, so only an absent badge is dropped. */}
+            {badge !== undefined && <span className="text-caption text-ds-muted">{badge}</span>}
+          </span>
           {action}
         </div>
       )}

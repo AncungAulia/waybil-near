@@ -14,8 +14,12 @@ Owner: Yeypayeyy. These rules add to the root `AGENTS.md`; they don't replace it
 
 ## Stack
 
-Next.js (App Router) in `fe/src`, TypeScript, Tailwind CSS 4, shadcn/ui restyled to the design,
+Next.js (App Router) in `fe/src`, TypeScript, Tailwind CSS 4, our own components in
+`src/components` built to the design (no shadcn/ui), Radix Dialog for sheets and dialogs,
 near-connect for wallets, MapLibre GL with OpenStreetMap tiles, browser camera for QR.
+Since there is no component library, menus, comboboxes, radio groups and the date grid follow
+the WAI-ARIA keyboard patterns by hand (see `WalletMenu`, `SearchPicker`, `DueGrid`). Copy
+those when you build a new one.
 Types and money helpers come from `@waybil/shared`. Never redo the fee math in the UI.
 
 ## Rules
@@ -24,7 +28,8 @@ Types and money helpers come from `@waybil/shared`. Never redo the fee math in t
   Instrument Sans). No raw hex in components.
 - Pages in `src/app` stay thin. Screens live in `src/modules/<role>`.
 - Every recorded action ends with a proof link (`ProofLink`) to NearBlocks.
-- Money shows two decimals and "USDC" set smaller next to the number.
+- Money shows two decimals with "USDC" next to the number, at the same size, as the board
+  writes it. Only the amount field keeps a smaller suffix.
 - Mobile: the main button sits at the bottom of the screen. Empty and error states fill the
   full width and height.
 - Drivers and warehouses never see a wallet prompt. Their actions go through the relayer.

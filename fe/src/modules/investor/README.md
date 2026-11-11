@@ -1,9 +1,12 @@
 # Investor screens
 
-Issue #30. The 14 I1–I3 states live in `components/InvestorScreen.tsx` with shared-type
+Issue #30. The 15 I1–I3 states live in `components/InvestorScreen.tsx` with shared-type
 Investor, Pool and Shipment fixtures in `data/fixtures.ts`.
 Routes are `/pool`, `/pool/deliveries`, `/pool/deliveries/[id]` and `/pool/history`.
-The gated gallery exposes every state, including a busy pool and a queued withdrawal.
+The gated gallery exposes every state, including a busy pool, a queued withdrawal and a
+delivery covered by the reserve (I3.5).
+I3.5 is gallery only for now. The live list keeps every sample bill unmissed, so adding a
+covered row would change the "Missed payments" count on the pool page.
 
 This is a labeled local demo. No wallet, transfer, shares or real withdrawal queue is changed.
 Deposit and withdrawal previews update `waybil-demo-pool-v1` in browser local storage.

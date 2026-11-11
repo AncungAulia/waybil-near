@@ -15,8 +15,11 @@
   --color-ds-ink: #111111;
   --color-ds-ink-2: #3d3d3d;
   --color-ds-muted: #6b6b6b;
+  --color-ds-filter-count: #bdbdbd;
+  --color-ds-map-paused: #8a8a88;
   --color-ds-brand: #ffd60a;
   --color-ds-brand-deep: #6b5600;
+  --color-ds-brand-ink: #3d3300;
   --color-ds-brand-soft: #fff8d1;
   /* Yellow on light grey needs a ring to stay visible, see the Delivered status dot. */
   --color-ds-brand-ring: #c9a800;
@@ -25,12 +28,22 @@
   --color-ds-danger: #d42f34;
   --color-ds-warning: #e06a00;
   --color-ds-danger-soft: #fdf1f1;
+  --color-ds-danger-stamp: #fbe3ec;
+  --color-ds-danger-result: #fbeaea;
   --color-ds-success-soft: #e3f1e7;
+  --color-ds-check-soft: #e4f2e8;
+  --color-ds-check-ink: #14572b;
+  --color-ds-report-ink: #8a1039;
+  --color-ds-vote-soft: #fff6d6;
+  --color-ds-vote-ink: #6b4e00;
+  --color-ds-warning-soft: #fff1d6;
+  --color-ds-warning-ink: #8a5300;
   /* The unused part of the ruler meter, from design/shaders/ruler.glsl. */
   --color-ds-meter-empty: #cfcfcf;
   /* Second line of text on the dark toast, and the quieter one in the footer. */
   --color-ds-on-night: #a8a8a8;
   --color-ds-on-night-dim: #8c8c8c;
+  --color-ds-role-selected-muted: #c9c9c9;
 
   /* Pressed and disabled shades, read off the States board. */
   --color-ds-brand-pressed: #f0b400;
@@ -83,6 +96,9 @@
   --radius-row: 20px;
   --radius-card: 28px;
 
+  /* The soft shadow under small pills floating on the map, for example the truck label. */
+  --shadow-float: 0 4px 12px rgb(0 0 0 / 0.12);
+
   /*
    * Motion, see fe/AGENTS.md "Motion" and the Quiet rules board. These replace Tailwind's
    * own ease-out and ease-in-out on purpose. Hover and colour changes use `ease-base`.
@@ -100,7 +116,20 @@
   --spacing: 1px;
 }
 
-/* Hover effects only for real pointers. `desk` also needs a wide screen. */
+/*
+ * Hover effects only for real pointers (fe/AGENTS.md "Motion"). Tailwind 4's own `hover:`
+ * only checks `(hover: hover)`, which some touch screens also match, so the variant is
+ * redefined here. `group-hover:` and `peer-hover:` follow it too.
+ * `hover-fine` is the bare media query, kept for code that already uses it.
+ * `desk` also needs a wide screen.
+ */
+@custom-variant hover {
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      @slot;
+    }
+  }
+}
 @custom-variant hover-fine (@media (hover: hover) and (pointer: fine));
 @custom-variant desk (@media (min-width: 1024px) and (hover: hover) and (pointer: fine));
 
@@ -127,6 +156,47 @@
     color: var(--color-ds-ink);
   }
 
+  /*
+   * Tailwind 4 drops the browser's own pointer on a button, so anything tappable asks for it
+   * back here rather than every component repeating `cursor-pointer`. A button that is off
+   * keeps the plain arrow.
+   */
+  button:not(:disabled),
+  summary,
+  select:not(:disabled),
+  a[href],
+  [role="button"]:not([aria-disabled="true"]),
+  [role="switch"]:not(:disabled),
+  [role="tab"]:not(:disabled),
+  [role="option"],
+  [role="menuitem"],
+  [role="radio"]:not([aria-disabled="true"]),
+  [role="checkbox"]:not([aria-disabled="true"]),
+  [role="link"],
+  [role="gridcell"][tabindex]:not([aria-disabled="true"]),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  input[type="file"]:not(:disabled),
+  input[type="submit"]:not(:disabled),
+  input[type="button"]:not(:disabled),
+  input[type="range"]:not(:disabled),
+  input[type="color"]:not(:disabled),
+  label:has(input:not(:disabled):not([type="text"]):not([type="email"]):not([type="number"])),
+  label[for]:not(:has(input[type="text"], input[type="email"], input[type="number"], textarea)) {
+    cursor: pointer;
+  }
+
+  /*
+   * A button that is waiting shows the progress cursor, and anything marked off with
+   * aria-disabled keeps the plain arrow. The doubled attribute outranks the pointer rule above.
+   */
+  [aria-busy="true"][aria-busy="true"] {
+    cursor: progress;
+  }
+  [aria-disabled="true"][aria-disabled="true"]:not([aria-busy="true"]) {
+    cursor: default;
+  }
+
   /* Keyboard only: a 2 px ring with a 2 px offset. */
   :focus-visible {
     outline: 2px solid var(--color-ds-ink);
@@ -135,12 +205,77 @@
 }
 
 @layer components {
+  /*
+   * The Due card on the shipper board: a brand glow in the top right with the halftone
+   * dots from design/shaders/halftone.glsl over it (16 px cells, white at 16%).
+   */
   .bill-card {
+    position: relative;
+    background-image:
+      radial-gradient(
+        ellipse at 83% 5%,
+        color-mix(in srgb, var(--color-ds-brand) 40%, transparent),
+        transparent 60%
+      ),
+      /* The board sets a second, warmer glow low on the left. */
+        radial-gradient(
+          ellipse at 10% 94%,
+          color-mix(in srgb, var(--color-ds-brand-pressed) 22%, transparent),
+          transparent 62%
+        );
+  }
+  /*
+   * The driver's "Ready to get paid" card (K1.2) and the pool stat: the same halftone, dark
+   * over the brand yellow, with a white and an amber glow in the top right.
+   */
+  .ready-card {
+    position: relative;
+    background-image:
+      radial-gradient(
+        ellipse at top right,
+        color-mix(in srgb, white 60%, transparent),
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse at 80% 0%,
+        color-mix(in srgb, var(--color-ds-brand-pressed) 45%, transparent),
+        transparent 55%
+      );
+  }
+  /*
+   * The halftone sits over the glows and fades away from the top right corner, the way
+   * design/shaders/halftone.glsl shrinks its dots toward the text. The card's own children
+   * are lifted above it so the dots never land on a word.
+   */
+  .bill-card::after,
+  .ready-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background-size: 16px 16px;
+    -webkit-mask-image: radial-gradient(100% 100% at 100% 0%, #000 15%, transparent 85%);
+    mask-image: radial-gradient(100% 100% at 100% 0%, #000 15%, transparent 85%);
+  }
+  .bill-card::after {
     background-image: radial-gradient(
-      ellipse at top right,
-      color-mix(in srgb, var(--color-ds-brand) 20%, transparent),
-      transparent 65%
+      circle,
+      color-mix(in srgb, white 16%, transparent) 2.2px,
+      transparent 2.3px
     );
+  }
+  .ready-card::after {
+    background-image: radial-gradient(
+      circle,
+      color-mix(in srgb, black 12%, transparent) 1.9px,
+      transparent 2px
+    );
+  }
+  .bill-card > *,
+  .ready-card > * {
+    position: relative;
+    z-index: 1;
   }
   /*
    * Buttons get the three layer ring drawn on the States board: a brand-deep hairline on the
@@ -164,13 +299,47 @@
     pointer-events: none;
   }
 
-  /* Press feedback on anything tappable. Release is faster than press. */
+  /*
+   * Press feedback on anything tappable. Release is faster than press.
+   * A `transition-colors` utility would replace this transition, because utilities win over
+   * components. Elements that also change colour use
+   * `transition-[color,background-color,border-color,transform]` instead.
+   */
   .press {
     transition: transform 100ms ease;
   }
   .press:not(:disabled):active:not(:focus-visible) {
     transform: scale(0.97);
     transition-duration: 160ms;
+  }
+  /* A waiting button doesn't react to a press. */
+  .press[aria-busy="true"]:not(:disabled):active:not(:focus-visible) {
+    transform: none;
+  }
+
+  /*
+   * Text links on the boards. `link` rests in brand deep and turns ink under a real pointer,
+   * `link-ink` does the reverse for the links the board draws in ink. The whole label reacts,
+   * not only the arrow. Colour change only, 150 ms, plain ease.
+   */
+  .link,
+  .link-ink {
+    cursor: pointer;
+    transition: color 150ms var(--ease-base);
+  }
+  .link {
+    color: var(--color-ds-brand-deep);
+  }
+  .link-ink {
+    color: var(--color-ds-ink);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .link:not(:disabled):hover {
+      color: var(--color-ds-ink);
+    }
+    .link-ink:not(:disabled):hover {
+      color: var(--color-ds-brand-deep);
+    }
   }
 }
 
@@ -270,5 +439,36 @@
     .press:not(:disabled):active:not(:focus-visible) {
       transform: none;
     }
+  }
+}
+
+@keyframes shipment-shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.shipment-skeleton {
+  position: relative;
+  overflow: hidden;
+}
+.shipment-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--color-ds-bg) 55%, transparent),
+    transparent
+  );
+  animation: shipment-shimmer 2.4s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .shipment-skeleton::after {
+    animation: none;
   }
 }
