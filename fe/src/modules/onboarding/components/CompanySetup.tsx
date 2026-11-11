@@ -2,8 +2,9 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { COUNTRIES, CITIES, type CompanyDraft, type OnboardingState } from "../data/fixtures";
-import { companyErrors, documentError } from "../data/validation";
+import { type CompanyDraft, type OnboardingState } from "../data/fixtures";
+import { companyErrors, countryForName, dialCode, documentError } from "../data/validation";
+import { useRegions } from "../data/regions";
 import { PhoneInput } from "./PhoneInput";
 import { SearchPicker } from "./SearchPicker";
 import { cn } from "@/lib/cn";
@@ -19,13 +20,16 @@ export function CompanySetup({
   setDraft: (draft: CompanyDraft) => void;
   onContinue: () => void;
 }) {
-  const [phoneCode, setPhoneCode] = useState<string>(
-    () => COUNTRIES.find((country) => country.name === draft.country)?.code ?? "+62",
-  );
+  const regions = useRegions(draft.country, draft.province);
+  /* The phone country follows the company's country until someone picks another one. */
+  const phoneCountry =
+    draft.phoneCountry ||
+    (regions.iso2 && dialCode(regions.iso2) ? regions.iso2 : countryForName(draft.country)) ||
+    "ID";
   const [touched, setTouched] = useState<Set<string>>(
     () => new Set(state === "C3" ? ["registration", "phone"] : []),
   );
-  const errors = companyErrors(draft, phoneCode);
+  const errors = companyErrors(draft, phoneCountry);
   const edit = (key: keyof CompanyDraft, value: string) => {
     setTouched((t) => new Set(t).add(key));
     setDraft({ ...draft, [key]: value });
@@ -85,8 +89,22 @@ export function CompanySetup({
             appearance="company"
             placeholder="Select country"
             value={draft.country}
-            options={COUNTRIES.map((c) => ({ value: c.name, label: c.name }))}
-            onChange={(value) => setDraft({ ...draft, country: value, province: "", city: "" })}
+            options={regions.countries.map((c) => ({ value: c.name, label: c.name }))}
+            allowCustom={!regions.loadingCountries}
+            emptyText={
+              regions.loadingCountries ? "Loading countries." : "Type the name of your country."
+            }
+            onChange={(value) => {
+              const iso2 = regions.countries.find((c) => c.name === value)?.iso2;
+              setDraft({
+                ...draft,
+                country: value,
+                province: "",
+                city: "",
+                phoneCountry:
+                  (iso2 && dialCode(iso2) ? iso2 : countryForName(value)) || draft.phoneCountry,
+              });
+            }}
           />
           <SearchPicker
             label="State / Province"
@@ -100,12 +118,13 @@ export function CompanySetup({
                   : "Select province"
                 : "Pick a country first"
             }
-            options={(COUNTRIES.find((c) => c.name === draft.country)?.provinces ?? []).map(
-              (p) => ({
-                value: p,
-                label: p,
-              }),
-            )}
+            options={regions.provinces.map((p) => ({ value: p.name, label: p.name }))}
+            allowCustom={!regions.loadingCountries}
+            emptyText={
+              regions.loadingCountries
+                ? "Loading provinces."
+                : "Type the name of your state or province."
+            }
             onChange={(value) => setDraft({ ...draft, province: value, city: "" })}
             initialOpen={state === "C5"}
             initialQuery="Ma"
@@ -116,7 +135,9 @@ export function CompanySetup({
             value={draft.city}
             disabled={!draft.province}
             placeholder={draft.province ? "Select city" : "Pick a province first"}
-            options={(CITIES[draft.province] ?? []).map((c) => ({ value: c, label: c }))}
+            options={regions.cities.map((c) => ({ value: c, label: c }))}
+            allowCustom={!regions.loadingCities}
+            emptyText={regions.loadingCities ? "Loading cities." : "Type the name of your city."}
             onChange={(value) => edit("city", value)}
           />
         </div>
@@ -135,11 +156,10 @@ export function CompanySetup({
               popoverAlign="end"
               value={draft.phone}
               onChange={(value) => edit("phone", value)}
-              code={phoneCode}
-              onCodeChange={(code) => {
-                setPhoneCode(code);
-                setTouched((previous) => new Set(previous).add("phone"));
-              }}
+              code={dialCode(phoneCountry)}
+              country={phoneCountry}
+              onCodeChange={() => setTouched((previous) => new Set(previous).add("phone"))}
+              onCountryChange={(iso2) => setDraft({ ...draft, phoneCountry: iso2 })}
               initialOpen={state === "C4"}
               error={touched.has("phone") ? errors.phone : undefined}
             />

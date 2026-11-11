@@ -79,32 +79,8 @@ export const ONBOARDING_FIXTURES = Object.fromEntries(
     },
   ]),
 ) as Record<OnboardingState, { role: Role | null; shipper: Shipper }>;
-export const COUNTRIES = [
-  {
-    name: "United States",
-    code: "+1",
-    min: 10,
-    max: 10,
-    provinces: ["Maine", "Maryland", "Massachusetts"],
-  },
-  { name: "Indonesia", code: "+62", min: 9, max: 13, provinces: ["Jakarta"] },
-  { name: "Malaysia", code: "+60", min: 9, max: 10, provinces: ["Selangor"] },
-  { name: "Singapore", code: "+65", min: 8, max: 8, provinces: ["Singapore"] },
-  { name: "Philippines", code: "+63", min: 10, max: 10, provinces: ["Metro Manila"] },
-  { name: "Thailand", code: "+66", min: 9, max: 9, provinces: ["Bangkok"] },
-  { name: "Vietnam", code: "+84", min: 9, max: 10, provinces: ["Hanoi"] },
-] as const;
-export const CITIES: Record<string, string[]> = {
-  Jakarta: ["Jakarta"],
-  Maine: ["Eastport", "Harbor City", "Riverton"],
-  Maryland: ["Baltimore"],
-  Massachusetts: ["Boston"],
-  Selangor: ["Shah Alam"],
-  Singapore: ["Singapore"],
-  "Metro Manila": ["Manila"],
-  Bangkok: ["Bangkok"],
-  Hanoi: ["Hanoi"],
-};
+/* Country, province and city names come from `public/places` (see `regions.ts`). The sample
+ * company uses names from those lists so the pickers show them as chosen. */
 export const SAMPLE_COMPANY = {
   name: "Northwind Freight Co.",
   registration: "9120 0012 3456 7",
@@ -116,6 +92,8 @@ export const SAMPLE_COMPANY = {
   contact: "Hannah Brooks",
   job: "Finance",
   phone: "207 555 0142",
+  /** ISO2 code of the phone number's country. It follows the company's country until changed. */
+  phoneCountry: "US",
   email: "hannah@northwindfreight.com",
   trips: "40",
   spend: "12000",

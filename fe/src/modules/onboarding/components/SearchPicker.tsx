@@ -9,7 +9,28 @@ import { CaretDown, CaretUpDown, Check, MagnifyingGlass } from "@phosphor-icons/
  * option, Home and End jump to the ends, Enter picks it, and Escape closes the list and
  * returns to the field. Focus stays in the search box while the list moves, as the
  * combobox pattern asks. Arrow Down or Up on the closed field opens it too.
+ * With `allowCustom`, a search that matches no option can be picked as typed, so a place
+ * missing from the list (or a list that failed to load) never blocks the form.
  */
+/** Long lists (cities) draw this many matches. Typing narrows the rest. */
+const MAX_SHOWN = 300;
+type Option = { value: string; label: string; flag?: string; detail?: string };
+/** A flag is an image path, or an emoji drawn from the ISO2 code when no image exists. */
+function Flag({ flag }: { flag: string }) {
+  return flag.startsWith("/") ? (
+    <img
+      src={flag}
+      alt=""
+      width={22}
+      height={15}
+      className="h-15 w-22 shrink-0 rounded-[3px] object-cover ring-1 ring-ds-ink/10"
+    />
+  ) : (
+    <span aria-hidden className="w-22 shrink-0 text-center text-[17px] leading-none">
+      {flag}
+    </span>
+  );
+}
 export function SearchPicker({
   label,
   className,
@@ -22,11 +43,13 @@ export function SearchPicker({
   initialQuery = "",
   appearance,
   popoverAlign = "start",
+  allowCustom = false,
+  emptyText = "No matches.",
 }: {
   label: string;
   className?: string;
   value: string;
-  options: { value: string; label: string; flag?: string }[];
+  options: Option[];
   onChange: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
@@ -34,6 +57,9 @@ export function SearchPicker({
   initialQuery?: string;
   appearance?: "company";
   popoverAlign?: "start" | "end";
+  allowCustom?: boolean;
+  /** Shown when the list has nothing to pick, for example while it loads. */
+  emptyText?: string;
 }) {
   const [open, setOpen] = useState(initialOpen),
     [query, setQuery] = useState(initialQuery),
@@ -62,9 +88,16 @@ export function SearchPicker({
       input.current?.focus();
     }
   }, [open]);
-  const filtered = options.filter((o) =>
-    `${o.label} ${o.value}`.toLowerCase().includes(query.toLowerCase()),
+  const needle = query.trim().toLowerCase();
+  const matches = options.filter((o) =>
+    `${o.label} ${o.value} ${o.detail ?? ""}`.toLowerCase().includes(needle),
   );
+  const custom =
+    allowCustom && needle && !options.some((o) => o.label.toLowerCase() === needle)
+      ? [{ value: query.trim(), label: `Use “${query.trim()}”` }]
+      : [];
+  const filtered: Option[] = [...matches.slice(0, MAX_SHOWN), ...custom];
+  const selected = options.find((o) => o.value === value);
   /* With nothing highlighted yet, the chosen option (or the first) is the starting point. */
   const current =
     active >= 0 && active < filtered.length
@@ -133,18 +166,12 @@ export function SearchPicker({
         }}
       >
         <span className="flex min-w-0 items-center gap-8 truncate">
-          {appearance === "company" && label === "Phone code" && (
-            <img
-              src={options.find((o) => o.value === value)?.flag}
-              alt=""
-              width={22}
-              height={15}
-              className="h-15 w-22 shrink-0 rounded-[3px] object-cover ring-1 ring-ds-ink/10"
-            />
+          {appearance === "company" && label === "Phone code" && selected?.flag && (
+            <Flag flag={selected.flag} />
           )}
           {label === "Phone code"
-            ? value
-            : (options.find((o) => o.value === value)?.label ?? placeholder)}
+            ? (selected?.detail ?? value)
+            : (selected?.label ?? (value || placeholder))}
         </span>
         {appearance === "company" ? (
           <CaretUpDown size={16} className="shrink-0 text-ds-muted" />
@@ -246,25 +273,22 @@ export function SearchPicker({
                   onClick={() => pick(o.value)}
                 >
                   <span className="flex items-center gap-10">
-                    {appearance === "company" && o.flag && (
-                      <img
-                        src={o.flag}
-                        alt=""
-                        width={22}
-                        height={15}
-                        className="h-15 w-22 shrink-0 rounded-[3px] object-cover ring-1 ring-ds-ink/10"
-                      />
-                    )}
+                    {appearance === "company" && o.flag && <Flag flag={o.flag} />}
                     {o.label}
                   </span>
                   {appearance === "company" && label === "Phone code" && (
-                    <span className="ml-auto text-[13.5px] text-ds-muted">{o.value}</span>
+                    <span className="ml-auto text-[13.5px] text-ds-muted">
+                      {o.detail ?? o.value}
+                    </span>
                   )}
                   {value === o.value && <Check size={16} />}
                 </div>
               ))
             ) : (
-              <p className="p-12 text-label text-ds-muted">No matches.</p>
+              <p className="p-12 text-label text-ds-muted">{needle ? "No matches." : emptyText}</p>
+            )}
+            {matches.length > MAX_SHOWN && (
+              <p className="p-12 text-[13px] text-ds-muted">Keep typing to see more places.</p>
             )}
           </div>
         </div>

@@ -103,7 +103,7 @@ export function LiveShipper({
           </Link>
         )}
         {failed ? (
-          <Panel className="grid min-h-240 place-content-center gap-12 text-center">
+          <Panel className={cn("grid place-content-center gap-12 text-center", FULL)}>
             <p className="text-label text-ds-muted">
               We could not load your shipments. Try again in a moment.
             </p>
@@ -112,7 +112,7 @@ export function LiveShipper({
             </Button>
           </Panel>
         ) : !data ? (
-          <Panel className="grid min-h-240 place-content-center">
+          <Panel className={cn("grid place-content-center", FULL)}>
             <p className="text-label text-ds-muted">Loading your shipments.</p>
           </Panel>
         ) : !data.shipper ? (
@@ -135,9 +135,13 @@ export function LiveShipper({
   );
 }
 
+/* Fills the window under the navbar, as the other empty states do. */
+const FULL =
+  "min-h-[calc(100dvh-184px)] md:min-h-[calc(100dvh-148px)] lg:min-h-[calc(100dvh-156px)]";
+
 function NotApproved() {
   return (
-    <Panel className="grid min-h-320 place-content-center gap-12 text-center">
+    <Panel className={cn("grid place-content-center gap-12 text-center", FULL)}>
       <h1 className="text-heading">Your company is not approved yet</h1>
       <p className="mx-auto max-w-380 text-label text-ds-muted">
         Send your company details and papers. The team checks them and sets your first limit.
