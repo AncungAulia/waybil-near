@@ -106,7 +106,8 @@ export function RoleShell({
       <Navbar
         links={links}
         current={current}
-        className="hidden md:flex"
+        sticky
+        className="hidden md:block"
         wallet={
           hasWallet ? (
             <button
@@ -125,7 +126,8 @@ export function RoleShell({
           )
         }
       />
-      <header className="flex h-56 items-center justify-between md:hidden">
+      {/* The phone header stays on top over a blurred canvas. It is already short, so it never shrinks. */}
+      <header className="sticky top-0 z-30 -mx-16 flex h-56 items-center justify-between bg-ds-canvas/80 px-16 backdrop-blur-xl backdrop-saturate-150 md:hidden">
         <Logo />
         <div className="flex items-center gap-8">
           {role === "warehouse" && (
