@@ -25,6 +25,28 @@ export const envSchema = z
     ASSISTANT_ACCOUNT: z.string().default("assistant.waybil.testnet"),
     ASSISTANT_PRIVATE_KEY: secret,
     GOOGLE_CLIENT_ID: secret,
+    GOOGLE_SIGNUP_DAILY_LIMIT: z.coerce.number().int().min(0).max(1000).default(10),
+    RECOVERY_ENCRYPTION_KEY: optional(
+      z.string().refine((v) => Buffer.from(v, "base64").length === 32),
+    ),
+    GOOGLE_ACCOUNT_NAMES: z
+      .string()
+      .refine((v) => {
+        try {
+          return z
+            .record(
+              z.string().regex(/^[a-f0-9]{64}$/),
+              z
+                .string()
+                .max(40)
+                .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+            )
+            .safeParse(JSON.parse(v)).success;
+        } catch {
+          return false;
+        }
+      })
+      .default("{}"),
     NEAR_AI_API_KEY: secret,
     EMAIL_API_KEY: secret,
   })

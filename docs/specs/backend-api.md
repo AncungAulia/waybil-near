@@ -35,6 +35,30 @@ be supplied together. Defaults and feature setup are documented in `be/README.md
 
 ## Auth
 
+`POST /v1/auth/challenge` accepts `{kind:"wallet",accountId,role?}` or
+`{kind:"google",publicKey,inviteCode?}`. Wallet role is shipper/investor for a new account;
+team membership is discovered from NEAR. Returns `{id,nonce,message,recipient,callbackUrl,
+expiresAt}`. Nonces are 32 random bytes encoded as base64. Wallets sign the returned exact
+NEP-413 payload, including callbackUrl, then send challengeId plus the existing wallet fields.
+Google clients pass that nonce to GIS and POST `{challengeId,idToken}`. The public key and
+invite are taken from the challenge, not replaced in the login body. Challenges last five
+minutes and are consumed atomically before provisioning. An unsuccessful provisioning step
+requires a fresh login attempt and resumes its existing identity/account.
+
+Google identity is SHA-256 of `sub`, not email. Drivers can join without an invite; warehouse
+accounts require a warehouse invite. Signup does not accept the invitation automatically.
+Names default to a sanitized given name plus a subject-hash suffix; `GOOGLE_ACCOUNT_NAMES`
+can map verified subject hashes to reserved demo slugs. A per-account full-access recovery
+key is encrypted with AES-256-GCM and identity-bound AAD. Only its encryption secret lives
+in environment settings. Recovery replaces the previous device key and increments the
+profile session version. No role/account/identity changes are accepted by the profile route.
+Profile update fields are name, E.164 phone, email and optional driver truckPlate.
+
+New env: `RECOVERY_ENCRYPTION_KEY` (base64 of 32 random bytes), `GOOGLE_ACCOUNT_NAMES`
+(optional JSON object mapping subject hashes to account slugs). Account creation uses the
+funded `users.waybil.testnet` signer, adds a role-restricted function-call key and registers
+mock-USDC storage before issuing a session. No parent/admin key is returned to the browser.
+
 | Method | Path | Who | What |
 |---|---|---|---|
 | POST | `/v1/auth/wallet` | Wallet users | Body: NEP-413 signed message (`accountId`, `publicKey`, `signature`, `nonce`). Checks the key belongs to the account on chain. Returns a session. |
@@ -141,3 +165,13 @@ normalized to URL origins, including inputs with a trailing slash.
 Server diagnostics contain only an operation, error class/code, route template and known
 transaction hash where applicable. They never include exception messages, request bodies,
 query strings, headers, credentials or personal data.
+
+Google provisioning reserves a durable daily slot under a global lease before funding a
+new identity. GOOGLE_SIGNUP_DAILY_LIMIT defaults to 10 (UTC); zero disables new signups.
+Reservations count even if provisioning fails, and retries of an identity reuse its slot
+on that date. Accounts receive 0.005 NEAR for storage; gas is sponsored separately. The
+parent's spendable balance is checked and low funds produce a safe operational diagnostic.
+POST /v1/auth/logout revokes every existing session for the account by incrementing its
+session version. The device's on-chain key remains subject to the normal recovery flow.
+SDK RPC requests make one attempt, and integration operations have a 15-second deadline.
+Timeouts remain ambiguous and must be reconciled before another signed intent is prepared.

@@ -1,5 +1,28 @@
 import type { Role } from "./shipment";
 
+export type ChallengeRequest =
+  | { kind: "wallet"; accountId: string; role?: "shipper" | "investor" }
+  | { kind: "google"; publicKey: string; inviteCode?: string };
+export interface ChallengeResponse {
+  id: string;
+  nonce: string;
+  message: string;
+  recipient: string;
+  callbackUrl: string;
+  expiresAt: string;
+}
+export interface WalletLogin {
+  challengeId: string;
+  accountId: string;
+  publicKey: string;
+  signature: string;
+  nonce: string;
+}
+export interface GoogleLogin {
+  challengeId: string;
+  idToken: string;
+}
+
 export interface InviteCreate {
   type: "driver" | "warehouse";
   name: string;

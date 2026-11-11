@@ -3,6 +3,20 @@ import type { Store, Snapshot, Table } from "../types/db";
 import { readEnv } from "../config/env";
 import { Sessions } from "../lib/session";
 import type { Profile } from "@waybil/shared";
+import type { Leases } from "../lib/leases";
+
+export class MemoryLeases implements Leases {
+  private held = new Set<string>();
+  async run<T>(key: string, work: () => Promise<T>): Promise<T> {
+    if (this.held.has(key)) conflict();
+    this.held.add(key);
+    try {
+      return await work();
+    } finally {
+      this.held.delete(key);
+    }
+  }
+}
 
 export class MemoryStore implements Store {
   rows = new Map<string, Snapshot<unknown>>();

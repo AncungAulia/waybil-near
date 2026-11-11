@@ -16,7 +16,9 @@
     "cors": "^2.8.5",
     "express": "^5.1.0",
     "express-rate-limit": "^8.2.0",
+    "google-auth-library": "^11.3.3",
     "jose": "^6.1.0",
+    "near-api-js": "7.4.0",
     "zod": "^4.3.0"
   },
   "devDependencies": {
@@ -24,8 +26,8 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.0",
     "@types/node": "^26.6.6",
-    "supertest": "^7.2.0",
     "@types/supertest": "^6.0.3",
+    "supertest": "^7.2.0",
     "tsup": "^9.0.0",
     "tsx": "^4.23.15",
     "typescript": "~6.0.3"

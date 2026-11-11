@@ -24,8 +24,25 @@ it("applies migrations with private domain tables and concurrent-update protecti
     );
     expect(first.rows).toHaveLength(1);
     expect(stale.rows).toHaveLength(0);
+    const owner = "00000000-0000-4000-8000-000000000001";
+    const other = "00000000-0000-4000-8000-000000000002";
+    expect(
+      (await db.query("select claim_work_lease('sample',$1,300) as claimed", [owner])).rows,
+    ).toEqual([{ claimed: true }]);
+    expect(
+      (await db.query("select claim_work_lease('sample',$1,300) as claimed", [other])).rows,
+    ).toEqual([{ claimed: false }]);
+    await db.query("select release_work_lease('sample',$1)", [other]);
+    expect(
+      (await db.query("select claim_work_lease('sample',$1,300) as claimed", [other])).rows,
+    ).toEqual([{ claimed: false }]);
+    await db.query("select release_work_lease('sample',$1)", [owner]);
+    expect(
+      (await db.query("select claim_work_lease('sample',$1,300) as claimed", [other])).rows,
+    ).toEqual([{ claimed: true }]);
     await db.exec("set role anon");
     await expect(db.query("select * from profiles")).rejects.toThrow();
+    await expect(db.query("select claim_work_lease('sample',$1,300)", [owner])).rejects.toThrow();
   } finally {
     await db.close();
   }
