@@ -47,3 +47,27 @@ it("renews long-running work and prevents further side effects after losing owne
     vi.useRealTimers();
   }
 });
+it("fences deferred work after its lease has been released", async () => {
+  const { withLeaseContext } = await import("./lease-context");
+  const rpc = vi.fn().mockResolvedValue({ data: true, error: null });
+  const leases = new DatabaseLeases({ rpc } as unknown as SupabaseClient);
+  let deferred!: () => Promise<void>;
+  await leases.run("sample-job", async () => {
+    let resume!: () => void;
+    const signal = new Promise<void>((resolve) => {
+      resume = resolve;
+    });
+    const result = withLeaseContext(
+      () => {},
+      async () => {
+        await signal;
+        assertLeases();
+      },
+    );
+    deferred = async () => {
+      resume();
+      await result;
+    };
+  });
+  await expect(deferred()).rejects.toMatchObject({ code: "E_LEASE_LOST" });
+});

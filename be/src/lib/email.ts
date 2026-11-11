@@ -67,7 +67,7 @@ export class ResendTransport implements EmailTransport {
     }
     if (!response.ok)
       throw new EmailFailure(
-        response.status >= 500 || response.status === 409,
+        response.status >= 500 || response.status === 409 || response.status === 408,
         response.status >= 500 ||
           response.status === 409 ||
           response.status === 429 ||

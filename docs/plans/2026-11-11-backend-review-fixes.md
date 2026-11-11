@@ -55,7 +55,7 @@ future refactoring. Existing tests cover their current behavior.
 
 ## Verification and deployment boundary
 
-Local validation: 99 backend tests, 17 frontend tests and 6 shared tests, workspace
+Local validation: 100 backend tests, 17 frontend tests and 6 shared tests, workspace
 lint/typecheck/format checks, backend production build. A real provider read testnet block
 277162533 without signing or sending transactions. Built server smoke checks reject missing
 production credentials, serve development /health, and stop cleanly after SIGTERM.

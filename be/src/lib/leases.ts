@@ -67,6 +67,7 @@ export class DatabaseLeases implements Leases {
       });
     } finally {
       clearInterval(timer);
+      lost = true;
       if (renewal) await renewal;
       await db.rpc("release_work_lease", { lease_key: key, lease_owner: owner });
     }
