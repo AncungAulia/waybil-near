@@ -510,7 +510,10 @@ export function OnboardingScreen({
       <Icon size={34} />
     </span>
   );
-  const shareLink = `${useOrigin()}/c/sam`;
+  /* A driver shares a link with their own account, so a company can add them in one tap. */
+  const origin = useOrigin();
+  const shareLink =
+    LIVE && profile?.role === "driver" ? `${origin}/c/${profile.accountId}` : `${origin}/c/sam`;
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(shareLink);

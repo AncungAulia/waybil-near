@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   advanceFor,
   formatUsdc,
@@ -487,6 +487,15 @@ function Network({ data, refresh }: { data: LiveShipperData; refresh: () => void
   const [done, setDone] = useState<Done>(null);
   const waiting = waitingToAdd(data);
   const open = data.invites.filter((i) => !i.acceptedBy);
+  /* A driver's own link (/c/<account>) opens this page with ?driver=<account>. */
+  const shared = useSearchParams().get("driver");
+  const sharedDriver =
+    shared &&
+    /^[a-z0-9._-]{2,64}$/.test(shared) &&
+    !data.network.drivers.includes(shared) &&
+    !waiting.some((i) => i.acceptedBy === shared)
+      ? shared
+      : null;
 
   async function add(type: "driver" | "warehouse", account: string, label: string) {
     setBusy(account);
@@ -526,8 +535,25 @@ function Network({ data, refresh }: { data: LiveShipperData; refresh: () => void
         </div>
       </header>
       <DoneNote done={done} />
-      {waiting.length > 0 && (
+      {(waiting.length > 0 || sharedDriver) && (
         <Panel title="Ready to add">
+          {sharedDriver && (
+            <div className="flex flex-wrap items-center justify-between gap-12 py-8">
+              <div className="min-w-0">
+                <p className="text-label break-all">{people[sharedDriver] ?? sharedDriver}</p>
+                <p className="text-caption text-ds-muted">Driver · shared their link with you</p>
+              </div>
+              <Button
+                loading={busy === sharedDriver}
+                loadingLabel="Waiting for wallet"
+                onClick={() =>
+                  void add("driver", sharedDriver, people[sharedDriver] ?? sharedDriver)
+                }
+              >
+                Add to your network
+              </Button>
+            </div>
+          )}
           {waiting.map((i) => (
             <div key={i.code} className="flex flex-wrap items-center justify-between gap-12 py-8">
               <div className="min-w-0">
