@@ -17,6 +17,9 @@ export function authRoutes(deps: AppDeps, service: AuthService) {
   router.post("/auth/google", async (req, res) => {
     res.json(await service.google(parse(googleLogin, req.body)));
   });
+  router.post("/auth/logout", authenticate(deps.sessions, deps.store), async (req, res) => {
+    res.json(await service.logout(principal(req).accountId));
+  });
   router.put("/me/profile", authenticate(deps.sessions, deps.store), async (req, res) => {
     res.json(await service.updateProfile(principal(req).accountId, parse(profileUpdate, req.body)));
   });

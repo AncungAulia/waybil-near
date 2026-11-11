@@ -168,3 +168,25 @@ Storage buckets `documents` and `report-photos` are private. Links are signed an
 `RELAYER_ACCOUNT`, `RELAYER_PRIVATE_KEY`, `USERS_ACCOUNT`, `USERS_PRIVATE_KEY`, `ASSISTANT_ACCOUNT`, `ASSISTANT_PRIVATE_KEY`,
 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `GOOGLE_CLIENT_ID`, `JWT_SECRET`,
 `NEAR_AI_API_KEY`, `EMAIL_API_KEY`.
+
+## Production safety and diagnostics
+
+Production startup requires explicit JWT, Supabase, recovery encryption, Google client,
+relayer/users signing keys, APP_URL, CORS_ORIGINS and TRUST_PROXY_HOPS. APP_URL and all
+browser origins must use HTTPS. Missing configuration stops startup before /health is
+available. Development may still start with integrations disabled. Browser origins are
+normalized to URL origins, including inputs with a trailing slash.
+
+Server diagnostics contain only an operation, error class/code, route template and known
+transaction hash where applicable. They never include exception messages, request bodies,
+query strings, headers, credentials or personal data.
+
+Google provisioning reserves a durable daily slot under a global lease before funding a
+new identity. GOOGLE_SIGNUP_DAILY_LIMIT defaults to 10 (UTC); zero disables new signups.
+Reservations count even if provisioning fails, and retries of an identity reuse its slot
+on that date. Accounts receive 0.005 NEAR for storage; gas is sponsored separately. The
+parent's spendable balance is checked and low funds produce a safe operational diagnostic.
+POST /v1/auth/logout revokes every existing session for the account by incrementing its
+session version. The device's on-chain key remains subject to the normal recovery flow.
+SDK RPC requests make one attempt, and integration operations have a 15-second deadline.
+Timeouts remain ambiguous and must be reconciled before another signed intent is prepared.
