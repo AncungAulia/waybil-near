@@ -1485,7 +1485,7 @@ export function AdminScreen({
     </div>
   );
 }
-function Fact({ label, value }: { label: string; value: React.ReactNode }) {
+export function Fact({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="admin-fact flex flex-wrap items-center justify-between gap-8 py-7 text-[14px] leading-17">
       <span className="text-ds-muted">{label}</span>
@@ -1493,7 +1493,7 @@ function Fact({ label, value }: { label: string; value: React.ReactNode }) {
     </div>
   );
 }
-function AdminBadge({
+export function AdminBadge({
   children,
   tone = "success",
   icon,
@@ -1525,7 +1525,7 @@ function AdminBadge({
     </span>
   );
 }
-function AdminTiles({ items }: { items: { label: string; value: React.ReactNode }[] }) {
+export function AdminTiles({ items }: { items: { label: string; value: React.ReactNode }[] }) {
   return (
     <div
       className={cn(
@@ -1542,7 +1542,7 @@ function AdminTiles({ items }: { items: { label: string; value: React.ReactNode 
     </div>
   );
 }
-function Empty({
+export function Empty({
   title,
   text,
   icon = "tray",

@@ -1,4 +1,4 @@
-import { AdminScreen } from "@/modules/admin/components/AdminScreen";
+import { Admin } from "@/modules/admin/components/Admin";
 export default function Page() {
-  return <AdminScreen />;
+  return <Admin view="approvals" />;
 }

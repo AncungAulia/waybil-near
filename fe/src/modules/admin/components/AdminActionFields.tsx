@@ -16,6 +16,8 @@ export function AdminActionFields({
   limit,
   onLimit,
   invalidLimit,
+  subtitle,
+  hint,
 }: {
   kind: "vote" | "decision" | "limit" | "pause";
   selected: string;
@@ -28,6 +30,10 @@ export function AdminActionFields({
   limit: string;
   onLimit: (value: string) => void;
   invalidLimit: boolean;
+  /** Live data replaces the sample company line under the title. */
+  subtitle?: string;
+  /** Live data replaces the sample hint under the limit field. */
+  hint?: string;
 }) {
   const coast = selected === "Coastline Freight";
   const [wholeLimit = "", ...fraction] = limit.split(".");
@@ -42,11 +48,12 @@ export function AdminActionFields({
       onChange={(e) => onLimit(e.target.value.replaceAll(",", ""))}
       error={invalidLimit ? "Enter a limit above zero and no more than 10,000.00 USDC." : undefined}
       hint={
-        kind === "limit"
+        hint ??
+        (kind === "limit"
           ? `That is ${Math.round((Number(limit) / 3000 - 1) * 100)}% more. It cannot go above 10,000.00 USDC.`
           : coast
             ? "Check the papers and choose a starting limit."
-            : "The assistant suggests 2,000.00 USDC. You can change it."
+            : "The assistant suggests 2,000.00 USDC. You can change it.")
       }
     />
   );
@@ -114,17 +121,18 @@ export function AdminActionFields({
   return (
     <>
       <p className="admin-sheet-subtitle text-[13px] leading-16 text-ds-muted">
-        {kind === "vote"
-          ? selected === "Meridian Shipping"
-            ? "Start Meridian Shipping · 2,000.00 USDC"
-            : "Raise Northwind’s limit · 3,000.00 → 5,000.00 USDC"
-          : kind === "limit"
-            ? "Now 3,000.00 USDC · 2,400.00 in use"
-            : kind === "pause"
-              ? "They cannot approve new trips until the team turns it back on."
-              : coast
-                ? "Applied yesterday · 25 trips a month"
-                : "Applied today · 40 trips a month"}
+        {subtitle ??
+          (kind === "vote"
+            ? selected === "Meridian Shipping"
+              ? "Start Meridian Shipping · 2,000.00 USDC"
+              : "Raise Northwind’s limit · 3,000.00 → 5,000.00 USDC"
+            : kind === "limit"
+              ? "Now 3,000.00 USDC · 2,400.00 in use"
+              : kind === "pause"
+                ? "They cannot approve new trips until the team turns it back on."
+                : coast
+                  ? "Applied yesterday · 25 trips a month"
+                  : "Applied today · 40 trips a month")}
       </p>
       {kind === "decision" ? (
         <div className="flex flex-col gap-10">
