@@ -40,9 +40,12 @@ import {
 } from "@/components/elements/icons";
 import { cn } from "@/lib/cn";
 import { BASE_POOL } from "@/lib/demo-pool";
-import { ApiError } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
 import { LIVE } from "@/lib/env";
 import { connectWallet, disconnectWallet, walletSignIn } from "@/lib/wallet";
+import { getShipper } from "@/lib/near";
+import type { Application, ApplicationResponse } from "@waybil/shared";
+import { fromCompanyInput, LIVE_STATE, saveApplication, sendPapers } from "../data/application";
 import { useAuth } from "@/providers/AuthProvider";
 import {
   ONBOARDING_FIXTURES,
@@ -164,7 +167,7 @@ export function OnboardingScreen({
             : 2
           : 1;
   useEffect(() => {
-    if (preview || !["C6", "D5"].includes(state)) return;
+    if (preview || !["C6", "D5"].includes(state) || (LIVE && state === "C6")) return;
     const timer = setTimeout(() => setState(state === "C6" ? "C7" : "D6"), 350);
     return () => clearTimeout(timer);
   }, [state, preview]);
@@ -180,7 +183,56 @@ export function OnboardingScreen({
    * Live wallet sign-in (#82). A new account has no role yet, so the server answers
    * E_ROLE_REQUIRED, B1 asks for one, and the wallet signs a second challenge with it.
    */
-  const { signIn } = useAuth();
+  const { signIn, profile } = useAuth();
+
+  /*
+   * Live shipper application (#84). It loads the shipper's application once, saves the
+   * details, uploads the papers, submits, and shows the real review state.
+   */
+  const liveCompany = LIVE && !preview && profile?.role === "shipper";
+  const [application, setApplication] = useState<Application | null>(null);
+  const [applicationError, setApplicationError] = useState<string | null>(null);
+  const [startLimit, setStartLimit] = useState<string | null>(null);
+  const loadedApplication = useRef(false);
+  useEffect(() => {
+    if (!liveCompany || group !== "C" || loadedApplication.current) return;
+    loadedApplication.current = true;
+    api<ApplicationResponse | null>("/applications/me")
+      .then((found) => {
+        if (!found) return;
+        setApplication(found.application);
+        setCompany(fromCompanyInput(found.application.company));
+        setState(LIVE_STATE[found.application.state]);
+      })
+      .catch((e: unknown) => setApplicationError(e instanceof ApiError ? e.message : null));
+  }, [liveCompany, group]);
+  useEffect(() => {
+    if (!liveCompany || state !== "C8" || !profile) return;
+    getShipper(profile.accountId)
+      .then((s) => setStartLimit(s?.limit ?? null))
+      .catch(() => setStartLimit(null));
+  }, [liveCompany, state, profile]);
+  async function saveDetails() {
+    setApplicationError(null);
+    try {
+      setApplication(await saveApplication(application, company));
+      setState("C5.1");
+    } catch (e) {
+      setApplicationError(e instanceof ApiError ? e.message : "Your details could not be saved.");
+    }
+  }
+  async function submitPapers() {
+    if (!application) return;
+    setApplicationError(null);
+    setState("C6");
+    try {
+      setApplication(await sendPapers(application.id, files));
+      setState("C7");
+    } catch (e) {
+      setApplicationError(e instanceof ApiError ? e.message : "Your papers could not be sent.");
+      setState("C5.2");
+    }
+  }
   const [signInError, setSignInError] = useState<string | null>(null);
   const pending = useRef<Awaited<ReturnType<typeof connectWallet>> | null>(null);
   /* Cancel on A2 abandons the attempt that is still waiting on the wallet. */
@@ -767,23 +819,30 @@ export function OnboardingScreen({
               </div>
             </>
           ) : group === "C" && !review ? (
-            documents ? (
-              <CompanyDocuments
-                state={state}
-                files={files}
-                setFiles={setFiles}
-                onBack={() => setState("C2")}
-                onSubmit={() => setState("C6")}
-              />
-            ) : (
-              <CompanySetup
-                key={state === "C3" ? "errors" : "company"}
-                state={state}
-                draft={company}
-                setDraft={setCompany}
-                onContinue={() => setState("C5.1")}
-              />
-            )
+            <>
+              {liveCompany && applicationError && (
+                <p role="alert" className="rounded-row bg-ds-danger-result p-14 text-label">
+                  {applicationError}
+                </p>
+              )}
+              {documents ? (
+                <CompanyDocuments
+                  state={state}
+                  files={files}
+                  setFiles={setFiles}
+                  onBack={() => setState("C2")}
+                  onSubmit={() => (liveCompany ? void submitPapers() : setState("C6"))}
+                />
+              ) : (
+                <CompanySetup
+                  key={state === "C3" ? "errors" : "company"}
+                  state={state}
+                  draft={company}
+                  setDraft={setCompany}
+                  onContinue={() => (liveCompany ? void saveDetails() : setState("C5.1"))}
+                />
+              )}
+            </>
           ) : driverForm ? (
             <DriverSetup
               state={state}
@@ -806,14 +865,20 @@ export function OnboardingScreen({
                 state === "C8"
                   ? `${company.name} can now approve trips. Your drivers get paid early, up to your limit.`
                   : state === "C9"
-                    ? "Your review is on hold until this is fixed."
+                    ? liveCompany && application?.state === "rejected"
+                      ? "The team did not approve your company this time."
+                      : "Your review is on hold until this is fixed."
                     : `This usually takes one business day. We'll message ${company.contact.split(" ")[0]} on WhatsApp when it's done.`,
               )}
               {state === "C8" ? (
                 <div className="bill-card flex flex-col items-center gap-6 overflow-hidden rounded-[22px] bg-ds-ink px-22 py-20 text-center text-ds-bg">
                   <p className="text-label text-ds-role-selected-muted">Your credit limit</p>
                   <Money
-                    amount={ONBOARDING_FIXTURES[state].shipper.limit}
+                    amount={
+                      liveCompany && startLimit
+                        ? startLimit
+                        : ONBOARDING_FIXTURES[state].shipper.limit
+                    }
                     className="text-[34px] leading-[1.1] font-medium tracking-[-0.035em] md:text-[40px]"
                   />
                   <p className="text-[12.5px] leading-[1.45] text-ds-brand">
@@ -824,14 +889,31 @@ export function OnboardingScreen({
                 <div className="flex items-start gap-10 rounded-[16px] bg-ds-brand-soft px-16 py-14">
                   <WarningCircle size={18} className="mt-1 shrink-0 text-ds-brand-deep" />
                   <p className="text-[13.5px] leading-[1.45]">
-                    The business registration number doesn't match the company name. Check the
-                    number on your registration certificate and send it again.
+                    {liveCompany && application?.rejection
+                      ? application.rejection.note ||
+                        `The reason was ${application.rejection.reason.replaceAll("_", " ")}.`
+                      : liveCompany
+                        ? "The team asked for more papers. Update your details and send them again."
+                        : "The business registration number doesn't match the company name. Check the number on your registration certificate and send it again."}
                   </p>
                 </div>
               ) : (
                 <div className="rounded-row bg-ds-canvas px-18 py-4 [&>div]:py-9 [&>div]:text-[14px] [&>div>span:last-child]:font-medium [&>div+div]:border-t [&>div+div]:border-ds-line">
                   <Row label="Company" value={company.name} />
-                  <Row label="Sent" value="Nov 11 · 14:31" />
+                  <Row
+                    label="Sent"
+                    value={
+                      liveCompany && application
+                        ? new Date(application.updatedAt).toLocaleString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                            hourCycle: "h23",
+                          })
+                        : "Nov 11 · 14:31"
+                    }
+                  />
                   <Row label="Status" value="In review" />
                 </div>
               )}
@@ -855,14 +937,22 @@ export function OnboardingScreen({
                   </>
                 ) : (
                   <>
-                    <Button
-                      variant={state === "C9" ? "primary" : "secondary"}
-                      icon={state === "C9" ? undefined : <PencilSimple size={17} />}
-                      className={cn(actionClass, "h-52")}
-                      onClick={() => setState("C2")}
-                    >
-                      {state === "C9" ? "Update details" : "Edit details"}
-                    </Button>
+                    {/* The backend only takes edits in draft or needs_more, not in review. */}
+                    {!(liveCompany && application?.state === "in_review") && (
+                      <Button
+                        variant={state === "C9" ? "primary" : "secondary"}
+                        icon={state === "C9" ? undefined : <PencilSimple size={17} />}
+                        className={cn(actionClass, "h-52")}
+                        onClick={() => {
+                          /* A rejected company applies again with a new application. */
+                          if (liveCompany && application?.state === "rejected")
+                            setApplication(null);
+                          setState("C2");
+                        }}
+                      >
+                        {state === "C9" ? "Update details" : "Edit details"}
+                      </Button>
+                    )}
                     {state === "C9" ? (
                       <a
                         className="press focus-ring flex h-48 items-center justify-center rounded-full bg-ds-canvas px-18 text-body font-medium text-ds-ink hover:bg-ds-surface-3"

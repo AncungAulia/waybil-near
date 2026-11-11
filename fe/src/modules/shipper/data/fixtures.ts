@@ -49,6 +49,8 @@ export type ShipperState = keyof typeof SHIPPER_STATES;
 
 export interface DemoShipmentRow {
   shipment: Shipment;
+  /** Live rows have no origin city, so they name the trip themselves, for example "To Harbor Hub". */
+  route?: string;
   city: string;
   driver: string;
   cargo: string;

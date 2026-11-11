@@ -1,4 +1,4 @@
-import { ShipperScreen } from "@/modules/shipper/components/ShipperScreen";
+import { Shipper } from "@/modules/shipper/components/Shipper";
 export default function Page() {
-  return <ShipperScreen initialState="P2.1" />;
+  return <Shipper view="new" initialState="P2.1" />;
 }

@@ -30,7 +30,7 @@ export function ShipmentList({
           <span>Fee</span>
           <span>Bill</span>
         </div>
-        {rows.map(({ shipment, city, driver, cargo, due }) => (
+        {rows.map(({ shipment, route, city, driver, cargo, due }) => (
           <button
             type="button"
             disabled={shipment.status === "Cancelled"}
@@ -61,7 +61,7 @@ export function ShipmentList({
               </span>
               <span className="flex min-w-0 flex-1 flex-col gap-2">
                 <span className="whitespace-nowrap text-[15px] leading-[18px] font-medium">
-                  Eastport to {city}
+                  {route ?? `Eastport to ${city}`}
                 </span>
                 <span className="text-[12.5px] leading-[17px] text-ds-muted">
                   #{shipment.id} · {driver} · {cargo}
@@ -94,7 +94,7 @@ export function ShipmentList({
 
   return (
     <div className="flex flex-col">
-      {rows.map(({ shipment, city, driver, due }) => (
+      {rows.map(({ shipment, route, city, driver, due }) => (
         <button
           type="button"
           disabled={shipment.status === "Cancelled"}
@@ -107,7 +107,7 @@ export function ShipmentList({
               <Truck size={18} />
             </span>
             <span className="min-w-0 flex-1">
-              <span className="block text-body font-medium">Eastport to {city}</span>
+              <span className="block text-body font-medium">{route ?? `Eastport to ${city}`}</span>
               <span className="mt-4 block text-[12.5px] text-ds-muted">
                 #{shipment.id} · {driver} · {due.replace(/^Due /, "due ")}
               </span>

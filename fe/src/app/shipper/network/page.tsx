@@ -1,4 +1,4 @@
-import { ShipperScreen } from "@/modules/shipper/components/ShipperScreen";
+import { Shipper } from "@/modules/shipper/components/Shipper";
 export default async function Page({
   searchParams,
 }: {
@@ -6,7 +6,8 @@ export default async function Page({
 }) {
   const query = await searchParams;
   return (
-    <ShipperScreen
+    <Shipper
+      view="network"
       key={query.invite ?? "network"}
       initialState={
         query.invite === "driver" ? "P5.3" : query.invite === "destination" ? "P5.4" : "P5.1"
