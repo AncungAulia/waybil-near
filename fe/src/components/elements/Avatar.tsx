@@ -38,7 +38,11 @@ export function AvatarSkeleton({ className }: { className?: string }) {
 }
 
 function initials(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
+  /* A company suffix is not a name, so "Northwind Freight Co." reads NF and not NC. */
+  const parts = name
+    .trim()
+    .split(/\s+/)
+    .filter((part) => part && !part.endsWith("."));
   if (parts.length === 0) return "?";
   const first = parts[0]?.[0] ?? "";
   const last = parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? "") : "";

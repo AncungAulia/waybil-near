@@ -8,17 +8,34 @@ export function QrScanner({
   onCode,
   onBlocked,
   className,
+  torch = false,
+  onTorchAvailable,
 }: {
   active: boolean;
   onCode: (code: string) => void;
   onBlocked: () => void;
   className?: string;
+  torch?: boolean;
+  onTorchAvailable?: (available: boolean) => void;
 }) {
   const video = useRef<HTMLVideoElement>(null);
-  const callbacks = useRef({ onCode, onBlocked });
+  const cameraTrack = useRef<MediaStreamTrack | undefined>(undefined);
+  const callbacks = useRef({ onCode, onBlocked, onTorchAvailable });
   useEffect(() => {
-    callbacks.current = { onCode, onBlocked };
-  }, [onCode, onBlocked]);
+    callbacks.current = { onCode, onBlocked, onTorchAvailable };
+  }, [onCode, onBlocked, onTorchAvailable]);
+  useEffect(() => {
+    const track = cameraTrack.current;
+    if (
+      track &&
+      (track.getCapabilities?.() as (MediaTrackCapabilities & { torch?: boolean }) | undefined)
+        ?.torch
+    ) {
+      void track
+        .applyConstraints({ advanced: [{ torch } as MediaTrackConstraintSet] })
+        .catch(() => callbacks.current.onTorchAvailable?.(false));
+    }
+  }, [torch]);
   useEffect(() => {
     if (!active) return;
     let cancelled = false;
@@ -53,6 +70,15 @@ export function QrScanner({
           return;
         }
         if (video.current) {
+          cameraTrack.current = stream.getVideoTracks()[0];
+          callbacks.current.onTorchAvailable?.(
+            Boolean(
+              (
+                cameraTrack.current?.getCapabilities?.() as
+                  (MediaTrackCapabilities & { torch?: boolean }) | undefined
+              )?.torch,
+            ),
+          );
           video.current.srcObject = stream;
           await video.current.play();
           scan();
@@ -65,6 +91,8 @@ export function QrScanner({
       cancelled = true;
       clearTimeout(timer);
       stream?.getTracks().forEach((t) => t.stop());
+      cameraTrack.current = undefined;
+      callbacks.current.onTorchAvailable?.(false);
     };
   }, [active]);
   return (

@@ -1,5 +1,5 @@
 import { cn } from "@/lib/cn";
-import { NEAR_NETWORK, WAYBIL_CONTRACT } from "@/lib/env";
+import { NEARBLOCKS_URL, WAYBIL_CONTRACT } from "@/lib/env";
 import { Logo } from "./Logo";
 
 /*
@@ -9,8 +9,7 @@ import { Logo } from "./Logo";
  */
 
 const GITHUB = "https://github.com/AncungAulia/waybil-near";
-const EXPLORER =
-  NEAR_NETWORK === "mainnet" ? "https://nearblocks.io" : "https://testnet.nearblocks.io";
+const EXPLORER = NEARBLOCKS_URL;
 
 const COLUMNS = [
   {
@@ -65,7 +64,8 @@ export function Footer({ className }: { className?: string }) {
                   key={link.label}
                   href={link.href}
                   {...("external" in link ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                  className="self-start text-body text-ds-bg transition-colors duration-150 ease-base hover:text-ds-brand"
+                  /* The States board ring. Its brand outline stays visible on the ink card. */
+                  className="focus-ring self-start rounded-[4px] text-body text-ds-bg transition-colors duration-150 ease-base hover:text-ds-brand"
                 >
                   {link.label}
                 </a>

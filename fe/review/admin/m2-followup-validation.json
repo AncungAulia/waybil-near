@@ -1,0 +1,74 @@
+[
+  {
+    "width": 1440,
+    "state": "M2.2",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Shippers",
+    "dialog": false
+  },
+  {
+    "width": 1440,
+    "state": "M2.4",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Shippers",
+    "dialog": true
+  },
+  {
+    "width": 1440,
+    "state": "M2.5",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Shippers",
+    "dialog": true
+  },
+  {
+    "width": 834,
+    "state": "M2.2",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Shippers",
+    "dialog": false
+  },
+  {
+    "width": 834,
+    "state": "M2.4",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Shippers",
+    "dialog": true
+  },
+  {
+    "width": 834,
+    "state": "M2.5",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Shippers",
+    "dialog": true
+  },
+  {
+    "width": 390,
+    "state": "M2.2",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Shippers",
+    "dialog": false
+  },
+  {
+    "width": 390,
+    "state": "M2.4",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Shippers",
+    "dialog": true
+  },
+  {
+    "width": 390,
+    "state": "M2.5",
+    "overflow": false,
+    "brokenImages": [],
+    "title": "Shippers",
+    "dialog": true
+  }
+]

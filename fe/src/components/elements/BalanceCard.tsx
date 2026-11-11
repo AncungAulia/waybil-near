@@ -1,4 +1,7 @@
+"use client";
+
 import { cn } from "@/lib/cn";
+import { useChanged } from "@/hooks/useChanged";
 import type { StatusChip } from "@/lib/status";
 import { StatusPill } from "./StatusPill";
 
@@ -27,8 +30,14 @@ export function BalanceCard({
   empty?: boolean;
   className?: string;
 }) {
+  const changed = useChanged(amount);
   return (
-    <div className={cn("flex w-420 flex-col gap-14 rounded-card bg-ds-canvas p-24", className)}>
+    <div
+      className={cn(
+        "flex w-420 max-w-full flex-col gap-14 rounded-card bg-ds-canvas p-24",
+        className,
+      )}
+    >
       <div className="flex items-center justify-between gap-12">
         <span className="text-[14px] text-ds-muted">{label}</span>
         <StatusPill status={status} />
@@ -37,7 +46,8 @@ export function BalanceCard({
       <span
         key={amount}
         className={cn(
-          "swap text-[43px] leading-none font-medium tracking-[-0.035em]",
+          changed && "swap",
+          "text-[43px] leading-none font-medium tracking-[-0.035em]",
           empty ? "text-ds-off-ink" : "text-ds-ink",
         )}
       >

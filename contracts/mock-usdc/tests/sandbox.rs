@@ -95,5 +95,30 @@ async fn account(
         .initial_balance(NearToken::from_near(10))
         .send()
         .await?;
+    let network = near_api::NetworkConfig::from_rpc_url("sandbox", sandbox.rpc_addr.parse()?);
+    let public_key: near_api::PublicKey =
+        near_sandbox::config::DEFAULT_GENESIS_ACCOUNT_PUBLIC_KEY.parse()?;
+    // Patched keys must reach finality before the signer fetches their nonce.
+    let ready = async {
+        loop {
+            let key = near_api::Account(id.clone())
+                .access_key(public_key.clone())
+                .at(near_api::types::Reference::Final)
+                .fetch_from(&network)
+                .await;
+            if key.is_ok() {
+                return testresult::TestResult::Ok(());
+            }
+            sandbox.fast_forward(1).await?;
+        }
+    };
+    tokio::time::timeout(std::time::Duration::from_secs(30), ready)
+        .await
+        .map_err(|_| {
+            std::io::Error::new(
+                std::io::ErrorKind::TimedOut,
+                format!("sandbox access key did not finalize for {id}"),
+            )
+        })??;
     Ok(near_api::Account(id))
 }

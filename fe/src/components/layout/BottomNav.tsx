@@ -46,7 +46,7 @@ export function BottomNav({
             aria-current={on ? "page" : undefined}
             aria-label={on ? undefined : item.label}
             className={cn(
-              "press focus-ring flex items-center justify-center rounded-full transition-colors duration-150 ease-base",
+              "press focus-ring flex items-center justify-center rounded-full transition-[color,background-color,border-color,transform] duration-150 ease-base",
               on
                 ? "gap-8 bg-ds-ink py-10 pr-16 pl-10 text-ds-bg"
                 : "size-44 bg-ds-canvas text-ds-ink",

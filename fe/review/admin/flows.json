@@ -1,0 +1,16 @@
+[
+  "Approving an existing vote reaches the threshold",
+  "The same member cannot vote twice",
+  "Rejecting produces a split vote",
+  "Limits above 10,000 are blocked",
+  "Approval stays pending for the second member",
+  "The edited starting limit is preserved",
+  "Rejecting an application returns to the list",
+  "Only the rejected application is removed",
+  "A limit change returns to company detail",
+  "The submitted limit is recorded in the demo receipt",
+  "Pausing updates the company state",
+  "Mobile tabs show active companies",
+  "Mobile tabs restore applications",
+  "Escape dismisses the reason sheet"
+]

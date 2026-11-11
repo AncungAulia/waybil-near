@@ -179,6 +179,41 @@ export function call(
   );
 }
 
+/**
+ * Sends a function call whose input is the raw bytes of `file` (not JSON), signed by
+ * `signer` from the keychain. Used for `approve_upgrade`, which takes the new wasm.
+ */
+export function callWithFile(
+  contract: string,
+  method: string,
+  file: string,
+  signer: string,
+  gas = "300 Tgas",
+): void {
+  must(
+    [
+      "contract",
+      "call-function",
+      "as-transaction",
+      contract,
+      method,
+      "file-args",
+      file,
+      "prepaid-gas",
+      gas,
+      "attached-deposit",
+      "0 NEAR",
+      "sign-as",
+      signer,
+      "network-config",
+      NETWORK,
+      "sign-with-keychain",
+      "send",
+    ],
+    `${method} on ${contract}`,
+  );
+}
+
 /** Deploys a wasm. With `init`, also calls the init method in the same transaction. */
 export function deploy(
   account: string,

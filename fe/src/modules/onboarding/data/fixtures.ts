@@ -7,7 +7,7 @@ export const ONBOARDING_STATES = {
   A5: "Checking your account",
   B1: "Nothing selected",
   B2: "Shipper selected",
-  B3: "Driver selected",
+  B3: "Google, truck owner selected",
   B4: "Investor selected",
   C1: "Details, empty",
   C2: "Details, ready",
@@ -87,6 +87,7 @@ export const COUNTRIES = [
     max: 10,
     provinces: ["Maine", "Maryland", "Massachusetts"],
   },
+  { name: "Indonesia", code: "+62", min: 9, max: 13, provinces: ["Jakarta"] },
   { name: "Malaysia", code: "+60", min: 9, max: 10, provinces: ["Selangor"] },
   { name: "Singapore", code: "+65", min: 8, max: 8, provinces: ["Singapore"] },
   { name: "Philippines", code: "+63", min: 10, max: 10, provinces: ["Metro Manila"] },
@@ -94,6 +95,7 @@ export const COUNTRIES = [
   { name: "Vietnam", code: "+84", min: 9, max: 10, provinces: ["Hanoi"] },
 ] as const;
 export const CITIES: Record<string, string[]> = {
+  Jakarta: ["Jakarta"],
   Maine: ["Eastport", "Harbor City", "Riverton"],
   Maryland: ["Baltimore"],
   Massachusetts: ["Boston"],

@@ -34,8 +34,9 @@ export function ShipmentRow({
       type="button"
       aria-current={selected || undefined}
       className={cn(
-        "press focus-ring flex w-640 items-center gap-14 rounded-[16px] border px-16 py-14 text-left",
-        "transition-colors duration-150 ease-base",
+        "press focus-ring flex w-640 max-w-full items-center gap-14 rounded-[16px] border px-16 py-14 text-left",
+        /* Not `transition-colors`, which would drop the press scale's transform transition. */
+        "transition-[color,background-color,border-color,transform] duration-150 ease-base",
         selected ? "border-ds-ink" : "border-ds-line hover:border-ds-line-strong",
         className,
       )}
@@ -63,7 +64,7 @@ export function ShipmentRowSkeleton({ className }: { className?: string }) {
     <div
       aria-hidden
       className={cn(
-        "flex w-640 items-center gap-14 rounded-[16px] bg-ds-canvas px-16 py-14",
+        "flex w-640 max-w-full items-center gap-14 rounded-[16px] bg-ds-canvas px-16 py-14",
         className,
       )}
     >

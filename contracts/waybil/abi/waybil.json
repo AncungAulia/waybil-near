@@ -2,7 +2,7 @@
   "schema_version": "0.4.0",
   "metadata": {
     "name": "waybil",
-    "version": "0.1.0"
+    "version": "0.2.0"
   },
   "body": {
     "functions": [
@@ -46,6 +46,54 @@
               }
             }
           ]
+        }
+      },
+      {
+        "name": "approve_upgrade",
+        "doc": " Second approval of an `Upgrade` proposal, sent with the new code (decision 0012).\n The input is borsh `(id: u64, code: Vec<u8>)`, not JSON, so the wasm travels as bytes.\n At 2 of 3 the contract deploys the code to itself and calls `migrate` in one batch,\n and returns that batch. If `migrate` fails the batch rolls back and the old code stays.\n A call on an expired proposal closes it as `Expired` instead of failing.",
+        "kind": "call",
+        "params": {
+          "serialization_type": "borsh",
+          "args": [
+            {
+              "name": "id",
+              "type_schema": {
+                "declaration": "u64",
+                "definitions": {
+                  "u64": {
+                    "Primitive": 8
+                  }
+                }
+              }
+            },
+            {
+              "name": "code",
+              "type_schema": {
+                "declaration": "Vec<u8>",
+                "definitions": {
+                  "Vec<u8>": {
+                    "Sequence": {
+                      "length_width": 4,
+                      "length_range": {
+                        "start": 0,
+                        "end": 4294967295
+                      },
+                      "elements": "u8"
+                    }
+                  },
+                  "u8": {
+                    "Primitive": 1
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "$ref": "#/definitions/PromiseOrValueProposalStatus"
+          }
         }
       },
       {
@@ -285,6 +333,16 @@
           "serialization_type": "json",
           "type_schema": {
             "$ref": "#/definitions/PromiseOrValueString"
+          }
+        }
+      },
+      {
+        "name": "get_code_info",
+        "kind": "view",
+        "result": {
+          "serialization_type": "json",
+          "type_schema": {
+            "$ref": "#/definitions/CodeInfo"
           }
         }
       },
@@ -758,6 +816,15 @@
         }
       },
       {
+        "name": "migrate",
+        "doc": " Runs right after new code is deployed: by a team upgrade in the same batch, or as the\n init call of a deploy with the deployer key. Reads the stored state, converts it when\n the layout changed, and sets `version`. If it fails, the deploy rolls back.",
+        "kind": "call",
+        "modifiers": [
+          "init",
+          "private"
+        ]
+      },
+      {
         "name": "new",
         "doc": " `team` must be three different accounts. They approve changes 2 of 3.",
         "kind": "call",
@@ -1025,6 +1092,27 @@
       "title": "String",
       "type": "string",
       "definitions": {
+        "CodeInfo": {
+          "type": "object",
+          "required": [
+            "version"
+          ],
+          "properties": {
+            "code_hash": {
+              "description": "Base58 sha256 of the current code. Null until the first team upgrade.",
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "version": {
+              "description": "Version of the stored state.",
+              "type": "integer",
+              "format": "uint16",
+              "minimum": 0.0
+            }
+          }
+        },
         "Config": {
           "description": "Rules the team can change by proposal later. Defaults follow decisions 0002 and 0003.",
           "type": "object",
@@ -1212,6 +1300,15 @@
         "PromiseOrValueBoolean": {
           "type": "boolean"
         },
+        "PromiseOrValueProposalStatus": {
+          "type": "string",
+          "enum": [
+            "Open",
+            "Approved",
+            "Rejected",
+            "Expired"
+          ]
+        },
         "PromiseOrValueString": {
           "type": "string"
         },
@@ -1357,6 +1454,27 @@
                       "type": "integer",
                       "format": "uint64",
                       "minimum": 0.0
+                    }
+                  }
+                }
+              },
+              "additionalProperties": false
+            },
+            {
+              "description": "Replace the contract code with the wasm whose sha256 is `code_hash`. The second approval comes with the code through `approve_upgrade` (decision 0012). Keep this the last variant: stored proposals depend on the variant order.",
+              "type": "object",
+              "required": [
+                "Upgrade"
+              ],
+              "properties": {
+                "Upgrade": {
+                  "type": "object",
+                  "required": [
+                    "code_hash"
+                  ],
+                  "properties": {
+                    "code_hash": {
+                      "type": "string"
                     }
                   }
                 }

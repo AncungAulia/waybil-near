@@ -19,5 +19,18 @@ export default tseslint.config(
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
+  {
+    // Review helpers are pasted into the browser console, so they talk to the page.
+    files: ["fe/review/**/*.js"],
+    languageOptions: {
+      globals: {
+        window: "readonly",
+        document: "readonly",
+        fetch: "readonly",
+        console: "readonly",
+        setTimeout: "readonly",
+      },
+    },
+  },
   prettier,
 );

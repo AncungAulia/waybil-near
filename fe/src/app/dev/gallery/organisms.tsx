@@ -230,7 +230,7 @@ export const ORGANISMS: GalleryEntry[] = [
           <Panel title="Shipment #1041" gap={18} className="max-w-520">
             <TimelineStep state="done" title="Approved by Northwind" time="Nov 13 · 08:02" />
             <TimelineStep state="done" title="Picked up by Sam" time="Nov 13 · 09:14" />
-            <TimelineStep state="failed" title="Delivery disputed" time="8 crates wet, 112 good" />
+            <TimelineStep state="paused" title="Delivery disputed" time="8 crates wet, 112 good" />
             <TimelineStep state="next" title="Northwind chooses what to pay" time="Waiting" />
           </Panel>
         ),

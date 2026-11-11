@@ -1,13 +1,16 @@
 "use client";
+
 import { useEffect, useRef } from "react";
-import { CheckCircle, Sparkle } from "@phosphor-icons/react";
+import { formatUsdc } from "@waybil/shared";
 import { Panel } from "@/components/layout/Panel";
 import { Button } from "@/components/ui/Button";
-import { Money } from "@/components/elements/Money";
-import { FanMeter } from "@/components/elements/FanMeter";
 import { KeyValue } from "@/components/elements/KeyValue";
-import { DemoRecord } from "@/components/elements/DemoRecord";
+import { FanMeter } from "@/components/elements/FanMeter";
+import { cn } from "@/lib/cn";
+import { CONTRACT_RECORD_URL } from "@/lib/env";
 import type { ShipperState } from "../data/fixtures";
+
+const CARD = "rounded-[24px]";
 
 export function ShipperCredit({
   state,
@@ -15,31 +18,29 @@ export function ShipperCredit({
   usedBefore = 2400000000n,
 }: {
   state: ShipperState;
-  go: (s: ShipperState) => void;
+  go: (state: ShipperState) => void;
   usedBefore?: bigint;
 }) {
-  const reviewing = state === "P7.2",
-    proposed = state === "P7.3",
-    same = state === "P7.4",
-    rejected = state === "P7.5";
+  const reviewing = state === "P7.2";
+  const proposed = state === "P7.3";
+  const same = state === "P7.4";
+  const rejected = state === "P7.5";
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);
   const review = () => {
     go("P7.2");
     timer.current = setTimeout(() => go("P7.3"), 700);
   };
-  const caps = (
-    <Panel title="Limits the assistant cannot change">
-      <p className="text-label text-ds-muted">
-        These limits are built into Waybil. The assistant cannot change them.
-      </p>
-      <div>
-        <KeyValue label="Max limit per shipper" value={<Money amount="10000000000" />} />
-        <KeyValue label="Max raise per week" value="20%" />
-        <KeyValue label="Bigger changes" value="2 of 3 team approvals" />
-      </div>
-    </Panel>
-  );
+  const badge = reviewing
+    ? "Review running"
+    : proposed
+      ? "Proposed 5,000"
+      : same
+        ? "Reviewed today"
+        : rejected
+          ? "Not approved"
+          : "Raised Nov 9";
+  const badgeIcon = reviewing || same ? "reviewing" : proposed || rejected ? "waiting" : "raised";
   const reasons = rejected
     ? [
         "Doubling in a month is a big jump",
@@ -60,167 +61,234 @@ export function ShipperCredit({
           "No disputed deliveries in 30 days",
           "Shipping volume up 18% this month",
         ];
+
+  const caps = (
+    <Panel className={CARD}>
+      <div className="flex flex-col gap-4">
+        <h2 className="text-[17px] leading-[21px] font-semibold">
+          Limits the assistant can&apos;t change
+        </h2>
+        <p className="text-[14px] leading-[17px] text-ds-muted">
+          These limits are built into Waybil. The assistant cannot change them.
+        </p>
+      </div>
+      <div className="[&>div]:gap-12 [&>div]:py-10 [&>div>span]:leading-[17px] [&>div>span:last-child]:font-semibold">
+        <KeyValue label="Max limit per shipper" value="10,000 USDC" />
+        <KeyValue label="Max raise per week" value="20%" />
+        <KeyValue label="Bigger changes" value="2 of 3 team approvals" />
+      </div>
+    </Panel>
+  );
+
   return (
     <>
-      <div className="mb-24 flex flex-wrap items-end justify-between gap-16">
-        <div>
-          <h1 className="text-title md:text-amount">Credit</h1>
-          <p className="mt-4 text-label text-ds-muted">Set by the Waybil credit assistant</p>
-        </div>
-        <Button
-          loading={reviewing}
-          loadingLabel="Reviewing"
-          disabled={proposed || same || rejected}
-          onClick={review}
-        >
-          {same ? "Ask again after 3 bills" : "Ask for a review"}
-        </Button>
+      <div className="mb-16 md:mb-24">
+        <h1 className="text-[30px] leading-[32px] font-medium tracking-[-0.03em] md:text-[40px] md:leading-[42px]">
+          Credit
+        </h1>
+        <p className="mt-6 hidden text-[14px] leading-[17px] text-ds-muted md:block">
+          Set by the Waybil credit assistant
+        </p>
       </div>
-      <div className="grid gap-24 lg:grid-cols-2">
+      <div className="grid items-start gap-24 xl:grid-cols-2">
         <div className="flex min-w-0 flex-col gap-24">
           <Panel
             title="Credit limit"
+            titleClassName="text-[14px] leading-[17px] font-normal text-ds-muted"
+            className={CARD}
             action={
-              <span className="rounded-full bg-ds-brand-soft px-12 py-6 text-caption">
-                {reviewing
-                  ? "Review running"
-                  : proposed
-                    ? "Proposed 5,000"
-                    : same
-                      ? "Reviewed today"
-                      : rejected
-                        ? "Not approved"
-                        : "Raised Nov 9"}
+              <span className="flex items-center gap-6 rounded-full bg-ds-brand-soft px-10 py-5 text-[12px] leading-[15px] font-semibold text-ds-brand-deep">
+                <CreditIcon
+                  name={badgeIcon}
+                  size={14}
+                  className={
+                    reviewing || same ? "animate-spin motion-reduce:animate-none" : undefined
+                  }
+                />
+                {badge}
               </span>
             }
           >
-            <Money amount="3000000000" className="text-display" />
-            <div className="mt-32">
+            <span className="text-[44px] leading-[54px] font-semibold tracking-[-1px]">
+              3,000 USDC
+            </span>
+            <div className="flex flex-col gap-6">
               <FanMeter
+                appearance="credit"
+                tone="ink"
                 value={Number(usedBefore) / 3000000000}
                 label="Credit limit used"
-                className="w-full h-36"
+                markerLabel={`${formatUsdc(usedBefore)} USDC used`}
+                className="w-full"
               />
-              <div className="mt-8 flex justify-between text-caption text-ds-muted">
+              <div className="flex justify-between text-[11px] leading-[13px] text-ds-muted">
                 <span>0</span>
                 <span>1,000</span>
                 <span>2,000</span>
                 <span>3,000</span>
               </div>
             </div>
-            <div className="flex flex-wrap justify-between gap-12 text-label">
-              <span>
-                Used <Money amount={usedBefore.toString()} />
-              </span>
-              <span>
-                Available <Money amount={(3000000000n - usedBefore).toString()} />
-              </span>
+            <div className="flex flex-wrap justify-between gap-12 text-[14px] leading-[17px] text-ds-ink-2">
+              <span>Used {formatUsdc(usedBefore)} USDC</span>
+              <span>Available {formatUsdc(3000000000n - usedBefore)} USDC</span>
             </div>
-            {proposed && (
-              <p className="rounded-row bg-ds-brand-soft p-16 text-label">
-                The assistant suggested 5,000.00 USDC. This is above the weekly limit, so the team
-                decides. One team member has approved so far.
-              </p>
-            )}
-            {rejected && (
-              <p className="rounded-row bg-ds-brand-soft p-16 text-label">
-                Your limit stays at 3,000.00 USDC. The team wants to see two more bills paid on time
-                before a bigger jump.
-              </p>
+            {(proposed || rejected) && (
+              <div className="flex items-start gap-10 rounded-[14px] bg-ds-vote-soft p-14 text-ds-vote-ink">
+                <CreditIcon name="team" size={18} className="shrink-0" />
+                <p className="text-[14px] leading-[17px]">
+                  {proposed
+                    ? "The assistant suggested 5,000 USDC (+67%). This is above the weekly limit, so the team decides. One team member has approved so far."
+                    : "Your limit stays at 3,000 USDC. The team wants to see two more bills paid on time before a bigger jump."}
+                </p>
+              </div>
             )}
           </Panel>
-          <div className="hidden lg:block">{caps}</div>
+          <div className="hidden xl:block">{caps}</div>
         </div>
         <div className="flex min-w-0 flex-col gap-24">
-          <Panel>
-            <div className="flex flex-wrap items-center justify-between gap-12">
-              <h2 className="flex items-center gap-10 text-heading">
-                <span className="grid size-36 place-items-center rounded-full bg-ds-ink text-ds-brand">
-                  <Sparkle size={20} />
-                </span>
+          <Panel className={CARD}>
+            <div className="flex flex-col items-start justify-between gap-10 md:flex-row md:items-center md:gap-12">
+              <h2 className="flex items-center gap-10 text-[17px] leading-[21px] font-semibold">
+                <CreditIcon name="assistant" size={36} className="shrink-0" />
                 Waybil credit assistant
               </h2>
-              <span className="rounded-full bg-ds-success-soft px-12 py-6 text-caption text-ds-success">
+              <span className="flex items-center gap-6 rounded-full bg-ds-check-soft px-10 py-5 text-[12px] leading-[15px] font-semibold text-ds-check-ink">
+                <CreditIcon name="private" size={14} />
                 Private check
               </span>
             </div>
-            <h3 className="mt-8 text-body font-medium">
+            <h3 className="text-[15px] leading-[18px] font-semibold">
               {reviewing
                 ? "Checking your history"
                 : same
-                  ? "Your limit stays at 3,000.00 USDC"
+                  ? "Your limit stays at 3,000 USDC"
                   : rejected
                     ? "Why the team said no"
                     : proposed
-                      ? "Why 5,000.00 USDC"
-                      : "Why 3,000.00 USDC"}
+                      ? "Why 5,000 USDC"
+                      : "Why 3,000 USDC"}
             </h3>
             {reviewing ? (
-              <p className="text-body text-ds-muted">
-                Reviewing your last 30 days of shipments and repayments. Usually under a minute.
-              </p>
+              <>
+                <div role="status" aria-busy="true" className="flex flex-col gap-16">
+                  <span className="sr-only">Checking your history</span>
+                  {[0, 1, 2].map((i) => (
+                    <span
+                      aria-hidden="true"
+                      key={i}
+                      className="shipment-skeleton h-14 rounded-full bg-ds-surface-3"
+                    />
+                  ))}
+                </div>
+                <p className="text-[14px] leading-[17px] text-ds-muted">
+                  Reviewing your last 30 days of shipments and repayments. Usually under a minute.
+                </p>
+              </>
             ) : same ? (
-              <p className="text-body text-ds-muted">
+              <p className="text-[14px] leading-[17px] text-ds-muted">
                 You ship about the same as last month. The assistant checks again after your next 3
                 paid bills.
               </p>
             ) : (
-              <ul className="flex flex-col gap-12">
-                {reasons.map((r) => (
-                  <li key={r} className="flex items-start gap-10 text-label text-ds-muted">
-                    <CheckCircle size={18} className="shrink-0 text-ds-success" />
-                    {r}
+              <ul className="flex flex-col gap-16">
+                {reasons.map((reason) => (
+                  <li
+                    key={reason}
+                    className="flex items-center gap-10 text-[15px] leading-[18px] text-ds-ink-2"
+                  >
+                    <CreditIcon name={rejected ? "info" : "check"} size={18} className="shrink-0" />
+                    <span>{reason}</span>
                   </li>
                 ))}
               </ul>
             )}
-            <p className="mt-20 text-caption text-ds-muted">
-              The assistant checks your numbers privately.
-            </p>
-            <DemoRecord title="Demo credit review" />
-            {proposed && (
-              <p className="text-caption text-ds-muted">A raise is already waiting for the team.</p>
-            )}
-            {rejected && <p className="text-caption text-ds-muted">You can ask again on Nov 19.</p>}
-            {!same && !reviewing && !rejected && !proposed && (
+            <div className="flex flex-col gap-6 pt-14">
+              <p className="text-[13px] leading-[16px] text-ds-muted">
+                The assistant checks your numbers in a sealed, private computer. Nobody can see
+                them, not even Waybil.
+              </p>
+              <a
+                href={CONTRACT_RECORD_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="focus-ring self-start rounded-small text-[13px] leading-[16px] font-semibold text-ds-brand-deep"
+              >
+                See the record on NearBlocks ↗
+              </a>
+            </div>
+            {!reviewing && !same && (
               <div className="flex items-center justify-between gap-12">
-                <p className="text-label text-ds-muted">Shipped more lately?</p>
-                <Button variant="quiet" onClick={review}>
+                <p className="min-w-0 flex-1 text-[14px] leading-[17px] text-ds-muted">
+                  {proposed
+                    ? "A raise is already waiting for the team."
+                    : rejected
+                      ? "You can ask again on Nov 19."
+                      : "Shipped more lately?"}
+                </p>
+                <Button
+                  variant="quiet"
+                  className="h-40 shrink-0 text-[14px] leading-[17px] disabled:text-ds-ink disabled:opacity-40"
+                  disabled={proposed || rejected}
+                  onClick={review}
+                >
                   Ask for a review
                 </Button>
               </div>
             )}
           </Panel>
-          <div className="lg:hidden">{caps}</div>
-          <Panel title="Limit history">
-            {(proposed || rejected) && (
-              <div className="border-b border-ds-line pb-16">
-                <p className="text-body">
-                  3,000.00 → 5,000.00 <span className="text-caption">USDC</span>
-                </p>
-                <p className="mt-4 text-caption text-ds-muted">
-                  {rejected
-                    ? "The team said no for now."
-                    : "The assistant suggested it. The team is deciding."}
-                </p>
-                <p className="mt-4 text-caption text-ds-muted">Today</p>
-              </div>
-            )}
-            {[
-              ["2,500.00 → 3,000.00 USDC", "Assistant · within the weekly limit", "Nov 9"],
-              ["0.00 → 2,500.00 USDC", "Team approval", "Oct 21"],
-            ].map(([amount, reason, date]) => (
-              <div key={date} className="flex flex-wrap items-center justify-between gap-12 py-8">
-                <div>
-                  <p className="text-body">{amount}</p>
-                  <p className="mt-4 text-caption text-ds-muted">{reason}</p>
-                </div>
-                <span className="text-caption text-ds-muted">{date}</span>
-              </div>
-            ))}
+          <div className="xl:hidden">{caps}</div>
+          <Panel
+            title="Limit history"
+            titleClassName="text-[17px] leading-[21px] font-semibold"
+            className={CARD}
+          >
+            <div>
+              {(proposed || rejected) && (
+                <HistoryRow
+                  amount="3,000 → 5,000 USDC"
+                  reason={
+                    rejected
+                      ? "The team said no for now."
+                      : "The assistant suggested it. The team is deciding."
+                  }
+                  date="Today"
+                />
+              )}
+              <HistoryRow
+                amount="2,500 → 3,000 USDC"
+                reason="Assistant · within the weekly limit"
+                date="Nov 9"
+              />
+              <HistoryRow amount="0 → 2,500 USDC" reason="Team · 2 of 3 approved" date="Oct 21" />
+            </div>
           </Panel>
         </div>
       </div>
     </>
+  );
+}
+
+function HistoryRow({ amount, reason, date }: { amount: string; reason: string; date: string }) {
+  return (
+    <div className="flex items-center justify-between gap-12 py-12">
+      <div className="flex min-w-0 flex-col gap-2">
+        <p className="text-[15px] leading-[18px] font-semibold">{amount}</p>
+        <p className="text-[13px] leading-[16px] text-ds-muted">{reason}</p>
+      </div>
+      <span className="shrink-0 text-[13px] leading-[16px] text-ds-muted">{date}</span>
+    </div>
+  );
+}
+
+function CreditIcon({ name, size, className }: { name: string; size: number; className?: string }) {
+  return (
+    <img
+      src={"/illustrations/credit/" + name + ".svg"}
+      alt=""
+      width={size}
+      height={size}
+      style={{ width: size, height: size }}
+      className={cn("object-contain", className)}
+    />
   );
 }
