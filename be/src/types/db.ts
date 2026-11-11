@@ -1,4 +1,5 @@
-export type Table = "profiles" | "invites" | "auth_challenges" | "auth_identities";
+export type Table =
+  "profiles" | "invites" | "auth_challenges" | "auth_identities" | "relay_requests";
 export interface Snapshot<T> {
   value: T;
   version: number;

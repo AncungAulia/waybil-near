@@ -71,6 +71,21 @@ account so a new phone can get a new device key after Google sign-in (see 0004).
 
 ## Relayer
 
+Body is `{ signedDelegate: "<base64 Borsh SignedDelegate>" }`, at most 16 KB decoded.
+Only canonical Ed25519 delegates with one function call and zero deposit are accepted.
+Gas is at most 100 Tgas, expiry at most 200 blocks ahead, with a fresh access-key nonce.
+The signer must be the session's current registered device key with the role's exact method.
+Arguments must match the ABI. A problem confirmation requires a stored immutable report hash.
+Before reports are integrated, that path returns unavailable rather than bypassing evidence.
+Limit is 30 relay requests per minute per account, in addition to the global IP limit.
+
+Responses contain `{txHash,status,proofUrl}`. Status is pending, confirmed or failed and refers
+to transaction/receipt execution, not a guaranteed payout. Clients read the actual shipment
+view for payment status. Pending returns HTTP 202. Retries of the same delegate use its
+persisted original signed outer transaction and hash. A pending relayer transaction blocks
+preparing another one until reconciled, avoiding fresh signatures with a stale relayer nonce.
+No unsigned actions or internal job methods are exposed through this endpoint.
+
 | Method | Path | Who | What |
 |---|---|---|---|
 | POST | `/v1/relay` | Google users | Body: base64 signed delegate action (NEP-366). Checks: receiver is `app.waybil.testnet`, method is in the allow list (`confirm_pickup`, `confirm_delivery`), sender matches the session, rate limit per account. Sends it signed by `relayer.waybil.testnet`. Returns the transaction hash. |
@@ -175,3 +190,9 @@ POST /v1/auth/logout revokes every existing session for the account by increment
 session version. The device's on-chain key remains subject to the normal recovery flow.
 SDK RPC requests make one attempt, and integration operations have a 15-second deadline.
 Timeouts remain ambiguous and must be reconciled before another signed intent is prepared.
+
+A definite RPC transaction rejection (including invalid nonce, expired transaction and
+insufficient balance) completes the saved intent as failed and releases the signer queue.
+Transport failures, timeouts and unknown execution remain pending. Signer contention returns
+503 E_SIGNER_BUSY with a retry message rather than a client edit conflict. A finalized false
+function result is failed, including mark_late returning false; incomplete outcomes stay pending.

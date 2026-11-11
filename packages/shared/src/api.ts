@@ -1,5 +1,14 @@
 import type { Role } from "./shipment";
 
+export interface RelayRequest {
+  signedDelegate: string;
+}
+export interface RelayResponse {
+  txHash: string;
+  status: "pending" | "confirmed" | "failed";
+  proofUrl: string;
+}
+
 export type ChallengeRequest =
   | { kind: "wallet"; accountId: string; role?: "shipper" | "investor" }
   | { kind: "google"; publicKey: string; inviteCode?: string };
