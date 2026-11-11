@@ -345,8 +345,10 @@ non-retryable 4xx or five attempts. Rate limits, 5xx and ambiguous transport out
 with the same idempotency key within the existing 23-hour window; unresolved ambiguity ends
 as uncertain. Permanently failed rows remain available for operational inspection.
 
-Credit review requests have a 24-hour per-shipper cooldown, including failed/unclear checks
-and initial resubmissions. Repeating an active request returns the existing review. Transient
+Explicit limit-review requests have a 24-hour per-shipper cooldown, including failed/unclear
+results. Initial checks are keyed by submissionNumber and can run on the same day after
+corrected papers are resubmitted from needs_more. Repeating the same submission returns its
+existing review. Transient
 provider, storage and configuration failures keep the review queued, retry no sooner than
 60 seconds, and stop after three processing attempts. Failed initial checks leave the
 application in_review for team handling, rather than silently returning it to draft.

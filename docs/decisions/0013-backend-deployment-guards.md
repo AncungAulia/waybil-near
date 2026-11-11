@@ -1,4 +1,4 @@
-# 0012 · Backend deployment guards
+# 0013 · Backend deployment guards
 
 Status: accepted for testnet deployment.
 
@@ -18,7 +18,9 @@ Operators can set zero to stop new provisioning. Parent spendable balance below 
 produces a diagnostic and below 0.01 NEAR stops new creation. These are conservative testnet
 operating limits, not economic estimates for mainnet.
 
-Private credit checks have a one-day cooldown per shipper, including unclear outcomes.
+Explicit limit-review requests have a one-day cooldown per shipper, including unclear outcomes.
+Initial submissions are keyed by submissionNumber and may be checked again on the same day
+after the shipper corrects papers following needs_more.
 Transient failures retry at most three times with at least a minute between attempts.
 An interrupted initial check keeps the application available to the team. Chain approval
 can reconcile the record independently of a successful assistant result. Approved shippers

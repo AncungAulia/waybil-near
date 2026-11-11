@@ -218,7 +218,8 @@ set it to zero. Existing ready identities can still sign in. Monitor structured 
 for E_SIGNUP_FUNDS and E_SIGNUP_CAP. New accounts receive 0.005 NEAR for storage.
 
 Keep CREDIT_AUTO_LIMITS=false for public testing. Credit checks retry transient errors with
-a one-minute delay, at most three attempts, and enforce a one-day shipper cooldown. An AI
+a one-minute delay and at most three attempts. Explicit limit-review requests have a one-day
+shipper cooldown; initial resubmissions after needs_more can run on the same day. An AI
 failure no longer returns an application to draft. Active shippers can create their missing
 company record and replace approved papers before requesting a fresh check. Email workers
 stop permanently rejected messages and cap retries at five. Logs omit provider payloads and

@@ -24,7 +24,7 @@ No additional comments were present on issues #15–#23 when checked.
 | Hung SDK requests | Per-request and enclosing-operation deadlines; continued operations cannot start more SDK calls after timeout. In-flight broadcasts remain ambiguous. |
 | Shutdown ignores active workers | Stop scheduling, await HTTP/worker promises, bound drain at 25 seconds. |
 | Email retries never stop | Permanent 4xx stops; retryable/ambiguous attempts capped at five, preserving uncertainty and idempotency. |
-| Paid review loops | One-day shipper cooldown, including initial resubmissions and unclear results. |
+| Paid review loops | One-day cooldown for explicit limit-review requests, including unclear results. PR #77 exempts initial resubmissions after needs_more; each submission retains its own idempotency key. |
 | Unsafe automatic raises | Public deployment keeps CREDIT_AUTO_LIMITS=false; no financial rules changed. |
 | Old papers / seed accounts | Active shippers can create a missing company record and replace approved papers. Review snapshots remain immutable. |
 | Missing admin assistant result | Each list row includes the latest public CreditReviewInfo, excluding private evidence. |
