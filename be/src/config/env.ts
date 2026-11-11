@@ -47,6 +47,11 @@ export const envSchema = z
         }
       })
       .default("{}"),
+    NEARBLOCKS_API_URL: z.preprocess(
+      (v) => (v === "" ? undefined : v),
+      z.url().default("https://api-testnet.nearblocks.io"),
+    ),
+    NEARBLOCKS_API_KEY: secret,
     NEAR_AI_API_KEY: secret,
     NEAR_AI_MODEL: secret,
     NEAR_AI_TRUSTED_SIGNERS_JSON: z.string().default("[]"),

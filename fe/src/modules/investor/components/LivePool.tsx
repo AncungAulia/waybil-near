@@ -1,7 +1,14 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
-import { FEE_BPS, splitBill, type QueueEntry, type Shipment } from "@waybil/shared";
+import {
+  FEE_BPS,
+  splitBill,
+  type PoolHistoryItem,
+  type PoolHistoryResponse,
+  type QueueEntry,
+  type Shipment,
+} from "@waybil/shared";
 import { ArrowLeft, ArrowLineDown, Clock, Package, SealCheck } from "@phosphor-icons/react";
 import { Panel } from "@/components/layout/Panel";
 import { Money } from "@/components/elements/Money";
@@ -9,6 +16,8 @@ import { FanMeter } from "@/components/elements/FanMeter";
 import { StatusPill } from "@/components/elements/StatusPill";
 import { Stat } from "@/components/elements/Stat";
 import { cn } from "@/lib/cn";
+import { api } from "@/lib/api";
+import { useLive } from "@/hooks/useLive";
 import { useNames } from "@/hooks/useNames";
 import { CONTRACT_RECORD_URL, nearblocksUrl } from "@/lib/env";
 import { statusChip } from "@/lib/status";
@@ -358,41 +367,90 @@ export function LiveDelivery({
 }
 
 /** I3.3. Waiting withdrawals from the queue, and NearBlocks for everything already done. */
+/* Pool events as the contract recorded them. The backend reads them from the indexer. */
+const KIND: Record<PoolHistoryItem["kind"], { label: string; sign: "+" | "-" | "" }> = {
+  deposit: { label: "Deposit", sign: "+" },
+  withdraw_paid: { label: "Withdrawal paid", sign: "-" },
+  withdraw_queued: { label: "Withdrawal asked, waiting for cash", sign: "" },
+  withdraw_failed: { label: "Payout bounced, back in the queue", sign: "" },
+};
+const isoDay = (iso: string) =>
+  new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(new Date(iso));
+
 export function LiveHistory({ accountId, queue }: { accountId: string; queue: QueueEntry[] }) {
   const mine = queue.filter((entry) => entry.investor === accountId);
+  const { data, failed, reload } = useLive(
+    () => api<PoolHistoryResponse>("/me/history"),
+    accountId,
+  );
   return (
     <>
       <header>
         <h1 className="text-title">History</h1>
         <p className="mt-6 text-label text-ds-muted">Your deposits, withdrawals, and earnings.</p>
       </header>
-      <Panel gap={4} className="px-20 py-8">
-        {mine.map((entry) => (
-          <div key={entry.requested_at} className="flex items-center gap-12 py-14">
-            <span className="grid size-38 shrink-0 place-items-center rounded-full bg-ds-canvas">
-              <Clock size={16} />
-            </span>
-            <span className="min-w-0 flex-1">
-              <span className="block text-body">Withdrawal waiting</span>
-              <span className="block text-caption text-ds-muted">
-                Asked {day(entry.requested_at)} · paid as bills are repaid
+      {mine.length > 0 && (
+        <Panel title="Waiting" gap={4} className="px-20 py-8">
+          {mine.map((entry) => (
+            <div key={entry.requested_at} className="flex items-center gap-12 py-14">
+              <span className="grid size-38 shrink-0 place-items-center rounded-full bg-ds-canvas">
+                <Clock size={16} />
               </span>
-            </span>
-            <Money amount={entry.amount} className="shrink-0 text-label" />
+              <span className="min-w-0 flex-1">
+                <span className="block text-body">Withdrawal waiting</span>
+                <span className="block text-caption text-ds-muted">
+                  Asked {day(entry.requested_at)} · paid as bills are repaid
+                </span>
+              </span>
+              <Money amount={entry.amount} className="shrink-0 text-label" />
+            </div>
+          ))}
+        </Panel>
+      )}
+      <Panel gap={4} className="px-20 py-8">
+        {failed && !data ? (
+          <div className="flex flex-col items-start gap-12 py-14">
+            <p className="text-label text-ds-muted">
+              We could not load your history right now. Try again in a minute.
+            </p>
+            <button className="link focus-ring text-label" onClick={reload}>
+              Try again
+            </button>
           </div>
-        ))}
-        <p className="py-14 text-label text-ds-muted">
-          {mine.length === 0 ? "No withdrawal is waiting. " : ""}Every deposit, withdrawal and
-          payout to your wallet is recorded.{" "}
-          <a
-            className="link focus-ring"
-            href={nearblocksUrl(`/address/${accountId}`)}
-            target="_blank"
-            rel="noreferrer"
-          >
-            See the record on NearBlocks ↗
-          </a>
-        </p>
+        ) : !data ? (
+          <p className="py-14 text-label text-ds-muted">Loading your history.</p>
+        ) : data.items.length === 0 ? (
+          <p className="py-14 text-label text-ds-muted">
+            Nothing yet. Your first deposit shows up here.
+          </p>
+        ) : (
+          data.items.map((item) => (
+            <div
+              key={`${item.txHash}-${item.kind}-${item.at}`}
+              className="flex items-center gap-12 py-14"
+            >
+              <span className="grid size-38 shrink-0 place-items-center rounded-full bg-ds-canvas">
+                {item.kind === "deposit" ? <ArrowLineDown size={16} /> : <Clock size={16} />}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-body">{KIND[item.kind].label}</span>
+                <span className="block text-caption text-ds-muted">{isoDay(item.at)}</span>
+                <a
+                  className="link focus-ring text-caption"
+                  href={nearblocksUrl(`/txns/${item.txHash}`)}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  See the record on NearBlocks ↗
+                </a>
+              </span>
+              <span className="shrink-0 text-label tabular-nums">
+                {KIND[item.kind].sign}
+                <Money amount={item.amount} />
+              </span>
+            </div>
+          ))
+        )}
       </Panel>
     </>
   );

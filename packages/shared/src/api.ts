@@ -173,6 +173,24 @@ export interface WarehouseDestination {
 export interface WarehouseDestinationsResponse {
   destinations: WarehouseDestination[];
 }
+/**
+ * One pool event for an investor, read from the contract's events: a deposit, a payout, a
+ * withdrawal that waits in the queue, or a payout that failed and went back to the queue.
+ */
+export interface PoolHistoryItem {
+  kind: "deposit" | "withdraw_paid" | "withdraw_queued" | "withdraw_failed";
+  /** USDC base units. */
+  amount: string;
+  /** Pool shares minted, for a deposit. */
+  shares: string | null;
+  txHash: string;
+  /** ISO time of the block. */
+  at: string;
+}
+export interface PoolHistoryResponse {
+  /** Newest first. */
+  items: PoolHistoryItem[];
+}
 export interface Invite extends InviteCreate {
   code: string;
   shipperId: string;

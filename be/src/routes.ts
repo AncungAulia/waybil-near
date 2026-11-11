@@ -28,6 +28,9 @@ import { adminRoutes } from "./modules/admin/admin.routes";
 import { Jobs } from "./modules/jobs/jobs.service";
 import { Profiles } from "./modules/profiles/profiles.service";
 import { profileRoutes } from "./modules/profiles/profiles.routes";
+import { PoolHistory } from "./modules/history/history.service";
+import { NearBlocksEvents } from "./modules/history/history.source";
+import { historyRoutes } from "./modules/history/history.routes";
 
 export function createRuntime(deps: AppDeps) {
   const router = Router();
@@ -66,6 +69,19 @@ export function createRuntime(deps: AppDeps) {
   router.use(reportRoutes(deps, reports));
   router.use(inviteRoutes(deps, invites, (accountId) => auth.subjectFor(accountId)));
   router.use(profileRoutes(deps, new Profiles(deps.store, deps.chain)));
+  router.use(
+    historyRoutes(
+      deps,
+      new PoolHistory(
+        new NearBlocksEvents(
+          deps.env.NEARBLOCKS_API_URL,
+          deps.env.WAYBIL_CONTRACT,
+          deps.env.NEARBLOCKS_API_KEY,
+        ),
+        deps.env.WAYBIL_CONTRACT,
+      ),
+    ),
+  );
   const relay = new RelayService(
     deps.store,
     deps.chain,
