@@ -1,14 +1,55 @@
 "use client";
-import * as Dialog from "@radix-ui/react-dialog";
 import { formatUsdc } from "@waybil/shared";
-import { useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
-import { X } from "@phosphor-icons/react";
+import { Plus, Copy, Check, SignOut, GasPump, Clock, SealCheck } from "@phosphor-icons/react";
 import { ActionSheet } from "@/components/layout/ActionSheet";
 import { Button } from "@/components/ui/Button";
 import { Money } from "./Money";
-import { DemoRecord } from "./DemoRecord";
+import { ArrowUpRightGlyph, SystemGlyph } from "./icons";
+import { cn } from "@/lib/cn";
 export type DemoWalletState = "G1" | "G2" | "G3" | "G4" | "G5" | "X6" | "X7";
+
+/*
+ * When the sample account last got test USDC. The balance and the one hour wait both read
+ * this one timestamp, so reopening the menu during the wait still shows the added money.
+ * A copy in memory keeps the demo working when storage is blocked.
+ */
+const FAUCET_KEY = "waybil-demo-faucet-v1";
+const FAUCET_WAIT_MS = 3600000;
+let claimedInMemory = 0;
+const claimListeners = new Set<() => void>();
+
+function readClaim(): number {
+  try {
+    return Number(localStorage.getItem(FAUCET_KEY) ?? 0) || claimedInMemory;
+  } catch {
+    return claimedInMemory;
+  }
+}
+
+function saveClaim(time: number) {
+  claimedInMemory = time;
+  try {
+    localStorage.setItem(FAUCET_KEY, String(time));
+  } catch {
+    /* The local preview still works when storage is unavailable. */
+  }
+  claimListeners.forEach((listener) => listener());
+}
+
+function subscribeClaim(listener: () => void) {
+  claimListeners.add(listener);
+  window.addEventListener("storage", listener);
+  return () => {
+    claimListeners.delete(listener);
+    window.removeEventListener("storage", listener);
+  };
+}
+
+function minutes(n: number) {
+  return n === 1 ? "1 minute" : `${n} minutes`;
+}
 export function DemoWallet({
   initialState = "G1",
   role = "shipper",
@@ -21,8 +62,11 @@ export function DemoWallet({
   const router = useRouter();
   const [state, setState] = useState(initialState),
     [copied, setCopied] = useState(false),
-    [claimed, setClaimed] = useState(false),
-    [retryMinutes, setRetryMinutes] = useState(48);
+    [retryMinutes, setRetryMinutes] = useState(48),
+    [agoMinutes, setAgoMinutes] = useState(12);
+  /* The server and the first render see no claim, so hydration always matches. */
+  const claimedAt = useSyncExternalStore(subscribeClaim, readClaim, () => 0);
+  const claimed = claimedAt > 0;
   const initialBalance = role === "investor" ? 3450000000n : role === "admin" ? 0n : 120000000n;
   const shownBalance = initialBalance + (claimed || state === "G4" ? 1000000000n : 0n);
   const account =
@@ -31,96 +75,118 @@ export function DemoWallet({
       : role === "admin"
         ? "risk.waybil.testnet"
         : "northwind-freight.testnet";
+  useEffect(() => {
+    if (state !== "G3" || initialState === "G3") return;
+    const timer = window.setTimeout(() => {
+      saveClaim(Date.now());
+      setState("G4");
+    }, 750);
+    return () => window.clearTimeout(timer);
+  }, [state, initialState]);
   function claim() {
-    let last = 0;
-    try {
-      last = Number(localStorage.getItem("waybil-demo-faucet-v1") ?? 0);
-    } catch {
-      /* The local demo can still be viewed when storage is unavailable. */
-    }
-    if (Date.now() - last < 3600000) {
-      setRetryMinutes(Math.ceil((3600000 - (Date.now() - last)) / 60000));
+    const since = Date.now() - readClaim();
+    if (since < FAUCET_WAIT_MS) {
+      setRetryMinutes(Math.max(1, Math.ceil((FAUCET_WAIT_MS - since) / 60000)));
+      setAgoMinutes(Math.floor(since / 60000));
       setState("G5");
       return;
     }
-    try {
-      localStorage.setItem("waybil-demo-faucet-v1", String(Date.now()));
-    } catch {
-      /* No transaction is sent by this preview. */
-    }
-    setClaimed(true);
-    setState("G4");
+    setState("G3");
   }
   if (state === "G1")
     return (
-      <Dialog.Root
-        open
-        onOpenChange={(open) => {
-          if (!open) onClose();
-        }}
+      <ActionSheet
+        title="Account menu"
+        onClose={onClose}
+        appearance="wallet"
+        hideHeader
+        overlayClassName="md:bg-transparent"
+        className="gap-16 md:top-100 md:right-40 md:bottom-auto md:left-auto md:w-380 md:translate-x-0 md:translate-y-0 md:gap-12 md:rounded-[24px] md:border md:border-ds-line md:p-16 md:shadow-lg"
       >
-        <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-40" />
-          <Dialog.Content
-            aria-describedby={undefined}
-            className="fixed top-88 right-16 left-16 z-50 flex flex-col gap-16 rounded-card border border-ds-line bg-ds-bg p-20 shadow-lg md:top-100 md:right-40 md:left-auto md:w-380"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <Dialog.Title className="text-heading">
-                  {role === "investor"
-                    ? "Maya Harper"
-                    : role === "admin"
-                      ? "Risk lead"
-                      : "Northwind Freight Co."}
-                </Dialog.Title>
-                <p className="break-all text-caption text-ds-muted">{account}</p>
-              </div>
-              <button
-                aria-label="Close"
-                className="press focus-ring rounded-full p-8"
-                onClick={onClose}
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <div className="rounded-row bg-ds-canvas p-16">
-              <p className="text-label">USDC</p>
-              <Money amount={String(shownBalance)} className="text-amount" />
-              <p className="text-caption text-ds-muted">For bills and deposits</p>
-            </div>
-            <Button
-              variant="quiet"
-              onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(account);
-                  setCopied(true);
-                } catch {
-                  setCopied(false);
-                }
-              }}
-            >
-              {copied ? "Copied" : "Copy address"}
-            </Button>
-            <Button onClick={() => setState("G2")}>Get test USDC</Button>
-            <Button
-              variant="quiet"
-              onClick={() => {
-                onClose();
-                router.push("/start");
-              }}
-            >
-              Disconnect
-            </Button>
-            <p className="text-caption text-ds-muted">
-              This preview shows a sample account. No wallet is connected.
+        <div className="flex items-center gap-12 p-4">
+          <div className="min-w-0 flex-1">
+            <p className="text-body font-medium">
+              {role === "investor"
+                ? "Maya Harper"
+                : role === "admin"
+                  ? "Risk lead"
+                  : "Northwind Freight Co."}
             </p>
-          </Dialog.Content>
-        </Dialog.Portal>
-      </Dialog.Root>
+            <p className="mt-2 break-words text-[12.5px] leading-[1.45] text-ds-muted">
+              {role === "admin" ? "Admin" : role === "investor" ? "Investor" : "Shipper"} ·{" "}
+              {account}
+            </p>
+          </div>
+          <button
+            type="button"
+            aria-label={copied ? "Address copied" : "Copy address"}
+            className="press focus-ring grid size-32 shrink-0 place-items-center rounded-full text-ds-muted hover:bg-ds-canvas"
+            onClick={async () => {
+              try {
+                await navigator.clipboard.writeText(account);
+                setCopied(true);
+              } catch {
+                setCopied(false);
+              }
+            }}
+          >
+            {copied ? <Check size={16} /> : <Copy size={16} />}
+          </button>
+          <img
+            src={`/illustrations/${role}-avatar.svg`}
+            alt=""
+            className="size-40 shrink-0 rounded-full"
+          />
+        </div>
+        <div className="flex flex-col gap-4 rounded-[16px] bg-ds-canvas px-16 py-14">
+          <p className="text-[12.5px] leading-[1.45] text-ds-muted">USDC</p>
+          <Money amount={String(shownBalance)} className="text-[22px] leading-[1.2] font-medium" />
+          <p className="text-[11.5px] leading-[1.45] text-ds-muted">For bills and deposits</p>
+        </div>
+        <div className="h-1 bg-ds-line" />
+        <button
+          type="button"
+          className="press focus-ring flex items-center gap-12 rounded-[14px] p-12 text-left hover:bg-ds-canvas"
+          onClick={() => setState("G2")}
+        >
+          <span className="grid size-36 shrink-0 place-items-center rounded-full bg-ds-canvas">
+            <Plus size={16} />
+          </span>
+          <span>
+            <span className="block text-[14.5px] leading-[1.45] font-medium">Get test USDC</span>
+            <span className="mt-2 block text-caption text-ds-muted">
+              Free test money for the demo
+            </span>
+          </span>
+        </button>
+        <button
+          type="button"
+          className="press focus-ring flex items-center gap-12 rounded-[14px] p-12 text-left hover:bg-ds-canvas"
+          onClick={() => {
+            onClose();
+            router.push("/start");
+          }}
+        >
+          <span className="grid size-36 shrink-0 place-items-center rounded-full bg-ds-danger-result text-ds-danger">
+            <SignOut size={16} />
+          </span>
+          <span className="text-[14.5px] font-medium text-ds-danger">Disconnect</span>
+        </button>
+        <p className="text-caption text-ds-muted">
+          This preview shows a sample account. No wallet is connected.
+        </p>
+      </ActionSheet>
     );
   return (
     <ActionSheet
+      appearance="wallet"
+      className={cn(
+        "md:w-440",
+        (state === "X6" || state === "X7") &&
+          "right-8 bottom-8 left-8 rounded-[32px] md:rounded-card",
+      )}
+      stamp={state === "G4" ? <SealCheck size={34} /> : undefined}
+      stampTone="brand"
       title={
         state === "G4"
           ? "1,000.00 test USDC added"
@@ -134,35 +200,61 @@ export function DemoWallet({
     >
       {state === "G4" ? (
         <>
-          <p className="text-label">
+          <p className="text-[14px] leading-[1.45] text-ds-muted">
             Your sample balance is now {formatUsdc(shownBalance)} USDC. Test money has no real
             value.
           </p>
-          <DemoRecord title="Demo test USDC receipt" />
-          <Button className="justify-between" onClick={onClose}>
+          <Button className="h-52 w-full justify-between" onClick={onClose}>
             Done
           </Button>
         </>
       ) : (
         <>
-          <p className="text-label text-ds-muted">
+          <p className="text-[14px] leading-[1.45] text-ds-muted">
             {state === "X6"
               ? "Nothing was sent and no money moved. You can try again when you’re ready."
               : state === "X7"
                 ? "The request failed. No money moved. Try again in a moment."
                 : "Test money is for trying Waybil on the test network. It has no real value."}
           </p>
-          <div className="rounded-row bg-ds-canvas p-20">
-            <p className="mb-8 text-caption text-ds-muted">You will get</p>
-            <Money amount="1000000000" className="text-amount" />
-          </div>
+          {state !== "X6" && state !== "X7" && (
+            <div className="flex items-center justify-between gap-12 rounded-[16px] bg-ds-canvas px-20 py-16">
+              <p className="text-body text-ds-muted">You will get</p>
+              <Money amount="1000000000" className="text-[17px] leading-[1.45] font-medium" />
+            </div>
+          )}
+          {(state === "G2" || state === "G3") && (
+            <div className="flex items-center gap-10 rounded-[16px] border border-ds-line px-14 py-12">
+              <GasPump size={16} className="shrink-0" />
+              <p className="text-[13px] leading-[1.45]">
+                There are no network fees. Waybil covers them for you.
+              </p>
+            </div>
+          )}
           {state === "G5" && (
-            <p className="rounded-row bg-ds-warning-soft p-16 text-label">
-              You can get test USDC once an hour. Try again in {retryMinutes} minutes.
-            </p>
+            <div className="flex items-start gap-10 rounded-[16px] bg-ds-brand-soft px-16 py-14">
+              <Clock size={18} className="mt-1 shrink-0 text-ds-brand-deep" />
+              <p className="text-[13.5px] leading-[1.45]">
+                You got test USDC {agoMinutes < 1 ? "just now" : `${minutes(agoMinutes)} ago`}. You
+                can get more in {minutes(retryMinutes)}.
+              </p>
+            </div>
           )}
           <Button
-            className="justify-between"
+            className={cn(
+              "h-52 w-full justify-between",
+              state === "G5" &&
+                "[&>span:last-child]:bg-ds-line-strong [&>span:last-child]:text-ds-bg",
+            )}
+            icon={
+              state === "X6" || state === "X7" ? (
+                <SystemGlyph name="retry" size={17} />
+              ) : state === "G5" ? (
+                <ArrowUpRightGlyph size={17} />
+              ) : (
+                <Plus size={17} />
+              )
+            }
             disabled={state === "G5"}
             loading={state === "G3"}
             loadingLabel="Waiting for wallet"
@@ -170,6 +262,18 @@ export function DemoWallet({
           >
             {state === "X6" || state === "X7" ? "Try again" : "Get 1,000 test USDC"}
           </Button>
+          {state === "G3" && (
+            <p className="text-center text-[12.5px] leading-[1.45] text-ds-muted">
+              Approve it in your wallet. Waybil covers the network fees.
+            </p>
+          )}
+          {(state === "X6" || state === "X7") && (
+            <p className="text-center text-[12.5px] leading-[1.45] text-ds-muted">
+              {state === "X6"
+                ? "Your wallet will ask you again."
+                : "If it keeps failing, wait a few minutes."}
+            </p>
+          )}
           <p className="text-caption text-ds-muted">
             This local demo changes no real balance and sends no wallet request.
           </p>

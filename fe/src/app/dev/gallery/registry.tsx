@@ -14,6 +14,7 @@ import { ShipmentRow, ShipmentRowSkeleton } from "@/components/elements/Shipment
 import { BalanceCard } from "@/components/elements/BalanceCard";
 import { TxToast } from "@/components/elements/TxToast";
 import { WalletMenu } from "@/modules/wallet/components/WalletMenu";
+import { CONTRACT_RECORD_URL } from "@/lib/env";
 import { SegmentedDemo } from "./SegmentedDemo";
 import { ORGANISMS } from "./organisms";
 
@@ -141,11 +142,8 @@ export const ATOMS: GalleryEntry[] = [
       { label: "Paid early", node: <StatusPill status="paidEarly" /> },
       { label: "Repaid", node: <StatusPill status="repaid" /> },
       { label: "Disputed", node: <StatusPill status="disputed" /> },
-      { label: "Cancelled · not drawn yet", node: <StatusPill status="cancelled" /> },
-      {
-        label: "Paid from the reserve · not drawn yet",
-        node: <StatusPill status="coveredByReserve" />,
-      },
+      { label: "Cancelled", node: <StatusPill status="cancelled" /> },
+      { label: "Covered by reserve", node: <StatusPill status="coveredByReserve" /> },
       { label: "Loading", node: <StatusPillSkeleton /> },
     ],
   },
@@ -258,7 +256,7 @@ export const MOLECULES: GalleryEntry[] = [
               name="Sam"
               sub="Driver"
               open
-              accountUrl="https://testnet.nearblocks.io"
+              accountUrl={CONTRACT_RECORD_URL}
             />
           </div>
         ),
@@ -391,7 +389,7 @@ export const MOLECULES: GalleryEntry[] = [
       },
       {
         label: "Failed",
-        node: <TimelineStep state="failed" title="Delivery disputed" time="Early payment paused" />,
+        node: <TimelineStep state="paused" title="Delivery disputed" time="Early payment paused" />,
       },
     ],
   },

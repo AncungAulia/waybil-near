@@ -1,0 +1,439 @@
+/* Admin cards from the desktop, tablet and mobile design frames. */
+.admin-ui main section {
+  border-radius: 24px;
+  min-width: 0;
+}
+.admin-ui main section > div:first-child > h2,
+.admin-ui main section > h2 {
+  font-size: 17px;
+  line-height: 21px;
+  font-weight: 600;
+}
+.admin-ui .admin-fact > span:last-child {
+  min-width: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.admin-ui .admin-empty {
+  min-width: 0;
+}
+.admin-closer-look .admin-fact > span:last-child,
+.admin-closer-look .admin-tiles > div > div,
+.admin-closer-look .admin-documents button,
+.admin-closer-look .admin-documents p:first-child,
+.admin-closer-look .admin-assessment > a {
+  font-weight: 600;
+}
+.admin-closer-look .admin-fact > span:last-child {
+  word-break: normal;
+}
+.admin-closer-look .admin-documents > div:last-child > div > span {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+}
+.admin-closer-look .admin-assessment > div:first-child > span {
+  color: var(--color-ds-warning-ink);
+}
+.admin-closer-look .admin-assessment > div:nth-child(2) > p:nth-child(2) {
+  letter-spacing: -0.5px;
+}
+.admin-ui .admin-empty > h2 {
+  font-size: 17px;
+  line-height: 21px;
+  font-weight: 600;
+}
+.admin-ui .admin-empty > p {
+  font-size: 14px;
+  line-height: 17px;
+  font-weight: 400;
+}
+.admin-ui .admin-empty-approvals,
+.admin-ui .admin-empty-applications {
+  min-height: calc(100dvh - 245px);
+  justify-content: center;
+}
+.admin-ui .admin-card-actions > * {
+  max-width: 100%;
+}
+.admin-ui .admin-card-actions {
+  flex-wrap: wrap;
+}
+.admin-ui .admin-assessment > div:nth-child(2) > .swap,
+.admin-ui .admin-assessment > div:nth-child(2) > p:nth-child(2) {
+  margin-top: 16px;
+}
+.admin-ui .admin-pool-stat {
+  border-radius: 20px;
+  min-height: 122px;
+}
+.admin-pool-stat::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--color-ds-ink) 4.5%, transparent) 1.5px,
+    transparent 1.5px
+  );
+  background-size: 16px 16px;
+}
+.admin-pool-stat:first-child::before {
+  display: none;
+}
+.admin-ui .admin-pool-stat > p:first-child {
+  min-height: 26px;
+}
+.admin-ui .admin-pool-stat > p:first-child svg {
+  box-sizing: content-box;
+  padding: 6px;
+  border-radius: 50%;
+  background: var(--color-ds-canvas);
+  color: var(--color-ds-ink-2);
+}
+.admin-ui .admin-pool-stat:first-child > p:first-child svg {
+  background: color-mix(in srgb, var(--color-ds-bg) 50%, transparent);
+}
+.admin-ui .admin-pool-stat:first-child > p {
+  color: var(--color-ds-brand-ink);
+}
+.admin-ui .admin-pool-stat > .swap {
+  flex-wrap: wrap;
+  letter-spacing: -0.5px;
+}
+.admin-ui .admin-pool-stat .swap > span {
+  letter-spacing: normal;
+  color: var(--color-ds-muted);
+}
+.admin-ui .admin-pool-stat:first-child .swap > span {
+  color: var(--color-ds-brand-ink);
+}
+.admin-pool .admin-investor-row p:first-child,
+.admin-pool .admin-investor-row .swap,
+.admin-pool .admin-pool-activity .swap,
+.admin-pool .admin-pool-activity > div:last-child > div > div > p:first-child,
+.admin-pool .admin-pool-limits > div:last-child p:first-child,
+.admin-pool .admin-pool-limits > div:last-child > div > p {
+  font-weight: 600;
+}
+.admin-pool .admin-investor-row .swap > span,
+.admin-pool .admin-pool-activity .swap > span {
+  font-weight: 600;
+}
+.admin-pool .admin-pool-activity > div:last-child > div > div {
+  flex: 1;
+}
+.admin-pool .admin-empty {
+  min-height: 0;
+  padding: 32px 16px;
+  gap: 8px;
+}
+.admin-pool .admin-empty > span {
+  background: var(--color-ds-brand-soft);
+  color: var(--color-ds-brand-deep);
+}
+.admin-pool .admin-empty > h2 {
+  font-size: 16px;
+  line-height: 20px;
+}
+.admin-pool .admin-empty > p {
+  font-size: 13px;
+  line-height: 16px;
+}
+.admin-sheet {
+  border-radius: 24px;
+  padding: 24px;
+  gap: 16px;
+}
+.admin-sheet > div:nth-child(2) h2 {
+  font-size: 22px;
+  line-height: 27px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.admin-sheet > div:nth-child(2) > button {
+  width: 24px;
+  height: 24px;
+  background: transparent;
+}
+.admin-sheet > div:nth-child(2) > button:focus-visible {
+  outline-width: 2px;
+  outline-offset: 2px;
+  box-shadow: none;
+}
+.admin-sheet > div:nth-child(2) > button:focus-visible::after {
+  display: none;
+}
+.admin-sheet-limit > div:nth-child(2) h2,
+.admin-sheet-pause > div:nth-child(2) h2 {
+  font-size: 20px;
+  line-height: 24px;
+}
+.admin-sheet .admin-sheet-subtitle {
+  margin-top: -12px;
+}
+.admin-sheet .admin-note textarea {
+  font-weight: 400;
+}
+.admin-sheet .admin-sheet-actions {
+  gap: 10px;
+}
+.admin-sheet .admin-sheet-actions > button:last-child {
+  height: 48px;
+}
+.admin-sheet-decision .admin-decision-option input[type="radio"] {
+  width: 20px;
+  height: 20px;
+}
+.admin-sheet-decision .admin-decision-option > div {
+  margin-top: 10px;
+}
+.admin-sheet-decision .admin-decision-option .admin-note textarea {
+  background: var(--color-ds-bg);
+}
+.admin-sheet-vote .admin-note textarea {
+  height: 96px;
+}
+.admin-sheet-limit .admin-note textarea {
+  height: 72px;
+  min-height: 72px;
+}
+.admin-sheet-decision .admin-note textarea {
+  height: 76px;
+  min-height: 76px;
+  border-radius: 12px;
+}
+.admin-sheet-decision {
+  gap: 18px;
+  border-radius: 28px;
+}
+.admin-sheet-decision .admin-decision-option {
+  padding: 14.5px;
+}
+.admin-sheet-decision .admin-limit-field {
+  gap: 6px;
+}
+.admin-sheet-decision .admin-limit-field > label {
+  font-weight: 400;
+  color: var(--color-ds-ink-2);
+}
+.admin-sheet-decision .admin-limit-field > div {
+  height: 46px;
+  border-radius: 12px;
+  padding-inline: 14px;
+  background: var(--color-ds-bg);
+  border-color: transparent;
+}
+.admin-sheet-decision .admin-limit-field > div:has(:focus-visible) {
+  border-color: var(--color-ds-ink);
+}
+.admin-sheet-decision .admin-limit-field > div:has([aria-invalid="true"]) {
+  border-color: var(--color-ds-danger);
+}
+.admin-sheet-decision .admin-limit-field input {
+  font-size: 18px;
+  font-weight: 600;
+}
+.admin-sheet-decision .admin-decision-option input[type="radio"] {
+  appearance: none;
+  border: 1.5px solid var(--color-ds-line-strong);
+  border-radius: 50%;
+  background: var(--color-ds-bg);
+}
+.admin-sheet-decision .admin-decision-option input[type="radio"]:checked {
+  border-color: var(--color-ds-ink);
+  background: radial-gradient(circle, var(--color-ds-brand) 0 4px, var(--color-ds-ink) 4px);
+}
+.admin-sheet-decision .admin-decision-rejected input[type="radio"]:checked {
+  border: 0;
+  background: radial-gradient(circle, var(--color-ds-bg) 0 4px, var(--color-ds-danger) 4px);
+}
+.admin-sheet-decision .admin-decision-rejected > div {
+  margin-top: 12px;
+  gap: 12px;
+}
+.admin-sheet-decision .admin-decision-rejected fieldset {
+  gap: 0;
+}
+.admin-sheet-decision .admin-decision-rejected .admin-note {
+  font-size: 13px;
+  line-height: 16px;
+  gap: 12px;
+}
+.admin-ui[data-state="M2.2"] .admin-tabs {
+  background: var(--color-ds-bg);
+}
+.admin-ui[data-state="M2.2"] .admin-tabs [aria-selected="true"] > span {
+  background: var(--color-ds-brand);
+  color: var(--color-ds-ink);
+}
+.admin-ui[data-state="M2.2"] .admin-tabs [aria-selected="false"] > span {
+  background: var(--color-ds-canvas);
+}
+.admin-ui main > div > header h1 {
+  font-size: 30px;
+  line-height: 32px;
+  letter-spacing: -0.03em;
+}
+.admin-ui main > div > header p {
+  font-size: 14px;
+  line-height: 17px;
+  font-weight: 400;
+}
+.admin-approvals .approval-proposal,
+.admin-approvals .approval-team,
+.admin-approvals .approval-recent {
+  border-radius: 24px;
+}
+.admin-approvals .approval-team > div:first-child > p {
+  font-size: 14px;
+  line-height: 17px;
+  font-weight: 400;
+}
+.admin-approvals .approval-member {
+  min-height: 60px;
+}
+.admin-approvals .approval-member > div > p:first-child,
+.admin-approvals .approval-recent-row p:first-child {
+  font-size: 15px;
+  line-height: 18px;
+  font-weight: 500;
+}
+.admin-approvals .approval-member > div > p:last-child,
+.admin-approvals .approval-recent-row p:last-child {
+  margin-top: 2px;
+  font-size: 13px;
+  line-height: 16px;
+  font-weight: 400;
+}
+.admin-approvals .approval-member > span:last-child,
+.admin-approvals .approval-recent-row > a {
+  font-size: 13px;
+  line-height: 16px;
+}
+.admin-approvals .approval-recent > div:first-child h2 {
+  font-size: 17px;
+  line-height: 21px;
+  font-weight: 600;
+}
+.admin-approvals .approval-recent-row {
+  min-height: 60px;
+}
+.admin-approvals .approval-actions > button {
+  width: 100%;
+}
+.admin-ui > div > header {
+  height: 57px;
+  padding: 8px 4px;
+}
+.admin-ui > div > header img[alt="Waybil"] {
+  height: 41px;
+  width: 146px;
+}
+.admin-ui > div > header img[alt="Risk lead"] {
+  width: 40px;
+  height: 40px;
+}
+@media (min-width: 768px) {
+  .admin-sheet {
+    width: 520px;
+  }
+  .admin-ui .admin-pool-stat {
+    min-height: 138px;
+  }
+  .admin-ui main > div > header h1 {
+    font-size: 40px;
+    line-height: 42px;
+  }
+  .admin-approvals .approval-actions > button {
+    width: auto;
+  }
+  .admin-approvals .approval-footer > div:first-child {
+    min-height: 48px;
+  }
+}
+@media (max-width: 767px) {
+  .admin-sheet {
+    border-radius: 28px 28px 0 0;
+  }
+  .admin-sheet-vote,
+  .admin-sheet-decision {
+    gap: 18px;
+  }
+  .admin-ui main > div {
+    gap: 16px;
+  }
+  .admin-ui .admin-detail-grid {
+    gap: 24px;
+  }
+  .admin-ui .admin-fact {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .admin-ui .admin-fact > span:last-child {
+    text-align: left;
+  }
+  .admin-ui .admin-assessment > div:first-child {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .admin-ui .admin-application-decision {
+    display: none;
+  }
+  .admin-ui .admin-manage-actions > button {
+    width: 100%;
+  }
+  .admin-ui .admin-card-actions > div {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  .admin-ui .admin-pool-stats .swap {
+    font-size: 24px;
+    line-height: 29px;
+    gap: 4px;
+  }
+  .admin-ui .admin-investors > div:first-child {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .admin-ui .admin-investor-row {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+  .admin-ui .admin-pool-activity > div > div {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+  .admin-ui .admin-pool-limits > div > div {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .admin-ui .admin-pool-limits > div > div > p {
+    text-align: left;
+  }
+  .admin-ui .admin-empty-approvals {
+    min-height: 300px;
+  }
+  .admin-ui .admin-empty-applications {
+    min-height: calc(100dvh - 296px);
+  }
+  .admin-ui > div > nav[aria-label="Main"] > a {
+    flex: 1;
+    padding-inline: 6px;
+  }
+  .admin-approvals main > div {
+    gap: 16px;
+  }
+  .admin-approvals .approval-proposal-head > span {
+    align-self: flex-start;
+  }
+  .admin-approvals .approval-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
