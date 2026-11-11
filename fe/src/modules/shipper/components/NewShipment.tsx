@@ -1,14 +1,6 @@
 "use client";
 import { useEffect, useId, useRef, useState } from "react";
-import {
-  ArrowRight,
-  CaretLeft,
-  CaretRight,
-  MagnifyingGlass,
-  Plus,
-  UserPlus,
-  Warehouse,
-} from "@phosphor-icons/react";
+import { ArrowRight, Plus, UserPlus, Warehouse } from "@phosphor-icons/react";
 import { formatUsdc } from "@waybil/shared";
 import { Panel } from "@/components/layout/Panel";
 import { ActionSheet } from "@/components/layout/ActionSheet";
@@ -24,63 +16,10 @@ import { GateMap } from "@/components/elements/GateMap";
 import { cn } from "@/lib/cn";
 import { draftNumbers, DEMO_TODAY, type ShipmentDraft } from "../data/form";
 import type { ShipperState } from "../data/fixtures";
-
-/*
- * The draft is kept for this tab, so "Invite a new driver" and "See your credit" can leave
- * the form and come back to it. It is cleared once the shipment is approved.
- */
-const DRAFT_KEY = "waybil-shipper-draft-v1";
-const DRAFT_FIELDS = ["driver", "destination", "cargo", "fee", "due"] as const;
-function readDraft(): ShipmentDraft | undefined {
-  try {
-    const value: unknown = JSON.parse(sessionStorage.getItem(DRAFT_KEY) ?? "null");
-    if (!value || typeof value !== "object") return undefined;
-    const draft = value as Record<string, unknown>;
-    return DRAFT_FIELDS.every((key) => typeof draft[key] === "string")
-      ? (draft as unknown as ShipmentDraft)
-      : undefined;
-  } catch {
-    return undefined;
-  }
-}
-function saveDraft(draft: ShipmentDraft | undefined) {
-  try {
-    if (draft) sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-    else sessionStorage.removeItem(DRAFT_KEY);
-  } catch {
-    /* Without storage the draft only lives on this screen. */
-  }
-}
-
-const DRIVERS = [
-  /* The board draws Sam's avatar as "SC", so the avatar gets the full name. */
-  { name: "Sam", full: "Sam Carter", plate: "NWF-204", trips: 12 },
-  { name: "Jordan Lee", full: "Jordan Lee", plate: "JLE-118", trips: 4 },
-  { name: "Chris Novak", full: "Chris Novak", plate: "", trips: 0 },
-];
-const PLACES = [
-  {
-    name: "Harbor Hub",
-    street: "9 Pier Street",
-    address: "9 Pier Street, Harbor City",
-    meta: "Lena receives here · 8 trips",
-    linked: true,
-  },
-  {
-    name: "Riverton branch",
-    street: "40 River Road",
-    address: "40 River Road, Riverton",
-    meta: "Receiver not linked yet",
-    linked: false,
-  },
-  {
-    name: "Millbrook depot",
-    street: "12 Mill Lane",
-    address: "12 Mill Lane, Millbrook",
-    meta: "Chris receives here · 3 trips",
-    linked: true,
-  },
-];
+import { readDraft, saveDraft } from "../data/draft";
+import { DRIVERS, PLACES } from "../data/choices";
+import { FieldButton, SearchRow } from "./FormFields";
+import { DuePopup } from "./DueGrid";
 
 /* The board writes the chosen date and how far off it is: "Dec 11, 2026 · in 29 days". */
 function dueLabel(due: string) {
@@ -92,262 +31,6 @@ function dueLabel(due: string) {
   }).format(new Date(due));
   const days = Math.round((Date.parse(due) - Date.parse(DEMO_TODAY)) / 86400000);
   return `${date} · in ${days} days`;
-}
-
-function FieldButton({
-  label,
-  value,
-  hint,
-  onClick,
-  children,
-  disabled = false,
-  /** Nothing picked yet, so the board writes the prompt in grey. */
-  empty = false,
-  /** The list under it is open, so the board lifts the field to white with an ink border. */
-  open = false,
-}: {
-  label: string;
-  value: string;
-  hint?: string;
-  onClick?: () => void;
-  children?: React.ReactNode;
-  disabled?: boolean;
-  empty?: boolean;
-  open?: boolean;
-}) {
-  const field = useRef<HTMLDivElement>(null);
-  const id = useId();
-  useEffect(() => {
-    if (!open) return;
-    const close = (event: PointerEvent) => {
-      if (!field.current?.contains(event.target as Node)) onClick?.();
-    };
-    document.addEventListener("pointerdown", close);
-    return () => document.removeEventListener("pointerdown", close);
-  }, [open, onClick]);
-  return (
-    <div
-      ref={field}
-      data-field
-      className="relative flex min-w-0 flex-col gap-8"
-      onKeyDown={(event) => {
-        if (open && event.key === "Escape") {
-          event.stopPropagation();
-          onClick?.();
-          field.current?.querySelector("button")?.focus();
-        }
-      }}
-    >
-      <span id={`${id}-label`} className="text-label">
-        {label}
-      </span>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={onClick}
-        /* Read as the label and the chosen value, for example "Driver, Sam · NWF-204". */
-        aria-labelledby={`${id}-label ${id}-value`}
-        aria-describedby={hint ? `${id}-hint` : undefined}
-        aria-expanded={onClick ? open : undefined}
-        className={cn(
-          "tap focus-ring flex h-52 w-full items-center justify-between gap-10 rounded-[16px] border-[1.5px] px-16 text-left text-[16px]",
-          open
-            ? "border-ds-ink bg-ds-bg"
-            : "border-ds-canvas bg-ds-canvas hover:border-ds-canvas-hover hover:bg-ds-canvas-hover",
-        )}
-      >
-        <span id={`${id}-value`} className={cn("min-w-0 truncate", empty && "text-ds-muted")}>
-          {value}
-        </span>
-        <svg
-          aria-hidden
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="shrink-0 text-ds-muted"
-        >
-          <path d="m7 9 5-5 5 5M7 15l5 5 5-5" />
-        </svg>
-      </button>
-      {hint && (
-        <p id={`${id}-hint`} className="text-caption text-ds-muted">
-          {hint}
-        </p>
-      )}
-      {children}
-    </div>
-  );
-}
-
-/** The search line the board draws at the top of the driver and destination lists. */
-function SearchRow({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <>
-      <label className="flex h-38 shrink-0 items-center gap-10 px-10">
-        <MagnifyingGlass size={16} className="shrink-0 text-ds-muted" />
-        <span className="sr-only">{label}</span>
-        <input
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={label}
-          className="min-w-0 flex-1 bg-transparent text-[14.5px] text-ds-ink outline-none placeholder:text-ds-muted focus-visible:outline-none"
-        />
-      </label>
-      <span aria-hidden className="h-1 shrink-0 bg-ds-line" />
-    </>
-  );
-}
-
-/* The calendar shows November 2026 to January 2027. Today and anything past 60 days is off. */
-const DUE_FROM = "2026-11-01";
-const DUE_TO = "2027-01-31";
-const DAY_MS = 86400000;
-const addDays = (date: string, n: number) =>
-  new Date(Date.parse(date) + n * DAY_MS).toISOString().slice(0, 10);
-const dueBlocked = (date: string) => {
-  const distance = (Date.parse(date) - Date.parse(DEMO_TODAY)) / DAY_MS;
-  return distance <= 0 || distance > 60;
-};
-const WEEKDAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-const SPOKEN_DATE = new Intl.DateTimeFormat("en-US", {
-  weekday: "long",
-  month: "long",
-  day: "numeric",
-  year: "numeric",
-  timeZone: "UTC",
-});
-
-/*
- * The P2.4 month grid, built as an ARIA grid. Only one day is in the tab order. The arrows
- * move by a day or a week, Home and End go to the start and end of the week, Page Up and
- * Page Down change the month, and Enter or Space picks the day. Days that can't be picked
- * stay reachable but say they are unavailable. Moving between days never animates.
- */
-function DueGrid({
-  month,
-  due,
-  labelledBy,
-  onMonth,
-  onPick,
-}: {
-  month: string;
-  due: string;
-  labelledBy: string;
-  onMonth: (month: string) => void;
-  onPick: (date: string, from: HTMLElement) => void;
-}) {
-  const [year, monthIndex] = month.split("-").map(Number) as [number, number];
-  const first = (new Date(Date.UTC(year, monthIndex - 1, 1)).getUTCDay() + 6) % 7;
-  const days = new Date(Date.UTC(year, monthIndex, 0)).getUTCDate();
-  const dates = Array.from(
-    { length: days },
-    (_, i) => `${month}-${String(i + 1).padStart(2, "0")}`,
-  );
-  const [focused, setFocused] = useState<string | null>(null);
-  const grid = useRef<HTMLDivElement>(null);
-  /* Set by a key press, so the day that becomes tabbable also takes focus once drawn. */
-  const moved = useRef(false);
-  const inMonth = (date: string | null): date is string => !!date && date.startsWith(month);
-  const tabbable =
-    (inMonth(focused) && focused) ||
-    (inMonth(due) && due) ||
-    dates.find((date) => !dueBlocked(date)) ||
-    dates[0]!;
-  useEffect(() => {
-    if (!moved.current) return;
-    moved.current = false;
-    grid.current?.querySelector<HTMLElement>(`[data-date="${tabbable}"]`)?.focus();
-  });
-  const moveTo = (date: string) => {
-    const next = date < DUE_FROM ? DUE_FROM : date > DUE_TO ? DUE_TO : date;
-    moved.current = true;
-    setFocused(next);
-    if (!next.startsWith(month)) onMonth(next.slice(0, 7));
-  };
-  /* The same day in another month, or that month's last day when it is shorter. */
-  const shiftMonth = (date: string, delta: number) => {
-    const [y, m, d] = date.split("-").map(Number) as [number, number, number];
-    const last = new Date(Date.UTC(y, m + delta, 0)).getUTCDate();
-    return new Date(Date.UTC(y, m - 1 + delta, Math.min(d, last))).toISOString().slice(0, 10);
-  };
-  const cells: (string | null)[] = [...Array<null>(first).fill(null), ...dates];
-  while (cells.length % 7) cells.push(null);
-  const weeks = Array.from({ length: cells.length / 7 }, (_, i) => cells.slice(i * 7, i * 7 + 7));
-  return (
-    <div ref={grid} role="grid" aria-labelledby={labelledBy} className="flex flex-col gap-y-2">
-      <div role="row" className="grid grid-cols-7 gap-x-4">
-        {["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map((day, i) => (
-          <span
-            key={day}
-            role="columnheader"
-            aria-label={WEEKDAYS[i]}
-            className="py-6 text-center text-[11.5px] text-ds-muted"
-          >
-            {day}
-          </span>
-        ))}
-      </div>
-      {weeks.map((week, w) => (
-        <div key={w} role="row" className="grid grid-cols-7 gap-x-4">
-          {week.map((date, i) => {
-            if (!date) return <span key={`blank${i}`} role="gridcell" />;
-            const blocked = dueBlocked(date);
-            const weekday = (new Date(date).getUTCDay() + 6) % 7;
-            return (
-              <div
-                key={date}
-                role="gridcell"
-                data-date={date}
-                tabIndex={date === tabbable ? 0 : -1}
-                aria-selected={due === date}
-                aria-disabled={blocked || undefined}
-                aria-label={`${SPOKEN_DATE.format(new Date(date))}${blocked ? ", not available" : ""}`}
-                className={cn(
-                  /* The hit area reaches 40 px tall without making the day bigger. */
-                  "focus-ring grid h-34 place-items-center rounded-[10px] text-label font-normal before:absolute before:inset-x-0 before:-inset-y-3",
-                  blocked ? "opacity-25" : "tap",
-                  due === date ? "bg-ds-brand font-semibold" : !blocked && "hover:bg-ds-canvas",
-                )}
-                onClick={(event) => {
-                  if (!blocked) onPick(date, event.currentTarget);
-                }}
-                onKeyDown={(event) => {
-                  const key = event.key;
-                  if (key === "ArrowLeft") moveTo(addDays(date, -1));
-                  else if (key === "ArrowRight") moveTo(addDays(date, 1));
-                  else if (key === "ArrowUp") moveTo(addDays(date, -7));
-                  else if (key === "ArrowDown") moveTo(addDays(date, 7));
-                  else if (key === "Home") moveTo(addDays(date, -weekday));
-                  else if (key === "End") moveTo(addDays(date, 6 - weekday));
-                  else if (key === "PageUp") moveTo(shiftMonth(date, -1));
-                  else if (key === "PageDown") moveTo(shiftMonth(date, 1));
-                  else if (key === "Enter" || key === " ") {
-                    if (!blocked) onPick(date, event.currentTarget);
-                  } else return;
-                  event.preventDefault();
-                }}
-              >
-                {Number(date.slice(8))}
-              </div>
-            );
-          })}
-        </div>
-      ))}
-    </div>
-  );
 }
 
 export function NewShipment({
@@ -398,7 +81,6 @@ export function NewShipment({
     setSearch("");
     go("P2.1");
   };
-  const [year, monthIndex] = month.split("-").map(Number) as [number, number];
   const dueId = useId();
   /* Picking a date closes the calendar, so focus goes back to the Due date field. */
   const pickDue = (date: string, from: HTMLElement) => {
@@ -443,10 +125,6 @@ export function NewShipment({
       : "Once approved, the fee and due date can’t be changed.";
   /* The board darkens that note while the wallet waits, because it is now an instruction. */
   const noteTone = state === "P2.7" ? "text-ds-ink" : "text-ds-muted";
-  const changeMonth = (delta: number) => {
-    const d = new Date(Date.UTC(year, monthIndex - 1 + delta, 1));
-    setMonth(d.toISOString().slice(0, 7));
-  };
 
   return (
     <>
@@ -635,63 +313,14 @@ export function NewShipment({
               onClick={() => go(state === "P2.4" ? "P2.1" : "P2.4")}
             >
               {state === "P2.4" && (
-                <div className={cn(popup, "gap-14 p-16")}>
-                  <div className="flex gap-8">
-                    {[30, 45, 60].map((days) => (
-                      <button
-                        key={days}
-                        className="tap focus-ring h-32 flex-1 rounded-full bg-ds-canvas text-label before:absolute before:inset-x-0 before:-inset-y-4 hover:bg-ds-canvas-hover"
-                        onClick={(event) =>
-                          pickDue(
-                            new Date(Date.parse(DEMO_TODAY) + days * 86400000)
-                              .toISOString()
-                              .slice(0, 10),
-                            event.currentTarget,
-                          )
-                        }
-                      >
-                        {days} days
-                      </button>
-                    ))}
-                  </div>
-                  {/* The board hangs the two arrows on the card's padding edge, so the
-                      tap target's own padding is pulled back out. */}
-                  <div className="-mx-11 -my-11 flex items-center justify-between">
-                    <button
-                      aria-label="Previous month"
-                      className="press focus-ring rounded-small p-8 text-ds-ink disabled:text-ds-muted"
-                      disabled={month <= "2026-11"}
-                      onClick={() => changeMonth(-1)}
-                    >
-                      <CaretLeft size={18} />
-                    </button>
-                    <span id={`${dueId}-month`} className="text-[14px] font-medium">
-                      {new Intl.DateTimeFormat("en-US", {
-                        month: "long",
-                        year: "numeric",
-                        timeZone: "UTC",
-                      }).format(new Date(`${month}-01`))}
-                    </span>
-                    <button
-                      aria-label="Next month"
-                      className="press focus-ring rounded-small p-8 text-ds-ink disabled:text-ds-muted"
-                      disabled={month >= "2027-01"}
-                      onClick={() => changeMonth(1)}
-                    >
-                      <CaretRight size={18} />
-                    </button>
-                  </div>
-                  <DueGrid
-                    month={month}
-                    due={draft.due}
-                    labelledBy={`${dueId}-month`}
-                    onMonth={setMonth}
-                    onPick={(date, from) => pickDue(date, from)}
-                  />
-                  <p className="text-caption text-ds-muted">
-                    Paying later than 60 days needs a talk with us.
-                  </p>
-                </div>
+                <DuePopup
+                  className={cn(popup, "gap-14 p-16")}
+                  month={month}
+                  due={draft.due}
+                  labelId={`${dueId}-month`}
+                  onMonth={setMonth}
+                  onPick={pickDue}
+                />
               )}
             </FieldButton>
           </div>

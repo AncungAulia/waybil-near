@@ -4,6 +4,11 @@ Issue #31. The 23 M1–M3 states live in `components/AdminScreen.tsx` with share
 and Pool fixtures in `data/fixtures.ts`. Routes are `/admin`, `/admin/shippers`,
 `/admin/shippers/[account]` and `/admin/pool`.
 
+`AdminScreen` owns the demo state. Its panels and its one sheet (`AdminSheet`) live in
+`components/demo/`. The live team screens (`LiveAdmin`) live in `components/live/`, with their
+loaders and small states in `live/shared.tsx`. `components/AdminParts.tsx` holds the badge,
+tiles, fact row and empty state that both use.
+
 `components/AdminActionFields.tsx` contains the approval, rejection, limit and pause
 forms. `components/admin.css` scopes the design layouts to the Admin role and its dialogs.
 

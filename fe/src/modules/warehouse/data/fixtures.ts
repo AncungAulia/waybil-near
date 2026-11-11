@@ -30,3 +30,26 @@ export const WAREHOUSE_FIXTURES = Object.fromEntries(
     ),
   ]),
 ) as Record<WarehouseState, Shipment>;
+
+/** The code the board types for W2.10 (one wrong character) and the half-typed W2.9 code. */
+export const MISMATCHED_CODE = "7K2Q9F4N";
+export const PARTIAL_CODE = "7K2Q9F";
+/** What Lena reports by default. */
+export const DEFAULT_REASONS = ["Damaged"];
+export const DEFAULT_GOOD_QTY = "112";
+export const DEFAULT_REPORT_NOTE = "8 crates arrived wet, 4 of them torn open.";
+/** The trucks expected today, as driver, shipment and arrival time. */
+export const EXPECTED_ARRIVALS = [
+  ["Sam · from Eastport", "#1041 · 120 crates of coffee · Northwind", "in 1 h 20 min"],
+  ["Jordan Lee · from Riverton", "#1047 · 80 sacks of sugar · Blue Ridge", "in 2 h 40 min"],
+  ["Chris Novak · from Millbrook", "#1050 · 40 crates of eggs · Northwind", "Not left yet"],
+] as const;
+/** Sam's arrival time once the truck is almost here (W1.2). */
+export const ARRIVING_SOON = "in 5 min";
+/** Deliveries received at Harbor Hub, as id, from, driver, cargo, status and time. */
+export const HISTORY = [
+  ["1041", "Eastport", "Sam", "120 of 120 crates", "Confirmed", "Today, 15:36"],
+  ["1038", "Riverton", "Jordan Lee", "72 of 80 sacks", "Problem reported", "Nov 10, 11:02"],
+  ["1035", "Millbrook", "Chris Novak", "40 of 40 crates", "Confirmed", "Nov 9, 16:45"],
+  ["1030", "Eastport", "Sam", "100 of 100 sacks", "Confirmed", "Nov 7, 09:20"],
+] as const;

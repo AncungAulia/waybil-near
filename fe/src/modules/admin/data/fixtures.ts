@@ -75,3 +75,23 @@ export const ADMIN_FIXTURES = Object.fromEntries(
     },
   ]),
 ) as Record<AdminState, { pool: Pool; proposal: Proposal }>;
+/* The three team members of the demo. The logged-in person is Risk lead. */
+export const PEOPLE = [
+  { name: "Risk lead", account: "risk.waybil.testnet" },
+  { name: "Operations", account: "ops.waybil.testnet" },
+  { name: "Finance", account: "finance.waybil.testnet" },
+];
+export type ActiveCompany = { name: string; limit: string; owed: string; left: string };
+/** The credit numbers of an active demo company. Unknown accounts show Northwind. */
+export function activeCompanyFor(account: string): ActiveCompany {
+  return account === "blue-ridge.testnet"
+    ? { name: "Blue Ridge Logistics", limit: "1500000000", owed: "594000000", left: "906000000" }
+    : account === "atlas-cargo.testnet"
+      ? { name: "Atlas Cargo", limit: "1500000000", owed: "300000000", left: "1200000000" }
+      : {
+          name: "Northwind Freight Co.",
+          limit: "3000000000",
+          owed: "2400000000",
+          left: "600000000",
+        };
+}

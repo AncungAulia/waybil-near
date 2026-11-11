@@ -1,4 +1,11 @@
-import { billForDriverAmount, driverAmountForGoodUnits, type Shipment } from "@waybil/shared";
+import {
+  advanceFor,
+  billForDriverAmount,
+  driverAmountForGoodUnits,
+  FEE_BPS,
+  parseUsdc,
+  type Shipment,
+} from "@waybil/shared";
 import { demoShipment } from "@/lib/demo-delivery";
 
 export const DRIVER_STATES = {
@@ -93,3 +100,36 @@ export const DRIVER_TRIPS: Record<number, DriverTrip> = {
 };
 /** When the shipper cancelled the trip on the K2.14 board: Nov 12, 09:40 UTC. */
 export const DRIVER_CANCELLED_AT = Date.UTC(2026, 10, 12, 9, 40);
+
+/** Sam's on-the-road trip, and the second trip that waits for pickup. */
+export const MAIN_TRIP_ID = 1041;
+export const WESTFIELD_TRIP_ID = 1044;
+/* The Westfield trip's bill. What Sam gets comes from the shared fee split. */
+export const WESTFIELD_BILL = parseUsdc("210");
+export const WESTFIELD_ADVANCE = advanceFor(WESTFIELD_BILL).toString();
+/** The code under the Westfield QR, and how it is shown to the warehouse. */
+export const WESTFIELD_CODE = "WSTF1044";
+export const WESTFIELD_CODE_LABEL = "WSTF 1044";
+/** How the main trip's code is shown under its QR. */
+export const DEMO_CODE_LABEL = "7K2Q 9F4M";
+/* The driver's part of each bill, for example "97.5%". */
+export const DRIVER_PERCENT = `${Number(FEE_BPS.driver) / 100}%`;
+export const HARBOR_HUB_MAPS =
+  "https://www.google.com/maps/search/?api=1&query=Harbor+Hub+9+Pier+Street";
+/** What Sam got for #1041 when nothing was reported, in USDC base units. */
+export const MAIN_TRIP_PAYOUT = "292500000";
+/** Paid to Sam this month before #1041, and what was in the wallet then. */
+export const MONTH_PAID_BEFORE = 604500000n;
+export const WALLET_BEFORE = 992100000n;
+/** Sample payouts as id, city, date, amount in USDC base units and company. */
+export const PAYOUTS = [
+  ["1041", "Harbor City", "Nov 12", MAIN_TRIP_PAYOUT, "Northwind"],
+  ["1039", "Millbrook", "Nov 11", "117000000", "Northwind"],
+  ["1032", "Riverton", "Nov 8", "292500000", "Northwind"],
+  ["1027", "Oakdale", "Nov 1", "195000000", "Blue Ridge"],
+] as const;
+/** The companies Sam works with before Atlas Cargo's invite. */
+export const CONNECTED_COMPANIES = ["Northwind Freight Co.", "Blue Ridge"];
+/** The problem Sam reports from the road by default. */
+export const DEFAULT_PROBLEM = "Running late";
+export const DEFAULT_PROBLEM_NOTE = "Traffic jam near Pine Ridge. About 1 hour late.";

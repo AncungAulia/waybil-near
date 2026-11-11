@@ -1,36 +1,23 @@
 "use client";
 import { useState } from "react";
-import {
-  billForDriverAmount,
-  driverAmountForGoodUnits,
-  formatUsdc,
-  parseUsdc,
-  type Shipment,
-} from "@waybil/shared";
+import { driverAmountForGoodUnits, formatUsdc, parseUsdc, type Shipment } from "@waybil/shared";
 import { Panel } from "@/components/layout/Panel";
-import { ActionSheet } from "@/components/layout/ActionSheet";
 import { Button, ButtonLink } from "@/components/ui/Button";
-import { Input } from "@/components/ui/Input";
 import { Money } from "@/components/elements/Money";
 import { DemoMap } from "@/components/elements/DemoMap";
 import { DemoRecord } from "@/components/elements/DemoRecord";
-import { TimelineStep } from "@/components/elements/TimelineStep";
 import { KeyValue } from "@/components/elements/KeyValue";
 import { ShipperPayment } from "./ShipperPayment";
 import { StatusPill } from "@/components/elements/StatusPill";
 import {
   Check,
-  Pause,
   ArrowRight,
-  ArrowUUpLeft,
   Info,
   Wallet,
   ChatCircle,
   FileText,
-  ShieldCheck,
   Image as ImageIcon,
   WarningCircle,
-  X,
 } from "@phosphor-icons/react";
 import { useDemoReport, useDemoSettlement } from "@/hooks/useDemoDelivery";
 import { DEFAULT_REPORT, settleDemoReport } from "@/lib/demo-delivery";
@@ -42,7 +29,10 @@ import {
   type DemoShipmentRow,
   type ShipperState,
 } from "../data/fixtures";
-import { DEMO_NOW, demoMoment, dueSummary, millis, shortDate, timing } from "../data/dates";
+import { DEMO_NOW, dueSummary, millis, shortDate, timing } from "../data/dates";
+import { ShipperProgress } from "./detail/ShipperProgress";
+import { SettleSheet } from "./detail/SettleSheet";
+import { CancelSheet, ReportSheet, TalkSheet } from "./detail/DetailSheets";
 
 /* The board names each destination by its place, and the receiver who works there. */
 const PLACES: Record<string, { name: string; receiver?: string }> = {
@@ -379,135 +369,26 @@ export function ShipperDetail({
                 )}
               </Panel>
             )}
-            <Panel title="Progress" gap={4} titleClassName="text-[18px] leading-[1.2]">
-              {(cancelled
-                ? ["Approved by you", "Cancelled by you"]
-                : [
-                    "Approved by you",
-                    `Picked up by ${driver}`,
-                    `Arrived at ${place}`,
-                    settled
-                      ? `${driver} got ${formatUsdc(BigInt(preview ? "273000000" : settlement.amount))} USDC`
-                      : `${driver} paid early`,
-                    covered ? "Covered by the reserve" : "You repaid",
-                  ]
-              ).map((title, i, steps) => {
-                const completed =
-                  repaid || cancelled || covered
-                    ? steps.length
-                    : approved
-                      ? 1
-                      : road
-                        ? 2
-                        : held
-                          ? 3
-                          : 4;
-                const step =
-                  settled && i === 4
-                    ? "next"
-                    : i < completed
-                      ? "done"
-                      : i === completed
-                        ? held
-                          ? "paused"
-                          : "current"
-                        : "next";
-                const times = cancelled
-                  ? ["Nov 12 · 08:02", cancelledAt ? demoMoment(cancelledAt) : "Nov 12 · 09:40"]
-                  : [
-                      "Nov 12 · 08:02",
-                      approved ? "Waiting for pickup" : "Nov 12 · 09:14",
-                      road ? "About 1 h 20 min to go" : "Nov 12 · 15:36",
-                      held
-                        ? "On hold"
-                        : settled
-                          ? "Nov 13 · 10:20"
-                          : `Nov 12 · 15:37 · ${formatUsdc(BigInt(shipment.advance))} USDC`,
-                      covered
-                        ? `${shortDate(coveredAt)} · team approval`
-                        : repaid
-                          ? `${shortDate(repaidAt ?? due)} · ${formatUsdc(BigInt(bill))} USDC`
-                          : `Due ${shortDate(due)}`,
-                    ];
-                return (
-                  <div
-                    key={title}
-                    /* The board joins the dots with a 2 px line, ink once the step is done. */
-                    className={cn(
-                      "relative py-10 after:absolute after:top-38 after:left-11 after:w-2 after:rounded-[1px]",
-                      i === steps.length - 1
-                        ? "after:hidden"
-                        : i <= completed
-                          ? "after:h-27"
-                          : "after:h-16",
-                      step === "done" && !(settled && i === 3)
-                        ? "after:bg-ds-ink"
-                        : "after:bg-ds-line-strong",
-                    )}
-                  >
-                    {covered && i === 4 ? (
-                      /* The reserve paid the pool back, so the step is done but marked in warning. */
-                      <div className="flex items-start gap-14">
-                        <span className="grid size-24 shrink-0 place-items-center rounded-full bg-ds-warning text-white">
-                          <ShieldCheck size={13} weight="bold" />
-                        </span>
-                        <span className="flex min-w-0 flex-col gap-2">
-                          <span className="text-[14.5px] leading-[1.2] font-medium">{title}</span>
-                          <span className="text-[12.5px] leading-[1.2] text-ds-muted">
-                            {times[i]}
-                          </span>
-                        </span>
-                      </div>
-                    ) : settled && i === 3 ? (
-                      <div className="flex items-start gap-14">
-                        <span className="grid size-24 shrink-0 place-items-center rounded-full bg-ds-check-soft text-ds-check-ink">
-                          <Pause size={12} weight="bold" />
-                        </span>
-                        <span className="flex min-w-0 flex-col gap-2">
-                          <span className="text-[14.5px] leading-[1.2] font-medium">{title}</span>
-                          <span className="text-[12.5px] leading-[1.2] text-ds-check-ink">
-                            {times[i]}
-                          </span>
-                        </span>
-                      </div>
-                    ) : (
-                      <TimelineStep
-                        className={cn(
-                          "w-full items-start [&>span:last-child>span]:leading-[1.2] [&>span:last-child>span:empty]:hidden",
-                          step === "next" && "[&>span:last-child>span:first-child]:font-normal",
-                          step === "paused" &&
-                            "[&>span:first-child]:bg-ds-danger-result [&>span:last-child>span:last-child]:text-ds-danger",
-                        )}
-                        state={step}
-                        title={title}
-                        time={i <= completed && !(settled && i === 4) ? (times[i] ?? "") : ""}
-                      />
-                    )}
-                  </div>
-                );
-              })}
-              {approved && state !== "P3.11" && (
-                <button
-                  type="button"
-                  className="link focus-ring -mt-6 -mb-12 flex items-center gap-6 self-start rounded-small py-12 text-[13px] font-semibold text-ds-danger hover:text-ds-ink"
-                  onClick={() => go("P3.11")}
-                >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    aria-hidden="true"
-                  >
-                    <path d="m18 6-12 12M6 6l12 12" />
-                  </svg>
-                  Cancel shipment
-                </button>
-              )}
-            </Panel>
+            <ShipperProgress
+              state={state}
+              shipment={shipment}
+              go={go}
+              driver={driver}
+              place={place}
+              bill={bill}
+              driverGot={preview ? "273000000" : settlement.amount}
+              due={due}
+              repaidAt={repaidAt}
+              coveredAt={coveredAt}
+              cancelledAt={cancelledAt}
+              approved={approved}
+              road={road}
+              held={held}
+              settled={settled}
+              repaid={repaid}
+              cancelled={cancelled}
+              covered={covered}
+            />
             {covered && (
               <div className="flex flex-col gap-4 rounded-[14px] bg-ds-canvas px-16 py-14">
                 <h2 className="text-[14.5px] font-medium">New shipments are paused</h2>
@@ -543,255 +424,43 @@ export function ShipperDetail({
         </div>
       </div>
       {state === "P3.7" && (
-        <ActionSheet
-          title="Problem report"
-          subtitle={`From ${receiver ? `${receiver} at ` : ""}${place} · Nov 12, 15:31`}
-          appearance="shipment"
-          wide
-          className="gap-18 [&_h2]:text-[22px]"
-          onClose={() => go(back)}
-        >
-          <div className="grid grid-cols-3 gap-8">
-            {report.photos.length
-              ? report.photos.map((p, i) => (
-                  <img
-                    key={p.name + i}
-                    src={p.src}
-                    alt={p.name}
-                    className="h-120 w-full rounded-small object-cover"
-                  />
-                ))
-              : [1, 2, 3].map((i) => (
-                  <span
-                    key={i}
-                    className="grid h-120 place-items-center rounded-[16px] bg-ds-canvas"
-                  >
-                    <ImageIcon size={24} className="text-ds-muted" />
-                  </span>
-                ))}
-          </div>
-          <div className="grid grid-cols-3 gap-8">
-            {[
-              ["Expected", shipment.qty],
-              ["In good shape", report.goodQty],
-              ["Damaged", shipment.qty - report.goodQty],
-            ].map(([label, count]) => (
-              <div key={label} className="rounded-[14px] bg-ds-canvas px-14 py-12">
-                <p className="text-caption text-ds-muted">{label}</p>
-                <p
-                  className={cn(
-                    "mt-2 text-[16px] font-semibold",
-                    label === "Damaged" && "text-ds-danger",
-                  )}
-                >
-                  {count} {shipment.unit}
-                </p>
-              </div>
-            ))}
-          </div>
-          <div className="flex flex-col gap-6">
-            <p className="text-[13px] text-ds-muted">
-              {receiver ? `${receiver}'s note` : "The receiver's note"}
-            </p>
-            <p className="text-body">&ldquo;{report.note}&rdquo;</p>
-          </div>
-          <DemoRecord
-            title="Report recorded"
-            className="rounded-[18px] px-16 py-12 [&>span:first-child]:size-32 [&>span:first-child>svg]:size-16 [&>span:nth-child(2)>span:first-child]:font-semibold"
-          />
-          <div className="flex flex-wrap justify-end gap-10 [&_button]:text-[15px]">
-            <Button variant="quiet" onClick={() => go(back)}>
-              Close
-            </Button>
-            {back !== "P3.9" && (
-              <Button icon={<ArrowRight size={17} />} onClick={() => go("P3.8")}>
-                Choose what to pay
-              </Button>
-            )}
-          </div>
-        </ActionSheet>
+        <ReportSheet
+          shipment={shipment}
+          report={report}
+          place={place}
+          receiver={receiver}
+          back={back}
+          go={go}
+        />
       )}
       {(state === "P3.8" || state === "P3.10") && (
-        <ActionSheet
-          title={`How much should ${driver} get?`}
-          appearance="shipment"
-          className={cn(
-            "md:w-520",
-            state === "P3.10" && "max-h-[calc(100dvh-16px)] gap-10 p-16 md:w-560",
-          )}
-          onClose={() => go("P3.6")}
-          subtitle={
-            state === "P3.10"
-              ? `Agree on the amount with ${driver} first.`
-              : `${place} counted ${report.goodQty} good ${unit} out of ${shipment.qty}.`
-          }
-        >
-          <div
-            role="radiogroup"
-            aria-label="How do you want to settle it?"
-            className={cn("flex flex-col gap-10", state === "P3.10" && "gap-8")}
-          >
-            {[
-              {
-                id: "arrived",
-                title: "Pay for what arrived",
-                body: `${driver} gets ${formatUsdc(arrivedAmount)} USDC for ${report.goodQty} of ${shipment.qty} ${unit}. Your bill becomes ${formatUsdc(billForDriverAmount(arrivedAmount))} USDC.`,
-              },
-              {
-                id: "full",
-                title: "Pay in full",
-                body: `${driver} gets ${formatUsdc(BigInt(shipment.advance))} USDC. Your bill stays ${formatUsdc(BigInt(shipment.bill))} USDC.`,
-              },
-              {
-                id: "different",
-                title: "Pay a different amount",
-                body: `Agree on it with ${driver} first and add a short reason.`,
-              },
-            ].map((o) => (
-              <div
-                key={o.id}
-                className={cn(
-                  "rounded-[16px] border-[1.5px] p-16",
-                  state === "P3.10" && "p-10",
-                  choice === o.id
-                    ? "border-ds-ink bg-ds-brand-soft"
-                    : "border-transparent bg-ds-canvas",
-                )}
-              >
-                <label className="flex cursor-pointer items-start gap-12">
-                  <input
-                    type="radio"
-                    name="settlement"
-                    checked={choice === o.id}
-                    className="peer sr-only"
-                    onChange={() => {
-                      setChoice(o.id);
-                      go(o.id === "different" ? "P3.10" : "P3.8");
-                    }}
-                  />
-                  <span
-                    aria-hidden
-                    className={cn(
-                      "mt-1 grid size-20 shrink-0 place-items-center rounded-full border-[1.5px] peer-focus-visible:outline-2 peer-focus-visible:outline-offset-4 peer-focus-visible:outline-ds-ink",
-                      choice === o.id
-                        ? "border-ds-ink bg-ds-ink"
-                        : "border-ds-line-strong bg-ds-bg",
-                    )}
-                  >
-                    {choice === o.id && <span className="size-8 rounded-full bg-ds-brand" />}
-                  </span>
-                  <span>
-                    <span className="block text-[15px] leading-[1.2] font-semibold">{o.title}</span>
-                    {!(o.id === "different" && choice === o.id) && (
-                      <span className="mt-3 block text-[13px] leading-[1.2] text-ds-ink-2">
-                        {o.body}
-                      </span>
-                    )}
-                  </span>
-                </label>
-                {o.id === "different" && choice === o.id && (
-                  <div className="mt-9 flex flex-col gap-6">
-                    <Input
-                      label={`${driver} gets`}
-                      value={amount}
-                      inputMode="decimal"
-                      suffix="USDC"
-                      className="gap-6 [&>div]:h-44 [&>label]:font-normal [&>label]:text-ds-ink-2 [&>div]:rounded-[12px] [&>div]:border-ds-ink [&>div]:bg-ds-bg [&>div]:px-14 [&>p]:text-ds-ink-2 [&_input]:text-[18px] [&_input]:font-semibold"
-                      onChange={(e) => setAmount(e.target.value)}
-                      error={
-                        !validCustom || custom > BigInt(shipment.advance)
-                          ? `Enter no more than ${formatUsdc(BigInt(shipment.advance))} USDC.`
-                          : undefined
-                      }
-                      hint={`${validCustom && custom <= BigInt(shipment.advance) ? `Your bill becomes ${formatUsdc(billForDriverAmount(custom))} USDC. ` : ""}It can't be more than ${formatUsdc(BigInt(shipment.advance))} USDC.`}
-                    />
-                    <label className="flex flex-col gap-6 text-[13px] text-ds-ink-2">
-                      Reason
-                      <textarea
-                        value={reason}
-                        onChange={(e) => setReason(e.target.value)}
-                        className="h-72 w-full resize-none md:h-64 rounded-[12px] border-[1.5px] border-transparent bg-ds-bg p-12 text-[13px] leading-[1.2] font-normal outline-none focus:border-ds-ink focus-visible:outline-none"
-                      />
-                    </label>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-          <p className="flex items-start gap-10 rounded-[14px] bg-ds-canvas p-14 text-[13px] leading-[1.2] font-normal text-ds-ink-2">
-            <Info size={18} className="mt-1 shrink-0" />
-            <span>
-              {driver} and the investors see your choice. The {shipment.qty - report.goodQty} wet{" "}
-              {unit} stay at {place} for you to collect.
-            </span>
-          </p>
-          {error && (
-            <p role="alert" className="text-label text-ds-danger">
-              {error}
-            </p>
-          )}
-          <div className="flex flex-wrap justify-end gap-10 [&_button]:text-[15px]">
-            <Button variant="quiet" onClick={() => go("P3.6")}>
-              Cancel
-            </Button>
-            <Button
-              icon={<Check size={17} weight="bold" />}
-              disabled={choice === "different" && !customValid}
-              onClick={acceptSettlement}
-            >
-              Confirm
-            </Button>
-          </div>
-        </ActionSheet>
+        <SettleSheet
+          state={state}
+          shipment={shipment}
+          report={report}
+          driver={driver}
+          place={place}
+          unit={unit}
+          arrivedAmount={arrivedAmount}
+          choice={choice}
+          setChoice={setChoice}
+          amount={amount}
+          setAmount={setAmount}
+          reason={reason}
+          setReason={setReason}
+          custom={custom}
+          validCustom={validCustom}
+          customValid={customValid}
+          error={error}
+          acceptSettlement={acceptSettlement}
+          go={go}
+        />
       )}
       {covered && talk && (
-        <ActionSheet
-          title="Talk to the Waybil team"
-          subtitle={`They will help you settle the ${formatUsdc(BigInt(bill))} USDC for shipment #${shipment.id}.`}
-          appearance="shipment"
-          onClose={() => setTalk(false)}
-        >
-          <p className="flex items-start gap-10 rounded-[14px] bg-ds-canvas p-16 text-[14px] leading-[1.45] text-ds-ink-2">
-            <ChatCircle size={18} className="mt-1 shrink-0 text-ds-ink" />
-            Our team will message you on WhatsApp today.
-          </p>
-          <div className="flex justify-end [&_button]:text-[15px]">
-            <Button variant="quiet" onClick={() => setTalk(false)}>
-              Close
-            </Button>
-          </div>
-        </ActionSheet>
+        <TalkSheet shipment={shipment} bill={bill} onClose={() => setTalk(false)} />
       )}
       {state === "P3.11" && (
-        <ActionSheet
-          title={`Cancel shipment #${shipment.id}?`}
-          subtitle={`${driver} hasn't picked it up yet.`}
-          appearance="shipment"
-          onClose={() => go("P3.1")}
-        >
-          <div className="flex flex-col gap-10 rounded-[14px] bg-ds-canvas p-16">
-            <p className="flex items-start gap-10 text-[13px] leading-[1.2] font-normal text-ds-ink-2">
-              <Wallet size={16} className="shrink-0 text-ds-ink-2" />
-              The {formatUsdc(BigInt(shipment.bill))} USDC goes back to your limit.
-            </p>
-            <p className="flex items-start gap-10 text-[13px] leading-[1.2] font-normal text-ds-ink-2">
-              <ChatCircle size={16} className="shrink-0 text-ds-ink-2" />
-              {driver} gets a WhatsApp message.
-            </p>
-            <p className="flex items-start gap-10 text-[13px] leading-[1.2] font-normal text-ds-ink-2">
-              <ArrowUUpLeft size={16} className="shrink-0 text-ds-ink-2" />
-              You can&apos;t undo this. You can make a new shipment anytime.
-            </p>
-          </div>
-          <div className="flex flex-wrap justify-end gap-10 [&_button]:text-[15px]">
-            <Button variant="quiet" onClick={() => go("P3.1")}>
-              Keep it
-            </Button>
-            <Button variant="danger" icon={<X size={17} />} onClick={onCancel}>
-              Cancel shipment
-            </Button>
-          </div>
-        </ActionSheet>
+        <CancelSheet shipment={shipment} driver={driver} go={go} onCancel={onCancel} />
       )}
     </>
   );

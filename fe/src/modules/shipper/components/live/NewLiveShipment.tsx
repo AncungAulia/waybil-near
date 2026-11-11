@@ -1,0 +1,191 @@
+"use client";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { advanceFor, formatUsdc, parseUsdc } from "@waybil/shared";
+import { UserPlus } from "@phosphor-icons/react";
+import { Panel } from "@/components/layout/Panel";
+import { Button, ButtonLink } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Money } from "@/components/elements/Money";
+import { WAYBIL_CONTRACT } from "@/lib/env";
+import { listShipmentsByShipper } from "@/lib/near";
+import { callContract } from "@/lib/wallet";
+import { creditUsed, dueAt, names, type LiveShipperData } from "../../data/live";
+import { Alert, failure, GAS, Meter } from "./shared";
+
+/* P2. */
+export function NewLiveShipment({ data, refresh }: { data: LiveShipperData; refresh: () => void }) {
+  const router = useRouter();
+  const { people, places } = names(data.invites);
+  const shipper = data.shipper!;
+  const [driver, setDriver] = useState(data.network.drivers[0] ?? "");
+  const [destination, setDestination] = useState(
+    data.network.destinations[0] ? String(data.network.destinations[0].id) : "",
+  );
+  const [qty, setQty] = useState("");
+  const [unit, setUnit] = useState("crates");
+  const [fee, setFee] = useState("");
+  const [due, setDue] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const day = (offset: number) =>
+    new Date(Date.now() + offset * 86400000).toISOString().slice(0, 10);
+  let bill = 0n;
+  try {
+    bill = /^\d+(\.\d{1,2})?$/.test(fee.trim()) ? parseUsdc(fee.trim()) : 0n;
+  } catch {
+    bill = 0n;
+  }
+  const free = BigInt(shipper.limit) - creditUsed(shipper);
+  const over = bill > free;
+  const qtyOk = /^\d+$/.test(qty) && Number(qty) > 0 && Number(qty) <= 0xffffffff;
+  const unitOk = /^[a-z]{1,20}$/i.test(unit.trim());
+  const dueOk = !!due && due > day(0) && due <= day(60);
+  const ready =
+    !!driver && !!destination && qtyOk && unitOk && bill > 0n && !over && dueOk && !shipper.paused;
+  const empty = data.network.drivers.length === 0 || data.network.destinations.length === 0;
+
+  async function approve() {
+    setBusy(true);
+    setError(null);
+    try {
+      const tx = await callContract(
+        WAYBIL_CONTRACT,
+        "create_shipment",
+        {
+          driver,
+          destination: Number(destination),
+          qty: Number(qty),
+          unit: unit.trim(),
+          bill: String(bill),
+          due_at: dueAt(due),
+        },
+        { gas: GAS },
+      );
+      /* The wallet gives only the hash, so the new id is the newest shipment now. */
+      const [newest] = (
+        await listShipmentsByShipper(data.account, {
+          from: Math.max(0, data.shipments.length - 5),
+          limit: 50,
+        })
+      ).sort((a, b) => b.id - a.id);
+      refresh();
+      router.push(newest ? `/shipper/shipments/${newest.id}?tx=${tx}` : "/shipper/shipments");
+    } catch (e) {
+      setError(failure(e));
+      setBusy(false);
+    }
+  }
+
+  return (
+    <>
+      <header>
+        <h1 className="text-title">New shipment</h1>
+        <p className="mt-6 text-label text-ds-muted">
+          You approve it now and pay the bill by the due date. The driver gets paid on arrival.
+        </p>
+      </header>
+      {empty ? (
+        <Panel className="grid min-h-240 place-content-center gap-12 text-center">
+          <p className="max-w-380 text-label text-ds-muted">
+            You need a driver and a destination in your network first.
+          </p>
+          <ButtonLink href="/shipper/network" className="mx-auto" icon={<UserPlus size={17} />}>
+            Open your network
+          </ButtonLink>
+        </Panel>
+      ) : (
+        <div className="grid items-start gap-24 lg:grid-cols-[minmax(0,1fr)_400px]">
+          <Panel title="Trip">
+            <label className="flex flex-col gap-8 text-label">
+              Driver
+              <select
+                className="focus-ring h-48 rounded-[14px] bg-ds-canvas px-12"
+                value={driver}
+                onChange={(e) => setDriver(e.target.value)}
+              >
+                {data.network.drivers.map((d) => (
+                  <option key={d} value={d}>
+                    {people[d] ?? d}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-8 text-label">
+              Destination
+              <select
+                className="focus-ring h-48 rounded-[14px] bg-ds-canvas px-12"
+                value={destination}
+                onChange={(e) => setDestination(e.target.value)}
+              >
+                {data.network.destinations.map((d) => (
+                  <option key={d.id} value={d.id}>
+                    {places[d.warehouse]?.name ?? d.warehouse}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="grid grid-cols-2 gap-12">
+              <Input
+                label="Quantity"
+                inputMode="numeric"
+                value={qty}
+                onChange={(e) => setQty(e.target.value)}
+                error={qty && !qtyOk ? "Enter a whole number above zero." : undefined}
+              />
+              <Input
+                label="Unit"
+                value={unit}
+                onChange={(e) => setUnit(e.target.value)}
+                error={!unitOk ? "Use one word, like crates." : undefined}
+              />
+            </div>
+            <Input
+              label="Bill"
+              suffix="USDC"
+              inputMode="decimal"
+              value={fee}
+              onChange={(e) => setFee(e.target.value)}
+              error={
+                over
+                  ? `That is over your limit. You have ${formatUsdc(free > 0n ? free : 0n)} USDC left.`
+                  : undefined
+              }
+            />
+            <Input
+              label="Due date"
+              type="date"
+              min={day(1)}
+              max={day(60)}
+              value={due}
+              onChange={(e) => setDue(e.target.value)}
+              hint="Up to 60 days from today."
+            />
+          </Panel>
+          <Panel title="Summary">
+            <div className="flex justify-between gap-12 text-label">
+              <span className="text-ds-muted">The driver gets on arrival</span>
+              <Money amount={String(advanceFor(bill))} />
+            </div>
+            <div className="flex justify-between gap-12 text-label">
+              <span className="text-ds-muted">You pay by the due date</span>
+              <Money amount={String(bill)} />
+            </div>
+            <Meter data={data} />
+            {shipper.paused && <Alert>The team paused new shipments for your company.</Alert>}
+            {error && <Alert>{error}</Alert>}
+            <Button
+              className="h-52 w-full justify-between"
+              disabled={!ready}
+              loading={busy}
+              loadingLabel="Waiting for wallet"
+              onClick={() => void approve()}
+            >
+              Approve shipment
+            </Button>
+          </Panel>
+        </div>
+      )}
+    </>
+  );
+}
