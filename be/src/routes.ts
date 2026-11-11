@@ -12,12 +12,19 @@ import { inviteRoutes } from "./modules/invites/invites.routes";
 import { RelayService } from "./modules/relay/relay.service";
 import { NearRelayer } from "./modules/relay/relay.provider";
 import { relayRoutes } from "./modules/relay/relay.routes";
+import { PrivateFiles } from "./lib/storage";
+import { Emails, ResendTransport } from "./lib/email";
+import { Applications } from "./modules/applications/applications.service";
+import { applicationRoutes } from "./modules/applications/applications.routes";
 
 export function createRoutes(deps: AppDeps) {
   const router = Router();
   const invites = new Invites(deps.store, deps.chain, deps.env.APP_URL);
   const leases = new DatabaseLeases(supabaseClient(deps.env));
   const provider = sdkProvider(deps.env);
+  const files = new PrivateFiles(supabaseClient(deps.env));
+  const emails = new Emails(deps.store, new ResendTransport(deps.env), leases);
+  const applications = new Applications(deps.store, deps.chain, files, emails, leases);
   const auth = new AuthService(
     deps.store,
     deps.chain,
@@ -29,6 +36,7 @@ export function createRoutes(deps: AppDeps) {
     new RecoveryKeys(deps.env.RECOVERY_ENCRYPTION_KEY),
   );
   router.use(authRoutes(deps, auth));
+  router.use(applicationRoutes(deps, applications));
   router.use(inviteRoutes(deps, invites, (accountId) => auth.subjectFor(accountId)));
   router.use(
     relayRoutes(

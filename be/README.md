@@ -83,3 +83,22 @@ integration is present. The per-account HTTP limiter is process-local; shared da
 request deduplication and nonce validation protect transaction submission across processes.
 The later deployment task must size the HTTP limit for its replica count. New dependency in
 #17 is borsh 2.0.0 for decoding the SDK schema. This branch depends on `be/16-auth`.
+
+## Applications and documents (#19)
+
+Apply migration 005. `POST /v1/applications` accepts the company fields in the API spec;
+`shippingSpend` is base units, not a decimal display string. Upload one multipart `file`
+with a `kind` of registration, bank_statement or tax_id. Only the first two are required.
+The server inspects file bytes, limits each upload to 2 MiB and records its SHA-256. Storage
+bucket `documents` is private. Links returned to the owner or team expire after 300 seconds.
+Document revisions retain their evidence; interrupted writes retain a cleanup record.
+
+Company edits and uploads are allowed in draft or needs_more. Submission becomes available
+when #20 connects the evaluator. Its absence returns 503; no fake assistant result is stored.
+Admin approval linkage verifies a matching StartShipper proposal and reconciles its actual
+execution. The backend does not vote. Set `EMAIL_API_KEY` and verified `EMAIL_FROM` for Resend
+notifications. Missing configuration leaves emails queued. Ambiguous sends stop automatic
+retry after 23 hours and require provider reconciliation. See decision 0009.
+
+Runtime dependencies added in #19 are multer and file-type; the Multer type package is a
+development dependency. File-type requires Node.js 22+. This branch depends on `be/17-relayer`.

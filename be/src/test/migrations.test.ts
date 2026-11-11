@@ -9,6 +9,9 @@ it("applies migrations with private domain tables and concurrent-update protecti
     await db.exec(
       "create role anon; create role authenticated; create role service_role bypassrls;",
     );
+    await db.exec(
+      "create schema storage; create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);",
+    );
     const dir = fileURLToPath(new URL("../../supabase/migrations/", import.meta.url));
     for (const file of (await readdir(dir)).filter((v) => v.endsWith(".sql")).sort())
       await db.exec(await readFile(`${dir}/${file}`, "utf8"));
