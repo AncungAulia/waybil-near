@@ -1,3 +1,5 @@
+import { DefinitiveTransactionError } from "../../lib/near-sdk";
+import { logError } from "../../lib/logger";
 import { createHash } from "node:crypto";
 import { encodeDelegateAction, type SignedDelegate } from "near-api-js";
 import type { Principal, RelayResponse, Shipment, Destination } from "@waybil/shared";
@@ -162,8 +164,10 @@ export class RelayService {
       status =
         (await this.provider.status(row.value.txHash)) ??
         (await this.provider.broadcast(row.value.bytes));
-    } catch {
-      return row;
+    } catch (error) {
+      logError("relay_reconcile", error, { txHash: row.value.txHash });
+      if (!(error instanceof DefinitiveTransactionError)) return row;
+      status = "failed";
     }
     if (status === "pending") return row;
     return this.store.replace("relay_requests", row.value.digest, row.version, {

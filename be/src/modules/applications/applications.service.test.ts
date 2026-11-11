@@ -136,3 +136,45 @@ it("rejects oversized uploads over HTTP and non-file bytes", async () => {
   expect(response.status).toBe(413);
   expect(response.body.error.code).toBe("E_TOO_LARGE");
 });
+
+it("allows concurrent read requests without competing for the application's write lease", async () => {
+  const { service, store } = setup();
+  const app = await service.create(profile(), sampleCompany);
+  await store.replace("applications", app.id, 0, {
+    ...app,
+    state: "in_review",
+  } satisfies Application);
+  const reads = await Promise.all(Array.from({ length: 8 }, () => service.mine(profile())));
+  expect(reads).toHaveLength(8);
+  expect(reads.every((r) => r.application.id === app.id)).toBe(true);
+});
+it("recovers a draft after team approval and allows refreshed papers", async () => {
+  const { service, store, view } = setup();
+  const app = await service.create(profile(), sampleCompany);
+  view.mockImplementation(async (method: string) =>
+    method === "is_member"
+      ? true
+      : method === "get_shipper"
+        ? { credit_limit: "100" }
+        : { id: 2, status: "Approved", kind: { StartShipper: { shipper: app.shipperId } } },
+  );
+  expect((await service.linkProposal(profile("admin"), app.id, 2)).state).toBe("approved");
+  await service.upload(profile(), app.id, "bank_statement", samplePng);
+  expect(
+    (await store.get<Application>("applications", app.id))!.value.documents.bank_statement,
+  ).toBeTruthy();
+});
+it("maps malformed multipart parsing failures to validation errors", async () => {
+  const deps = setup();
+  const p = profile();
+  await deps.store.insert("profiles", p.accountId, p);
+  const { token } = await deps.sessions.issue(p);
+  const app = createApp(deps, applicationRoutes(deps, deps.service));
+  const response = await request(app)
+    .post("/v1/applications/00000000-0000-4000-8000-000000000000/documents")
+    .auth(token, { type: "bearer" })
+    .set("Content-Type", "multipart/form-data; boundary=missing")
+    .send("invalid");
+  expect(response.status).toBe(400);
+  expect(response.body.error.code).toBe("E_VALIDATION");
+});

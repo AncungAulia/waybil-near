@@ -20,7 +20,15 @@ export class DatabaseLeases implements Leases {
       ttl_seconds: 300,
     });
     dbError(error);
-    if (!data) conflict();
+    if (!data) {
+      if (key.startsWith("signer:"))
+        throw new ApiException(
+          503,
+          "E_SIGNER_BUSY",
+          "Another request is being recorded. Please try again shortly.",
+        );
+      conflict();
+    }
     let lost = false;
     let renewal: Promise<void> | null = null;
     const guard = () => {

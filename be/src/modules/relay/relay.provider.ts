@@ -1,25 +1,15 @@
-import { createHash } from "node:crypto";
-import {
-  actions,
-  baseEncode,
-  decodeSignedTransaction,
-  encodeTransaction,
-  type Action,
-  type JsonRpcProvider,
-  type SignedDelegate,
-} from "near-api-js";
-import { UnknownTransactionError, UnknownTransactionOrReceiptError } from "near-api-js/rpc-errors";
+import { actions, type JsonRpcProvider, type SignedDelegate } from "near-api-js";
+import { signTx, txStatus, broadcastTx, outcome } from "../../lib/near-tx";
 import type { Env } from "../../config/env";
 import type { RelayResponse } from "@waybil/shared";
 import { sdkAccount, rpcCall } from "../../lib/near-sdk";
-type RpcTransactionResponse = Awaited<ReturnType<JsonRpcProvider["viewTransactionStatus"]>>;
 
 export interface RelayProvider {
   access(
     signed: SignedDelegate,
   ): Promise<{ nonce: bigint; height: bigint; receiver: string; methods: string[] }>;
-  prepare(signed: SignedDelegate): Promise<{ txHash: string; bytes: string }>;
   prepareLate?(id: number): Promise<{ txHash: string; bytes: string }>;
+  prepare(signed: SignedDelegate): Promise<{ txHash: string; bytes: string }>;
   broadcast(bytes: string): Promise<RelayResponse["status"]>;
   status(txHash: string): Promise<RelayResponse["status"] | null>;
 }
@@ -48,72 +38,24 @@ export class NearRelayer implements RelayProvider {
     });
   }
   async prepare(signed: SignedDelegate) {
-    return this.prepareActions(signed.delegateAction.senderId, [actions.signedDelegate(signed)]);
-  }
-  async prepareLate(id: number) {
-    return this.prepareActions(this.env.WAYBIL_CONTRACT, [
-      actions.functionCall("mark_late", { id }, 30000000000000n, 0n),
-    ]);
-  }
-  private async prepareActions(receiverId: string, calls: Action[]) {
-    return rpcCall(async () => {
-      const outer = await sdkAccount(
-        this.provider,
-        this.env.RELAYER_ACCOUNT,
-        this.env.RELAYER_PRIVATE_KEY,
-      ).createSignedTransaction({
-        receiverId,
-        actions: calls,
-      });
-      return {
-        txHash: baseEncode(
-          createHash("sha256").update(encodeTransaction(outer.transaction)).digest(),
-        ),
-        bytes: Buffer.from(encodeTransaction(outer)).toString("base64"),
-      };
-    });
-  }
-  async broadcast(bytes: string) {
-    return rpcCall(async () =>
-      this.result(
-        await this.provider.sendTransactionUntil(
-          decodeSignedTransaction(Buffer.from(bytes, "base64")),
-          "FINAL",
-        ),
-      ),
+    return signTx(
+      sdkAccount(this.provider, this.env.RELAYER_ACCOUNT, this.env.RELAYER_PRIVATE_KEY),
+      signed.delegateAction.senderId,
+      [actions.signedDelegate(signed)],
     );
   }
-  async status(txHash: string) {
-    try {
-      return this.result(
-        await this.provider.viewTransactionStatus({
-          txHash,
-          accountId: this.env.RELAYER_ACCOUNT,
-          waitUntil: "FINAL",
-        }),
-      );
-    } catch (error) {
-      if (
-        error instanceof UnknownTransactionError ||
-        error instanceof UnknownTransactionOrReceiptError
-      )
-        return null;
-      return rpcCall(async () => {
-        throw error;
-      });
-    }
+  async prepareLate(id: number) {
+    return signTx(
+      sdkAccount(this.provider, this.env.RELAYER_ACCOUNT, this.env.RELAYER_PRIVATE_KEY),
+      this.env.WAYBIL_CONTRACT,
+      [actions.functionCall("mark_late", { id }, 30000000000000n, 0n)],
+    );
   }
-  private result(result: RpcTransactionResponse): RelayResponse["status"] {
-    if (result.final_execution_status !== "FINAL") return "pending";
-    if (
-      (typeof result.status === "object" && "Failure" in result.status) ||
-      result.receipts_outcome.some(
-        (r) => typeof r.outcome.status === "object" && "Failure" in r.outcome.status,
-      )
-    )
-      return "failed";
-    return typeof result.status === "object" && "SuccessValue" in result.status
-      ? "confirmed"
-      : "pending";
+  async broadcast(bytes: string) {
+    return outcome(await broadcastTx(this.provider, bytes));
+  }
+  async status(txHash: string) {
+    const result = await txStatus(this.provider, this.env.RELAYER_ACCOUNT, txHash);
+    return result ? outcome(result) : null;
   }
 }

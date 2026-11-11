@@ -27,7 +27,10 @@ export interface EmailTransport {
   send(message: EmailMessage, id: string): Promise<string>;
 }
 export class EmailFailure extends Error {
-  constructor(public ambiguous: boolean) {
+  constructor(
+    public ambiguous: boolean,
+    public retryable = ambiguous,
+  ) {
     super("Email delivery failed.");
   }
 }
@@ -61,7 +64,14 @@ export class ResendTransport implements EmailTransport {
     } catch {
       throw new EmailFailure(true);
     }
-    if (!response.ok) throw new EmailFailure(response.status >= 500 || response.status === 409);
+    if (!response.ok)
+      throw new EmailFailure(
+        response.status >= 500 || response.status === 409,
+        response.status >= 500 ||
+          response.status === 409 ||
+          response.status === 429 ||
+          response.status === 408,
+      );
     let data: { id?: string };
     try {
       data = (await response.json()) as { id?: string };
@@ -111,7 +121,9 @@ export class Emails {
       if (
         row.value.state === "sent" ||
         row.value.state === "uncertain" ||
-        row.value.error === "E_EMAIL_CANCELLED"
+        row.value.error === "E_EMAIL_CANCELLED" ||
+        row.value.error === "E_EMAIL_PERMANENT" ||
+        row.value.error === "E_EMAIL_RETRIES"
       )
         return row.value;
       if (!(await eligible())) return this.cancelRow(row);
@@ -128,8 +140,16 @@ export class Emails {
             error: "E_EMAIL_UNCERTAIN",
           })
         ).value;
-      const at = new Date(this.now()).toISOString();
+      if (row.value.attempts >= 5)
+        return (
+          await this.store.replace<EmailRecord>("email_log", id, row.version, {
+            ...row.value,
+            state: row.value.ambiguous || row.value.state === "sending" ? "uncertain" : "failed",
+            error: "E_EMAIL_RETRIES",
+          })
+        ).value;
       const previousAmbiguous = row.value.ambiguous || row.value.state === "sending";
+      const at = new Date(this.now()).toISOString();
       row = await this.store.replace<EmailRecord>("email_log", id, row.version, {
         ...row.value,
         state: "sending",
@@ -146,10 +166,16 @@ export class Emails {
         return (
           await this.store.replace<EmailRecord>("email_log", id, row.version, {
             ...row.value,
-            state: "failed",
+            state:
+              previousAmbiguous && error instanceof EmailFailure && !error.retryable
+                ? "uncertain"
+                : "failed",
             ambiguous:
               previousAmbiguous || (error instanceof EmailFailure ? error.ambiguous : true),
-            error: "E_EMAIL_SEND",
+            error:
+              error instanceof EmailFailure && !error.retryable
+                ? "E_EMAIL_PERMANENT"
+                : "E_EMAIL_SEND",
           })
         ).value;
       }

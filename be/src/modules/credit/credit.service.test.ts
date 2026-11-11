@@ -61,6 +61,7 @@ const policy = {
   maxLimit: "10000000000",
 };
 async function setup(enabled = true) {
+  let clock = now;
   const deps = testDeps();
   deps.env.CREDIT_AUTO_LIMITS = enabled;
   deps.env.CREDIT_POLICY_JSON = JSON.stringify(policy);
@@ -129,7 +130,7 @@ async function setup(enabled = true) {
     check: vi.fn().mockResolvedValue({ papers: structuredClone(papers), proof }),
   };
   const writer: CreditWriter = {
-    time: async () => BigInt(now) * 1000000n,
+    time: async () => BigInt(clock) * 1000000n,
     prepare: vi.fn().mockImplementation(async (_shipper, limit, method) => ({
       txHash: "sample-limit-tx",
       bytes: "sample-signed-transaction",
@@ -140,6 +141,9 @@ async function setup(enabled = true) {
   };
   return {
     ...deps,
+    advance: (ms: number) => {
+      clock += ms;
+    },
     files,
     leases,
     shipper,
@@ -148,7 +152,16 @@ async function setup(enabled = true) {
     app,
     reader,
     writer,
-    credit: new Credit(deps.store, deps.chain, files, reader, writer, leases, deps.env, () => now),
+    credit: new Credit(
+      deps.store,
+      deps.chain,
+      files,
+      reader,
+      writer,
+      leases,
+      deps.env,
+      () => clock,
+    ),
   };
 }
 it("uses only an explicitly configured formula and exact base-unit arithmetic", async () => {
@@ -242,7 +255,7 @@ it("does not write on unclear papers, disabled automation or provider failure", 
   const failed = await setup();
   vi.mocked(failed.reader.check).mockRejectedValue(new Error("unverified model output"));
   review = await failed.credit.request(profile());
-  expect((await failed.credit.work(review.id)).result).toBe("failed");
+  expect((await failed.credit.work(review.id)).state).toBe("queued");
   expect(failed.writer.prepare).not.toHaveBeenCalled();
 });
 it("checks old pending proposals beyond the newest 50 and respects TTL/cooldown", async () => {
@@ -273,6 +286,7 @@ it("requires three bills paid after a genuine no-change decision", async () => {
   expect((await deps.credit.work(review.id)).result).toBe("no_change");
   await expect(deps.credit.request(profile())).rejects.toMatchObject({ code: "E_CREDIT_HISTORY" });
   for (let id = 1; id <= 3; id++) deps.shipments.push({ id, status: "Repaid" } as Shipment);
+  deps.advance(86400000);
   expect((await deps.credit.request(profile())).state).toBe("queued");
 });
 it("connects application submission to the durable evaluator without activating a starting limit", async () => {
@@ -319,4 +333,70 @@ it("returns unreadable initial papers for a closer look and resumes worker state
     "needs_more",
   );
   expect((await deps.credit.tick()).processed).toBe(0);
+});
+
+it("retries a transient initial check without sending the application back to draft", async () => {
+  const deps = await setup(false);
+  const row = (await deps.store.get<Application>("applications", deps.app.id))!;
+  const app = { ...row.value, state: "in_review" as const };
+  await deps.store.replace("applications", app.id, row.version, app);
+  const id = await deps.credit.beginInitial(app);
+  vi.mocked(deps.reader.check).mockRejectedValueOnce(new Error("provider unavailable"));
+  expect((await deps.credit.work(id)).state).toBe("queued");
+  expect((await deps.store.get<Application>("applications", app.id))!.value.state).toBe(
+    "in_review",
+  );
+  await deps.credit.work(id);
+  expect(deps.reader.check).toHaveBeenCalledTimes(1);
+  deps.advance(60000);
+  expect((await deps.credit.work(id)).state).toBe("complete");
+  expect(deps.reader.check).toHaveBeenCalledTimes(2);
+});
+it("caps paid review loops even after an unclear result", async () => {
+  const deps = await setup(false);
+  vi.mocked(deps.reader.check).mockRejectedValueOnce(new UnreadablePapers());
+  const review = await deps.credit.request(profile());
+  await deps.credit.work(review.id);
+  await expect(deps.credit.request(profile())).rejects.toMatchObject({ code: "E_CREDIT_RATE" });
+  expect(deps.reader.check).toHaveBeenCalledTimes(1);
+});
+it("completes a definitively rejected credit intent instead of blocking the assistant", async () => {
+  const { DefinitiveTransactionError } = await import("../../lib/near-sdk");
+  const deps = await setup();
+  vi.mocked(deps.writer.check).mockRejectedValueOnce(new DefinitiveTransactionError());
+  const review = await deps.credit.request(profile());
+  expect((await deps.credit.work(review.id)).result).toBe("failed");
+});
+it("returns authorized credit results over HTTP and includes the public review in admin lists", async () => {
+  const request = (await import("supertest")).default;
+  const { createApp } = await import("../../app");
+  const { creditRoutes } = await import("./credit.routes");
+  const deps = await setup(false);
+  const actor = profile();
+  await deps.store.insert("profiles", actor.accountId, actor);
+  const token = (await deps.sessions.issue(actor)).token;
+  const app = createApp(deps, creditRoutes(deps, deps.credit));
+  const response = await request(app)
+    .post("/v1/credit/review")
+    .auth(token, { type: "bearer" })
+    .send({});
+  expect(response.status).toBe(202);
+  expect(
+    (
+      await request(app)
+        .get("/v1/admin/credit/reviews/shipper.testnet")
+        .auth(token, { type: "bearer" })
+    ).status,
+  ).toBe(403);
+  await deps.credit.work(response.body.review.id);
+  const applications = new Applications(
+    deps.store,
+    deps.chain,
+    deps.files,
+    new Emails(deps.store, { enabled: () => false, send: vi.fn() }, deps.leases),
+    deps.leases,
+  );
+  const list = await applications.adminList(profile("admin"));
+  expect(list.applications[0]!.review!.id).toBe(response.body.review.id);
+  expect(list.applications[0]!.review).not.toHaveProperty("evidence");
 });

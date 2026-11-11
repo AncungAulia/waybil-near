@@ -192,3 +192,16 @@ export interface ProfileUpdate {
   email?: string;
   truckPlate?: string | null;
 }
+
+export interface ApplicationListItem extends Application {
+  review: CreditReviewInfo | null;
+}
+export interface ApplicationsResponse {
+  applications: ApplicationListItem[];
+}
+export interface ApplicationResponse {
+  application: Application;
+}
+export interface CreditReviewResponse {
+  review: CreditReviewInfo;
+}

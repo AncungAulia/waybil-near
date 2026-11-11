@@ -1,3 +1,5 @@
+import { DefinitiveTransactionError } from "../../lib/near-sdk";
+import { logError } from "../../lib/logger";
 import { randomUUID } from "node:crypto";
 import type {
   Application,
@@ -39,6 +41,7 @@ export interface CreditRow extends CreditReviewInfo {
   applicationApplied: boolean;
   decision: boolean;
   attempts: number;
+  nextAttemptAt?: string;
 }
 const configSchema = z.object({
   max_limit: amount,
@@ -66,6 +69,7 @@ export class Credit {
     return this.leases.run(`review-request:${app.shipperId}`, async () => {
       const existing = await this.store.get<CreditRow>("credit_reviews", id);
       if (existing) return id;
+      await this.cooldown(app.shipperId);
       const documents = await this.documents(app);
       await this.store.insert(
         "credit_reviews",
@@ -84,6 +88,7 @@ export class Credit {
       const active = rows.find((r) => r.value.state !== "complete");
       if (active) return this.info(active.value);
       const history = await this.eligible(actor.accountId);
+      await this.cooldown(actor.accountId);
       const app = requireValue(
         (await this.store.list<Application>("applications", { shipperId: actor.accountId }))
           .filter((r) => r.value.state !== "rejected")
@@ -142,12 +147,17 @@ export class Credit {
               reviewId: id,
             });
         });
-      } catch {
+      } catch (error) {
+        logError("credit_tick", error);
         deferred++;
       }
     }
     const rows = (await this.store.list<CreditRow>("credit_reviews"))
-      .filter((r) => r.value.state !== "complete" || !r.value.applicationApplied)
+      .filter(
+        (r) =>
+          (r.value.state !== "complete" || !r.value.applicationApplied) &&
+          (!r.value.nextAttemptAt || Date.parse(r.value.nextAttemptAt) <= this.now()),
+      )
       .sort((a, b) => a.value.createdAt.localeCompare(b.value.createdAt))
       .slice(0, limit);
     let processed = 0;
@@ -155,7 +165,8 @@ export class Credit {
       try {
         await this.work(row.value.id);
         processed++;
-      } catch {
+      } catch (error) {
+        logError("credit_tick", error);
         deferred++;
       }
     }
@@ -164,6 +175,8 @@ export class Credit {
   async work(id: string): Promise<CreditReviewInfo> {
     return this.leases.run(`credit:${id}`, async () => {
       let row = requireValue(await this.store.get<CreditRow>("credit_reviews", id));
+      if (row.value.nextAttemptAt && Date.parse(row.value.nextAttemptAt) > this.now())
+        return this.info(row.value);
       if (row.value.state === "complete") {
         await this.applyInitial(row);
         return this.info(row.value);
@@ -284,7 +297,20 @@ export class Credit {
             });
         }
       } catch (error) {
+        logError("credit_review", error, { txHash: row.value.txHash ?? undefined });
         if (row.value.intent) return this.info(row.value);
+        if (
+          !(error instanceof UnreadablePapers) &&
+          row.value.attempts < 3 &&
+          (!(error instanceof ApiException) || error.status >= 500)
+        ) {
+          row = await this.store.replace<CreditRow>("credit_reviews", id, row.version, {
+            ...row.value,
+            state: "queued",
+            nextAttemptAt: new Date(this.now() + 60000).toISOString(),
+          });
+          return this.info(row.value);
+        }
         row =
           error instanceof UnreadablePapers
             ? await this.finish(row, "no_change", {
@@ -306,8 +332,10 @@ export class Credit {
     let result;
     try {
       result = await this.writer.check(row.value.intent);
-    } catch {
-      return row;
+    } catch (error) {
+      logError("credit_reconcile", error, { txHash: row.value.txHash ?? undefined });
+      if (!(error instanceof DefinitiveTransactionError)) return row;
+      result = { status: "failed" as const, proposalId: null };
     }
     if (result.status === "pending") return row;
     if (result.status === "failed")
@@ -315,7 +343,10 @@ export class Credit {
         reasons: ["The limit change was not recorded. Please try again later."],
       });
     const proposed = row.value.intent.method === "assistant_propose";
-    if (proposed && result.proposalId == null) return row;
+    if (proposed && result.proposalId == null)
+      return this.finish(row, "failed", {
+        reasons: ["The limit proposal could not be verified. The team must check the record."],
+      });
     return this.finish(row, proposed ? "proposed" : "raised", {
       proposalId: result.proposalId,
       reasons: [
@@ -355,12 +386,7 @@ export class Credit {
       ) {
         await this.store.replace<Application>("applications", app.value.id, app.version, {
           ...app.value,
-          state:
-            review.value.result === "failed"
-              ? "draft"
-              : review.value.needsCloserLook
-                ? "needs_more"
-                : "in_review",
+          state: review.value.needsCloserLook ? "needs_more" : "in_review",
           reviewId: review.value.id,
           updatedAt: new Date(this.now()).toISOString(),
         });
@@ -462,6 +488,15 @@ export class Credit {
       }
     }
     return unavailable();
+  }
+  private async cooldown(shipperId: string) {
+    const rows = await this.store.list<CreditRow>("credit_reviews", { shipperId });
+    if (rows.some((r) => this.now() - Date.parse(r.value.createdAt) < 86400000))
+      throw new ApiException(
+        429,
+        "E_CREDIT_RATE",
+        "Please wait one day before asking for another private check.",
+      );
   }
   private async documents(app: Application) {
     const docs: ApplicationDocument[] = [];
