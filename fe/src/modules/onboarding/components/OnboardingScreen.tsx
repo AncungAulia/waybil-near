@@ -21,6 +21,11 @@ import {
   ArrowLineDown,
   Handshake,
   X,
+  CaretRight,
+  Coins,
+  Package,
+  Truck,
+  Warehouse,
 } from "@phosphor-icons/react";
 import { FEE_BPS, type Role } from "@waybil/shared";
 import { useOrigin } from "@/hooks/useOrigin";
@@ -103,6 +108,37 @@ const GOOGLE_ROLES = [
     value: "warehouse" as const,
     title: "I receive goods",
     note: "Scan the driver's QR when a truck arrives to confirm the delivery.",
+  },
+];
+/*
+ * A1 asks what the person does first, then signs them in the way that role uses, so a truck
+ * owner never lands on the wallet path. Shippers and investors use a NEAR wallet, drivers use
+ * Google, and warehouses join from a shipper's invite link.
+ */
+const START = [
+  {
+    value: "shipper" as const,
+    title: "I ship goods",
+    note: "Sign in with a NEAR wallet.",
+    icon: Package,
+  },
+  {
+    value: "investor" as const,
+    title: "I fund deliveries",
+    note: "Sign in with a NEAR wallet.",
+    icon: Coins,
+  },
+  {
+    value: "driver" as const,
+    title: "I own a truck",
+    note: "Continue with Google. You need no wallet and pay no fees.",
+    icon: Truck,
+  },
+  {
+    value: "warehouse" as const,
+    title: "I receive goods",
+    note: "Join from the link a shipping company sends you.",
+    icon: Warehouse,
   },
 ];
 export function OnboardingScreen({
@@ -242,6 +278,25 @@ export function OnboardingScreen({
     }
   }
   const [signInError, setSignInError] = useState<string | null>(null);
+  /* The wallet role picked on A1, used only if the account turns out to be new. */
+  const chosen = useRef<"shipper" | "investor" | null>(null);
+  const [warehouseHelp, setWarehouseHelp] = useState(false);
+  function start(value: (typeof START)[number]["value"]) {
+    setSignInError(null);
+    if (value === "warehouse") return setWarehouseHelp(true);
+    setWarehouseHelp(false);
+    if (value === "driver") {
+      if (LIVE) return void googleFlow();
+      setRole("driver");
+      setGoogle(true);
+      return setState("D1");
+    }
+    chosen.current = value;
+    if (LIVE) return void walletFlow();
+    setRole(value);
+    setGoogle(false);
+    setState(value === "shipper" ? "C1" : "E1");
+  }
   const pending = useRef<Awaited<ReturnType<typeof connectWallet>> | null>(null);
   /* Cancel on A2 abandons the attempt that is still waiting on the wallet. */
   const attempt = useRef(0);
@@ -262,6 +317,8 @@ export function OnboardingScreen({
     } catch (error) {
       if (id !== attempt.current) return;
       if (error instanceof ApiError && error.code === "E_ROLE_REQUIRED") {
+        /* A new account. The role picked on A1 signs the second challenge, so B1 is skipped. */
+        if (!role && chosen.current) return void walletFlow(chosen.current);
         setRole(null);
         setGoogle(false);
         setState("B1");
@@ -726,7 +783,7 @@ export function OnboardingScreen({
                           ? "Switch to the test network"
                           : "One moment",
                   state === "A1"
-                    ? "Shippers and investors connect a NEAR wallet. Drivers and warehouses continue with Google. You don't need a password."
+                    ? "Tell us what you do and we sign you in the right way. You don't need a password."
                     : state === "A2"
                       ? googleWaiting
                         ? "Pick your Google account to continue."
@@ -742,39 +799,63 @@ export function OnboardingScreen({
               <div className="flex flex-col gap-20 md:gap-24">
                 {state === "A1" ? (
                   <>
-                    <Button
-                      icon={<WalletGlyph size={17} />}
-                      className={actionClass}
-                      onClick={() => {
-                        if (LIVE) return void walletFlow();
-                        setRole(null);
-                        setGoogle(false);
-                        setState("B1");
-                      }}
-                    >
-                      Connect NEAR wallet
-                    </Button>
-                    <div className="flex items-center gap-12 text-[13px] leading-normal text-ds-muted">
-                      <span className="h-1 flex-1 bg-ds-line" />
-                      or
-                      <span className="h-1 flex-1 bg-ds-line" />
+                    <div className="flex flex-col gap-8">
+                      {START.map(({ value, title, note, icon: Icon }) => (
+                        <button
+                          key={value}
+                          type="button"
+                          aria-expanded={value === "warehouse" ? warehouseHelp : undefined}
+                          onClick={() => start(value)}
+                          className={cn(
+                            "press focus-ring flex w-full items-center gap-14 rounded-row border p-14 text-left transition-colors duration-150 ease-base",
+                            value === "warehouse" && warehouseHelp
+                              ? "border-ds-ink bg-ds-bg"
+                              : "border-ds-line bg-ds-bg hover:border-ds-line-strong",
+                          )}
+                        >
+                          <span className="grid size-40 shrink-0 place-items-center rounded-full bg-ds-canvas">
+                            <Icon size={19} />
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-[15px] font-medium">{title}</span>
+                            <span className="block text-[12.5px] leading-[1.4] text-ds-muted">
+                              {note}
+                            </span>
+                          </span>
+                          <CaretRight size={16} className="shrink-0 text-ds-muted" />
+                        </button>
+                      ))}
                     </div>
-                    <Button
-                      variant="secondary"
-                      icon={<MailGlyph size={17} />}
-                      className={cn(actionClass, "h-48")}
+                    {warehouseHelp && (
+                      <div className="enter flex flex-col gap-12 rounded-row bg-ds-bg p-16">
+                        <p className="text-label font-normal text-ds-ink-2">
+                          Warehouse staff join from the invite link a shipping company sends. Open
+                          that link on this phone to get started.
+                        </p>
+                        <Button
+                          variant="secondary"
+                          icon={<MailGlyph size={17} />}
+                          className="w-full justify-between"
+                          onClick={() => (LIVE ? void googleFlow() : setState("F5"))}
+                        >
+                          {LIVE
+                            ? "I already joined. Continue with Google"
+                            : "Open the sample invite"}
+                        </Button>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      className="link focus-ring self-center text-label"
                       onClick={() => {
-                        if (LIVE) return void googleFlow();
-                        setRole(null);
-                        setGoogle(true);
-                        setState("B1");
+                        chosen.current = null;
+                        setWarehouseHelp(false);
+                        if (LIVE) return void walletFlow();
+                        dashboard("/admin");
                       }}
                     >
-                      Continue with Google
-                    </Button>
-                    <p className="text-center text-label text-ds-muted">
-                      Drivers and warehouses need no wallet and pay no fees.
-                    </p>
+                      Waybil team member? Connect your wallet
+                    </button>
                   </>
                 ) : state === "A2" ? (
                   <>
