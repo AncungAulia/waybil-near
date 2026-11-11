@@ -18,7 +18,7 @@ import { api } from "@/lib/api";
 import { CONTRACT_RECORD_URL, USDC_CONTRACT, WAYBIL_CONTRACT } from "@/lib/env";
 import { statusChip } from "@/lib/status";
 import { callContract } from "@/lib/wallet";
-import { Alert, DoneNote, failure, type Done } from "./LiveShipper";
+import { Alert, DoneNote, failure, type Done } from "./live/shared";
 import { names, repayMessage, shortDay, toRow, type LiveShipperData } from "../data/live";
 
 const REASONS: Record<string, string> = {
