@@ -21,23 +21,33 @@ export async function view<T>(
   args: object = {},
   contract = WAYBIL_CONTRACT,
 ): Promise<T> {
-  const res = await fetch(NEAR_RPC_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      jsonrpc: "2.0",
-      id: method,
-      method: "query",
-      params: {
-        request_type: "call_function",
-        finality: "final",
-        account_id: contract,
-        method_name: method,
-        args_base64: btoa(JSON.stringify(args)),
-      },
-    }),
+  const body = JSON.stringify({
+    jsonrpc: "2.0",
+    id: method,
+    method: "query",
+    params: {
+      request_type: "call_function",
+      finality: "final",
+      account_id: contract,
+      method_name: method,
+      args_base64: btoa(JSON.stringify(args)),
+    },
   });
-  if (!res.ok) throw new ViewError(`RPC answered ${res.status}`);
+  /*
+   * The public RPC drops bursts: a 429, or a network error because the 429 has no CORS
+   * headers. Two retries with a short wait cover a page that reads many views at once.
+   */
+  let res: Response | null = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt) await new Promise((wait) => setTimeout(wait, 400 * attempt));
+    res = await fetch(NEAR_RPC_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+    }).catch(() => null);
+    if (res && res.status !== 429) break;
+  }
+  if (!res?.ok) throw new ViewError(`RPC answered ${res?.status ?? "no response"}`);
   const data = (await res.json()) as {
     error?: { message?: string; cause?: { name?: string } };
     result?: { result?: number[]; error?: string };

@@ -1,0 +1,385 @@
+"use client";
+import { useState } from "react";
+import Link from "next/link";
+import { FEE_BPS, splitBill, type QueueEntry, type Shipment } from "@waybil/shared";
+import { ArrowLeft, ArrowLineDown, Clock, Package, SealCheck } from "@phosphor-icons/react";
+import { Panel } from "@/components/layout/Panel";
+import { Money } from "@/components/elements/Money";
+import { FanMeter } from "@/components/elements/FanMeter";
+import { StatusPill } from "@/components/elements/StatusPill";
+import { Stat } from "@/components/elements/Stat";
+import { cn } from "@/lib/cn";
+import { CONTRACT_RECORD_URL, nearblocksUrl } from "@/lib/env";
+import { statusChip } from "@/lib/status";
+import { latestEvents, poolStats, type LivePool } from "../data/live";
+
+/*
+ * The investor screens on testnet data (#86). The views give shipments, shippers and the
+ * queue, but no list of deposits or withdrawals, so History points to NearBlocks for those.
+ */
+
+const POOL_PERCENT = `${Number(FEE_BPS.pool) / 100}%`;
+const day = (ns: string | null) =>
+  ns
+    ? new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(
+        new Date(Number(BigInt(ns) / 1000000n)),
+      )
+    : "";
+const percent = (part: bigint, whole: bigint) =>
+  whole > 0n ? Number((part * 100n) / whole) / 100 : 0;
+
+/** Stats, credit per company and the latest money moments on the pool page. */
+export function LiveSections({ data }: { data: LivePool | null }) {
+  if (!data) return null;
+  const stats = poolStats(data.deliveries);
+  const companies = Object.entries(data.shippers).filter(
+    (entry): entry is [string, NonNullable<(typeof entry)[1]>] => entry[1] !== null,
+  );
+  const latest = latestEvents(data.deliveries);
+  return (
+    <>
+      <div className="grid gap-16 md:grid-cols-3">
+        <Stat
+          className="w-full"
+          label="Earned by the pool"
+          value={<Money amount={String(stats.earned)} />}
+          context={`The pool earns ${POOL_PERCENT} of each bill.`}
+        />
+        <Stat
+          className="w-full"
+          label="Missed payments"
+          value={String(stats.missed)}
+          context={`Out of ${stats.trips} ${stats.trips === 1 ? "trip" : "trips"}`}
+        />
+        <Stat
+          className="w-full"
+          label="Average trip"
+          value={stats.averageDays === null ? "None yet" : `${stats.averageDays} days`}
+          context="From payment to repayment"
+        />
+      </div>
+      <div className="grid items-start gap-16 lg:grid-cols-2">
+        <Panel title="Owed by each company">
+          {companies.length === 0 && (
+            <p className="py-8 text-label text-ds-muted">No company owes the pool yet.</p>
+          )}
+          {companies.map(([account, shipper]) => {
+            const used = BigInt(shipper.owed) + BigInt(shipper.committed);
+            const pct = percent(used, BigInt(shipper.limit));
+            return (
+              <div key={account} className="flex flex-col gap-8 py-8">
+                <div className="flex justify-between gap-12 text-label">
+                  <span className="min-w-0 break-all">{account}</span>
+                  <span className="text-ds-muted">{Math.round(pct * 100)}%</span>
+                </div>
+                <FanMeter value={pct} label={`${account} credit used`} className="w-full" />
+                <p className="text-caption text-ds-muted">
+                  <Money amount={String(used)} /> of <Money amount={shipper.limit} />.{" "}
+                  {shipper.paused
+                    ? "The team paused this company."
+                    : shipper.late_bills > 0
+                      ? `${shipper.late_bills} ${shipper.late_bills === 1 ? "bill is" : "bills are"} late.`
+                      : "No bill is late."}
+                </p>
+              </div>
+            );
+          })}
+        </Panel>
+        <Panel
+          title="Latest"
+          gap={4}
+          className="p-20 pb-10"
+          action={
+            <Link className="link focus-ring text-label" href="/pool/deliveries">
+              See all
+            </Link>
+          }
+        >
+          {latest.length === 0 && (
+            <p className="py-12 text-label text-ds-muted">Nothing has happened in the pool yet.</p>
+          )}
+          {latest.map(({ kind, shipment: s }) => (
+            <Link
+              key={`${kind}-${s.id}`}
+              href={`/pool/deliveries/${s.id}`}
+              className="focus-ring flex items-center gap-12 py-12"
+            >
+              <span className="grid size-36 shrink-0 place-items-center rounded-full bg-ds-canvas">
+                {kind === "paid" ? <ArrowLineDown size={16} /> : <SealCheck size={16} />}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-label break-all">
+                  {kind === "paid" ? `Paid ${s.driver} early` : `${s.shipper} paid a bill`}
+                </span>
+                <span className="block text-caption text-ds-muted">
+                  <Money amount={kind === "paid" ? s.advance : s.bill} /> · #{s.id}
+                </span>
+              </span>
+              <span className="shrink-0 text-caption text-ds-muted">
+                {day(kind === "paid" ? s.paid_at : s.repaid_at)}
+              </span>
+            </Link>
+          ))}
+        </Panel>
+      </div>
+    </>
+  );
+}
+
+/** I3.1 and I3.4 with the shipments the pool paid for. */
+export function LiveDeliveries({ deliveries }: { deliveries: Shipment[] }) {
+  const [filter, setFilter] = useState("All");
+  const repaid = deliveries.filter((s) => s.status === "Repaid").length;
+  const shown = deliveries.filter(
+    (s) => filter === "All" || (filter === "Repaid") === (s.status === "Repaid"),
+  );
+  return (
+    <>
+      <header>
+        <h1 className="text-title">Deliveries</h1>
+        <p className="mt-6 text-label text-ds-muted">
+          Every trip the pool paid for, with proof it arrived.
+        </p>
+      </header>
+      {deliveries.length > 0 && (
+        <div className="flex w-fit flex-wrap gap-6 rounded-full bg-ds-bg p-4">
+          {[
+            { label: "All", count: deliveries.length },
+            { label: "Waiting to be repaid", count: deliveries.length - repaid },
+            { label: "Repaid", count: repaid },
+          ].map((f) => (
+            <button
+              key={f.label}
+              type="button"
+              onClick={() => setFilter(f.label)}
+              className={cn(
+                "press focus-ring flex items-center gap-6 rounded-full px-14 py-8 text-label transition-colors duration-150 ease-base",
+                filter === f.label ? "bg-ds-ink text-ds-bg" : "text-ds-ink-2 hover:bg-ds-canvas",
+              )}
+            >
+              {f.label}
+              <span
+                className={cn(
+                  "text-caption",
+                  filter === f.label ? "text-ds-on-night" : "text-ds-muted",
+                )}
+              >
+                {f.count}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+      <Panel
+        gap={4}
+        className={cn(
+          "px-20 py-8",
+          deliveries.length === 0 && "min-h-[calc(100dvh-330px)] md:min-h-[calc(100dvh-290px)]",
+        )}
+      >
+        {deliveries.length === 0 ? (
+          <div className="grid min-h-360 flex-1 place-content-center gap-16 text-center">
+            <img src="/illustrations/investor.svg" alt="" className="mx-auto h-96" />
+            <h2 className="text-heading">No deliveries yet</h2>
+            <p className="max-w-340 text-label text-ds-muted">
+              When the pool pays a driver early, the delivery shows up here with its proof.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="hidden gap-16 py-12 text-caption text-ds-muted md:grid md:grid-cols-[1fr_140px_150px_170px]">
+              <span>Delivery</span>
+              <span>Paid early</span>
+              <span>Status</span>
+              <span>Bill</span>
+            </div>
+            {shown.map((s) => (
+              <Link
+                href={`/pool/deliveries/${s.id}`}
+                key={s.id}
+                className="focus-ring grid items-center gap-10 py-14 md:grid-cols-[1fr_140px_150px_170px] md:gap-16"
+              >
+                <span className="flex min-w-0 items-center gap-12">
+                  <span className="grid size-40 shrink-0 place-items-center rounded-full bg-ds-canvas">
+                    <Package size={17} />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-body break-all">{s.shipper}</span>
+                    <span className="block text-caption break-all text-ds-muted">
+                      #{s.id} · {s.driver}
+                    </span>
+                  </span>
+                </span>
+                <Money amount={s.advance} className="text-label" />
+                <span className="justify-self-start">
+                  <StatusPill status={statusChip(s)} />
+                </span>
+                <p className="text-label text-ds-ink-2">
+                  {s.status === "Repaid"
+                    ? `Paid back ${day(s.repaid_at)}`
+                    : s.status === "CoveredByReserve"
+                      ? "Covered by the reserve"
+                      : `Bill due ${day(s.due_at)}`}
+                </p>
+              </Link>
+            ))}
+          </>
+        )}
+      </Panel>
+    </>
+  );
+}
+
+/** I3.2 for any shipment the pool paid for. */
+export function LiveDelivery({
+  shipment: s,
+  value,
+  total,
+}: {
+  shipment: Shipment | undefined;
+  value: string;
+  total: string;
+}) {
+  const back = (
+    <Link
+      href="/pool/deliveries"
+      className="focus-ring flex items-center gap-8 text-label text-ds-muted"
+    >
+      <ArrowLeft size={18} />
+      Deliveries
+    </Link>
+  );
+  if (!s)
+    return (
+      <>
+        {back}
+        <Panel className="grid min-h-240 place-content-center text-center">
+          <h1 className="text-heading">This delivery could not be found</h1>
+          <p className="mt-8 text-label text-ds-muted">
+            The pool has not paid for a delivery with this number.
+          </p>
+        </Panel>
+      </>
+    );
+  const split = splitBill(BigInt(s.bill));
+  const pool = BigInt(total);
+  const share = Math.round(percent(BigInt(value), pool) * 100);
+  const part = pool > 0n ? (split.pool * BigInt(value)) / pool : 0n;
+  const covered = s.status === "CoveredByReserve";
+  const money = covered
+    ? [
+        { label: `Paid early to ${s.driver}`, value: BigInt(s.advance) },
+        { label: "The company paid back", value: 0n },
+      ]
+    : [
+        { label: `Paid early to ${s.driver}`, value: BigInt(s.advance) },
+        {
+          label: s.status === "Repaid" ? "The company paid back" : "The company pays back",
+          value: BigInt(s.bill),
+        },
+        { label: "Pool earns", value: split.pool },
+        { label: `Your part at ${share}%`, value: part },
+        { label: "Safety reserve", value: split.reserve },
+        { label: "Waybil fee", value: split.waybil },
+      ];
+  const steps = [
+    { title: `Approved by ${s.shipper}`, at: s.approved_at, detail: `Bill due ${day(s.due_at)}` },
+    { title: `Picked up by ${s.driver}`, at: s.picked_up_at, detail: `${s.qty} ${s.unit}` },
+    {
+      title: "Arrival confirmed by the warehouse",
+      at: s.arrived_at,
+      detail: s.good_qty === null ? "" : `${s.good_qty} of ${s.qty} ${s.unit} in good shape`,
+    },
+    { title: `${s.driver} got paid`, at: s.paid_at, detail: "" },
+    { title: "The company paid the bill", at: s.repaid_at, detail: "" },
+  ].filter((step) => step.at);
+  return (
+    <>
+      {back}
+      <header className="flex flex-wrap items-center justify-between gap-12">
+        <div className="min-w-0">
+          <h1 className="text-title break-all">Delivery #{s.id}</h1>
+          <p className="mt-6 text-label break-all text-ds-muted">
+            {s.shipper} · {s.driver}
+          </p>
+        </div>
+        <StatusPill status={statusChip(s)} />
+      </header>
+      <div className="grid items-start gap-16 lg:grid-cols-2">
+        <Panel title="Money" gap={4}>
+          {money.map((r) => (
+            <div key={r.label} className="flex flex-wrap justify-between gap-8 py-9 text-label">
+              <span className="break-all text-ds-muted">{r.label}</span>
+              <Money amount={String(r.value)} />
+            </div>
+          ))}
+        </Panel>
+        <Panel title="Proof it happened" gap={4}>
+          {steps.map((step) => (
+            <div key={step.title} className="flex gap-14 py-12">
+              <span className="mt-2 grid size-26 shrink-0 place-items-center rounded-full bg-ds-ink text-ds-bg">
+                <SealCheck size={14} weight="bold" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-label break-all">{step.title}</span>
+                <span className="block text-caption text-ds-muted">{day(step.at)}</span>
+                {step.detail && (
+                  <span className="block text-caption text-ds-ink-2">{step.detail}</span>
+                )}
+              </span>
+            </div>
+          ))}
+          <a
+            className="link focus-ring mt-4 inline-block text-caption"
+            href={CONTRACT_RECORD_URL}
+            target="_blank"
+            rel="noreferrer"
+          >
+            See the record on NearBlocks ↗
+          </a>
+        </Panel>
+      </div>
+    </>
+  );
+}
+
+/** I3.3. Waiting withdrawals from the queue, and NearBlocks for everything already done. */
+export function LiveHistory({ accountId, queue }: { accountId: string; queue: QueueEntry[] }) {
+  const mine = queue.filter((entry) => entry.investor === accountId);
+  return (
+    <>
+      <header>
+        <h1 className="text-title">History</h1>
+        <p className="mt-6 text-label text-ds-muted">Your deposits, withdrawals, and earnings.</p>
+      </header>
+      <Panel gap={4} className="px-20 py-8">
+        {mine.map((entry) => (
+          <div key={entry.requested_at} className="flex items-center gap-12 py-14">
+            <span className="grid size-38 shrink-0 place-items-center rounded-full bg-ds-canvas">
+              <Clock size={16} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-body">Withdrawal waiting</span>
+              <span className="block text-caption text-ds-muted">
+                Asked {day(entry.requested_at)} · paid as bills are repaid
+              </span>
+            </span>
+            <Money amount={entry.amount} className="shrink-0 text-label" />
+          </div>
+        ))}
+        <p className="py-14 text-label text-ds-muted">
+          {mine.length === 0 ? "No withdrawal is waiting. " : ""}Every deposit, withdrawal and
+          payout to your wallet is recorded.{" "}
+          <a
+            className="link focus-ring"
+            href={nearblocksUrl(`/address/${accountId}`)}
+            target="_blank"
+            rel="noreferrer"
+          >
+            See the record on NearBlocks ↗
+          </a>
+        </p>
+      </Panel>
+    </>
+  );
+}

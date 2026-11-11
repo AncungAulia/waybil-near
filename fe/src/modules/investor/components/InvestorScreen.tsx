@@ -27,11 +27,30 @@ import { DemoMap } from "@/components/elements/DemoMap";
 import { StatusPill } from "@/components/elements/StatusPill";
 import { Stat } from "@/components/elements/Stat";
 import { cn } from "@/lib/cn";
-import { CONTRACT_RECORD_URL } from "@/lib/env";
+import { ProofLink } from "@/components/elements/ProofLink";
+import { CONTRACT_RECORD_URL, LIVE, USDC_CONTRACT, WAYBIL_CONTRACT } from "@/lib/env";
+import { callContract, ensureUsdcStorage } from "@/lib/wallet";
+import { useAuth } from "@/providers/AuthProvider";
+import { useLivePool } from "../hooks/useLivePool";
+import { queueCash, queuePosition, toBalance } from "../data/live";
+import { LiveDeliveries, LiveDelivery, LiveHistory, LiveSections } from "./LivePool";
 import { formatNumber } from "@/lib/format";
 import { INVESTOR_FIXTURES, type InvestorState } from "../data/fixtures";
 import { changePoolBalance, INITIAL_BALANCE, type DemoPoolBalance } from "../data/demo";
 const KEY = "waybil-demo-pool-v1";
+/* Deposit and withdraw both send USDC on, so they get room for the token's callback. */
+const TX_GAS = "100000000000000";
+const EMPTY_BALANCE: DemoPoolBalance = {
+  value: "0",
+  wallet: "0",
+  cash: "0",
+  total: "0",
+  queued: "0",
+};
+const wallError = (error: unknown) =>
+  /reject|cancel|denied|closed/i.test(String(error))
+    ? "You said no in your wallet. Nothing was sent."
+    : "It didn’t go through. No money moved. Try again in a moment.";
 /* What the pool earns of each bill, from the shared fee split, for example "1.6%". */
 const POOL_PERCENT = `${Number(FEE_BPS.pool) / 100}%`;
 /* The sample deliveries this demo shows. The empty state counts none of them. */
@@ -114,21 +133,40 @@ export function InvestorScreen({
     ),
     [filter, setFilter] = useState("All"),
     [risks, setRisks] = useState(false),
-    [receipt, setReceipt] = useState<{ amount: string; paid: string; queued: string } | null>(null);
+    [receipt, setReceipt] = useState<{
+      amount: string;
+      paid: string;
+      queued: string;
+      tx?: string;
+    } | null>(null),
+    [pending, setPending] = useState(false),
+    [txError, setTxError] = useState<string | null>(null);
   const snapshot = useSyncExternalStore(subscribe, read, () => "");
+  /* The live path reads testnet for the signed-in investor. The gallery keeps its fixtures. */
+  const { profile } = useAuth();
+  const live = LIVE && !preview && profile?.role === "investor" ? profile : null;
+  const { data, failed, refresh } = useLivePool(live?.accountId);
   const fixture = INVESTOR_FIXTURES[initialState];
   const [previewBalance, setPreviewBalance] = useState<DemoPoolBalance | null>(null);
   const saved = balanceFromJson(snapshot);
-  const busy = state === "I1.3" || state === "I2.6";
-  const balance = preview
-    ? (previewBalance ?? {
-        ...INITIAL_BALANCE,
-        value: fixture.investor.value,
-        cash: fixture.pool.cash,
-      })
-    : saved;
+  const balance = live
+    ? data
+      ? toBalance(data)
+      : EMPTY_BALANCE
+    : preview
+      ? (previewBalance ?? {
+          ...INITIAL_BALANCE,
+          value: fixture.investor.value,
+          cash: fixture.pool.cash,
+        })
+      : saved;
+  const busy = live
+    ? BigInt(balance.value) > 0n && BigInt(balance.cash) < BigInt(balance.value)
+    : state === "I1.3" || state === "I2.6";
+  const firstVisit = live ? data?.shares === 0n : state === "I1.2";
+  const name = live ? live.name.split(" ")[0] || live.accountId : "Maya";
   const lent = BigInt(balance.total) - BigInt(balance.cash);
-  const utilization = Number((lent * 10000n) / BigInt(balance.total || "1")) / 10000;
+  const utilization = Number((lent * 10000n) / (BigInt(balance.total) || 1n)) / 10000;
   const share =
     BigInt(balance.total) > 0n ? Number((BigInt(balance.value) * 100n) / BigInt(balance.total)) : 0;
   const current = state.startsWith("I3")
@@ -139,7 +177,7 @@ export function InvestorScreen({
   const deposit = state.startsWith("I2") && !["I2.5", "I2.6", "I2.7"].includes(state),
     success = state === "I2.4" || state === "I2.7",
     transfer = state.startsWith("I2"),
-    waiting = state === "I2.2";
+    waiting = state === "I2.2" || pending;
   let units = 0n;
   try {
     units = parseUsdc(amount);
@@ -163,8 +201,45 @@ export function InvestorScreen({
   const settledTotal =
     preview && !receipt ? (deposit ? "26000000000" : "24000000000") : balance.total;
   const settledShare = Math.round((Number(settledValue) / Number(settledTotal)) * 100);
+  async function submitLive(accountId: string) {
+    setTxError(null);
+    setPending(true);
+    try {
+      const tx = deposit
+        ? await ensureUsdcStorage(accountId).then(() =>
+            callContract(
+              USDC_CONTRACT,
+              "ft_transfer_call",
+              { receiver_id: WAYBIL_CONTRACT, amount: String(units), msg: "deposit" },
+              { deposit: "1", gas: TX_GAS },
+            ),
+          )
+        : await callContract(
+            WAYBIL_CONTRACT,
+            "withdraw",
+            { amount: String(units) },
+            { gas: TX_GAS },
+          );
+      setReceipt({ amount: String(units), paid: String(paid), queued: String(queued), tx });
+      refresh();
+      setState(deposit ? "I2.4" : "I2.7");
+    } catch (failure) {
+      setTxError(wallError(failure));
+    } finally {
+      setPending(false);
+    }
+  }
+  async function payQueue() {
+    try {
+      await callContract(WAYBIL_CONTRACT, "process_queue", {}, { gas: TX_GAS });
+      refresh();
+    } catch (failure) {
+      setTxError(wallError(failure));
+    }
+  }
   function submit() {
     if (units <= 0n || error) return;
+    if (live) return void submitLive(live.accountId);
     const result = changePoolBalance(balance, deposit ? "deposit" : "withdraw", amount);
     if (preview) setPreviewBalance(result.balance);
     if (!preview) {
@@ -185,15 +260,16 @@ export function InvestorScreen({
     setAmount(`${value / 1000000n}.${(value % 1000000n).toString().padStart(6, "0")}`);
   }
   const close = () => {
+    setTxError(null);
     setState("I1.1");
     setReceipt(null);
   };
   const home = (
     <div className="flex flex-col gap-16 md:gap-24">
       <header>
-        <h1 className="text-title">{state === "I1.2" ? "Welcome, Maya" : "Hi, Maya"}</h1>
+        <h1 className="text-title">{firstVisit ? `Welcome, ${name}` : `Hi, ${name}`}</h1>
         <p className="mt-6 text-label text-ds-muted">
-          {state === "I1.2"
+          {firstVisit
             ? "Here’s how the pool is doing. Deposit to start earning."
             : "Your money pays truck owners early."}
         </p>
@@ -214,9 +290,11 @@ export function InvestorScreen({
             />
           </div>
           <p className="text-label text-ds-brand">
-            {state === "I1.2"
+            {firstVisit
               ? "Deposit USDC to start earning."
-              : `Your share is ${share}%. You earned 9.72 USDC in this sample.`}
+              : live
+                ? `Your share is ${share}%.`
+                : `Your share is ${share}%. You earned 9.72 USDC in this sample.`}
           </p>
           <div className="flex flex-col gap-10 md:flex-row [&>button]:justify-between">
             <Button
@@ -229,7 +307,7 @@ export function InvestorScreen({
             >
               Deposit
             </Button>
-            {state !== "I1.2" && (
+            {!firstVisit && (
               <Button
                 variant="secondary"
                 onClick={() => {
@@ -244,7 +322,15 @@ export function InvestorScreen({
           {BigInt(balance.queued) > 0n && (
             <p className="text-label">
               {formatUsdc(BigInt(balance.queued))} USDC will arrive as bills are paid.
+              {live && data && queuePosition(data.queue, live.accountId) !== null && (
+                <> You are number {queuePosition(data.queue, live.accountId)} in line.</>
+              )}
             </p>
+          )}
+          {live && data && data.queue.length > 0 && queueCash(data.pool) > 0n && (
+            <Button variant="secondary" onClick={() => void payQueue()}>
+              Pay out the queue
+            </Button>
           )}
         </section>
         <Panel
@@ -261,7 +347,7 @@ export function InvestorScreen({
               className="text-[clamp(26px,13cqw,40px)] leading-[1.1] font-medium tracking-[-0.035em]"
             />
             <p className="text-caption text-ds-muted">
-              {busy
+              {busy && !live
                 ? "23,000.00 is paid out early and 2,000.00 is free."
                 : `${formatUsdc(BigInt(balance.total) - BigInt(balance.cash))} USDC is paid out early. ${formatUsdc(BigInt(balance.cash))} USDC is free.`}
             </p>
@@ -274,7 +360,12 @@ export function InvestorScreen({
               className="w-full"
             />
             <div className="mt-8 flex justify-between text-caption text-ds-muted">
-              {[0, 5000, 10000, 15000, 20000, 25000].map((n) => (
+              {(live
+                ? [0, 1, 2, 3, 4, 5].map((i) =>
+                    Number((BigInt(balance.total) * BigInt(i)) / 5000000n),
+                  )
+                : [0, 5000, 10000, 15000, 20000, 25000]
+              ).map((n) => (
                 <span key={n}>{formatNumber(n)}</span>
               ))}
             </div>
@@ -282,117 +373,123 @@ export function InvestorScreen({
           </div>
           {busy && (
             <p className="rounded-row bg-ds-warning-soft p-16 text-label">
-              Most of the pool is working right now. Withdrawals over 2,000.00 USDC wait until
-              companies pay their bills.
+              Most of the pool is working right now. Withdrawals over{" "}
+              {formatUsdc(BigInt(balance.cash))} USDC wait until companies pay their bills.
             </p>
           )}
         </Panel>
       </div>
-      <div className="grid gap-16 md:grid-cols-3">
-        <Stat
-          className="w-full"
-          label="Earned by the pool"
-          value={<Money amount="48600000" />}
-          context={`The pool earns ${POOL_PERCENT} of each bill.`}
-        />
-        <Stat className="w-full" label="Missed payments" value="0" context="Out of 9 trips" />
-        <Stat
-          className="w-full"
-          label="Average trip"
-          value="13 days"
-          context="From payment to repayment"
-        />
-      </div>
-      <div className="grid items-start gap-16 lg:grid-cols-2">
-        <Panel title="Owed by each company">
-          {[
-            {
-              name: "Northwind Freight Co.",
-              pct: 0.8,
-              used: "2,400.00",
-              limit: "3,000.00",
-              note: "Every bill was paid on time.",
-            },
-            {
-              name: "Blue Ridge Logistics",
-              pct: 0.3,
-              used: "594.00",
-              limit: "2,000.00",
-              note: "Every bill was paid on time.",
-            },
-            {
-              name: "Atlas Cargo",
-              pct: 0.2,
-              used: "300.00",
-              limit: "1,500.00",
-              note: "No bills have been paid yet.",
-            },
-          ].map((c) => (
-            <div key={c.name} className="flex flex-col gap-8 py-8">
-              <div className="flex justify-between text-label">
-                <span>{c.name}</span>
-                <span className="text-ds-muted">{Math.round(c.pct * 100)}%</span>
-              </div>
-              <FanMeter value={c.pct} label={`${c.name} credit used`} className="w-full" />
-              <p className="text-caption text-ds-muted">
-                {c.used} of {c.limit} USDC. {c.note}
-              </p>
-            </div>
-          ))}
-        </Panel>
-        <Panel
-          title="Latest"
-          gap={4}
-          className="p-20 pb-10"
-          action={
-            <Link className="link focus-ring text-label" href="/pool/history">
-              See all
-            </Link>
-          }
-        >
-          {[
-            {
-              icon: <ArrowLineDown size={16} />,
-              title: "Paid Sam early",
-              amount: "292500000",
-              note: "#1041 · Eastport to Harbor City",
-              when: "Today",
-            },
-            {
-              icon: <SealCheck size={16} />,
-              title: "Northwind paid a bill",
-              amount: "300000000",
-              note: "#1032 · 1 day early",
-              when: "Yesterday",
-            },
-            {
-              icon: <Plus size={16} />,
-              title: "You deposited",
-              amount: "5500000000",
-              note: "",
-              when: "Oct 21",
-            },
-          ].map((h) => (
-            <Link
-              key={h.title}
-              href="/pool/history"
-              className="focus-ring flex items-center gap-12 py-12"
+      {live ? (
+        <LiveSections data={data} />
+      ) : (
+        <>
+          <div className="grid gap-16 md:grid-cols-3">
+            <Stat
+              className="w-full"
+              label="Earned by the pool"
+              value={<Money amount="48600000" />}
+              context={`The pool earns ${POOL_PERCENT} of each bill.`}
+            />
+            <Stat className="w-full" label="Missed payments" value="0" context="Out of 9 trips" />
+            <Stat
+              className="w-full"
+              label="Average trip"
+              value="13 days"
+              context="From payment to repayment"
+            />
+          </div>
+          <div className="grid items-start gap-16 lg:grid-cols-2">
+            <Panel title="Owed by each company">
+              {[
+                {
+                  name: "Northwind Freight Co.",
+                  pct: 0.8,
+                  used: "2,400.00",
+                  limit: "3,000.00",
+                  note: "Every bill was paid on time.",
+                },
+                {
+                  name: "Blue Ridge Logistics",
+                  pct: 0.3,
+                  used: "594.00",
+                  limit: "2,000.00",
+                  note: "Every bill was paid on time.",
+                },
+                {
+                  name: "Atlas Cargo",
+                  pct: 0.2,
+                  used: "300.00",
+                  limit: "1,500.00",
+                  note: "No bills have been paid yet.",
+                },
+              ].map((c) => (
+                <div key={c.name} className="flex flex-col gap-8 py-8">
+                  <div className="flex justify-between text-label">
+                    <span>{c.name}</span>
+                    <span className="text-ds-muted">{Math.round(c.pct * 100)}%</span>
+                  </div>
+                  <FanMeter value={c.pct} label={`${c.name} credit used`} className="w-full" />
+                  <p className="text-caption text-ds-muted">
+                    {c.used} of {c.limit} USDC. {c.note}
+                  </p>
+                </div>
+              ))}
+            </Panel>
+            <Panel
+              title="Latest"
+              gap={4}
+              className="p-20 pb-10"
+              action={
+                <Link className="link focus-ring text-label" href="/pool/history">
+                  See all
+                </Link>
+              }
             >
-              <span className="grid size-36 shrink-0 place-items-center rounded-full bg-ds-canvas">
-                {h.icon}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-label">{h.title}</span>
-                <span className="block text-caption text-ds-muted">
-                  <Money amount={h.amount} />
-                  {h.note && ` · ${h.note}`}
-                </span>
-              </span>
-              <span className="shrink-0 text-caption text-ds-muted">{h.when}</span>
-            </Link>
-          ))}
-        </Panel>
-      </div>
+              {[
+                {
+                  icon: <ArrowLineDown size={16} />,
+                  title: "Paid Sam early",
+                  amount: "292500000",
+                  note: "#1041 · Eastport to Harbor City",
+                  when: "Today",
+                },
+                {
+                  icon: <SealCheck size={16} />,
+                  title: "Northwind paid a bill",
+                  amount: "300000000",
+                  note: "#1032 · 1 day early",
+                  when: "Yesterday",
+                },
+                {
+                  icon: <Plus size={16} />,
+                  title: "You deposited",
+                  amount: "5500000000",
+                  note: "",
+                  when: "Oct 21",
+                },
+              ].map((h) => (
+                <Link
+                  key={h.title}
+                  href="/pool/history"
+                  className="focus-ring flex items-center gap-12 py-12"
+                >
+                  <span className="grid size-36 shrink-0 place-items-center rounded-full bg-ds-canvas">
+                    {h.icon}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-label">{h.title}</span>
+                    <span className="block text-caption text-ds-muted">
+                      <Money amount={h.amount} />
+                      {h.note && ` · ${h.note}`}
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-caption text-ds-muted">{h.when}</span>
+                </Link>
+              ))}
+            </Panel>
+          </div>
+        </>
+      )}
     </div>
   );
   return (
@@ -400,6 +497,19 @@ export function InvestorScreen({
       <div className="flex flex-col gap-24">
         {!state.startsWith("I3") ? (
           home
+        ) : live && !data ? (
+          <Panel className="grid min-h-240 place-content-center text-center">
+            <p className="text-label text-ds-muted">
+              {failed ? "We could not load the pool. Try again in a moment." : "Loading the pool."}
+            </p>
+            {failed && (
+              <Button variant="secondary" className="mx-auto mt-12" onClick={refresh}>
+                Try again
+              </Button>
+            )}
+          </Panel>
+        ) : live && data && state === "I3.3" ? (
+          <LiveHistory accountId={live.accountId} queue={data.queue} />
         ) : state === "I3.3" ? (
           <>
             <header>
@@ -437,6 +547,14 @@ export function InvestorScreen({
               ))}
             </Panel>
           </>
+        ) : live && data && state === "I3.2" ? (
+          <LiveDelivery
+            shipment={data.deliveries.find((s) => s.id === shipmentId)}
+            value={balance.value}
+            total={balance.total}
+          />
+        ) : live && data && (state === "I3.1" || state === "I3.4") ? (
+          <LiveDeliveries deliveries={data.deliveries} />
         ) : state === "I3.2" || state === "I3.5" ? (
           <DeliveryDetails
             id={shipmentId}
@@ -541,9 +659,11 @@ export function InvestorScreen({
             </Panel>
           </>
         )}
-        <p className="text-center text-caption text-ds-muted">
-          This demo uses sample data. It does not move money.
-        </p>
+        {!live && (
+          <p className="text-center text-caption text-ds-muted">
+            This demo uses sample data. It does not move money.
+          </p>
+        )}
       </div>
       {transfer && (
         <ActionSheet
@@ -566,7 +686,9 @@ export function InvestorScreen({
               <p className="text-label text-ds-muted">
                 {deposit
                   ? "It starts paying truck owners on the next delivery."
-                  : "The available part was sent in this local demo."}
+                  : live
+                    ? "The available part is on its way to your wallet."
+                    : "The available part was sent in this local demo."}
               </p>
               {BigInt(receipt?.queued ?? "0") > 0n && (
                 <p className="rounded-row bg-ds-warning-soft p-16 text-label">
@@ -574,7 +696,11 @@ export function InvestorScreen({
                   {formatUsdc(BigInt(receipt!.queued))} USDC is waiting for bills to be paid.
                 </p>
               )}
-              <DemoRecord title={deposit ? "Demo deposit receipt" : "Demo withdrawal receipt"} />
+              {receipt?.tx ? (
+                <ProofLink tx={receipt.tx} />
+              ) : (
+                <DemoRecord title={deposit ? "Demo deposit receipt" : "Demo withdrawal receipt"} />
+              )}
               <div className="w-full rounded-row bg-ds-canvas p-16 text-label">
                 <div className="flex justify-between gap-12 py-4">
                   <span className="text-ds-muted">Your money in the pool</span>
@@ -696,6 +822,11 @@ export function InvestorScreen({
                   )}
                 </>
               )}
+              {txError && (
+                <p role="alert" className="rounded-row bg-ds-danger-result p-14 text-label">
+                  {txError}
+                </p>
+              )}
               <Button
                 disabled={!!error || units <= 0n}
                 loading={waiting}
@@ -713,11 +844,13 @@ export function InvestorScreen({
                   How the pool works and its risks
                 </button>
               )}
-              <p className="text-caption text-ds-muted">
-                {waiting
-                  ? "Two quick approvals. The first one only happens once."
-                  : "This is a local demo. No wallet request is sent."}
-              </p>
+              {(waiting || !live) && (
+                <p className="text-caption text-ds-muted">
+                  {waiting
+                    ? "Two quick approvals. The first one only happens once."
+                    : "This is a local demo. No wallet request is sent."}
+                </p>
+              )}
             </>
           )}
         </ActionSheet>
