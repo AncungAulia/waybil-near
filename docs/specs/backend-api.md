@@ -153,3 +153,15 @@ Storage buckets `documents` and `report-photos` are private. Links are signed an
 `RELAYER_ACCOUNT`, `RELAYER_PRIVATE_KEY`, `USERS_ACCOUNT`, `USERS_PRIVATE_KEY`, `ASSISTANT_ACCOUNT`, `ASSISTANT_PRIVATE_KEY`,
 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `GOOGLE_CLIENT_ID`, `JWT_SECRET`,
 `NEAR_AI_API_KEY`, `EMAIL_API_KEY`.
+
+## Production safety and diagnostics
+
+Production startup requires explicit JWT, Supabase, recovery encryption, Google client,
+relayer/users signing keys, APP_URL, CORS_ORIGINS and TRUST_PROXY_HOPS. APP_URL and all
+browser origins must use HTTPS. Missing configuration stops startup before /health is
+available. Development may still start with integrations disabled. Browser origins are
+normalized to URL origins, including inputs with a trailing slash.
+
+Server diagnostics contain only an operation, error class/code, route template and known
+transaction hash where applicable. They never include exception messages, request bodies,
+query strings, headers, credentials or personal data.

@@ -58,5 +58,30 @@ export const envSchema = z
 export type Env = z.infer<typeof envSchema>;
 export function readEnv(input: NodeJS.ProcessEnv = process.env): Env {
   const values = Object.fromEntries(Object.entries(input).filter(([, v]) => v !== ""));
-  return envSchema.parse(values);
+  const parsed = envSchema.parse(values);
+  if (input.NODE_ENV === "production") {
+    const required = [
+      "JWT_SECRET",
+      "SUPABASE_URL",
+      "SUPABASE_SERVICE_ROLE_KEY",
+      "RECOVERY_ENCRYPTION_KEY",
+      "GOOGLE_CLIENT_ID",
+      "RELAYER_PRIVATE_KEY",
+      "USERS_PRIVATE_KEY",
+      "APP_URL",
+      "CORS_ORIGINS",
+      "TRUST_PROXY_HOPS",
+    ];
+    const missing = required.filter((key) => !values[key]?.trim());
+    if (missing.length) throw new Error(`Missing production configuration: ${missing.join(", ")}`);
+    if (
+      new URL(parsed.APP_URL).protocol !== "https:" ||
+      parsed.CORS_ORIGINS.split(",").some((origin) => new URL(origin.trim()).protocol !== "https:")
+    )
+      throw new Error("Production application and browser origins must use HTTPS.");
+  }
+  parsed.CORS_ORIGINS = parsed.CORS_ORIGINS.split(",")
+    .map((origin) => new URL(origin.trim()).origin)
+    .join(",");
+  return parsed;
 }
