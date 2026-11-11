@@ -94,7 +94,8 @@ No unsigned actions or internal job methods are exposed through this endpoint.
 
 The implementation also provides owner-only `GET /v1/invites` returning `{ invites }`.
 Codes are 24-character random hex strings. Public reads never return phone/address/contact
-details. `shipperName` uses the account ID until the shipper publishes a company name.
+details. `shipperName` is the company name from the shipper's newest application that was
+not rejected, taken when the invite is created. Before the shipper applies it is the account ID.
 Acceptance is a conditional versioned update. Repeating acceptance by the same account
 returns its original acceptance; another account receives 409. Google signup can reserve
 an invitation for five minutes against a hashed Google subject, without consuming it.
@@ -107,6 +108,16 @@ The response distinguishes acceptance from the subsequent shipper-signed network
 | POST | `/v1/invites` | Shipper | Body: `type` (`driver` or `warehouse`), name, phone, destination address for warehouses. Returns a code and link. Expires in 7 days. |
 | GET | `/v1/invites/:code` | Public | Shipper name, type, state (`open`, `used`, `expired`) |
 | POST | `/v1/invites/:code/accept` | Google user | Marks it used. The shipper then calls `add_driver` or `add_destination` on chain (the frontend prompts them). |
+
+## Public names and warehouse destinations
+
+Shipments on chain hold account IDs only. These two reads let screens show names and let a
+warehouse find its destinations, which the contract keeps per shipper.
+
+| Method | Path | Who | What |
+|---|---|---|---|
+| GET | `/v1/profiles?ids=a,b` | Signed in | One to 50 account IDs, comma separated. Returns `ProfilesResponse` `{ profiles: [{ accountId, role, name }] }` for the accounts that have a profile. Unknown accounts are left out. Never returns phone, email or truck plate. `name` is the company name from the shipper's newest application that was not rejected, otherwise the profile name, otherwise empty. |
+| GET | `/v1/me/destinations` | Warehouse | `WarehouseDestinationsResponse` `{ destinations: [{ id, shipperId, shipperName }] }`. The shippers come from the warehouse invites this account accepted, and each shipper's `get_network` gives the destinations that point to this account. A destination appears once the shipper has called `add_destination`. |
 
 ## Shipper applications
 

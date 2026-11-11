@@ -29,6 +29,7 @@ import { Button, ButtonLink } from "@/components/ui/Button";
 import { Money } from "@/components/elements/Money";
 import { ProofLink } from "@/components/elements/ProofLink";
 import { api, ApiError } from "@/lib/api";
+import { useNames } from "@/hooks/useNames";
 import { cn } from "@/lib/cn";
 import {
   getPool,
@@ -132,22 +133,26 @@ function useLoad<T>(load: () => Promise<T>, key: string) {
 }
 
 /** What a proposal changes, in plain words. */
-function describe(kind: ProposalKind, shippers: Record<string, Shipper | null>) {
+function describe(
+  kind: ProposalKind,
+  shippers: Record<string, Shipper | null>,
+  name: (accountId: string) => string = (accountId) => accountId,
+) {
   if ("StartShipper" in kind)
     return {
-      title: `Start ${kind.StartShipper.shipper}`,
+      title: `Start ${name(kind.StartShipper.shipper)}`,
       from: 0n,
       to: BigInt(kind.StartShipper.limit),
     };
   if ("SetLimit" in kind) {
     const now = shippers[kind.SetLimit.shipper]?.limit;
     return {
-      title: `Change ${kind.SetLimit.shipper}’s limit`,
+      title: `Change ${name(kind.SetLimit.shipper)}’s limit`,
       from: now === undefined ? undefined : BigInt(now),
       to: BigInt(kind.SetLimit.limit),
     };
   }
-  if ("Unpause" in kind) return { title: `Turn ${kind.Unpause.shipper} back on` };
+  if ("Unpause" in kind) return { title: `Turn ${name(kind.Unpause.shipper)} back on` };
   if ("CoverFromReserve" in kind)
     return { title: `Cover bill #${kind.CoverFromReserve.shipment_id} from the reserve` };
   if ("Upgrade" in kind) return { title: "Install a new version of Waybil" };
@@ -293,6 +298,7 @@ function Approvals({ me }: { me: string }) {
     }
   }
 
+  const name = useNames(data?.proposals.map((p) => shipperOf(p.kind)) ?? []);
   if (error) return <Failed error={error} reload={reload} />;
   const open = data?.proposals.filter((p) => p.status === "Open") ?? [];
   const closed = data?.proposals.filter((p) => p.status !== "Open").slice(0, 6) ?? [];
@@ -352,7 +358,7 @@ function Approvals({ me }: { me: string }) {
               {closed.map((p) => (
                 <div key={p.id} className="approval-recent-row py-12">
                   <p className="text-label font-medium break-all">
-                    {describe(p.kind, data.shippers).title}
+                    {describe(p.kind, data.shippers, name).title}
                   </p>
                   <p className="text-caption text-ds-muted">
                     {p.status} · {p.approvals.length} approved · {p.rejections.length} rejected ·{" "}
@@ -390,7 +396,7 @@ function Approvals({ me }: { me: string }) {
             limit=""
             onLimit={() => {}}
             invalidLimit={false}
-            subtitle={describe(rejecting.kind, data.shippers).title}
+            subtitle={describe(rejecting.kind, data.shippers, name).title}
           />
           <div className="admin-sheet-actions flex justify-end gap-10">
             <Button variant="quiet" onClick={() => setRejecting(null)}>
@@ -430,7 +436,8 @@ function ProposalCard({
   onApprove: () => void;
   onReject: () => void;
 }) {
-  const change = describe(p.kind, shippers);
+  const name = useNames([shipperOf(p.kind)]);
+  const change = describe(p.kind, shippers, name);
   const voted = p.approvals.includes(me) || p.rejections.includes(me);
   return (
     <Panel className="approval-proposal">

@@ -9,6 +9,7 @@ import { FanMeter } from "@/components/elements/FanMeter";
 import { StatusPill } from "@/components/elements/StatusPill";
 import { Stat } from "@/components/elements/Stat";
 import { cn } from "@/lib/cn";
+import { useNames } from "@/hooks/useNames";
 import { CONTRACT_RECORD_URL, nearblocksUrl } from "@/lib/env";
 import { statusChip } from "@/lib/status";
 import { latestEvents, poolStats, type LivePool } from "../data/live";
@@ -30,6 +31,11 @@ const percent = (part: bigint, whole: bigint) =>
 
 /** Stats, credit per company and the latest money moments on the pool page. */
 export function LiveSections({ data }: { data: LivePool | null }) {
+  const name = useNames(
+    data
+      ? [...Object.keys(data.shippers), ...data.deliveries.flatMap((s) => [s.shipper, s.driver])]
+      : [],
+  );
   if (!data) return null;
   const stats = poolStats(data.deliveries);
   const companies = Object.entries(data.shippers).filter(
@@ -69,7 +75,7 @@ export function LiveSections({ data }: { data: LivePool | null }) {
             return (
               <div key={account} className="flex flex-col gap-8 py-8">
                 <div className="flex justify-between gap-12 text-label">
-                  <span className="min-w-0 break-all">{account}</span>
+                  <span className="min-w-0 break-all">{name(account)}</span>
                   <span className="text-ds-muted">{Math.round(pct * 100)}%</span>
                 </div>
                 <FanMeter value={pct} label={`${account} credit used`} className="w-full" />
@@ -109,7 +115,9 @@ export function LiveSections({ data }: { data: LivePool | null }) {
               </span>
               <span className="min-w-0 flex-1">
                 <span className="block text-label break-all">
-                  {kind === "paid" ? `Paid ${s.driver} early` : `${s.shipper} paid a bill`}
+                  {kind === "paid"
+                    ? `Paid ${name(s.driver)} early`
+                    : `${name(s.shipper)} paid a bill`}
                 </span>
                 <span className="block text-caption text-ds-muted">
                   <Money amount={kind === "paid" ? s.advance : s.bill} /> · #{s.id}
@@ -128,6 +136,7 @@ export function LiveSections({ data }: { data: LivePool | null }) {
 
 /** I3.1 and I3.4 with the shipments the pool paid for. */
 export function LiveDeliveries({ deliveries }: { deliveries: Shipment[] }) {
+  const name = useNames(deliveries.flatMap((s) => [s.shipper, s.driver]));
   const [filter, setFilter] = useState("All");
   const repaid = deliveries.filter((s) => s.status === "Repaid").length;
   const shown = deliveries.filter(
@@ -204,9 +213,9 @@ export function LiveDeliveries({ deliveries }: { deliveries: Shipment[] }) {
                     <Package size={17} />
                   </span>
                   <span className="min-w-0">
-                    <span className="block text-body break-all">{s.shipper}</span>
+                    <span className="block text-body break-all">{name(s.shipper)}</span>
                     <span className="block text-caption break-all text-ds-muted">
-                      #{s.id} · {s.driver}
+                      #{s.id} · {name(s.driver)}
                     </span>
                   </span>
                 </span>
@@ -240,6 +249,7 @@ export function LiveDelivery({
   value: string;
   total: string;
 }) {
+  const name = useNames([s?.shipper, s?.driver]);
   const back = (
     <Link
       href="/pool/deliveries"
@@ -268,11 +278,11 @@ export function LiveDelivery({
   const covered = s.status === "CoveredByReserve";
   const money = covered
     ? [
-        { label: `Paid early to ${s.driver}`, value: BigInt(s.advance) },
+        { label: `Paid early to ${name(s.driver)}`, value: BigInt(s.advance) },
         { label: "The company paid back", value: 0n },
       ]
     : [
-        { label: `Paid early to ${s.driver}`, value: BigInt(s.advance) },
+        { label: `Paid early to ${name(s.driver)}`, value: BigInt(s.advance) },
         {
           label: s.status === "Repaid" ? "The company paid back" : "The company pays back",
           value: BigInt(s.bill),
@@ -283,14 +293,18 @@ export function LiveDelivery({
         { label: "Waybil fee", value: split.waybil },
       ];
   const steps = [
-    { title: `Approved by ${s.shipper}`, at: s.approved_at, detail: `Bill due ${day(s.due_at)}` },
-    { title: `Picked up by ${s.driver}`, at: s.picked_up_at, detail: `${s.qty} ${s.unit}` },
+    {
+      title: `Approved by ${name(s.shipper)}`,
+      at: s.approved_at,
+      detail: `Bill due ${day(s.due_at)}`,
+    },
+    { title: `Picked up by ${name(s.driver)}`, at: s.picked_up_at, detail: `${s.qty} ${s.unit}` },
     {
       title: "Arrival confirmed by the warehouse",
       at: s.arrived_at,
       detail: s.good_qty === null ? "" : `${s.good_qty} of ${s.qty} ${s.unit} in good shape`,
     },
-    { title: `${s.driver} got paid`, at: s.paid_at, detail: "" },
+    { title: `${name(s.driver)} got paid`, at: s.paid_at, detail: "" },
     { title: "The company paid the bill", at: s.repaid_at, detail: "" },
   ].filter((step) => step.at);
   return (
@@ -300,7 +314,7 @@ export function LiveDelivery({
         <div className="min-w-0">
           <h1 className="text-title break-all">Delivery #{s.id}</h1>
           <p className="mt-6 text-label break-all text-ds-muted">
-            {s.shipper} · {s.driver}
+            {name(s.shipper)} · {name(s.driver)}
           </p>
         </div>
         <StatusPill status={statusChip(s)} />
