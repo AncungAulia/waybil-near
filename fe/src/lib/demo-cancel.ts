@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useSyncExternalStore } from "react";
+import { LIVE } from "./env";
 
 /*
  * Read-only view of the shipments the shipper cancelled in the demo. The shipper module
@@ -11,8 +12,8 @@ const CANCELLED_KEY = "waybil-demo-cancelled-v1";
 const CANCELLED_AT_KEY = "waybil-demo-cancelled-at-v1";
 /** Only #1044 and shipments created in the demo can be cancelled (status Approved only). */
 const CANCELLABLE = (id: number) => id === 1044 || id >= 1045;
-/** The demo runs on a fixed day, Nov 12, the same one the shipper screens use. */
-const DEMO_DAY = Date.parse("2026-11-12");
+/** The demo runs on a fixed day, Nov 12, the same one the shipper screens use. Live uses today. */
+const DEMO_DAY = LIVE ? Date.now() : Date.parse("2026-11-12");
 
 function read(key: string) {
   try {
