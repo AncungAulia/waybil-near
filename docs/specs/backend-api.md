@@ -190,3 +190,9 @@ POST /v1/auth/logout revokes every existing session for the account by increment
 session version. The device's on-chain key remains subject to the normal recovery flow.
 SDK RPC requests make one attempt, and integration operations have a 15-second deadline.
 Timeouts remain ambiguous and must be reconciled before another signed intent is prepared.
+
+A definite RPC transaction rejection (including invalid nonce, expired transaction and
+insufficient balance) completes the saved intent as failed and releases the signer queue.
+Transport failures, timeouts and unknown execution remain pending. Signer contention returns
+503 E_SIGNER_BUSY with a retry message rather than a client edit conflict. A finalized false
+function result is failed, including mark_late returning false; incomplete outcomes stay pending.
