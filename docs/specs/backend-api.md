@@ -119,6 +119,20 @@ warehouse find its destinations, which the contract keeps per shipper.
 | GET | `/v1/profiles?ids=a,b` | Signed in | One to 50 account IDs, comma separated. Returns `ProfilesResponse` `{ profiles: [{ accountId, role, name }] }` for the accounts that have a profile. Unknown accounts are left out. Never returns phone, email or truck plate. `name` is the company name from the shipper's newest application that was not rejected, otherwise the profile name, otherwise empty. |
 | GET | `/v1/me/destinations` | Warehouse | `WarehouseDestinationsResponse` `{ destinations: [{ id, shipperId, shipperName }] }`. The shippers come from the warehouse invites this account accepted, and each shipper's `get_network` gives the destinations that point to this account. A destination appears once the shipper has called `add_destination`. |
 
+## Pool history
+
+The contract keeps no list of an investor's past deposits and withdrawals, only its events
+(`deposited`, `withdraw_paid`, `withdraw_queued`, `withdraw_failed`). The backend reads them from
+the NearBlocks indexer (`NEARBLOCKS_API_URL`, v3) and keeps them in memory. A restart reads them
+again. The free indexer plan allows a few calls a minute, so one scan runs at most once a minute
+and opens at most 4 transactions. Older events fill in on later scans. Set `NEARBLOCKS_API_KEY`
+for a higher limit. If the indexer fails before anything was loaded, the route returns 503
+`E_UNAVAILABLE`. After that it serves what it has.
+
+| Method | Path | Who | What |
+|---|---|---|---|
+| GET | `/v1/me/history` | Investor | `PoolHistoryResponse` `{ items: [{ kind, amount, shares, txHash, at }] }`, newest first. `kind` is `deposit`, `withdraw_paid`, `withdraw_queued` or `withdraw_failed`. `amount` is in USDC base units. `shares` is set for deposits. |
+
 ## Shipper applications
 
 Company JSON is `{name,registration,country,province,city,address,postal,contact,job,phone,
@@ -313,7 +327,8 @@ Storage buckets `documents` and `report-photos` are private. Links are signed an
 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `GOOGLE_CLIENT_ID`, `JWT_SECRET`,
 `NEAR_AI_API_KEY`, `NEAR_AI_MODEL`, `NEAR_AI_TRUSTED_SIGNERS_JSON`, `CREDIT_POLICY_JSON`,
 `CREDIT_AUTO_LIMITS`, `CREDIT_WORKER_ENABLED`, `JOBS_WORKER_ENABLED`, `EMAIL_API_KEY`,
-`EMAIL_FROM`. Additional auth/origin configuration is listed in `be/.env.example` and the
+`EMAIL_FROM`, `NEARBLOCKS_API_URL` (default `https://api-testnet.nearblocks.io`),
+`NEARBLOCKS_API_KEY` (optional). Additional auth/origin configuration is listed in `be/.env.example` and the
 feature sections above.
 
 ## Production safety and diagnostics
