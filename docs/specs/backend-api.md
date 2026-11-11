@@ -165,3 +165,13 @@ normalized to URL origins, including inputs with a trailing slash.
 Server diagnostics contain only an operation, error class/code, route template and known
 transaction hash where applicable. They never include exception messages, request bodies,
 query strings, headers, credentials or personal data.
+
+Google provisioning reserves a durable daily slot under a global lease before funding a
+new identity. GOOGLE_SIGNUP_DAILY_LIMIT defaults to 10 (UTC); zero disables new signups.
+Reservations count even if provisioning fails, and retries of an identity reuse its slot
+on that date. Accounts receive 0.005 NEAR for storage; gas is sponsored separately. The
+parent's spendable balance is checked and low funds produce a safe operational diagnostic.
+POST /v1/auth/logout revokes every existing session for the account by incrementing its
+session version. The device's on-chain key remains subject to the normal recovery flow.
+SDK RPC requests make one attempt, and integration operations have a 15-second deadline.
+Timeouts remain ambiguous and must be reconciled before another signed intent is prepared.

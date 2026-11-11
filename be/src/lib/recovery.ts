@@ -19,7 +19,9 @@ export class RecoveryKeys {
     };
   }
   open(sealed: SealedKey, identity: string): string {
-    const decipher = createDecipheriv("aes-256-gcm", this.key(), Buffer.from(sealed.iv, "base64"));
+    const decipher = createDecipheriv("aes-256-gcm", this.key(), Buffer.from(sealed.iv, "base64"), {
+      authTagLength: 16,
+    });
     decipher.setAAD(Buffer.from(identity));
     decipher.setAuthTag(Buffer.from(sealed.tag, "base64"));
     return Buffer.concat([

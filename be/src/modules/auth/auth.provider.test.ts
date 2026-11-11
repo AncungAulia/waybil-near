@@ -17,7 +17,7 @@ it("creates only role-scoped device access and resumes an existing recovery-owne
     .spyOn(provider, "viewAccount")
     .mockRejectedValueOnce(new AccountDoesNotExistError(accountId, "block", 1))
     .mockResolvedValue({
-      amount: 1n,
+      amount: 1000000000000000000000000n,
       locked: 0n,
       code_hash: "none",
       storage_usage: 0,
@@ -39,11 +39,12 @@ it("creates only role-scoped device access and resumes an existing recovery-owne
     await auth.ensureAccount(accountId, device, recovery.toString(), "driver");
     const request = send.mock.calls[0]![0];
     expect(request.receiverId).toBe(accountId);
+    expect(request.actions[1]!.transfer!.deposit).toBe(5000000000000000000000n);
     const rule = request.actions[3]!.addKey!.accessKey.permission.functionCall!;
     expect(rule.methodNames).toEqual(["confirm_pickup"]);
     expect(rule.receiverId).toBe(env.WAYBIL_CONTRACT);
     await auth.ensureAccount(accountId, device, recovery.toString(), "driver");
-    expect(view).toHaveBeenCalledTimes(2);
+    expect(view).toHaveBeenCalledTimes(3);
     expect(send).toHaveBeenCalledTimes(1);
   } finally {
     send.mockRestore();

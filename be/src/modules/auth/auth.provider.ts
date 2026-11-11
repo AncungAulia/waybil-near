@@ -19,6 +19,7 @@ import { OAuth2Client } from "google-auth-library";
 import type { Env } from "../../config/env";
 import type { ChallengeResponse } from "@waybil/shared";
 import type { Leases } from "../../lib/leases";
+import { logError } from "../../lib/logger";
 import { allowed, ApiException, unavailable } from "../../lib/errors";
 import { rpcCall, sdkAccount } from "../../lib/near-sdk";
 import type { LoginProvider } from "./auth.ports";
@@ -115,13 +116,24 @@ export class AuthProvider implements LoginProvider {
         if (error instanceof AccountDoesNotExistError) exists = false;
         else throw error;
       }
-      if (!exists)
+      if (!exists) {
+        const parent = await this.provider.viewAccount({ accountId: this.env.USERS_ACCOUNT });
+        const spendable =
+          BigInt(parent.amount) - BigInt(parent.storage_usage) * 10000000000000000000n;
+        if (spendable < nearToYocto("0.1"))
+          logError("signup_parent_low_balance", new Error(), { code: "E_SIGNUP_FUNDS" });
+        if (spendable < nearToYocto("0.01"))
+          throw new ApiException(
+            503,
+            "E_SIGNUP_FUNDS",
+            "Account setup is temporarily unavailable. Please try again later.",
+          );
         await this.leases.run("signer:users", () =>
           this.parent().signAndSendTransaction({
             receiverId: accountId,
             actions: [
               actions.createAccount(),
-              actions.transfer(nearToYocto("0.05")),
+              actions.transfer(nearToYocto("0.005")),
               actions.addFullAccessKey(recoveryKey),
               actions.addFunctionCallAccessKey(
                 PublicKey.fromString(deviceKey),
@@ -133,6 +145,7 @@ export class AuthProvider implements LoginProvider {
             retries: 0,
           }),
         );
+      }
       const recovery = await this.provider.viewAccessKey({ accountId, publicKey: recoveryKey });
       allowed(recovery.permission === "FullAccess");
       await this.checkDevice(accountId, deviceKey, role);
