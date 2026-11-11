@@ -1,6 +1,8 @@
 # Warehouse screens
 
-Issue #29. W1.1–W1.3, W2.1–W2.12 and W3.1–W3.2 live in `components/WarehouseScreen.tsx`.
+Issue #29. W1.1–W1.3, W2.1–W2.12 and W3.1–W3.2 are drawn by `components/WarehouseScreen.tsx`,
+which owns the state and renders `Arrivals` (W1), `ScanFlow`, `CheckGoods`, `ReportForm` and
+`ScanResult` (W2) and `History` (W3).
 `data/fixtures.ts` provides a shared-type Shipment for each drawn state.
 
 Routes are `/warehouse`, `/warehouse/scan` and `/warehouse/history`.

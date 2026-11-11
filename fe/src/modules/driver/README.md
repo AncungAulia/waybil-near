@@ -1,6 +1,8 @@
 # Driver screens
 
-Issue #28. K1.1–K1.3, K2.1–K2.13 and K3.1–K3.4 live in `components/DriverScreen.tsx`.
+Issue #28. K1.1–K1.3, K2.1–K2.13 and K3.1–K3.4 are drawn by `components/DriverScreen.tsx`,
+which owns the state and renders `TripsList` (K1), `TripDetail`, `TripSheet` and `TripFullScreens`
+(K2), `Payouts` (K3.1–K3.2) and `Companies` (K3.3–K3.4).
 `data/fixtures.ts` provides a shared-type Shipment for each drawn state.
 
 Routes are `/driver`, `/driver/trips/1041`, `/driver/trips/1044`, `/driver/payouts`
