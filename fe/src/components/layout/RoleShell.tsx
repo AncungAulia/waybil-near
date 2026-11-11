@@ -20,6 +20,15 @@ import {
 import { Navbar } from "./Navbar";
 import { Logo } from "./Logo";
 import { cn } from "@/lib/cn";
+import { useAuth } from "@/providers/AuthProvider";
+
+const LABELS = {
+  driver: "Driver",
+  warehouse: "Warehouse",
+  shipper: "Shipper",
+  investor: "Investor",
+  admin: "Waybil team",
+};
 
 export function RoleShell({
   role,
@@ -53,14 +62,19 @@ export function RoleShell({
     investor: "Maya",
     admin: "Risk lead",
   };
-  const name = names[role];
-  const sub = {
-    driver: "Driver",
-    warehouse: "Harbor Hub",
-    shipper: "Shipper",
-    investor: "Investor",
-    admin: "Waybil team",
-  }[role];
+  /* The signed-in person, when this shell is their own role. Otherwise the demo names. */
+  const { profile } = useAuth();
+  const live = profile?.role === role ? profile : null;
+  const name = live ? live.name || live.accountId : names[role];
+  const sub = live
+    ? LABELS[role]
+    : {
+        driver: "Driver",
+        warehouse: "Harbor Hub",
+        shipper: "Shipper",
+        investor: "Investor",
+        admin: "Waybil team",
+      }[role];
   const avatar = (
     <img src={`/illustrations/${role}-avatar.svg`} alt={name} className="size-36 rounded-full" />
   );
@@ -153,7 +167,13 @@ export function RoleShell({
       </header>
       <main className="mt-16 md:mt-24">{children}</main>
       {wallet && hasWallet && (
-        <DemoWallet key={wallet} initialState={wallet} role={role} onClose={closeWallet} />
+        <DemoWallet
+          key={wallet}
+          initialState={wallet}
+          role={role}
+          live={live ? { accountId: live.accountId, name: live.name } : undefined}
+          onClose={closeWallet}
+        />
       )}
       {!detail && (
         <nav
