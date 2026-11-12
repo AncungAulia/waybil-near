@@ -17,7 +17,12 @@ import { useTrips } from "@/hooks/useTrips";
 import { sharingNote, useShareLocation } from "@/hooks/useShareLocation";
 import { directionsUrl, duration } from "@/lib/route";
 import { FILL_UNDER_HEADER, FillEmpty } from "@/components/elements/EmptyState";
-import { SkeletonGroup, SkeletonHeader, SkeletonListPanel } from "@/components/elements/Skeleton";
+import {
+  Skeleton,
+  SkeletonGroup,
+  SkeletonHeader,
+  SkeletonListPanel,
+} from "@/components/elements/Skeleton";
 import { useLive } from "@/hooks/useLive";
 import { useNames } from "@/hooks/useNames";
 import { ApiError } from "@/lib/api";
@@ -179,7 +184,7 @@ function Trip({
   const [tx, setTx] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const name = useNames([s?.shipper]);
-  const { trips } = useTrips(s ? [s.id] : []);
+  const { trips, data: tripData } = useTrips(s ? [s.id] : []);
   const trip = trips[0];
   const sharing = useShareLocation(s?.id, s?.status === "PickedUp");
   const back = <BackLink href="/driver">Trips</BackLink>;
@@ -228,7 +233,10 @@ function Trip({
       {/* The map on the left, at the full height of the cards on the right. */}
       <div className="grid gap-16 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-24">
         <div className="flex flex-col gap-10">
-          {trip ? (
+          {!tripData ? (
+            /* The map's place is held while the trip loads. */
+            <Skeleton className="h-300 w-full rounded-card lg:h-auto lg:min-h-480 lg:flex-1" />
+          ) : trip ? (
             <>
               <TripMap
                 trip={trip}
