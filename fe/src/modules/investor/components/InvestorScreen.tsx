@@ -255,7 +255,8 @@ export function InvestorScreen({
           </p>
         )}
       </div>
-      {transfer && (
+      {/* The risks open in place of the transfer sheet, which comes back as it was on close. */}
+      {transfer && !risks && (
         <TransferSheet
           deposit={deposit}
           success={success}
