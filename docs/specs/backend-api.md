@@ -277,6 +277,12 @@ unexpired pins. Its proof mode is explicitly `pinned_model_signer`; it does not 
 perform fresh Intel/NVIDIA hardware quote verification. Gateway-only/missing/invalid proofs
 cannot authorize a limit write. Pin changes require operational review; there is no TOFU.
 
+The chosen model is `Qwen/Qwen3.8-27B`, with `z-ai/glm-5.3-flash` as the fallback. The
+adapter turns model thinking off so the 2048-token budget goes to the JSON answer: model IDs
+starting with `Qwen/` get `chat_template_kwargs: {enable_thinking: false}`, every other model
+gets `reasoning_effort: "low"`. The prompt asks for `bankCompany` as the account holder on the
+bank statement, not the bank's name. Each NEAR AI request times out after 120 seconds.
+
 One active review per shipper is enforced. No-change decisions under a configured policy
 require three additional Repaid shipment IDs before another review. Configuration-only
 no-change results are not credit decisions. Pending proposals and contract cooldowns are
