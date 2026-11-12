@@ -117,3 +117,11 @@ export function remaining(trip: Trip, truck: TruckOnMap | null) {
 export function directionsUrl(lat: number, lng: number) {
   return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`;
 }
+
+/** "45 min", "2 h" or "1 h 20 min". */
+export function duration(minutes: number) {
+  if (minutes < 60) return `${Math.max(1, Math.round(minutes))} min`;
+  const h = Math.floor(minutes / 60);
+  const m = Math.round(minutes % 60);
+  return m ? `${h} h ${m} min` : `${h} h`;
+}

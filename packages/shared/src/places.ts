@@ -48,6 +48,14 @@ export interface RouteLine {
   coordinates: [number, number][];
 }
 
+/** GET /v1/places/route: the road between two of the shipper's places, before a trip exists. */
+export interface RoutePreview {
+  route: RouteLine;
+  routeSource: "road" | "straight";
+  distanceKm: number;
+  durationMin: number | null;
+}
+
 /** The newest point a driver's phone sent while the truck was on the road. */
 export interface TruckLocation {
   lat: number;

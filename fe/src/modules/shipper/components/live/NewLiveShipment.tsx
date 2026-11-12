@@ -1,7 +1,13 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { advanceFor, formatUsdc, parseUsdc, type TripCreate } from "@waybil/shared";
+import {
+  advanceFor,
+  formatUsdc,
+  parseUsdc,
+  type RoutePreview,
+  type TripCreate,
+} from "@waybil/shared";
 import { MapPin, UserPlus } from "@phosphor-icons/react";
 import { Panel } from "@/components/layout/Panel";
 import { Button, ButtonLink } from "@/components/ui/Button";
@@ -12,8 +18,9 @@ import { Money } from "@/components/elements/Money";
 import { FillEmpty } from "@/components/elements/EmptyState";
 import { RouteMap } from "@/components/elements/RouteMap";
 import { api } from "@/lib/api";
-import { km } from "@/lib/route";
+import { duration, km } from "@/lib/route";
 import { usePlaces } from "@/hooks/useTrips";
+import { useLive } from "@/hooks/useLive";
 import { WAYBIL_CONTRACT } from "@/lib/env";
 import { listShipmentsByShipper } from "@/lib/near";
 import { callContract } from "@/lib/wallet";
@@ -39,6 +46,11 @@ export function NewLiveShipment({ data, refresh }: { data: LiveShipperData; refr
     (i) => i.type === "warehouse" && i.acceptedBy === chosen?.warehouse && i.placeId,
   )?.placeId;
   const destPlace = (placeList?.places ?? []).find((p) => p.id === destPlaceId);
+  /* The road between the two, worked out by the server before anything is approved. */
+  const preview = useLive(
+    () => api<RoutePreview>(`/places/route?from=${pickup!.id}&to=${destPlace!.id}`),
+    pickup && destPlace ? `${pickup.id}-${destPlace.id}` : null,
+  );
   const [qty, setQty] = useState("");
   const [unit, setUnit] = useState("");
   const [fee, setFee] = useState("");
@@ -222,14 +234,22 @@ export function NewLiveShipment({ data, refresh }: { data: LiveShipperData; refr
             {pickup && destPlace ? (
               <>
                 <RouteMap
-                  className="h-200 w-full"
-                  chip="Route preview"
+                  /* A new pair starts a new map, so it fits the new route. */
+                  key={`${pickup.id}-${destPlace.id}`}
+                  className="h-220 w-full"
+                  chip={
+                    preview.data?.routeSource === "road"
+                      ? "Route preview"
+                      : preview.data
+                        ? "Direct route preview"
+                        : "Finding the road"
+                  }
                   trips={[
                     {
                       id: "preview",
                       pickup,
                       destination: destPlace,
-                      route: [
+                      route: preview.data?.route.coordinates ?? [
                         [pickup.lng, pickup.lat],
                         [destPlace.lng, destPlace.lat],
                       ],
@@ -237,9 +257,9 @@ export function NewLiveShipment({ data, refresh }: { data: LiveShipperData; refr
                   ]}
                 />
                 <p className="text-caption text-ds-muted">
-                  {pickup.name} to {destPlace.name} is about{" "}
-                  {Math.round(km([pickup.lng, pickup.lat], [destPlace.lng, destPlace.lat]))} km in a
-                  straight line. The road route is drawn once you approve.
+                  {preview.data?.routeSource === "road"
+                    ? `${pickup.name} to ${destPlace.name} is ${Math.round(preview.data.distanceKm)} km by road${preview.data.durationMin != null ? `, about ${duration(preview.data.durationMin)} of driving` : ""}.`
+                    : `${pickup.name} to ${destPlace.name} is about ${Math.round(km([pickup.lng, pickup.lat], [destPlace.lng, destPlace.lat]))} km in a straight line.`}
                 </p>
               </>
             ) : (
