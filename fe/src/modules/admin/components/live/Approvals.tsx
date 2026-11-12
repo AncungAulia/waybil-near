@@ -1,5 +1,8 @@
 "use client";
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useInvalidate } from "@/hooks/useInvalidate";
+import { qk } from "@/lib/queryKeys";
 import {
   formatUsdc,
   type Proposal,
@@ -68,35 +71,42 @@ export function Approvals({ me }: { me: string }) {
     };
   }, "approvals");
   const [done, setDone] = useState<Done>(null);
-  const [busy, setBusy] = useState<number | null>(null);
   const [rejecting, setRejecting] = useState<Proposal | null>(null);
   const [reason, setReason] = useState("");
   const [note, setNote] = useState("");
+  const invalidate = useInvalidate();
 
-  async function vote(p: Proposal, approve: boolean) {
-    setBusy(p.id);
-    setDone(null);
-    try {
-      const tx = await callContract(WAYBIL_CONTRACT, "vote", { id: p.id, approve }, { gas: GAS });
-      let text = approve ? "Your approval is recorded." : "Your rejection is recorded.";
-      if (!approve) {
-        const body = { reason: VOTE_REASONS[reason] ?? "other", note: note.trim() };
-        /* The vote must be final before the backend sees it, so try once more after a moment. */
-        await api(`/admin/proposals/${p.id}/reasons`, { body }).catch(async () => {
-          await new Promise((wait) => setTimeout(wait, 2500));
-          await api(`/admin/proposals/${p.id}/reasons`, { body }).catch(() => {
-            text = "Your rejection is recorded. The reason could not be saved.";
-          });
+  /* Records the vote, then saves the reason for a rejection with the backend. */
+  async function record({ p, approve }: { p: Proposal; approve: boolean }): Promise<Done> {
+    const tx = await callContract(WAYBIL_CONTRACT, "vote", { id: p.id, approve }, { gas: GAS });
+    let text = approve ? "Your approval is recorded." : "Your rejection is recorded.";
+    if (!approve) {
+      const body = { reason: VOTE_REASONS[reason] ?? "other", note: note.trim() };
+      /* The vote must be final before the backend sees it, so try once more after a moment. */
+      await api(`/admin/proposals/${p.id}/reasons`, { body }).catch(async () => {
+        await new Promise((wait) => setTimeout(wait, 2500));
+        await api(`/admin/proposals/${p.id}/reasons`, { body }).catch(() => {
+          text = "Your rejection is recorded. The reason could not be saved.";
         });
-      }
-      setDone({ text, tx });
-      setRejecting(null);
-      reload();
-    } catch (e) {
-      setDone({ text: failure(e) });
-    } finally {
-      setBusy(null);
+      });
     }
+    return { text, tx };
+  }
+  const voting = useMutation({
+    mutationFn: record,
+    onSuccess: (next) => {
+      setDone(next);
+      setRejecting(null);
+      /* A vote can start a shipper or change a limit, which other team pages show too. */
+      void invalidate(qk.allAdmin());
+    },
+    onError: (e) => setDone({ text: failure(e) }),
+  });
+  /* The proposal being voted on, while its wallet request is open. */
+  const busy = voting.isPending ? voting.variables.p.id : null;
+  function vote(p: Proposal, approve: boolean) {
+    setDone(null);
+    voting.mutate({ p, approve });
   }
 
   const name = useNames(data?.proposals.map((p) => shipperOf(p.kind)) ?? []);
@@ -128,7 +138,7 @@ export function Approvals({ me }: { me: string }) {
                   reasons={data.reasons.filter((r) => r.proposalId === p.id)}
                   me={me}
                   busy={busy === p.id}
-                  onApprove={() => void vote(p, true)}
+                  onApprove={() => vote(p, true)}
                   onReject={() => {
                     setReason("");
                     setNote("");
@@ -210,7 +220,7 @@ export function Approvals({ me }: { me: string }) {
               disabled={!reason}
               loading={busy === rejecting.id}
               loadingLabel="Waiting for wallet"
-              onClick={() => void vote(rejecting, false)}
+              onClick={() => vote(rejecting, false)}
             >
               Reject
             </Button>

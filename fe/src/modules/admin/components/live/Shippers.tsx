@@ -119,7 +119,6 @@ export function Shippers() {
           onDone={(next) => {
             setDone(next);
             setDeciding(null);
-            reload();
           }}
         />
       )}

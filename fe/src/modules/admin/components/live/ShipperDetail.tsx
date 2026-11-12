@@ -1,5 +1,8 @@
 "use client";
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useInvalidate } from "@/hooks/useInvalidate";
+import { qk } from "@/lib/queryKeys";
 import {
   formatUsdc,
   type ApplicationDetail,
@@ -79,10 +82,21 @@ export function ShipperDetail({ account }: { account: string }) {
   const [reason, setReason] = useState("");
   const [note, setNote] = useState("");
   const [limit, setLimit] = useState("");
-  const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<Done>(null);
   const [sheetError, setSheetError] = useState<string | null>(null);
   const [proof, setProof] = useState<string | null>(null);
+  const invalidate = useInvalidate();
+  const action = useMutation({
+    mutationFn: (run: () => Promise<Done>) => run(),
+    onSuccess: (next) => {
+      setDone(next);
+      setSheet(null);
+      /* A pause or a proposal shows on this page, in the list and in approvals. */
+      void invalidate(qk.allAdmin());
+    },
+    onError: (e) => setSheetError(failure(e)),
+  });
+  const busy = action.isPending;
 
   const back = <BackLink href="/admin/shippers">Shippers</BackLink>;
   if (error)
@@ -114,18 +128,9 @@ export function ShipperDetail({ account }: { account: string }) {
       </>
     );
 
-  async function send(run: () => Promise<Done>) {
-    setBusy(true);
+  function send(run: () => Promise<Done>) {
     setSheetError(null);
-    try {
-      setDone(await run());
-      setSheet(null);
-      reload();
-    } catch (e) {
-      setSheetError(failure(e));
-    } finally {
-      setBusy(false);
-    }
+    action.mutate(run);
   }
   const pause = () =>
     send(async () => {
@@ -395,7 +400,6 @@ export function ShipperDetail({ account }: { account: string }) {
           onDone={(next) => {
             setDone(next);
             setSheet(null);
-            reload();
           }}
         />
       )}
