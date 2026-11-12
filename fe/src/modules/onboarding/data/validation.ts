@@ -1,4 +1,4 @@
-import { parseUsdc } from "@waybil/shared";
+import { isValidPlate, parseUsdc } from "@waybil/shared";
 import { phoneError } from "@/lib/phone";
 export {
   PHONE_COUNTRIES,
@@ -51,8 +51,8 @@ export function driverErrors(
   return {
     name: draft.name.trim() ? undefined : "Enter your full name.",
     phone: phoneError(draft.phone, phoneCode),
-    plate: /^[A-Z]{1,4}-\d{1,5}$/.test(draft.plate.trim())
+    plate: isValidPlate(draft.plate)
       ? undefined
-      : "Use the format on your plate, like NWF-204.",
+      : "Use the letters and numbers on your plate, like B 1234 EOF.",
   };
 }

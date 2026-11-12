@@ -49,7 +49,7 @@ describe("onboarding validation", () => {
     expect(countryForDialCode("+1")).toBe("US");
     expect(countryForDialCode("+62")).toBe("ID");
     expect(
-      driverErrors({ name: "Sam Carter", phone: "207 555 0199", plate: "AB1234" }, "+1").plate,
+      driverErrors({ name: "Sam Carter", phone: "207 555 0199", plate: "1234" }, "+1").plate,
     ).toBeTruthy();
     expect(
       Object.values(

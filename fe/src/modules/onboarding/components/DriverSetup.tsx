@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { normalizePlate } from "@waybil/shared";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { type OnboardingState } from "../data/fixtures";
@@ -26,7 +27,7 @@ export function DriverSetup({
   const [draft, setDraft] = useState({
       name: filled ? "Sam Carter" : (initialName ?? ""),
       phone: filled ? "207 555 0199" : "",
-      plate: state === "D3" ? "AB1234" : filled ? "NWF-204" : "",
+      plate: state === "D3" ? "1234" : filled ? "NWF-204" : "",
     }),
     [phoneCode, setPhoneCode] = useState(filled ? "+1" : "+62"),
     [touched, setTouched] = useState<Set<string>>(() => new Set(state === "D3" ? ["plate"] : []));
@@ -59,7 +60,7 @@ export function DriverSetup({
             onFinish({
               name: draft.name.trim(),
               phone: `${phoneCode}${draft.phone.replace(/\D/g, "")}`,
-              plate: draft.plate.trim(),
+              plate: normalizePlate(draft.plate),
             });
         }}
       >
@@ -88,7 +89,7 @@ export function DriverSetup({
         <Input
           className={cn(touched.has("plate") && errors.plate && "[&>div]:bg-ds-bg")}
           label="Truck plate number"
-          placeholder="NWF-204"
+          placeholder="B 1234 EOF"
           value={draft.plate}
           disabled={waiting}
           onChange={(e) => edit("plate", e.target.value.toUpperCase())}
