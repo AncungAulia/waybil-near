@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { ArrowUpRight, Check, Copy, MapTrifold, Plus, UserPlus } from "@phosphor-icons/react";
 import { Panel } from "@/components/layout/Panel";
 import { Button, ButtonLink } from "@/components/ui/Button";
+import { NameTag } from "@/components/ui/Tag";
 import { ActionSheet } from "@/components/layout/ActionSheet";
 import { Avatar } from "@/components/elements/Avatar";
 import { nearblocksUrl, WAYBIL_CONTRACT } from "@/lib/env";
@@ -346,17 +347,5 @@ function CopyInvite({ code, name }: { code: string; name: string }) {
       {copied ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />}
       <span className="hidden sm:inline">{copied ? "Copied" : "Copy link"}</span>
     </button>
-  );
-}
-
-/* A name with a small grey label for what it is, instead of joining the two with a dot. */
-function NameTag({ name, tag, bold = false }: { name: string; tag: string; bold?: boolean }) {
-  return (
-    <p className="flex flex-wrap items-center gap-x-8 gap-y-2">
-      <span className={cn("text-label break-words", bold && "font-semibold")}>{name}</span>
-      <span className="rounded-full bg-ds-canvas px-8 py-2 text-[12px] font-medium text-ds-ink-2">
-        {tag}
-      </span>
-    </p>
   );
 }
