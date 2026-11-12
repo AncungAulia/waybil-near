@@ -70,45 +70,50 @@ export function PoolHome({
             className="pointer-events-none absolute inset-0 -z-10 size-full object-cover"
           />
           <p className="text-label text-ds-line">Your money in the pool</p>
-          {/* The amount scales with the card so it fits a 320 px phone. It reaches full size by 390. */}
-          <div className="@container">
-            {loading ? (
-              <span className="flex h-[clamp(39px,21cqw,54px)] items-center md:h-54">
-                <Skeleton className="h-32 w-200 max-w-full bg-ds-bg/15" />
-              </span>
-            ) : (
-              <Money
-                amount={balance.value}
-                className="text-[clamp(26px,14cqw,36px)] font-medium tracking-tight md:text-amount"
-              />
-            )}
-          </div>
-          <p className="text-label text-ds-brand">
-            {loading ? (
-              <Skeleton className="my-3 w-140 bg-ds-bg/15" />
-            ) : firstVisit ? (
-              "Deposit USDC to start earning."
-            ) : live ? (
-              `Your share is ${share}%.`
-            ) : (
-              `Your share is ${share}%. You earned 9.72 USDC in this sample.`
-            )}
-          </p>
-          {/* On a phone the two actions share the width, half each. */}
-          <div
-            className={cn(
-              "grid gap-10 md:flex [&>button]:min-w-0 [&>button]:justify-between",
-              !firstVisit && "grid-cols-2",
-            )}
-          >
-            <Button variant="moment" icon={<Plus size={17} />} onClick={onDeposit}>
-              Deposit
-            </Button>
-            {!firstVisit && (
-              <Button variant="secondary" onClick={onWithdraw}>
-                Withdraw
+          {/* The amount, the line under it and the buttons sit together at the bottom of the card. */}
+          <div className="flex flex-col gap-20">
+            <div className="flex flex-col gap-6">
+              {/* The amount scales with the card so it fits a 320 px phone. It reaches full size by 390. */}
+              <div className="@container">
+                {loading ? (
+                  <span className="flex h-[clamp(39px,21cqw,54px)] items-center md:h-54">
+                    <Skeleton className="h-32 w-200 max-w-full bg-ds-bg/15" />
+                  </span>
+                ) : (
+                  <Money
+                    amount={balance.value}
+                    className="text-[clamp(26px,14cqw,36px)] font-medium tracking-tight md:text-amount"
+                  />
+                )}
+              </div>
+              <p className="text-label text-ds-brand">
+                {loading ? (
+                  <Skeleton className="my-3 w-140 bg-ds-bg/15" />
+                ) : firstVisit ? (
+                  "Deposit USDC to start earning."
+                ) : live ? (
+                  `Your share is ${share}%.`
+                ) : (
+                  `Your share is ${share}%. You earned 9.72 USDC in this sample.`
+                )}
+              </p>
+            </div>
+            {/* On a phone the two actions share the width, half each. */}
+            <div
+              className={cn(
+                "grid gap-10 md:flex [&>button]:min-w-0 [&>button]:justify-between",
+                !firstVisit && "grid-cols-2",
+              )}
+            >
+              <Button variant="moment" icon={<Plus size={17} />} onClick={onDeposit}>
+                Deposit
               </Button>
-            )}
+              {!firstVisit && (
+                <Button variant="secondary" onClick={onWithdraw}>
+                  Withdraw
+                </Button>
+              )}
+            </div>
           </div>
           {BigInt(balance.queued) > 0n && (
             <p className="text-label">
