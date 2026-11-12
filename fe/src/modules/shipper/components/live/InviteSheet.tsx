@@ -81,7 +81,8 @@ export function InviteSheet({
           ...(place && { address: place.address, placeId: place.id }),
         },
       });
-      setLink(result.link);
+      /* The same app the shipper is using, so a local test gives a local link. */
+      setLink(`${window.location.origin}/join/${result.invite.code}`);
       onSent();
     } catch (e) {
       setError(failure(e));
