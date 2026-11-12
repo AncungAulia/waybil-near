@@ -14,7 +14,8 @@ export type Table =
   | "pause_notes"
   | "job_runs"
   | "places"
-  | "trips";
+  | "trips"
+  | "arrival_codes";
 export interface Snapshot<T> {
   value: T;
   version: number;
