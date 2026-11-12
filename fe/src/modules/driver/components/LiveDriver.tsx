@@ -3,6 +3,8 @@ import { qk } from "@/lib/queryKeys";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useMutation } from "@tanstack/react-query";
+import { useInvalidate } from "@/hooks/useInvalidate";
 import { formatUsdc, type Shipment } from "@waybil/shared";
 import { ArrowDown, Buildings, Copy, NavigationArrow, Package, Truck } from "@phosphor-icons/react";
 import { RoleShell } from "@/components/layout/RoleShell";
@@ -89,11 +91,7 @@ export function LiveDriver({
             <SkeletonListPanel rows={4} />
           </SkeletonGroup>
         ) : view === "trip" ? (
-          <Trip
-            account={account}
-            shipment={data.find((s) => s.id === shipmentId)}
-            reload={reload}
-          />
+          <Trip account={account} shipment={data.find((s) => s.id === shipmentId)} />
         ) : view === "payouts" ? (
           <Payouts trips={data} />
         ) : view === "companies" ? (
@@ -173,18 +171,25 @@ function Trips({ trips }: { trips: Shipment[] }) {
 }
 
 /* K2 for one trip. */
-function Trip({
-  account,
-  shipment: s,
-  reload,
-}: {
-  account: string;
-  shipment: Shipment | undefined;
-  reload: () => void;
-}) {
-  const [busy, setBusy] = useState(false);
+function Trip({ account, shipment: s }: { account: string; shipment: Shipment | undefined }) {
+  const invalidate = useInvalidate();
   const [error, setError] = useState<string | null>(null);
   const [tx, setTx] = useState<string | null>(null);
+  /* The relayer records the pickup. Its retries live in relay(). */
+  const confirm = useMutation({
+    mutationFn: (id: number) => relay(account, "confirm_pickup", { id }),
+    onSuccess: (result) => {
+      setTx(result.txHash);
+      if (result.status === "failed") setError("The pickup was not recorded. Try again.");
+      /* The trip is on the road now, so its status and its truck on the map change. */
+      void invalidate(qk.driverTrips(account), qk.allTrips());
+    },
+    onError: (e) =>
+      setError(
+        e instanceof ApiError ? e.message : "The pickup could not be sent. Check your signal.",
+      ),
+  });
+  const busy = confirm.isPending;
   const [copied, setCopied] = useState(false);
   const name = useNames([s?.shipper]);
   const { trips, data: tripData } = useTrips(s ? [s.id] : []);
@@ -214,21 +219,9 @@ function Trip({
       </>
     );
 
-  async function pickup(id: number) {
-    setBusy(true);
+  function pickup(id: number) {
     setError(null);
-    try {
-      const result = await relay(account, "confirm_pickup", { id });
-      setTx(result.txHash);
-      if (result.status === "failed") setError("The pickup was not recorded. Try again.");
-      reload();
-    } catch (e) {
-      setError(
-        e instanceof ApiError ? e.message : "The pickup could not be sent. Check your signal.",
-      );
-    } finally {
-      setBusy(false);
-    }
+    confirm.mutate(id);
   }
   /* The page shows once the trip and the company name are in, so nothing changes under the reader. */
   if (!tripData || (name(s.shipper) === s.shipper && !waited))
@@ -308,7 +301,7 @@ function Trip({
                 icon={<Package size={17} />}
                 loading={busy}
                 loadingLabel="Recording"
-                onClick={() => void pickup(s.id)}
+                onClick={() => pickup(s.id)}
               >
                 Confirm pickup
               </Button>
