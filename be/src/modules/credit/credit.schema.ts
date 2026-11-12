@@ -25,24 +25,33 @@ export function policyFrom(value: string): CreditPolicy | null {
     throw new ApiException(503, "E_CREDIT_POLICY", "The credit review policy is not ready.");
   }
 }
+/*
+ * A model often answers null for a field it could not read, for example on a photo that is not
+ * a paper. Null reads as an empty value, so the papers end as "needs a closer look" instead of
+ * failing the format check and being retried as a technical error.
+ */
+const text = (max: number) => z.preprocess((v) => v ?? "", z.string().max(max));
 export const extractedPapers = z
   .object({
     readable: z.boolean(),
-    registrationCompany: z.string().max(256),
-    registrationNumber: z.string().max(80),
-    bankCompany: z.string().max(256),
-    currency: z.string().max(3),
-    monthlyOutgoing: z
-      .array(
-        z
-          .object({
-            month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
-            amount: z.string().regex(/^\d{1,20}(?:\.\d{1,6})?$/),
-          })
-          .strict(),
-      )
-      .max(3),
-    reasons: z.array(z.string().max(500)).max(6),
+    registrationCompany: text(256),
+    registrationNumber: text(80),
+    bankCompany: text(256),
+    currency: text(3),
+    monthlyOutgoing: z.preprocess(
+      (v) => v ?? [],
+      z
+        .array(
+          z
+            .object({
+              month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/),
+              amount: z.string().regex(/^\d{1,20}(?:\.\d{1,6})?$/),
+            })
+            .strict(),
+        )
+        .max(3),
+    ),
+    reasons: z.preprocess((v) => v ?? [], z.array(z.string().max(500)).max(6)),
   })
   .strict();
 export type ExtractedPapers = z.infer<typeof extractedPapers>;
