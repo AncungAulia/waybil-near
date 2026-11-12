@@ -17,6 +17,7 @@ import { Money } from "@/components/elements/Money";
 import { StatusPill } from "@/components/elements/StatusPill";
 import { TripMap } from "@/components/elements/TripMap";
 import { usePlaces, useTrips } from "@/hooks/useTrips";
+import { forgetPickup, pickupFor } from "../data/pendingTrip";
 import { SearchPicker } from "@/components/ui/SearchPicker";
 import { api } from "@/lib/api";
 import { CONTRACT_RECORD_URL, USDC_CONTRACT, WAYBIL_CONTRACT } from "@/lib/env";
@@ -143,7 +144,9 @@ export function LiveShipment({
     <>
       <header className="flex flex-wrap items-center justify-between gap-12">
         <div className="min-w-0">
-          <h1 className="text-title break-all">{row.route}</h1>
+          <h1 className="text-title break-all">
+            {trips[0] ? `${trips[0].pickup.name} to ${trips[0].destination.name}` : row.route}
+          </h1>
           <p className="mt-6 text-label break-all text-ds-muted">
             {row.driver} carries {row.cargo} on #{s.id}.
           </p>
@@ -153,7 +156,7 @@ export function LiveShipment({
       <DoneNote done={done} />
       <TripMap trip={trips[0]} status={s.status} />
       {tripData && !trips[0] && (s.status === "Approved" || s.status === "PickedUp") && (
-        <AddTrip shipmentId={s.id} onAdded={reloadTrips} />
+        <AddTrip shipment={s} onAdded={reloadTrips} />
       )}
       <div className="grid items-start gap-24 lg:grid-cols-[minmax(0,1fr)_400px]">
         <Panel title="Trip" gap={4}>
@@ -166,7 +169,13 @@ export function LiveShipment({
           ))}
           {warehouse && (
             <p className="py-10 text-caption break-all text-ds-muted">
-              Destination {places[warehouse]?.address || warehouse}
+              {trips[0] && (
+                <>
+                  Pickup at {trips[0].pickup.address}
+                  <br />
+                </>
+              )}
+              Destination at {places[warehouse]?.address || warehouse}
             </p>
           )}
           <a
@@ -309,12 +318,34 @@ export function LiveShipment({
  * A shipment recorded without its trip (an older one, or one whose trip could not be saved
  * in time) gets its map here once the shipper says where the goods are picked up.
  */
-function AddTrip({ shipmentId, onAdded }: { shipmentId: number; onAdded: () => void }) {
+function AddTrip({
+  shipment,
+  onAdded,
+}: {
+  shipment: { id: number; driver: string; destination: number };
+  onAdded: () => void;
+}) {
+  const shipmentId = shipment.id;
   const { data } = usePlaces();
   const pickups = (data?.places ?? []).filter((p) => p.kind === "pickup");
   const [pickup, setPickup] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /* The pickup chosen when this shipment was approved finishes the trip on its own. */
+  const noted = pickupFor(shipment);
+  useEffect(() => {
+    if (!noted) return;
+    api(`/trips/${shipmentId}`, {
+      method: "PUT",
+      body: { pickupPlaceId: noted } satisfies TripCreate,
+    })
+      .then(() => {
+        forgetPickup();
+        onAdded();
+      })
+      .catch(() => forgetPickup());
+  }, [noted, shipmentId, onAdded]);
+  if (noted) return null;
   if (data && !pickups.length) return null;
   return (
     <Panel title="Show this trip on the map">

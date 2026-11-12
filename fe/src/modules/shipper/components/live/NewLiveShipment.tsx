@@ -20,6 +20,7 @@ import { RouteMap } from "@/components/elements/RouteMap";
 import { api } from "@/lib/api";
 import { duration, km } from "@/lib/route";
 import { usePlaces } from "@/hooks/useTrips";
+import { forgetPickup, rememberPickup } from "../../data/pendingTrip";
 import { useLive } from "@/hooks/useLive";
 import { WAYBIL_CONTRACT } from "@/lib/env";
 import { listShipmentsByShipper } from "@/lib/near";
@@ -91,6 +92,16 @@ export function NewLiveShipment({ data, refresh }: { data: LiveShipperData; refr
     setBusy(true);
     setError(null);
     try {
+      /*
+       * Remember the pickup point before the wallet opens. If the trip can't be saved below,
+       * the shipment page finishes it from this note.
+       */
+      rememberPickup({
+        pickupId: pickup!.id,
+        driver,
+        destination: Number(destination),
+        after: Math.max(0, ...data.shipments.map((x) => x.id)),
+      });
       const tx = await callContract(
         WAYBIL_CONTRACT,
         "create_shipment",
@@ -127,7 +138,9 @@ export function NewLiveShipment({ data, refresh }: { data: LiveShipperData; refr
         await api(`/trips/${newest.id}`, {
           method: "PUT",
           body: { pickupPlaceId: pickup.id } satisfies TripCreate,
-        }).catch(() => undefined);
+        })
+          .then(() => forgetPickup())
+          .catch(() => undefined);
       refresh();
       router.push(newest ? `/shipper/shipments/${newest.id}?tx=${tx}` : "/shipper/shipments");
     } catch (e) {
