@@ -44,6 +44,20 @@ export function DriverFormStep({
       setState("D2");
     }
   }
+  /* Truck details belong to a driver account. Another role would save them to its own profile. */
+  if (LIVE && profile && profile.role !== "driver")
+    return (
+      <>
+        <StepHeading
+          state={state}
+          title="This page is for drivers"
+          note="You are signed in with another role. Drivers sign in with Google to add their truck."
+        />
+        <ButtonLink href="/start" variant="secondary" className="w-full justify-between">
+          Go to sign in
+        </ButtonLink>
+      </>
+    );
   return (
     <>
       {LIVE && signInError && (
@@ -53,7 +67,8 @@ export function DriverFormStep({
       )}
       <DriverSetup
         state={state}
-        initialName={LIVE ? (profile?.name ?? "") : undefined}
+        initialName={LIVE && profile?.role === "driver" ? profile.name : undefined}
+        payoutAccount={LIVE && profile?.role === "driver" ? profile.accountId : undefined}
         onFinish={(driver) => (LIVE ? void saveDriver(driver) : setState("D5"))}
       />
     </>

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { type OnboardingState } from "../data/fixtures";
@@ -7,12 +7,16 @@ import { driverErrors } from "../data/validation";
 import { PhoneInput } from "@/components/elements/PhoneInput";
 import { WalletGlyph } from "@/components/elements/icons";
 import { cn } from "@/lib/cn";
+import { LIVE } from "@/lib/env";
 export function DriverSetup({
   state,
   onFinish,
   initialName,
+  payoutAccount,
 }: {
   state: OnboardingState;
+  /** The signed-in driver's account, where payouts land. The demo shows Sam's. */
+  payoutAccount?: string;
   /** The name to start with on D1, for example the one from Google. */
   initialName?: string;
   /** `phone` is in E.164, for example "+12075550199". */
@@ -26,6 +30,10 @@ export function DriverSetup({
     }),
     [phoneCode, setPhoneCode] = useState(filled ? "+1" : "+62"),
     [touched, setTouched] = useState<Set<string>>(() => new Set(state === "D3" ? ["plate"] : []));
+  /* The signed-in name arrives a moment after the form opens. It fills an empty name only. */
+  useEffect(() => {
+    if (initialName) setDraft((d) => (d.name ? d : { ...d, name: initialName }));
+  }, [initialName]);
   const errors = driverErrors(draft, phoneCode);
   const waiting = state === "D5";
   function edit(key: keyof typeof draft, value: string) {
@@ -91,7 +99,10 @@ export function DriverSetup({
           <p className="text-[13px] leading-[1.45] text-ds-muted">Payout account</p>
           <p className="flex items-center gap-8 text-[15px] leading-[1.45] font-semibold">
             <WalletGlyph size={16} className="shrink-0" />
-            <span className="break-all">sam.users.waybil.testnet</span>
+            <span className="break-all">
+              {payoutAccount ??
+                (LIVE ? "Shown after you sign in with Google" : "sam.users.waybil.testnet")}
+            </span>
           </p>
           <p className="text-[13px] leading-[1.45] text-ds-muted">
             Every payment lands here automatically after setup.
