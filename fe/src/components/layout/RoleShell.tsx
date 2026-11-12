@@ -196,25 +196,43 @@ export function RoleShell({
         />
       )}
       {!detail && (
+        /*
+         * A light floating dock, like a phone's own. Every tab keeps its icon and label. The open
+         * one is ink with a bold icon and a small yellow dot under it, the others are grey.
+         */
         <nav
           aria-label="Main"
-          className="fixed right-16 bottom-[calc(16px+env(safe-area-inset-bottom))] left-16 z-30 flex items-center justify-between rounded-full bg-ds-ink p-6 md:hidden"
+          className="fixed inset-x-16 bottom-[calc(14px+env(safe-area-inset-bottom))] z-30 mx-auto grid max-w-380 rounded-[26px] border border-ds-line bg-ds-bg/85 px-6 py-6 shadow-float backdrop-blur-xl backdrop-saturate-150 md:hidden"
+          style={{ gridTemplateColumns: `repeat(${links.length}, minmax(0, 1fr))` }}
         >
-          {links.map(({ href, label, icon: Icon }) => (
-            <Link
-              key={href}
-              href={href}
-              aria-label={label}
-              aria-current={href === current ? "page" : undefined}
-              className={cn(
-                "press focus-ring flex h-52 items-center justify-center gap-8 rounded-full px-20",
-                href === current ? "bg-ds-brand text-ds-ink" : "text-ds-bg",
-              )}
-            >
-              <Icon size={20} />
-              {href === current && <span className="text-label">{label}</span>}
-            </Link>
-          ))}
+          {links.map(({ href, label, icon: Icon }) => {
+            const on = href === current;
+            return (
+              <Link
+                key={href}
+                href={href}
+                aria-current={on ? "page" : undefined}
+                className={cn(
+                  "press focus-ring flex flex-col items-center gap-2 rounded-[20px] pt-8 pb-6 transition-colors duration-150",
+                  on ? "text-ds-ink" : "text-ds-muted",
+                )}
+              >
+                <Icon size={22} weight={on ? "fill" : "regular"} />
+                <span
+                  className={cn("text-[11px] leading-14", on ? "font-semibold" : "font-medium")}
+                >
+                  {label}
+                </span>
+                <span
+                  aria-hidden
+                  className={cn(
+                    "size-4 rounded-full transition-opacity duration-150",
+                    on ? "bg-ds-brand opacity-100" : "opacity-0",
+                  )}
+                />
+              </Link>
+            );
+          })}
         </nav>
       )}
     </div>
