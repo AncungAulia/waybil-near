@@ -256,16 +256,21 @@ export function ShipperDetail({ account }: { account: string }) {
           {shipper ? (
             <>
               <section className="flex flex-col gap-20 rounded-card bg-ds-bg p-24">
-                <div className="flex flex-wrap items-start justify-between gap-12">
-                  <div>
-                    <p className="text-label text-ds-muted">Credit limit</p>
-                    <Money amount={shipper.limit} className="mt-4 block text-amount" />
+                {/*
+                 * The badge sits top right, level with the label, on every screen. The label
+                 * gives way with an ellipsis, so the two never overlap, and the amount has the
+                 * full width below.
+                 */}
+                <div>
+                  <div className="flex min-w-0 items-center justify-between gap-12">
+                    <p className="min-w-0 truncate text-label text-ds-muted">Credit limit</p>
+                    <AdminBadge tone={shipper.paused ? "warning" : "success"}>
+                      {shipper.paused
+                        ? `Paused for ${REASON_WORDS[shipper.paused] ?? shipper.paused}`
+                        : "New trips allowed"}
+                    </AdminBadge>
                   </div>
-                  <AdminBadge tone={shipper.paused ? "warning" : "success"}>
-                    {shipper.paused
-                      ? `Paused for ${REASON_WORDS[shipper.paused] ?? shipper.paused}`
-                      : "New trips allowed"}
-                  </AdminBadge>
+                  <Money amount={shipper.limit} className="mt-4 block text-amount" />
                 </div>
                 <div className="flex flex-col gap-8">
                   <FanMeter
