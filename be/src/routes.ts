@@ -28,7 +28,7 @@ import { adminRoutes } from "./modules/admin/admin.routes";
 import { Jobs } from "./modules/jobs/jobs.service";
 import { Profiles } from "./modules/profiles/profiles.service";
 import { profileRoutes } from "./modules/profiles/profiles.routes";
-import { PoolHistory } from "./modules/history/history.service";
+import { PoolHistory, txBudget } from "./modules/history/history.service";
 import { NearBlocksEvents } from "./modules/history/history.source";
 import { historyRoutes } from "./modules/history/history.routes";
 import { Places } from "./modules/places/places.service";
@@ -87,12 +87,14 @@ export function createRuntime(deps: AppDeps) {
     historyRoutes(
       deps,
       new PoolHistory(
+        deps.store,
         new NearBlocksEvents(
           deps.env.NEARBLOCKS_API_URL,
           deps.env.WAYBIL_CONTRACT,
           deps.env.NEARBLOCKS_API_KEY,
         ),
         deps.env.WAYBIL_CONTRACT,
+        txBudget(deps.env.NEARBLOCKS_API_KEY),
       ),
     ),
   );

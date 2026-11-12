@@ -182,11 +182,15 @@ arrival code of the shipment in its arguments, otherwise 400 `E_ARRIVAL_CODE`.
 
 The contract keeps no list of an investor's past deposits and withdrawals, only its events
 (`deposited`, `withdraw_paid`, `withdraw_queued`, `withdraw_failed`). The backend reads them from
-the NearBlocks indexer (`NEARBLOCKS_API_URL`, v3) and keeps them in memory. A restart reads them
-again. The free indexer plan allows a few calls a minute, so one scan runs at most once a minute
-and opens at most 4 transactions. Older events fill in on later scans. Set `NEARBLOCKS_API_KEY`
-for a higher limit. If the indexer fails before anything was loaded, the route returns 503
-`E_UNAVAILABLE`. After that it serves what it has.
+the NearBlocks indexer (`NEARBLOCKS_API_URL`, v3) and keeps them in `pool_events`, one row per
+event line (id `<receiptId>:<logIndex>`, saved once). Where reading got to lives in `pool_scan`,
+one row per contract with the newest receipt already listed and the transactions still to read,
+so a restart or deploy keeps the history. A scan lists the contract's receipts until it reaches
+the stored newest receipt, puts the transactions it found in front of the waiting ones (newest
+first), and opens at most 4 of them, or 40 with `NEARBLOCKS_API_KEY`. Older events fill in on
+later scans. One scan runs at most once a minute per process, and a scan whose saved position
+changed meanwhile is skipped. If the indexer fails before anything was stored, the route returns
+503 `E_UNAVAILABLE`. After that it serves what is stored.
 
 | Method | Path | Who | What |
 |---|---|---|---|
@@ -376,7 +380,7 @@ as an executed transaction or a sent email. Live deployment/scheduler setup rema
 
 `profiles`, `invites`, `applications`, `application_documents`, `credit_reviews`,
 `reports`, `report_photos`, `proposal_reasons`, `pause_notes`, `email_log`,
-`auth_challenges`, `auth_identities`, `relay_requests`, `work_leases`, `job_runs`, `places`, `trips`, `arrival_codes`.
+`auth_challenges`, `auth_identities`, `relay_requests`, `work_leases`, `job_runs`, `places`, `trips`, `arrival_codes`, `pool_events`, `pool_scan`.
 Storage buckets `documents` and `report-photos` are private. Links are signed and short-lived.
 
 ## Env (`be/.env.example`)

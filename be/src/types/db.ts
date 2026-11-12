@@ -15,7 +15,9 @@ export type Table =
   | "job_runs"
   | "places"
   | "trips"
-  | "arrival_codes";
+  | "arrival_codes"
+  | "pool_events"
+  | "pool_scan";
 export interface Snapshot<T> {
   value: T;
   version: number;
