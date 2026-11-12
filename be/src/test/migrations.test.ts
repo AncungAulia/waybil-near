@@ -77,6 +77,8 @@ it("applies migrations with private domain tables and concurrent-update protecti
       "places",
       "trips",
       "arrival_codes",
+      "pool_events",
+      "pool_scan",
     ])
       await expect(db.query(`select * from ${table}`)).rejects.toThrow();
     await expect(db.query("select claim_work_lease('sample',$1,300)", [owner])).rejects.toThrow();
