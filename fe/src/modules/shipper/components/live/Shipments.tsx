@@ -38,7 +38,7 @@ export function Shipments({ data }: { data: LiveShipperData }) {
         value={filter}
         onChange={setFilter}
         label="Filter shipments"
-        className="w-fit flex-wrap"
+        fill
       />
       {rows.length === 0 ? (
         /* Fills the window under the filters, as the board draws an empty list. */
