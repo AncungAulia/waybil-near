@@ -337,9 +337,10 @@ export function ShipperDetail({ account }: { account: string }) {
                   ].map((t) => (
                     <div
                       key={t.label}
-                      className="flex flex-col gap-8 rounded-row bg-ds-canvas p-14"
+                      className="flex flex-col items-center justify-center gap-4 rounded-row bg-ds-canvas p-14 text-center md:items-start md:justify-start md:gap-8 md:text-left"
                     >
-                      <span className="grid size-32 place-items-center rounded-full bg-ds-bg">
+                      {/* The icons only show on wider screens. A phone keeps the number and its word. */}
+                      <span className="hidden size-32 place-items-center rounded-full bg-ds-bg md:grid">
                         {t.icon}
                       </span>
                       <p className="text-[22px] leading-26 font-semibold">{t.value}</p>
