@@ -187,8 +187,9 @@ export function LiveShipment({
       </header>
       <DoneNote done={done} />
       {/* The map on the left. The bill, progress and trip facts stack on the right. */}
-      <div className="grid items-start gap-16 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-24">
-        <div className="flex flex-col gap-10 lg:sticky lg:top-104">
+      <div className="grid gap-16 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-24">
+        {/* The map takes the full height of the cards beside it. */}
+        <div className="flex flex-col gap-10">
           {!tripData ? (
             /* The map's place is held while the trip loads, so nothing jumps in later. */
             <Skeleton className="h-340 w-full rounded-card lg:h-560" />
@@ -198,7 +199,7 @@ export function LiveShipment({
                 trip={trip}
                 status={s.status}
                 caption={false}
-                className="h-340 rounded-card lg:h-560"
+                className="h-340 rounded-card lg:h-auto lg:min-h-480 lg:flex-1"
               />
               <RouteNote trip={trip} status={s.status} />
             </>

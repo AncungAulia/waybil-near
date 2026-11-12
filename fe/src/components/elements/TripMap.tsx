@@ -48,7 +48,7 @@ export function TripMap({
     : `The trip is ${Math.round(trip.distanceKm)} km${trip.durationMin != null ? `, about ${eta(trip.durationMin)} by road` : ""}.`;
 
   return (
-    <div className="flex flex-col gap-8">
+    <div className="flex min-h-0 flex-1 flex-col gap-8">
       <RouteMap
         trips={[{ ...view, truck: truck ? view.truck : null }]}
         chip={chip}

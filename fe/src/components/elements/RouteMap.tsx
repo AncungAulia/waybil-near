@@ -55,6 +55,10 @@ export function RouteMap({
   const lib = useRef<typeof import("maplibre-gl") | null>(null);
   const markers = useRef(new Map<string, Marker>());
   const fitted = useRef(false);
+  /* The last view fitted to the trips, kept so a resize can fit it again. */
+  const lastBounds = useRef<import("maplibre-gl").LngLatBoundsLike | null>(null);
+  /* Once the person pans or zooms, the map stops fitting itself. */
+  const touched = useRef(false);
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const pick = useRef(onPick);
@@ -92,7 +96,14 @@ export function RouteMap({
         m.on("click", (e) => pick.current?.(e.lngLat.lat, e.lngLat.lng));
         map.current = m;
         /* A map opened inside a sheet starts while the sheet still moves. Follow its real size. */
-        const fit = new ResizeObserver(() => m.resize());
+        const fit = new ResizeObserver(() => {
+          m.resize();
+          if (lastBounds.current && !touched.current)
+            m.fitBounds(lastBounds.current, { padding: 56, maxZoom: 13, animate: false });
+        });
+        m.on("movestart", (e) => {
+          if ((e as { originalEvent?: unknown }).originalEvent) touched.current = true;
+        });
         fit.observe(box.current);
         m.once("remove", () => fit.disconnect());
         /* A style that never loads leaves an empty box. Say so instead. */
@@ -187,6 +198,7 @@ export function RouteMap({
       const bounds = new maplibre.LngLatBounds(points[0], points[0]);
       for (const p of points) bounds.extend(p);
       m.fitBounds(bounds, { padding: 56, maxZoom: 13, animate: false });
+      lastBounds.current = bounds;
       fitted.current = true;
     }
   }, [ready, trips, pin]);
