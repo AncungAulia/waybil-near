@@ -96,17 +96,17 @@ export function Navbar({
   );
   if (!sticky) return nav;
   /*
-   * The sticky band keeps its full height, so the page under it never jumps. Only the pill
-   * inside it changes. The band is the page colour from the top of the window to below the
-   * pill, so nothing that scrolls under it shows around the pill's round ends.
+   * The sticky box keeps the full 72 px, so the page under it never jumps. Only the pill
+   * inside it gets shorter. Behind the pill the page colour is solid at the top and fades out
+   * just below it, so content scrolling up disappears softly instead of showing around the
+   * pill's round ends or being cut by a hard line.
    */
   return (
-    <div
-      className={cn(
-        "sticky top-0 z-30 -mx-32 -mt-20 flex h-104 items-center bg-ds-canvas px-32 pt-8 lg:-mx-40 lg:px-40",
-        className,
-      )}
-    >
+    <div className={cn("sticky top-0 z-30 -mt-20 h-92 pt-20", className)}>
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -inset-x-32 top-0 -bottom-16 -z-10 lg:-inset-x-40 bg-linear-to-b from-ds-canvas from-60% to-transparent"
+      />
       {nav}
     </div>
   );
