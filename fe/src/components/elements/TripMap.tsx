@@ -13,10 +13,13 @@ export function TripMap({
   trip,
   status,
   className,
+  caption = true,
 }: {
   trip: Trip | undefined;
   status: Shipment["status"];
   className?: string;
+  /** False when the screen shows the distance and time itself, around the map. */
+  caption?: boolean;
 }) {
   const onRoad = status === "PickedUp";
   const now = useClock(onRoad && !!trip?.simulation);
@@ -52,12 +55,14 @@ export function TripMap({
         badge={truck?.simulated ? "Simulated location for the demo" : undefined}
         className={cn("h-260 w-full md:h-360", className)}
       />
-      <div>
-        <p className="text-caption text-ds-muted">
-          {trip.pickup.name} to {trip.destination.name}
-        </p>
-        <p className="text-caption text-ds-muted">{facts}</p>
-      </div>
+      {caption && (
+        <div>
+          <p className="text-caption text-ds-muted">
+            {trip.pickup.name} to {trip.destination.name}
+          </p>
+          <p className="text-caption text-ds-muted">{facts}</p>
+        </div>
+      )}
     </div>
   );
 }

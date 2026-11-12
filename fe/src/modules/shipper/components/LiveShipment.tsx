@@ -16,6 +16,8 @@ import { Input } from "@/components/ui/Input";
 import { Money } from "@/components/elements/Money";
 import { StatusPill } from "@/components/elements/StatusPill";
 import { TripMap } from "@/components/elements/TripMap";
+import { TimelineStep } from "@/components/elements/TimelineStep";
+import { duration } from "@/lib/route";
 import { Skeleton } from "@/components/elements/Skeleton";
 import { NameTag } from "@/components/ui/Tag";
 import { cn } from "@/lib/cn";
@@ -141,7 +143,32 @@ export function LiveShipment({
     },
     { title: `${row.driver} got paid`, at: s.paid_at },
     { title: "You paid the bill", at: s.repaid_at },
-  ].filter((step) => step.at);
+  ];
+  /* Every step of the journey, done or still to come. The first one not done is happening now. */
+  const firstOpen = steps.findIndex((step) => !step.at);
+  const timeline = steps.map((step, i) => ({
+    ...step,
+    state:
+      s.status === "Cancelled" && i === 1
+        ? ("failed" as const)
+        : s.status === "Reported" && i === 2
+          ? ("paused" as const)
+          : step.at
+            ? ("done" as const)
+            : i === firstOpen && s.status !== "Cancelled"
+              ? ("current" as const)
+              : ("next" as const),
+    time:
+      s.status === "Cancelled" && i === 1
+        ? "Cancelled before pickup."
+        : step.at
+          ? shortDay(step.at)
+          : i === firstOpen
+            ? "Happening next."
+            : "Still to come.",
+  }));
+  const trip = trips[0];
+  const days = Math.ceil((Number(BigInt(s.due_at) / 1_000_000n) - Date.now()) / 86400000);
 
   return (
     <>
@@ -164,24 +191,50 @@ export function LiveShipment({
           <Skeleton className="h-320 w-full rounded-card md:h-420" />
         ) : trips[0] ? (
           <Panel title="Route">
-            <TripMap trip={trips[0]} status={s.status} />
+            <div className="grid grid-cols-3 gap-12">
+              <Fact label="Distance" value={`${Math.round(trips[0].distanceKm)} km`} />
+              <Fact
+                label="Drive time"
+                value={trips[0].durationMin == null ? "Not known" : duration(trips[0].durationMin)}
+              />
+              <Fact
+                label="Truck"
+                value={
+                  s.status === "Approved"
+                    ? "Not left yet"
+                    : s.status === "PickedUp"
+                      ? "On the road"
+                      : s.status === "Cancelled"
+                        ? "Cancelled"
+                        : "Arrived"
+                }
+              />
+            </div>
+            <TripMap trip={trips[0]} status={s.status} caption={false} className="md:h-420" />
           </Panel>
         ) : s.status === "Approved" || s.status === "PickedUp" ? (
           <AddTrip shipment={s} onAdded={reloadTrips} />
         ) : null}
         <Panel title="Bill" className={cn("h-full", tripData && !trips[0] && "lg:col-start-2")}>
-          <div className="flex justify-between gap-12 text-label">
-            <span className="text-ds-muted">The driver gets</span>
+          <BillRow label="Driver">{row.driver}</BillRow>
+          <BillRow label="Cargo">{row.cargo}</BillRow>
+          <BillRow label="The driver gets on arrival">
             <Money amount={s.advance} />
-          </div>
-          <div className="flex justify-between gap-12 text-label">
-            <span className="text-ds-muted">You pay</span>
+          </BillRow>
+          <BillRow label="Waybil fee">
+            <Money amount={String(BigInt(s.bill) - BigInt(s.advance))} />
+          </BillRow>
+          <BillRow label="You pay" strong>
             <Money amount={s.bill} />
-          </div>
-          <div className="flex justify-between gap-12 text-label">
-            <span className="text-ds-muted">Due</span>
-            <span>{shortDay(s.due_at)}</span>
-          </div>
+          </BillRow>
+          <BillRow label="Due">
+            {shortDay(s.due_at)}
+            {s.status !== "Repaid" && s.status !== "Cancelled" && days >= 0
+              ? `, in ${days} ${days === 1 ? "day" : "days"}`
+              : ""}
+          </BillRow>
+          {/* The actions sit at the bottom of the card. */}
+          <div className="flex-1" />
           {s.status === "Approved" && (
             <Button variant="danger" onClick={() => setSheet("cancel")}>
               Cancel shipment
@@ -198,29 +251,42 @@ export function LiveShipment({
         </Panel>
       </div>
       <Panel title="Trip">
-        <div className="grid gap-24 md:grid-cols-2">
-          <div className="flex flex-col">
-            {steps.map((step) => (
-              <div key={step.title} className="py-8">
-                <p className="text-label break-all">{step.title}</p>
-                <p className="text-caption text-ds-muted">{shortDay(step.at)}</p>
-                {step.detail && <p className="text-caption text-ds-ink-2">{step.detail}</p>}
+        <div className="grid gap-28 md:grid-cols-2">
+          <div className="flex flex-col gap-18">
+            {timeline.map((step) => (
+              <div key={step.title}>
+                <TimelineStep state={step.state} title={step.title} time={step.time} />
+                {step.detail && (
+                  <p className="mt-4 pl-38 text-caption text-ds-ink-2">{step.detail}</p>
+                )}
               </div>
             ))}
           </div>
-          <div className="flex flex-col gap-14">
-            {trips[0] && (
-              <Stop label="Pickup" name={trips[0].pickup.name} address={trips[0].pickup.address} />
+          <div className="flex flex-col gap-16 rounded-row bg-ds-canvas p-20">
+            {trip && (
+              <Stop
+                kind="pickup"
+                label="Pickup"
+                name={trip.pickup.name}
+                address={trip.pickup.address}
+              />
+            )}
+            {trip && (
+              <p className="ml-6 border-l-2 border-dashed border-ds-line-strong py-4 pl-18 text-caption text-ds-muted">
+                {Math.round(trip.distanceKm)} km by road
+                {trip.durationMin != null ? `, about ${duration(trip.durationMin)}` : ""}.
+              </p>
             )}
             {warehouse && (
               <Stop
+                kind="destination"
                 label="Destination"
-                name={trips[0]?.destination.name ?? places[warehouse]?.name ?? warehouse}
-                address={trips[0]?.destination.address ?? places[warehouse]?.address ?? ""}
+                name={trip?.destination.name ?? places[warehouse]?.name ?? warehouse}
+                address={trip?.destination.address ?? places[warehouse]?.address ?? ""}
               />
             )}
             <a
-              className="link focus-ring inline-block text-caption"
+              className="link focus-ring mt-auto inline-block text-caption"
               href={CONTRACT_RECORD_URL}
               target="_blank"
               rel="noreferrer"
@@ -403,12 +469,63 @@ function AddTrip({
   );
 }
 
-/* One end of the trip: what it is as a tag, its name and its address. */
-function Stop({ label, name, address }: { label: string; name: string; address: string }) {
+/* One end of the trip, a dot for the pickup and a square for the destination, as on the map. */
+function Stop({
+  kind,
+  label,
+  name,
+  address,
+}: {
+  kind: "pickup" | "destination";
+  label: string;
+  name: string;
+  address: string;
+}) {
   return (
-    <div>
-      <NameTag name={name} tag={label} bold />
-      {address && <p className="text-caption text-ds-muted">{address}</p>}
+    <div className="flex items-start gap-12">
+      <span
+        aria-hidden
+        className={cn(
+          "mt-3 grid shrink-0 place-items-center bg-ds-ink",
+          kind === "pickup"
+            ? "size-14 rounded-full border-[3px] border-ds-bg"
+            : "size-16 rounded-[4px]",
+        )}
+      >
+        {kind === "destination" && <span className="size-6 rounded-[1px] bg-ds-brand" />}
+      </span>
+      <div className="min-w-0">
+        <NameTag name={name} tag={label} bold />
+        {address && <p className="text-caption text-ds-muted">{address}</p>}
+      </div>
+    </div>
+  );
+}
+
+/* A small number with its label, for the route card. */
+function Fact({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-row bg-ds-canvas px-14 py-10">
+      <p className="text-caption text-ds-muted">{label}</p>
+      <p className="text-label font-semibold">{value}</p>
+    </div>
+  );
+}
+
+/* One line of the bill, a label on the left and its value on the right. */
+function BillRow({
+  label,
+  strong = false,
+  children,
+}: {
+  label: string;
+  strong?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={cn("flex justify-between gap-12 text-label", strong && "font-semibold")}>
+      <span className={strong ? "text-ds-ink" : "text-ds-muted"}>{label}</span>
+      <span className="text-right">{children}</span>
     </div>
   );
 }
