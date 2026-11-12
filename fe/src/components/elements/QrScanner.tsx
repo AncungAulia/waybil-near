@@ -111,20 +111,19 @@ export function QrScanner({
           className="absolute size-full object-cover"
         />
       ) : null}
-      <svg
-        viewBox="0 0 260 260"
-        className="pointer-events-none relative size-260 text-ds-brand"
-        aria-hidden
-      >
-        <path
-          d="M 4 32 V 4 H 32 M 228 4 H 256 V 32 M 256 228 V 256 H 228 M 32 256 H 4 V 228"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="6"
-          strokeLinecap="round"
-        />
-        <path d="M 14 130 H 246" stroke="currentColor" opacity="0.5" />
-      </svg>
+      <div className="pointer-events-none relative size-260 text-ds-brand" aria-hidden>
+        <svg viewBox="0 0 260 260" className="absolute inset-0 size-full">
+          <path
+            d="M 4 32 V 4 H 32 M 228 4 H 256 V 32 M 256 228 V 256 H 228 M 32 256 H 4 V 228"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="6"
+            strokeLinecap="round"
+          />
+        </svg>
+        {/* The scan line sweeps the frame like a real scanner. It rests in the middle with reduced motion. */}
+        <span className="qr-scan-line absolute inset-x-14 top-1/2 h-2 rounded-full bg-ds-brand shadow-[0_0_12px_3px_rgb(255_214_10/0.55)]" />
+      </div>
       <p className="absolute right-16 bottom-24 left-16 text-center text-label">
         Point at the QR on the driver&apos;s phone
       </p>

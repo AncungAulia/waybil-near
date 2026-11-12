@@ -542,3 +542,18 @@
     animation: none;
   }
 }
+
+/* The QR scanner's line, sweeping the frame from top to bottom and back. */
+@keyframes qr-scan {
+  from {
+    transform: translateY(-114px);
+  }
+  to {
+    transform: translateY(114px);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .qr-scan-line {
+    animation: qr-scan 1.8s var(--ease-in-out) infinite alternate;
+  }
+}
