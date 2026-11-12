@@ -159,7 +159,7 @@ export function LiveSections({
                     : `${name(s.shipper)} paid a bill`}
                 </span>
                 <span className="block text-caption text-ds-muted">
-                  <Money amount={kind === "paid" ? s.advance : s.bill} /> · #{s.id}
+                  <Money amount={kind === "paid" ? s.advance : s.bill} /> for #{s.id}
                 </span>
               </span>
               <span className="shrink-0 text-caption text-ds-muted">
@@ -249,7 +249,7 @@ export function LiveDeliveries({ deliveries }: { deliveries: Shipment[] }) {
                 <span className="min-w-0">
                   <span className="block text-body break-all">{name(s.shipper)}</span>
                   <span className="block text-caption break-all text-ds-muted">
-                    #{s.id} · {name(s.driver)}
+                    {name(s.driver)} drives #{s.id}.
                   </span>
                 </span>
               </span>
@@ -339,7 +339,7 @@ export function LiveDelivery({
         <div className="min-w-0">
           <h1 className="text-title break-all">Delivery #{s.id}</h1>
           <p className="mt-6 text-label break-all text-ds-muted">
-            {name(s.shipper)} · {name(s.driver)}
+            {name(s.driver)} drives for {name(s.shipper)}.
           </p>
         </div>
         <StatusPill status={statusChip(s)} />
@@ -415,7 +415,7 @@ export function LiveHistory({ accountId, queue }: { accountId: string; queue: Qu
               <span className="min-w-0 flex-1">
                 <span className="block text-body">Withdrawal waiting</span>
                 <span className="block text-caption text-ds-muted">
-                  Asked {day(entry.requested_at)} · paid as bills are repaid
+                  Asked {day(entry.requested_at)}. It is paid as bills are repaid.
                 </span>
               </span>
               <Money amount={entry.amount} className="shrink-0 text-label" />

@@ -77,14 +77,14 @@ export function DemoPoolSections() {
               icon: <ArrowLineDown size={16} />,
               title: "Paid Sam early",
               amount: "292500000",
-              note: "#1041 · Eastport to Harbor City",
+              note: "for #1041 from Eastport to Harbor City",
               when: "Today",
             },
             {
               icon: <SealCheck size={16} />,
               title: "Northwind paid a bill",
               amount: "300000000",
-              note: "#1032 · 1 day early",
+              note: "on #1032, 1 day early",
               when: "Yesterday",
             },
             {
@@ -107,7 +107,7 @@ export function DemoPoolSections() {
                 <span className="block text-label">{h.title}</span>
                 <span className="block text-caption text-ds-muted">
                   <Money amount={h.amount} />
-                  {h.note && ` · ${h.note}`}
+                  {h.note && ` ${h.note}`}
                 </span>
               </span>
               <span className="shrink-0 text-caption text-ds-muted">{h.when}</span>

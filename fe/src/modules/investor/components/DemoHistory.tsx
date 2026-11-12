@@ -6,18 +6,18 @@ import { cn } from "@/lib/cn";
 const HISTORY = [
   {
     title: "Earned",
-    note: "Nov 9 · from Northwind's bill #1032",
+    note: "From Northwind's bill #1032 on Nov 9.",
     amount: "960000",
     kind: "earned",
   },
   {
     title: "Earned",
-    note: "Nov 7 · from Blue Ridge's bill #1028",
+    note: "From Blue Ridge's bill #1028 on Nov 7.",
     amount: "980000",
     kind: "earned",
   },
-  { title: "Withdrawal", note: "Nov 1 · to your wallet", amount: "-500000000", kind: "out" },
-  { title: "Deposit", note: "Oct 21 · from your wallet", amount: "5500000000", kind: "in" },
+  { title: "Withdrawal", note: "To your wallet on Nov 1.", amount: "-500000000", kind: "out" },
+  { title: "Deposit", note: "From your wallet on Oct 21.", amount: "5500000000", kind: "in" },
 ] as const;
 
 /* The sample history (I3.3). */

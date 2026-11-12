@@ -112,7 +112,7 @@ export function DemoDeliveries({
                     <span className="min-w-0">
                       <span className="block text-body">Eastport to {r.city}</span>
                       <span className="block text-caption text-ds-muted">
-                        #{r.id} · Northwind · {r.driver}
+                        {r.driver} drove #{r.id} for Northwind.
                       </span>
                     </span>
                   </span>

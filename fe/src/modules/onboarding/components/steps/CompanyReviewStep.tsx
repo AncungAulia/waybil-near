@@ -99,7 +99,7 @@ export function CompanyReviewStep({
                     minute: "2-digit",
                     hourCycle: "h23",
                   })
-                : "Nov 11 · 14:31"
+                : "Nov 11, 14:31"
             }
           />
           <Row label="Status" value="In review" />

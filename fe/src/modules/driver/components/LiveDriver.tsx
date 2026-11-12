@@ -112,7 +112,7 @@ function Row({ s }: { s: Shipment }) {
       <span className="min-w-0 flex-1">
         <span className="block text-body font-medium">Trip #{s.id}</span>
         <span className="mt-4 block text-[12.5px] break-all text-ds-muted">
-          {s.qty} {s.unit} · {name(s.shipper)}
+          {s.qty} {s.unit} for {name(s.shipper)}
         </span>
       </span>
       <span className="flex flex-col items-end gap-6">
@@ -217,7 +217,7 @@ function Trip({
         <div className="min-w-0">
           <h1 className="text-title">Trip #{s.id}</h1>
           <p className="mt-6 text-label break-all text-ds-muted">
-            {s.qty} {s.unit} · {name(s.shipper)}
+            {s.qty} {s.unit} for {name(s.shipper)}
           </p>
         </div>
         <StatusPill status={statusChip(s)} />
@@ -362,7 +362,7 @@ function Payouts({ trips }: { trips: Shipment[] }) {
                 <span className="min-w-0">
                   <span className="block text-label">Trip #{s.id}</span>
                   <span className="block text-caption break-all text-ds-muted">
-                    {day(s.paid_at)} · {name(s.shipper)}
+                    Paid {day(s.paid_at)} for {name(s.shipper)}
                   </span>
                 </span>
                 <Money amount={s.advance} className="shrink-0 text-label" />

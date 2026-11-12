@@ -28,7 +28,7 @@ export function Companies({
               <span className="min-w-0">
                 <span className="block text-body">Atlas Cargo wants to work with you</span>
                 <span className="block text-caption text-ds-muted">
-                  Verified · paid on time 100%
+                  A verified company that always pays on time.
                 </span>
               </span>
             </div>
@@ -50,7 +50,7 @@ export function Companies({
               <div className="flex-1">
                 <h3 className="text-body">{name}</h3>
                 <p className="text-caption text-ds-muted">
-                  {i === 0 ? "Eastport · 3 trips with you" : "Millbrook · 1 trip with you"}
+                  {i === 0 ? "Eastport. 3 trips with you." : "Millbrook. 1 trip with you."}
                 </p>
               </div>
               <span className="flex shrink-0 items-center gap-6 rounded-full bg-ds-canvas py-6 pr-14 pl-11 text-caption">

@@ -317,7 +317,7 @@ export function CompanyDocuments({
               >
                 {errors[slot.key] ??
                   (files[slot.key]
-                    ? `${files[slot.key]?.name} · ${((files[slot.key]?.size ?? 0) / 1024 / 1024).toFixed(1)} MB`
+                    ? `${files[slot.key]?.name}, ${((files[slot.key]?.size ?? 0) / 1024 / 1024).toFixed(1)} MB`
                     : slot.hint)}
               </p>
             </div>

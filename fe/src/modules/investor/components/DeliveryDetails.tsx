@@ -57,19 +57,19 @@ export function DeliveryDetails({
   const steps = [
     {
       title: "Approved by Northwind",
-      who: "Hannah Brooks · Nov 12, 08:02",
+      who: "Hannah Brooks on Nov 12, 08:02",
       detail: `Bill ${formatUsdc(bill)} USDC, due Dec 11`,
       warning: false,
     },
     {
       title: `Picked up by ${driver}`,
-      who: "Nov 12, 09:14 · Main warehouse, Eastport",
+      who: "Main warehouse, Eastport on Nov 12, 09:14",
       detail: "Load checked by the driver",
       warning: false,
     },
     {
       title: "Arrival confirmed by Harbor Hub",
-      who: "Lena · Nov 12, 15:36",
+      who: "Lena on Nov 12, 15:36",
       detail: "120 of 120 crates",
       warning: false,
     },
@@ -77,7 +77,7 @@ export function DeliveryDetails({
       ? [
           {
             title: "Covered by the reserve",
-            who: "Waybil team · Dec 27, 10:20",
+            who: "Waybil team on Dec 27, 10:20",
             detail: "2 of 3 approved. Northwind is paused until it settles.",
             warning: true,
           },
@@ -91,7 +91,7 @@ export function DeliveryDetails({
         <div>
           <h1 className="text-title">Eastport to {city}</h1>
           <p className="mt-6 text-label text-ds-muted">
-            #{id} · Northwind · {driver}
+            {driver} drove #{id} for Northwind.
           </p>
         </div>
         <StatusPill status={covered ? "coveredByReserve" : "paidEarly"} />

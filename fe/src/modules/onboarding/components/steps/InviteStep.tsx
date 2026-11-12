@@ -85,7 +85,7 @@ export function InviteStep({
               <p className="mt-2 text-[12.5px] leading-[1.45] text-ds-muted">
                 {state === "F5"
                   ? "You are invited to receive goods."
-                  : "Shipping company · Eastport"}
+                  : "A shipping company in Eastport."}
               </p>
             </div>
             <span className="inline-flex shrink-0 items-center gap-4 rounded-full bg-ds-success-soft px-10 py-4 text-caption font-medium text-ds-success">
@@ -105,7 +105,7 @@ export function InviteStep({
             ) : (
               <>
                 <Row label="Credit limit" value={<Money amount="3000000000" />} />
-                <Row label="Paid on time" value="100% · 9 trips" />
+                <Row label="Paid on time" value="100% of 9 trips" />
                 <Row label="Payout" value={`You get ${DRIVER_PERCENT} on arrival.`} />
               </>
             )}

@@ -163,7 +163,7 @@ export function DriverScreen({
           <h1 className="text-title md:text-amount">{title}</h1>
           <p className="mt-4 text-label text-ds-muted">
             {detail
-              ? `#${shipmentId} · ${trip.company}`
+              ? `#${shipmentId} for ${trip.company}`
               : state.startsWith("K1")
                 ? state === "K1.2"
                   ? "The money is already in your account"

@@ -130,7 +130,7 @@ export function TripSheet({
         </>
       ) : state === "K2.10" ? (
         <>
-          <p className="text-caption text-ds-muted">From Lena at Harbor Hub · Nov 12, 15:31</p>
+          <p className="text-caption text-ds-muted">Sent by Lena at Harbor Hub on Nov 12, 15:31.</p>
           <div className="grid grid-cols-3 gap-8">
             {report.photos.length
               ? report.photos.map((photo, i) => (

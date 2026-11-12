@@ -47,7 +47,7 @@ export function ShowQr({
           </button>
         </div>
         <p className="text-label">
-          Shipment #{shipmentId} · {westfield ? "60 boxes of oil" : "120 crates of coffee"}
+          Shipment #{shipmentId} carries {westfield ? "60 boxes of oil" : "120 crates of coffee"}.
         </p>
         <p
           role="status"
