@@ -121,10 +121,6 @@ export function Shippers() {
                         <FanMeter
                           value={share}
                           label={`${name} credit used`}
-                          describe={(at, inUse) => {
-                            const mark = (limit * BigInt(Math.round(at * 1000))) / 1000n;
-                            return `The ${formatUsdc(mark)} USDC mark of the limit is ${inUse ? "in use" : "free"}.`;
-                          }}
                           className="mt-10 w-full"
                         />
                         <p className="mt-6 text-caption text-ds-muted">
