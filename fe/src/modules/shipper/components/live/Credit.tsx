@@ -5,6 +5,7 @@ import { Panel } from "@/components/layout/Panel";
 import { Button } from "@/components/ui/Button";
 import { Money } from "@/components/elements/Money";
 import { ProofLink } from "@/components/elements/ProofLink";
+import { Skeleton, SkeletonGroup } from "@/components/elements/Skeleton";
 import { api } from "@/lib/api";
 import type { LiveShipperData } from "../../data/live";
 import { Alert, failure, Meter } from "./shared";
@@ -69,7 +70,14 @@ export function Credit({ data, refresh }: { data: LiveShipperData; refresh: () =
         </Panel>
         <Panel title="Credit assistant">
           {review === undefined ? (
-            <p className="text-label text-ds-muted">Loading.</p>
+            <SkeletonGroup
+              label="Loading your last credit check."
+              className="flex flex-col gap-12 py-4"
+            >
+              <Skeleton className="w-4/5" />
+              <Skeleton className="h-10 w-3/5" />
+              <Skeleton className="h-10 w-2/5" />
+            </SkeletonGroup>
           ) : running ? (
             <p className="text-label">
               The credit assistant is checking your record privately. This takes a minute.

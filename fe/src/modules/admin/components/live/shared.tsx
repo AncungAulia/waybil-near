@@ -3,6 +3,7 @@ import { parseUsdc, type ProposalKind, type Shipper } from "@waybil/shared";
 import { Panel } from "@/components/layout/Panel";
 import { Button } from "@/components/ui/Button";
 import { ProofLink } from "@/components/elements/ProofLink";
+import { Skeleton, SkeletonGroup, SkeletonRow } from "@/components/elements/Skeleton";
 import { ApiError } from "@/lib/api";
 import { Empty } from "../AdminParts";
 
@@ -131,11 +132,18 @@ export function Failed({ error, reload }: { error: string; reload: () => void })
     </Panel>
   );
 }
-export function Loading() {
+/** A card of shimmering rows while a team screen loads. */
+export function Loading({ label = "Loading." }: { label?: string }) {
   return (
-    <Panel className="grid min-h-240 place-content-center">
-      <p className="text-label text-ds-muted">Loading.</p>
-    </Panel>
+    <SkeletonGroup label={label}>
+      <Panel gap={4} className="min-h-240">
+        <Skeleton className="mb-8 h-16 w-140" />
+        <SkeletonRow />
+        <SkeletonRow />
+        <SkeletonRow />
+        <SkeletonRow />
+      </Panel>
+    </SkeletonGroup>
   );
 }
 

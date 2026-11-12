@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { api } from "@/lib/api";
 import { Alert, failure } from "./shared";
-import { PhoneInput } from "@/modules/onboarding/components/PhoneInput";
-import { dialCode, phoneError, toE164 } from "@/modules/onboarding/data/validation";
+import { PhoneInput } from "@/components/elements/PhoneInput";
+import { dialCode, phoneError, toE164 } from "@/lib/phone";
 
 export function InviteSheet({
   type,

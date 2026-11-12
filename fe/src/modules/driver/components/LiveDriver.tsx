@@ -12,6 +12,7 @@ import { StatusPill } from "@/components/elements/StatusPill";
 import { DeliveryQr } from "@/components/elements/DeliveryQr";
 import { ProofLink } from "@/components/elements/ProofLink";
 import { BackLink } from "@/components/elements/BackLink";
+import { SkeletonGroup, SkeletonHeader, SkeletonListPanel } from "@/components/elements/Skeleton";
 import { useLive } from "@/hooks/useLive";
 import { useNames } from "@/hooks/useNames";
 import { ApiError } from "@/lib/api";
@@ -68,9 +69,10 @@ export function LiveDriver({
             </Button>
           </Panel>
         ) : !data ? (
-          <Panel className="grid min-h-240 place-content-center">
-            <p className="text-label text-ds-muted">Loading your trips.</p>
-          </Panel>
+          <SkeletonGroup label="Loading your trips." className="flex flex-col gap-24">
+            <SkeletonHeader />
+            <SkeletonListPanel rows={4} />
+          </SkeletonGroup>
         ) : view === "trip" ? (
           <Trip
             account={account}

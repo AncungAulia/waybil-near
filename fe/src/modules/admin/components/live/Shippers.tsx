@@ -49,7 +49,7 @@ export function Shippers() {
       <Header title="Shippers" note="New applications and the companies already shipping" />
       <DoneNote done={done} />
       {!data ? (
-        <Loading />
+        <Loading label="Loading the shippers." />
       ) : (
         <div className="grid items-start gap-24 lg:grid-cols-[1fr_420px]">
           <div className="flex flex-col gap-20">

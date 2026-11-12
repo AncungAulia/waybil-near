@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { type OnboardingState } from "../data/fixtures";
 import { driverErrors } from "../data/validation";
-import { PhoneInput } from "./PhoneInput";
+import { PhoneInput } from "@/components/elements/PhoneInput";
 import { WalletGlyph } from "@/components/elements/icons";
 import { cn } from "@/lib/cn";
 export function DriverSetup({

@@ -1,8 +1,8 @@
 "use client";
 import { useState } from "react";
 import { Input } from "@/components/ui/Input";
-import { SearchPicker } from "./SearchPicker";
-import { countryForDialCode, dialCode, PHONE_COUNTRIES } from "../data/validation";
+import { SearchPicker } from "@/components/ui/SearchPicker";
+import { countryForDialCode, dialCode, PHONE_COUNTRIES } from "@/lib/phone";
 import { cn } from "@/lib/cn";
 /*
  * Every country with a phone code has a drawn flag in `public/flags` (see its README).
@@ -24,7 +24,8 @@ export function PhoneInput({
   error,
   disabled = false,
   initialOpen = false,
-  appearance,
+  /* Every phone field uses the flag look, so one country picker looks the same everywhere. */
+  appearance = "company",
   showHint = true,
   popoverAlign,
   label = "Phone or WhatsApp",

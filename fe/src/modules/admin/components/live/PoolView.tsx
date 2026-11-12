@@ -23,7 +23,7 @@ export function PoolView() {
     <>
       <Header title="Pool" note="Where the investors’ money is right now" />
       {!p || !data ? (
-        <Loading />
+        <Loading label="Loading the pool." />
       ) : (
         <>
           {value > 0n && free * 10n < value && (

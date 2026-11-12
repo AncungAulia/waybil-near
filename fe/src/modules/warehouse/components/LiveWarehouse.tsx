@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/Input";
 import { StatusPill } from "@/components/elements/StatusPill";
 import { QrScanner } from "@/components/elements/QrScanner";
 import { ProofLink } from "@/components/elements/ProofLink";
+import { SkeletonGroup, SkeletonHeader, SkeletonListPanel } from "@/components/elements/Skeleton";
 import { useLive } from "@/hooks/useLive";
 import { api, ApiError } from "@/lib/api";
 import { cn } from "@/lib/cn";
@@ -73,9 +74,10 @@ export function LiveWarehouse({ view, account }: { view: WarehouseView; account:
             </Button>
           </Panel>
         ) : !data ? (
-          <Panel className="grid min-h-240 place-content-center">
-            <p className="text-label text-ds-muted">Loading your arrivals.</p>
-          </Panel>
+          <SkeletonGroup label="Loading your arrivals." className="flex flex-col gap-24">
+            <SkeletonHeader />
+            <SkeletonListPanel rows={4} title={false} />
+          </SkeletonGroup>
         ) : data.destinations.length === 0 ? (
           <Panel className="grid min-h-320 place-content-center gap-12 text-center">
             <h1 className="text-heading">No destination yet</h1>

@@ -517,10 +517,13 @@
   }
 }
 
+/* The one loading shimmer. `.skeleton` is the shared name, `.shipment-skeleton` the older one. */
+.skeleton,
 .shipment-skeleton {
   position: relative;
   overflow: hidden;
 }
+.skeleton::after,
 .shipment-skeleton::after {
   content: "";
   position: absolute;
@@ -534,6 +537,7 @@
   animation: shipment-shimmer 2.4s linear infinite;
 }
 @media (prefers-reduced-motion: reduce) {
+  .skeleton::after,
   .shipment-skeleton::after {
     animation: none;
   }

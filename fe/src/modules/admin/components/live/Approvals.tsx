@@ -107,7 +107,7 @@ export function Approvals({ me }: { me: string }) {
       <Header title="Approvals" note="Changes that need the team" />
       <DoneNote done={done} />
       {!data ? (
-        <Loading />
+        <Loading label="Loading the approvals." />
       ) : (
         <div className="grid items-start gap-24 lg:grid-cols-[1fr_420px]">
           <div className="flex flex-col gap-24">

@@ -15,6 +15,12 @@ import { Money } from "@/components/elements/Money";
 import { FanMeter } from "@/components/elements/FanMeter";
 import { StatusPill } from "@/components/elements/StatusPill";
 import { Stat } from "@/components/elements/Stat";
+import {
+  SkeletonGroup,
+  SkeletonListPanel,
+  SkeletonRow,
+  SkeletonStats,
+} from "@/components/elements/Skeleton";
 import { cn } from "@/lib/cn";
 import { api } from "@/lib/api";
 import { useLive } from "@/hooks/useLive";
@@ -41,13 +47,28 @@ const percent = (part: bigint, whole: bigint) =>
   whole > 0n ? Number((part * 100n) / whole) / 100 : 0;
 
 /** Stats, credit per company and the latest money moments on the pool page. */
-export function LiveSections({ data }: { data: LivePool | null }) {
+export function LiveSections({
+  data,
+  failed = false,
+}: {
+  data: LivePool | null;
+  failed?: boolean;
+}) {
   const name = useNames(
     data
       ? [...Object.keys(data.shippers), ...data.deliveries.flatMap((s) => [s.shipper, s.driver])]
       : [],
   );
-  if (!data) return null;
+  if (!data)
+    return failed ? null : (
+      <SkeletonGroup label="Loading the pool." className="flex flex-col gap-16 md:gap-24">
+        <SkeletonStats />
+        <div className="grid items-start gap-16 lg:grid-cols-2">
+          <SkeletonListPanel rows={3} />
+          <SkeletonListPanel rows={3} />
+        </div>
+      </SkeletonGroup>
+    );
   const stats = poolStats(data.deliveries);
   const companies = Object.entries(data.shippers).filter(
     (entry): entry is [string, NonNullable<(typeof entry)[1]>] => entry[1] !== null,
@@ -412,7 +433,12 @@ export function LiveHistory({ accountId, queue }: { accountId: string; queue: Qu
             </button>
           </div>
         ) : !data ? (
-          <p className="py-14 text-label text-ds-muted">Loading your history.</p>
+          <SkeletonGroup label="Loading your history.">
+            <SkeletonRow />
+            <SkeletonRow />
+            <SkeletonRow />
+            <SkeletonRow />
+          </SkeletonGroup>
         ) : data.items.length === 0 ? (
           <p className="py-14 text-label text-ds-muted">
             Nothing yet. Your first deposit shows up here.

@@ -14,6 +14,7 @@ import { DemoPoolSections } from "./DemoPoolSections";
 export function PoolHome({
   liveAccount,
   data,
+  failed = false,
   balance,
   firstVisit,
   name,
@@ -28,6 +29,8 @@ export function PoolHome({
   /* The signed-in investor on the live path, or null for the demo. */
   liveAccount: string | null;
   data: LivePool | null;
+  /* The live pool could not be read, so the sections under the cards stay hidden. */
+  failed?: boolean;
   balance: DemoPoolBalance;
   firstVisit: boolean;
   name: string;
@@ -142,7 +145,7 @@ export function PoolHome({
           )}
         </Panel>
       </div>
-      {live ? <LiveSections data={data} /> : <DemoPoolSections />}
+      {live ? <LiveSections data={data} failed={failed} /> : <DemoPoolSections />}
     </div>
   );
 }

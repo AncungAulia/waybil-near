@@ -3,6 +3,12 @@ import { RoleShell } from "@/components/layout/RoleShell";
 import { Panel } from "@/components/layout/Panel";
 import { Button } from "@/components/ui/Button";
 import { BackLink } from "@/components/elements/BackLink";
+import {
+  SkeletonGroup,
+  SkeletonHeader,
+  SkeletonListPanel,
+  SkeletonStats,
+} from "@/components/elements/Skeleton";
 import { cn } from "@/lib/cn";
 import { LiveShipment } from "./LiveShipment";
 import { useLiveShipper } from "../hooks/useLiveShipper";
@@ -55,9 +61,14 @@ export function LiveShipper({
             </Button>
           </Panel>
         ) : !data ? (
-          <Panel className={cn("grid place-content-center", FULL)}>
-            <p className="text-label text-ds-muted">Loading your shipments.</p>
-          </Panel>
+          <SkeletonGroup
+            label="Loading your shipments."
+            className={cn("flex flex-col gap-24", FULL)}
+          >
+            <SkeletonHeader />
+            <SkeletonStats />
+            <SkeletonListPanel rows={5} />
+          </SkeletonGroup>
         ) : !data.shipper ? (
           <NotApproved />
         ) : view === "home" ? (

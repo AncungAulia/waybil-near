@@ -4,6 +4,7 @@ import { formatUsdc, parseUsdc } from "@waybil/shared";
 import { RoleShell } from "@/components/layout/RoleShell";
 import { Panel } from "@/components/layout/Panel";
 import { Button } from "@/components/ui/Button";
+import { SkeletonGroup, SkeletonHeader, SkeletonListPanel } from "@/components/elements/Skeleton";
 import { LIVE, USDC_CONTRACT, WAYBIL_CONTRACT } from "@/lib/env";
 import { callContract, ensureUsdcStorage } from "@/lib/wallet";
 import { useAuth } from "@/providers/AuthProvider";
@@ -173,6 +174,7 @@ export function InvestorScreen({
     <PoolHome
       liveAccount={live ? live.accountId : null}
       data={data}
+      failed={failed}
       balance={balance}
       firstVisit={firstVisit}
       name={name}
@@ -196,17 +198,20 @@ export function InvestorScreen({
       <div className="flex flex-col gap-24">
         {!state.startsWith("I3") ? (
           home
-        ) : live && !data ? (
+        ) : live && !data && failed ? (
           <Panel className="grid min-h-240 place-content-center text-center">
             <p className="text-label text-ds-muted">
-              {failed ? "We could not load the pool. Try again in a moment." : "Loading the pool."}
+              We could not load the pool. Try again in a moment.
             </p>
-            {failed && (
-              <Button variant="secondary" className="mx-auto mt-12" onClick={refresh}>
-                Try again
-              </Button>
-            )}
+            <Button variant="secondary" className="mx-auto mt-12" onClick={refresh}>
+              Try again
+            </Button>
           </Panel>
+        ) : live && !data ? (
+          <SkeletonGroup label="Loading the pool." className="flex flex-col gap-24">
+            <SkeletonHeader />
+            <SkeletonListPanel rows={5} title={false} className="px-20 py-8" />
+          </SkeletonGroup>
         ) : live && data && state === "I3.3" ? (
           <LiveHistory accountId={live.accountId} queue={data.queue} />
         ) : state === "I3.3" ? (

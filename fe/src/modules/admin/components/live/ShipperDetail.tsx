@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/Button";
 import { Money } from "@/components/elements/Money";
 import { ProofLink } from "@/components/elements/ProofLink";
 import { BackLink } from "@/components/elements/BackLink";
+import { Skeleton, SkeletonGroup } from "@/components/elements/Skeleton";
 import { api } from "@/lib/api";
 import { getShipper, listShipmentsByShipper, readAll } from "@/lib/near";
 import { WAYBIL_CONTRACT } from "@/lib/env";
@@ -94,7 +95,7 @@ export function ShipperDetail({ account }: { account: string }) {
     return (
       <>
         {back}
-        <Loading />
+        <Loading label="Loading this company." />
       </>
     );
   const { shipper, application, detail, review, pauses, shipments } = data;
@@ -447,9 +448,19 @@ export function ShipperDetail({ account }: { account: string }) {
       )}
       {sheet === "proof" && (
         <ActionSheet title="Private check proof" onClose={() => setSheet(null)}>
-          <pre className="max-h-[50dvh] overflow-auto rounded-small bg-ds-canvas p-12 text-[12px] leading-16 break-all whitespace-pre-wrap">
-            {proof ?? "Loading."}
-          </pre>
+          {proof === null ? (
+            <SkeletonGroup label="Loading the proof." className="flex flex-col gap-10 py-12">
+              <Skeleton className="w-4/5" />
+              <Skeleton className="w-full" />
+              <Skeleton className="w-3/5" />
+              <Skeleton className="w-11/12" />
+              <Skeleton className="w-2/3" />
+            </SkeletonGroup>
+          ) : (
+            <pre className="max-h-[50dvh] overflow-auto rounded-small bg-ds-canvas p-12 text-[12px] leading-16 break-all whitespace-pre-wrap">
+              {proof}
+            </pre>
+          )}
           <Button onClick={() => setSheet(null)}>Done</Button>
         </ActionSheet>
       )}
