@@ -1,6 +1,9 @@
 "use client";
 import { formatUsdc } from "@waybil/shared";
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { useMutation, useQuery, type QueryKey } from "@tanstack/react-query";
+import { useInvalidate } from "@/hooks/useInvalidate";
+import { qk } from "@/lib/queryKeys";
 import { useRouter } from "next/navigation";
 import { Plus, Copy, Check, SignOut, GasPump, Clock, SealCheck } from "@phosphor-icons/react";
 import { ActionSheet } from "@/components/layout/ActionSheet";
@@ -61,21 +64,22 @@ function minutes(n: number) {
   return n === 1 ? "1 minute" : `${n} minutes`;
 }
 
-/** The real USDC balance. `refresh` reads it again after a transaction. */
+/** The real USDC balance, from the shared cache. */
 function useUsdcBalance(accountId: string | undefined) {
-  const [balance, setBalance] = useState<bigint | null>(null);
-  const [version, setVersion] = useState(0);
-  useEffect(() => {
-    if (!accountId) return;
-    let stale = false;
-    usdcBalance(accountId)
-      .then((value) => !stale && setBalance(BigInt(value)))
-      .catch(() => !stale && setBalance(null));
-    return () => {
-      stale = true;
-    };
-  }, [accountId, version]);
-  return { balance, refresh: () => setVersion((v) => v + 1) };
+  const query = useQuery({
+    queryKey: qk.usdc(accountId ?? ""),
+    queryFn: () => usdcBalance(accountId!).then((value) => BigInt(value)),
+    enabled: !!accountId,
+  });
+  return { balance: query.data ?? null };
+}
+
+/* The reads that hold this role's balance, so they show the test USDC at once. */
+function balanceKeys(role: "shipper" | "investor" | "admin", accountId: string) {
+  const keys: QueryKey[] = [qk.usdc(accountId)];
+  if (role === "shipper") keys.push(qk.shipper(accountId));
+  if (role === "investor") keys.push(qk.pool(accountId));
+  return keys;
 }
 export function DemoWallet({
   initialState = "G1",
@@ -92,6 +96,8 @@ export function DemoWallet({
   const router = useRouter();
   const { signOut } = useAuth();
   const real = useUsdcBalance(live?.accountId);
+  const invalidate = useInvalidate();
+  const faucet = useMutation({ mutationFn: () => callContract(USDC_CONTRACT, "faucet", {}) });
   const [state, setState] = useState(initialState),
     [copied, setCopied] = useState(false),
     [retryMinutes, setRetryMinutes] = useState(48),
@@ -132,8 +138,8 @@ export function DemoWallet({
         return;
       }
       setState("G3");
-      await callContract(USDC_CONTRACT, "faucet", {});
-      real.refresh();
+      await faucet.mutateAsync();
+      void invalidate(...balanceKeys(role, accountId));
       setState("G4");
     } catch (error) {
       setState(/reject|cancel|denied|closed/i.test(String(error)) ? "X6" : "X7");

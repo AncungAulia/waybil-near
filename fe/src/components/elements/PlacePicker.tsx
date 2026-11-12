@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { qk } from "@/lib/queryKeys";
 import type { PlaceReverseResponse, PlaceSearchResponse, PlaceSuggestion } from "@waybil/shared";
 import { MapPin } from "@phosphor-icons/react";
 import { Input } from "@/components/ui/Input";
@@ -64,9 +66,8 @@ export function PlacePicker({
   /** False when the screen draws the map elsewhere, for example beside a wide form. */
   showMap?: boolean;
 }) {
-  const [results, setResults] = useState<PlaceSuggestion[]>([]);
-  const [searching, setSearching] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  /* The text to search for, set after a pause in typing. Null until the first search. */
+  const [searched, setSearched] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   /* Search only for what the person typed, not for a label they picked. */
   const typed = useRef(false);
@@ -80,29 +81,30 @@ export function PlacePicker({
     const q = value.address.trim();
     /* Search only while the person is typing here, not when a moved pin fills the address. */
     if (!typed.current || q.length < MIN_CHARS || document.activeElement !== field.current) return;
-    const ctrl = new AbortController();
     const timer = window.setTimeout(() => {
-      setSearching(true);
-      setError(null);
-      api<PlaceSearchResponse>(`/places/search?q=${encodeURIComponent(q)}`, {
-        signal: ctrl.signal,
-      })
-        .then((r) => {
-          setResults(r.results);
-          setOpen(true);
-        })
-        .catch((e: unknown) => {
-          if ((e as Error)?.name === "AbortError") return;
-          setResults([]);
-          setError("Address search is not working right now. Tap the map to drop the pin.");
-        })
-        .finally(() => setSearching(false));
+      setSearched(q);
+      setOpen(true);
     }, PAUSE_MS);
-    return () => {
-      ctrl.abort();
-      window.clearTimeout(timer);
-    };
+    return () => window.clearTimeout(timer);
   }, [value.address]);
+
+  /* Each text is searched once and kept, so typing back to it shows its places at once. */
+  const search = useQuery({
+    queryKey: qk.addressSearch(searched ?? ""),
+    queryFn: ({ signal }) =>
+      api<PlaceSearchResponse>(`/places/search?q=${encodeURIComponent(searched!)}`, {
+        signal,
+      }).then((r) => r.results),
+    enabled: searched !== null,
+    staleTime: 10 * 60_000,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+  const results: PlaceSuggestion[] = search.data ?? [];
+  const searching = search.isFetching;
+  const error = search.isError
+    ? "Address search is not working right now. Tap the map to drop the pin."
+    : null;
 
   const pin = value.lat != null && value.lng != null ? { lat: value.lat, lng: value.lng } : null;
 
