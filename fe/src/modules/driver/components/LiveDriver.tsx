@@ -16,6 +16,7 @@ import { DeliveryQr } from "@/components/elements/DeliveryQr";
 import { ProofLink } from "@/components/elements/ProofLink";
 import { BackLink } from "@/components/elements/BackLink";
 import { TripMap } from "@/components/elements/TripMap";
+import { TimelineStep } from "@/components/elements/TimelineStep";
 import { useTrips } from "@/hooks/useTrips";
 import { sharingNote, useShareLocation } from "@/hooks/useShareLocation";
 import { directionsUrl, duration } from "@/lib/route";
@@ -377,6 +378,13 @@ function Trip({ account, shipment: s }: { account: string; shipment: Shipment | 
             paidOn={s.paid_at ? day(s.paid_at) : ""}
             destination={trip?.destination.name ?? "the warehouse"}
           />
+          <Panel title="Progress">
+            <div className="flex flex-col gap-16">
+              {driverSteps(s, trip?.destination.name ?? "the warehouse").map((step) => (
+                <TimelineStep key={step.title} {...step} />
+              ))}
+            </div>
+          </Panel>
           <Panel title="Trip" className="lg:flex-1">
             <div className="flex flex-col gap-12">
               <Fact label="Company">{name(s.shipper)}</Fact>
@@ -387,7 +395,7 @@ function Trip({ account, shipment: s }: { account: string; shipment: Shipment | 
               </Fact>
             </div>
             <a
-              className="link focus-ring inline-flex w-fit items-center gap-4 text-caption"
+              className="link focus-ring mt-auto inline-flex w-fit items-center gap-4 text-caption"
               href={CONTRACT_RECORD_URL}
               target="_blank"
               rel="noopener noreferrer"
@@ -399,6 +407,39 @@ function Trip({ account, shipment: s }: { account: string; shipment: Shipment | 
       </div>
     </>
   );
+}
+
+/* The driver's side of the journey, done or still to come. The first open step is next. */
+function driverSteps(s: Shipment, destination: string) {
+  const steps = [
+    { title: "Trip assigned", at: s.approved_at },
+    { title: "You picked it up", at: s.picked_up_at },
+    { title: `Arrived at ${destination}`, at: s.arrived_at },
+    { title: "You got paid", at: s.paid_at },
+  ];
+  const next = steps.findIndex((step) => !step.at);
+  return steps.map((step, i) => ({
+    title: step.title,
+    state:
+      s.status === "Cancelled" && !step.at
+        ? ("next" as const)
+        : s.status === "Reported" && i === 3
+          ? ("paused" as const)
+          : step.at
+            ? ("done" as const)
+            : i === next
+              ? ("current" as const)
+              : ("next" as const),
+    time: step.at
+      ? day(step.at)
+      : s.status === "Cancelled"
+        ? "Cancelled."
+        : s.status === "Reported" && i === 3
+          ? "Waiting for the report to be settled."
+          : i === next
+            ? "Happening next."
+            : "Still to come.",
+  }));
 }
 
 /* What the driver gets: dark with a large amount until paid, then plain with the day it landed. */
