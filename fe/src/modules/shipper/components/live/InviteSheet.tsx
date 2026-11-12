@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import type { InviteCreatedResponse, Place, PlaceCreate } from "@waybil/shared";
-import { Copy } from "@phosphor-icons/react";
+import { Copy, MapPin } from "@phosphor-icons/react";
 import { ActionSheet } from "@/components/layout/ActionSheet";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -185,13 +185,23 @@ export function InviteSheet({
                 />
               )}
             </div>
-            {placeSheet && (
-              <RouteMap
-                pin={spot.lat != null && spot.lng != null ? { lat: spot.lat, lng: spot.lng } : null}
-                onPick={(lat, lng) => setSpot((s) => ({ ...s, lat, lng }))}
-                className="h-240 w-full lg:h-full lg:min-h-440"
-              />
-            )}
+            {/* The map waits for an address, so an empty form stays short. */}
+            {placeSheet &&
+              (spot.lat != null && spot.lng != null ? (
+                <RouteMap
+                  pin={{ lat: spot.lat, lng: spot.lng }}
+                  onPick={(lat, lng) => setSpot((s) => ({ ...s, lat, lng }))}
+                  className="h-240 w-full lg:h-full lg:min-h-440"
+                />
+              ) : (
+                <div className="hidden flex-col items-center justify-center gap-10 rounded-row bg-ds-canvas p-24 text-center lg:flex">
+                  <MapPin size={28} className="text-ds-muted" aria-hidden />
+                  <p className="max-w-260 text-label text-ds-muted">
+                    Search the address on the left. Its pin shows here, and you can drag it to the
+                    exact spot.
+                  </p>
+                </div>
+              ))}
           </div>
           {error && <Alert>{error}</Alert>}
           <Button

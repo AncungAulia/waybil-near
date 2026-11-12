@@ -79,7 +79,11 @@ export function RouteMap({
         });
         m.addControl(new maplibre.NavigationControl({ showCompass: false }), "top-right");
         let loaded = false;
-        m.on("load", () => {
+        /*
+         * "load" waits for every first tile, so one slow tile would hold it back. The style is
+         * all the lines and markers need.
+         */
+        m.once("style.load", () => {
           loaded = true;
           if (!cancelled) setReady(true);
         });

@@ -86,7 +86,7 @@ export function PlacePicker({
               ? "Searching addresses."
               : pin
                 ? "Pin set. Drag it or tap the map to move it."
-                : (hint ?? "Pick an address from the list, or tap the map."))
+                : (hint ?? "Pick an address from the list."))
           }
           onChange={(e) => {
             typed.current = true;
@@ -123,7 +123,7 @@ export function PlacePicker({
           </ul>
         )}
       </div>
-      {showMap && (
+      {showMap && pin && (
         <RouteMap
           pin={pin}
           onPick={(lat, lng) => onChange({ ...value, lat, lng })}
