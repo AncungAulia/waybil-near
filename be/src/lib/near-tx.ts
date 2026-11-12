@@ -24,6 +24,11 @@ export async function signTx(account: Account, receiverId: string, actions: Acti
 export async function txStatus(provider: JsonRpcProvider, accountId: string, txHash: string) {
   return rpcCall(async () => {
     try {
+      /*
+       * Ask first without waiting. For a transaction the network has never seen, waiting for
+       * FINAL only runs into the timeout, and the caller would never learn to send it again.
+       */
+      await provider.viewTransactionStatus({ txHash, accountId, waitUntil: "NONE" });
       return await provider.viewTransactionStatus({ txHash, accountId, waitUntil: "FINAL" });
     } catch (error) {
       if (
