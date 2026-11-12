@@ -34,6 +34,9 @@ Types and money helpers come from `@waybil/shared`. Never redo the fee math in t
   full width and height.
 - Drivers and warehouses never see a wallet prompt. Their actions go through the relayer.
 - Only `NEXT_PUBLIC_*` env values reach the browser, and they are never secrets.
+- Avoid the middle dot (·) in UI text. Show a kind, role or status as a `Tag` next to the
+  name (`NameTag` in `src/components/ui/Tag.tsx`), and put other facts on their own lines
+  or in a short sentence.
 
 ## Motion
 
