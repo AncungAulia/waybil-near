@@ -13,6 +13,7 @@ import {
 } from "@waybil/shared";
 import {
   ArrowLineDown,
+  ArrowUpRight,
   Clock,
   ClockCounterClockwise,
   Package,
@@ -36,9 +37,8 @@ import { cn } from "@/lib/cn";
 import { api } from "@/lib/api";
 import { useLive } from "@/hooks/useLive";
 import { useNames } from "@/hooks/useNames";
-import { CONTRACT_RECORD_URL } from "@/lib/env";
+import { CONTRACT_RECORD_URL, nearblocksUrl } from "@/lib/env";
 import { BackLink } from "@/components/elements/BackLink";
-import { ProofLink } from "@/components/elements/ProofLink";
 import { statusChip } from "@/lib/status";
 import { latestEvents, poolStats, type LivePool } from "../data/live";
 
@@ -369,7 +369,13 @@ export function LiveDelivery({
         <div className="flex flex-col gap-16">
           {/* What this delivery earned the investor, first and large, in its own card. */}
           {!covered && (
-            <section className="rounded-card bg-ds-ink p-24 text-ds-bg">
+            /* The same dotted glow as the pool card, so money cards look alike. */
+            <section className="relative isolate overflow-hidden rounded-card bg-ds-ink p-24 text-ds-bg">
+              <img
+                src="/illustrations/investor-glow.png"
+                alt=""
+                className="pointer-events-none absolute inset-0 -z-10 size-full object-cover"
+              />
               <p className="text-label text-ds-bg/70">Your part of this delivery</p>
               <Money amount={String(part)} className="mt-4 block text-amount" />
               <p className="mt-4 text-caption text-ds-bg/70">
@@ -497,15 +503,26 @@ export function LiveHistory({ accountId, queue }: { accountId: string; queue: Qu
                 <span className="grid size-38 shrink-0 place-items-center rounded-full bg-ds-canvas">
                   {item.kind === "deposit" ? <ArrowLineDown size={16} /> : <Clock size={16} />}
                 </span>
+                {/* What happened, its day, then the amount, all on the left. */}
                 <span className="min-w-0 flex-1">
                   <span className="block text-body">{KIND[item.kind].label}</span>
                   <span className="block text-caption text-ds-muted">{isoDay(item.at)}</span>
-                  <ProofLink tx={item.txHash} className="text-caption" />
+                  <span className="mt-4 block text-label font-semibold tabular-nums">
+                    {KIND[item.kind].sign}
+                    <Money amount={item.amount} />
+                  </span>
                 </span>
-                <span className="shrink-0 text-label tabular-nums">
-                  {KIND[item.kind].sign}
-                  <Money amount={item.amount} />
-                </span>
+                {/* The record on the right. A short label on a computer, the arrow alone on a phone. */}
+                <a
+                  href={nearblocksUrl(`/txns/${item.txHash}`)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`See this ${KIND[item.kind].label.toLowerCase()} on NearBlocks`}
+                  className="link focus-ring tap grid size-40 shrink-0 place-items-center rounded-full bg-ds-canvas text-[14px] font-medium sm:flex sm:size-auto sm:bg-transparent"
+                >
+                  <span className="hidden sm:inline">NearBlocks ↗</span>
+                  <ArrowUpRight size={17} className="sm:hidden" aria-hidden />
+                </a>
               </div>
             ))
           )}
