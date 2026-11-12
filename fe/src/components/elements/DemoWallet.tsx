@@ -12,6 +12,7 @@ import { Tag } from "@/components/ui/Tag";
 import { Money } from "./Money";
 import { ArrowUpRightGlyph, SystemGlyph } from "./icons";
 import { cn } from "@/lib/cn";
+import { notify } from "@/lib/notify";
 import { USDC_CONTRACT } from "@/lib/env";
 import { usdcBalance, view } from "@/lib/near";
 import { callContract, disconnectWallet } from "@/lib/wallet";
@@ -97,7 +98,20 @@ export function DemoWallet({
   const { signOut } = useAuth();
   const real = useUsdcBalance(live?.accountId);
   const invalidate = useInvalidate();
-  const faucet = useMutation({ mutationFn: () => callContract(USDC_CONTRACT, "faucet", {}) });
+  /* The new balance shows in the menu, so the result is a toast and the sheet closes. */
+  const added = (tx?: string) => {
+    notify.success("1,000.00 test USDC added", { meta: "Test money has no real value.", tx });
+    onClose();
+  };
+  const faucet = useMutation({
+    mutationFn: () => callContract(USDC_CONTRACT, "faucet", {}),
+    onSuccess: (tx) => {
+      if (live) void invalidate(...balanceKeys(role, live.accountId));
+      added(tx);
+    },
+    /* Errors stay in the open sheet, next to the Try again button. */
+    onError: (error) => setState(/reject|cancel|denied|closed/i.test(String(error)) ? "X6" : "X7"),
+  });
   const [state, setState] = useState(initialState),
     [copied, setCopied] = useState(false),
     [retryMinutes, setRetryMinutes] = useState(48),
@@ -120,7 +134,7 @@ export function DemoWallet({
     if (live || state !== "G3" || initialState === "G3") return;
     const timer = window.setTimeout(() => {
       saveClaim(Date.now());
-      setState("G4");
+      added();
     }, 750);
     return () => window.clearTimeout(timer);
   }, [state, initialState]);
@@ -138,9 +152,7 @@ export function DemoWallet({
         return;
       }
       setState("G3");
-      await faucet.mutateAsync();
-      void invalidate(...balanceKeys(role, accountId));
-      setState("G4");
+      faucet.mutate();
     } catch (error) {
       setState(/reject|cancel|denied|closed/i.test(String(error)) ? "X6" : "X7");
     }
