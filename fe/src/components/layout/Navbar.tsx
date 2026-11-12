@@ -18,10 +18,9 @@ export interface NavLink {
 }
 
 /*
- * Once the page scrolls, the pill gets a little shorter and narrower and lifts off the content.
- * It is a layout change seen many times a day, so it is small and quick: 72 to 60 px tall and
- * up to 1080 px wide, over 200 ms with the ease-in-out token, and no movement at all with
- * reduced motion. Two thresholds stop it from flickering when the page rests near the top.
+ * Once the page scrolls, the pill gets a little shorter and lifts off the content. It is a
+ * layout change seen many times a day, so it is small and quick: 72 to 60 px over 200 ms
+ * with the ease-in-out token, and no movement at all with reduced motion. Two thresholds stop it from flickering when the page rests near the top.
  */
 function useScrolled(on: boolean) {
   const [scrolled, setScrolled] = useState(false);
@@ -57,8 +56,8 @@ export function Navbar({
       className={cn(
         "flex h-72 w-full items-center justify-between rounded-full border border-ds-line bg-ds-bg px-20",
         sticky &&
-          "mx-auto max-w-full transition-[height,max-width,box-shadow] duration-200 ease-in-out motion-reduce:transition-none",
-        compact && "h-60 max-w-1080 shadow-float",
+          "transition-[height,box-shadow] duration-200 ease-in-out motion-reduce:transition-none",
+        compact && "h-60 shadow-float",
         !sticky && className,
       )}
     >
