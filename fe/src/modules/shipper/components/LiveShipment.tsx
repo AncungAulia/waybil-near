@@ -176,9 +176,14 @@ export function LiveShipment({
     <>
       <header className="flex flex-wrap items-center justify-between gap-12">
         <div className="min-w-0">
-          <h1 className="text-title break-all">
-            {trips[0] ? `${trips[0].pickup.name} to ${trips[0].destination.name}` : row.route}
-          </h1>
+          {/* The title waits for the trip, so it never changes under the reader. */}
+          {!tripData ? (
+            <Skeleton className="h-36 w-320 max-w-full rounded-small" />
+          ) : (
+            <h1 className="text-title break-all">
+              {trips[0] ? `${trips[0].pickup.name} to ${trips[0].destination.name}` : row.route}
+            </h1>
+          )}
           <p className="mt-6 text-label break-all text-ds-muted">
             Shipment #{s.id}. {row.driver} carries {row.cargo}.
           </p>

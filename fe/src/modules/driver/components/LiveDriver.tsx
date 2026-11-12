@@ -221,12 +221,22 @@ function Trip({
       {back}
       <header className="flex flex-wrap items-center justify-between gap-12">
         <div className="min-w-0">
-          <h1 className="text-title break-words">
-            {trip ? `${trip.pickup.name} to ${trip.destination.name}` : `Trip #${s.id}`}
-          </h1>
-          <p className="mt-6 text-label break-all text-ds-muted">
-            Trip #{s.id} for {name(s.shipper)}.
-          </p>
+          {/* The title waits for the trip and the company name, so it never flashes raw ids. */}
+          {!tripData || name(s.shipper) === s.shipper ? (
+            <>
+              <Skeleton className="h-36 w-300 max-w-full rounded-small" />
+              <Skeleton className="mt-8 h-16 w-180 rounded-small" />
+            </>
+          ) : (
+            <>
+              <h1 className="text-title break-words">
+                {trip ? `${trip.pickup.name} to ${trip.destination.name}` : `Trip #${s.id}`}
+              </h1>
+              <p className="mt-6 text-label break-all text-ds-muted">
+                Trip #{s.id} for {name(s.shipper)}.
+              </p>
+            </>
+          )}
         </div>
         <StatusPill status={statusChip(s)} />
       </header>
