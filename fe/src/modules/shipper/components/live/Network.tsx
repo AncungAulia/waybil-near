@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { ArrowUpRight, MapPin, Plus, UserPlus } from "@phosphor-icons/react";
+import { ArrowUpRight, Check, Copy, MapPin, Plus, UserPlus } from "@phosphor-icons/react";
 import { Panel } from "@/components/layout/Panel";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { ActionSheet } from "@/components/layout/ActionSheet";
@@ -196,18 +196,21 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
       {open.length > 0 && (
         <Panel title="Invites waiting">
           {open.map((i) => (
-            <div key={i.code} className="py-8">
-              <p className="text-label">
-                {i.name} · {i.type === "driver" ? "Driver" : "Destination"}
-              </p>
-              <p className="text-caption text-ds-muted">
-                Sent to {i.phone}. The link works until{" "}
-                {new Date(i.expiresAt).toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                })}
-                .
-              </p>
+            <div key={i.code} className="flex items-center gap-12 py-8">
+              <div className="min-w-0 flex-1">
+                <p className="text-label">
+                  {i.name} · {i.type === "driver" ? "Driver" : "Destination"}
+                </p>
+                <p className="text-caption text-ds-muted">
+                  Sent to {i.phone}. The link works until{" "}
+                  {new Date(i.expiresAt).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                  .
+                </p>
+              </div>
+              <CopyInvite code={i.code} name={i.name} />
             </div>
           ))}
         </Panel>
@@ -286,5 +289,32 @@ function Member({
         </a>
       )}
     </div>
+  );
+}
+
+/*
+ * Copies an open invite's link again, for when the first message got lost. The link uses
+ * this site's own address, so it opens the same app the shipper is using.
+ */
+function CopyInvite({ code, name }: { code: string; name: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      aria-label={`Copy the invite link for ${name}`}
+      className="tap focus-ring flex shrink-0 items-center gap-6 rounded-full bg-ds-canvas px-14 py-10 text-[14px] font-medium hover:bg-ds-canvas-hover"
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(`${window.location.origin}/join/${code}`);
+          setCopied(true);
+          window.setTimeout(() => setCopied(false), 2000);
+        } catch {
+          setCopied(false);
+        }
+      }}
+    >
+      {copied ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />}
+      <span className="hidden sm:inline">{copied ? "Copied" : "Copy link"}</span>
+    </button>
   );
 }
