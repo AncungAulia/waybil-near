@@ -45,10 +45,10 @@ export function ProposalPanel({
           <h2 className="text-[17px] leading-21 font-semibold">{name}</h2>
           <p className="text-[13px] leading-16 text-ds-muted">
             {second
-              ? "New company from the Shippers page · Today 09:40"
+              ? "New company from the Shippers page, added today at 09:40."
               : state === "M1.7"
-                ? "Suggested by the credit assistant · Nov 4"
-                : "Suggested by the credit assistant · Today 10:12"}
+                ? "Suggested by the credit assistant on Nov 4."
+                : "Suggested by the credit assistant today at 10:12."}
           </p>
         </div>
         <span
@@ -155,11 +155,11 @@ export function ProposalPanel({
               : state === "M1.2"
                 ? "2 of 2 approved"
                 : state === "M1.5"
-                  ? "1 approve · 1 reject"
+                  ? "1 approved and 1 rejected"
                   : state === "M1.6"
-                    ? "1 approve · 2 reject"
+                    ? "1 approved and 2 rejected"
                     : state === "M1.7"
-                      ? "1 approve · 7 days passed"
+                      ? "1 approved, then 7 days passed"
                       : "1 of 2 approved"}
           </p>
         </div>

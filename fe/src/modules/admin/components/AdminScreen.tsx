@@ -193,12 +193,12 @@ export function AdminScreen({
                     ? "Where the investors’ money is right now"
                     : activeDetail
                       ? account === "northwind-freight.testnet"
-                        ? "Active since Oct 21 · Eastport"
+                        ? "Active since Oct 21 in Eastport"
                         : "Active shipper"
                       : applicationDetail
                         ? coast
-                          ? "Applied yesterday · Northgate"
-                          : "Applied today · Port Ellis"
+                          ? "Applied yesterday from Northgate"
+                          : "Applied today from Port Ellis"
                         : "New applications and the companies already shipping"}
               </p>
             </div>
@@ -294,8 +294,8 @@ export function AdminScreen({
                   value={tab}
                   onChange={setTab}
                   options={[
-                    { value: "Waiting", label: `Waiting · ${waitingCount}` },
-                    { value: "Active", label: `Active · ${state === "M2.9" ? 0 : 3}` },
+                    { value: "Waiting", label: `Waiting ${waitingCount}` },
+                    { value: "Active", label: `Active ${state === "M2.9" ? 0 : 3}` },
                   ]}
                 />
                 <div className="grid items-start gap-24 lg:grid-cols-[1fr_420px]">
@@ -303,7 +303,7 @@ export function AdminScreen({
                     className={cn("flex flex-col gap-20", tab !== "Waiting" && "hidden lg:flex")}
                   >
                     <div className="hidden lg:block">
-                      {sectionTitle(`Waiting for review · ${waitingCount}`)}
+                      {sectionTitle(`${waitingCount} waiting for review`)}
                     </div>
                     <Applications
                       state={state}

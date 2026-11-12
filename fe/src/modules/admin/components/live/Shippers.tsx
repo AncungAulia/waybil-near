@@ -54,7 +54,7 @@ export function Shippers() {
         <div className="grid items-start gap-24 lg:grid-cols-[1fr_420px]">
           <div className="flex flex-col gap-20">
             <h2 className="text-[15px] leading-18 font-medium">
-              Waiting for review · {data.waiting.length}
+              {data.waiting.length} waiting for review
             </h2>
             {data.waiting.length === 0 ? (
               <Panel className="admin-empty-applications">
@@ -141,7 +141,7 @@ function ApplicationCard({
         <div className="flex min-w-0 flex-col gap-4">
           <h2 className="text-[17px] leading-21 font-semibold">{a.company.name}</h2>
           <p className="text-[13px] leading-16 text-ds-muted">
-            Applied {day(a.createdAt)} · {a.company.city} · {a.company.trips} trips a month
+            Applied {day(a.createdAt)} from {a.company.city}. {a.company.trips} trips a month.
           </p>
         </div>
         <AdminBadge tone={a.proposalId !== null ? "brand" : closer ? "warning" : "success"}>

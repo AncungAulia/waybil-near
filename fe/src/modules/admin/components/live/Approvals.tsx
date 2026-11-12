@@ -12,6 +12,7 @@ import { ArrowRight, Check, X } from "@phosphor-icons/react";
 import { Panel } from "@/components/layout/Panel";
 import { ActionSheet } from "@/components/layout/ActionSheet";
 import { Button } from "@/components/ui/Button";
+import { Tag } from "@/components/ui/Tag";
 import { Money } from "@/components/elements/Money";
 import { api } from "@/lib/api";
 import { useNames } from "@/hooks/useNames";
@@ -157,12 +158,13 @@ export function Approvals({ me }: { me: string }) {
               )}
               {closed.map((p) => (
                 <div key={p.id} className="approval-recent-row py-12">
-                  <p className="text-label font-medium break-all">
+                  <p className="flex flex-wrap items-center gap-x-8 gap-y-2 text-label font-medium break-all">
                     {describe(p.kind, data.shippers, name).title}
+                    <Tag>{p.status}</Tag>
                   </p>
                   <p className="text-caption text-ds-muted">
-                    {p.status} · {p.approvals.length} approved · {p.rejections.length} rejected ·{" "}
-                    {day(p.created_at)}
+                    Proposed {day(p.created_at)}. {p.approvals.length} approved and{" "}
+                    {p.rejections.length} rejected.
                   </p>
                   {data.reasons
                     .filter((r) => r.proposalId === p.id)
@@ -245,8 +247,8 @@ function ProposalCard({
         <div className="flex min-w-0 flex-col gap-4">
           <h2 className="text-[17px] leading-21 font-semibold break-all">{change.title}</h2>
           <p className="text-[13px] leading-16 text-ds-muted break-all">
-            {p.from_assistant ? "Suggested by the credit assistant" : `Proposed by ${p.by}`} ·{" "}
-            {day(p.created_at)} · #{p.id}
+            {p.from_assistant ? "Suggested by the credit assistant" : `Proposed by ${p.by}`} on{" "}
+            {day(p.created_at)}. This is proposal #{p.id}.
           </p>
         </div>
         <AdminBadge tone="brand">Waiting for the team</AdminBadge>
@@ -274,7 +276,7 @@ function ProposalCard({
       <div className="flex flex-wrap items-center justify-between gap-16 pt-16">
         <p className="text-[14px] leading-17">
           {p.approvals.length} of 2 approved
-          {p.rejections.length > 0 && ` · ${p.rejections.length} rejected`}
+          {p.rejections.length > 0 && ` and ${p.rejections.length} rejected`}
         </p>
         {voted ? (
           <p className="text-[13px] leading-16 text-ds-ink-2">Your vote is recorded.</p>

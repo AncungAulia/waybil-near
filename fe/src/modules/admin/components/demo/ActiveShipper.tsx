@@ -11,6 +11,7 @@ import {
 } from "@phosphor-icons/react";
 import { Panel } from "@/components/layout/Panel";
 import { Button } from "@/components/ui/Button";
+import { Tag } from "@/components/ui/Tag";
 import { Money } from "@/components/elements/Money";
 import { FanMeter } from "@/components/elements/FanMeter";
 import { cn } from "@/lib/cn";
@@ -93,7 +94,7 @@ export function ActiveShipper({
           className="admin-open-bills"
           action={
             <span className="hidden text-[13px] text-ds-muted md:inline">
-              8 bills · 2,400.00 USDC · newest 4
+              8 bills for 2,400.00 USDC. The newest 4 are shown.
             </span>
           }
         >
@@ -135,7 +136,7 @@ export function ActiveShipper({
                 <div className="min-w-0">
                   <p className="text-[14px] leading-17 font-medium">Eastport to {r.city}</p>
                   <p className="mt-2 text-[12px] leading-15 text-ds-muted">
-                    #{r.id} · Due {r.due}
+                    #{r.id} is due {r.due}.
                   </p>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-4 text-right">
@@ -164,10 +165,13 @@ export function ActiveShipper({
             {[
               {
                 title: "The assistant suggests 5,000.00 USDC",
-                meta: "Today · Waiting for the team",
+                meta: "Today. It is waiting for the team.",
               },
-              { title: "Raised to 3,000.00 USDC", meta: "Nov 9 · By the credit assistant" },
-              { title: "Started at 2,500.00 USDC", meta: "Oct 21 · Approved by the team" },
+              {
+                title: "Raised to 3,000.00 USDC",
+                meta: "The credit assistant raised it on Nov 9.",
+              },
+              { title: "Started at 2,500.00 USDC", meta: "The team approved it on Oct 21." },
             ].map((r, i) => (
               <div key={r.title} className="flex gap-12">
                 <span className="grid size-32 shrink-0 place-items-center rounded-full bg-ds-canvas">
@@ -196,7 +200,7 @@ export function ActiveShipper({
         <Panel title="Contact">
           <div className="flex flex-col gap-10">
             {[
-              { icon: User, text: "Hannah Brooks · Finance" },
+              { icon: User, text: "Hannah Brooks", tag: "Finance" },
               { icon: Phone, text: "+1 207 555 0142" },
               { icon: Envelope, text: "hannah@northwindfreight.com" },
               { icon: ShieldCheck, text: "Documents checked on Oct 21" },
@@ -204,6 +208,7 @@ export function ActiveShipper({
               <p key={r.text} className="flex gap-10 text-[14px] leading-17 text-ds-ink-2">
                 <r.icon size={16} className="shrink-0 text-ds-muted" />
                 <span className="min-w-0 break-words">{r.text}</span>
+                {"tag" in r && <Tag>{r.tag}</Tag>}
               </p>
             ))}
           </div>

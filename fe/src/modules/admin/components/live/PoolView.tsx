@@ -56,7 +56,7 @@ export function PoolView() {
               data.queue.map((q, i) => (
                 <Fact
                   key={`${q.investor}-${q.requested_at}`}
-                  label={`${i + 1}. ${q.investor} · ${day(q.requested_at)}`}
+                  label={`${i + 1}. ${q.investor} asked ${day(q.requested_at)}`}
                   value={<Money amount={q.amount} />}
                 />
               ))

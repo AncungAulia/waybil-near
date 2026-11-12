@@ -14,6 +14,7 @@ import { FileText, Pause, Scales } from "@phosphor-icons/react";
 import { Panel } from "@/components/layout/Panel";
 import { ActionSheet } from "@/components/layout/ActionSheet";
 import { Button } from "@/components/ui/Button";
+import { Tag } from "@/components/ui/Tag";
 import { Money } from "@/components/elements/Money";
 import { ProofLink } from "@/components/elements/ProofLink";
 import { BackLink } from "@/components/elements/BackLink";
@@ -198,8 +199,15 @@ export function ShipperDetail({ account }: { account: string }) {
       <header className="flex flex-wrap items-center justify-between gap-12 md:items-end">
         <div className="min-w-0">
           <h1 className="text-title break-all">{application?.company.name ?? account}</h1>
-          <p className="mt-6 text-label text-ds-muted break-all">
-            {shipper ? `Active shipper · ${account}` : `Applied ${day(application?.createdAt)}`}
+          <p className="mt-6 flex flex-wrap items-center gap-8 text-label text-ds-muted break-all">
+            {shipper ? (
+              <>
+                {account}
+                <Tag>Active shipper</Tag>
+              </>
+            ) : (
+              `Applied ${day(application?.createdAt)}`
+            )}
           </p>
         </div>
         {!shipper && application && application.proposalId === null && (
@@ -228,7 +236,7 @@ export function ShipperDetail({ account }: { account: string }) {
                   },
                   {
                     label: "Shipments",
-                    value: `${shipments.length} · ${shipments.filter((s) => s.status === "Repaid").length} repaid`,
+                    value: `${shipments.length} in total, ${shipments.filter((s) => s.status === "Repaid").length} repaid`,
                   },
                 ]}
               />
@@ -297,7 +305,12 @@ export function ShipperDetail({ account }: { account: string }) {
                       },
                       {
                         label: "Contact",
-                        value: `${detail.application.company.contact} · ${detail.application.company.job}`,
+                        value: (
+                          <span className="inline-flex flex-wrap items-center gap-8">
+                            {detail.application.company.contact}
+                            <Tag>{detail.application.company.job}</Tag>
+                          </span>
+                        ),
                       },
                       { label: "Phone", value: detail.application.company.phone },
                       { label: "Email", value: detail.application.company.email },
@@ -408,7 +421,7 @@ export function ShipperDetail({ account }: { account: string }) {
             invalidLimit={sheet === "limit" && invalidLimit}
             subtitle={
               sheet === "limit"
-                ? `Now ${formatUsdc(BigInt(shipper.limit))} USDC · ${formatUsdc(BigInt(shipper.owed) + BigInt(shipper.committed))} in use`
+                ? `The limit is ${formatUsdc(BigInt(shipper.limit))} USDC now, and ${formatUsdc(BigInt(shipper.owed) + BigInt(shipper.committed))} is in use.`
                 : undefined
             }
             hint="It cannot go above 10,000.00 USDC."

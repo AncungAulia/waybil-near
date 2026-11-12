@@ -75,7 +75,7 @@ export function PoolContent({ state, pool }: { state: AdminState; pool: Pool }) 
           {
             label: "Overdue",
             value: state === "M3.3" ? "292500000" : "0",
-            context: state === "M3.3" ? "1 bill · 3 days late" : "Nothing late",
+            context: state === "M3.3" ? "1 bill is 3 days late" : "Nothing late",
             icon: Hourglass,
           },
           {
@@ -126,7 +126,7 @@ export function PoolContent({ state, pool }: { state: AdminState; pool: Pool }) 
             !empty && (
               <span className="flex shrink-0 items-center gap-6 rounded-full bg-ds-brand-soft px-10 py-5 text-[12px] leading-15 font-semibold text-ds-brand-deep">
                 <TrendUp size={14} />
-                APY 8.4% · last 30 days
+                APY 8.4% over the last 30 days
               </span>
             )
           }
@@ -203,15 +203,15 @@ export function PoolContent({ state, pool }: { state: AdminState; pool: Pool }) 
             ) : (
               <div className="flex flex-col gap-4">
                 {[
-                  { title: "Advance · #1041", name: "Sam", amount: "-292500000" },
-                  { title: "Repaid · #1039", name: "Northwind", amount: "120000000" },
+                  { title: "Advance for #1041", name: "Sam", amount: "-292500000" },
+                  { title: "Repaid for #1039", name: "Northwind", amount: "120000000" },
                   { title: "Deposit", name: "maya-harper.testnet", amount: "1000000000" },
                 ].map((item) => (
                   <div key={item.title} className="flex items-center justify-between gap-12 py-10">
                     <div className="min-w-0">
                       <p className="text-[15px] leading-18 font-medium">{item.title}</p>
+                      <p className="text-[13px] leading-16 text-ds-muted">{item.name}</p>
                       <p className="mt-2 text-[13px] leading-16 text-ds-brand-deep">
-                        <span>{item.name} · </span>
                         <a
                           href={ACCOUNT}
                           target="_blank"

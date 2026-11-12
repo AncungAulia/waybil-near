@@ -94,7 +94,7 @@ export function DecideSheet({
         limit={limit}
         onLimit={setLimit}
         invalidLimit={invalidLimit}
-        subtitle={`Applied ${day(a.createdAt)} · ${a.company.trips} trips a month`}
+        subtitle={`They applied ${day(a.createdAt)} and ship ${a.company.trips} trips a month.`}
         hint={
           suggested
             ? `The assistant suggests ${formatUsdc(suggested)} USDC. You can change it.`

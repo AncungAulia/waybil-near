@@ -15,9 +15,12 @@ export function RecentPanel({ state }: { state: AdminState }) {
       <div>
         {[
           ...(state === "M1.3"
-            ? ["Northwind · 3,000.00 → 5,000.00 USDC", "Meridian Shipping · 0 → 2,000.00 USDC"]
+            ? [
+                "Northwind’s limit 3,000.00 → 5,000.00 USDC",
+                "Meridian Shipping’s limit 0 → 2,000.00 USDC",
+              ]
             : []),
-          "Northwind · 0 → 2,500.00 USDC",
+          "Northwind’s limit 0 → 2,500.00 USDC",
           "Advance rate cap set to 97.5%",
         ].map((t, i, rows) => (
           <div
@@ -27,8 +30,12 @@ export function RecentPanel({ state }: { state: AdminState }) {
             <div className="min-w-0">
               <p className="text-label font-medium">{t}</p>
               <p className="text-caption text-ds-muted">
-                {i === rows.length - 1 ? "3 of 3 approved" : "2 of 3 approved"} ·{" "}
-                {i === rows.length - 1 ? "Oct 28" : i === rows.length - 2 ? "Oct 21" : "Today"}
+                {i === rows.length - 1 ? "3 of 3 approved" : "2 of 3 approved"}{" "}
+                {i === rows.length - 1
+                  ? "on Oct 28."
+                  : i === rows.length - 2
+                    ? "on Oct 21."
+                    : "today."}
               </p>
               <a
                 href={ACCOUNT}
