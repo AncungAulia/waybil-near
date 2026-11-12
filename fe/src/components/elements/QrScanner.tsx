@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import jsQR from "jsqr";
 import { cn } from "@/lib/cn";
 
@@ -19,6 +19,11 @@ export function QrScanner({
   onTorchAvailable?: (available: boolean) => void;
 }) {
   const video = useRef<HTMLVideoElement>(null);
+  /*
+   * What the person sees under the frame. It changes when nothing reads for a while, and the
+   * frame turns green for a moment when a code reads.
+   */
+  const [hint, setHint] = useState<"point" | "closer" | "type" | "read">("point");
   const cameraTrack = useRef<MediaStreamTrack | undefined>(undefined);
   const callbacks = useRef({ onCode, onBlocked, onTorchAvailable });
   useEffect(() => {
@@ -43,26 +48,64 @@ export function QrScanner({
     let timer: ReturnType<typeof setTimeout> | undefined;
     const canvas = document.createElement("canvas");
     const context = canvas.getContext("2d", { willReadFrequently: true });
+    /* Reads the whole frame, then the middle of it enlarged, which helps with a small QR. */
+    const read = (v: HTMLVideoElement) => {
+      if (!context) return null;
+      const width = 800;
+      const height = Math.round((width * v.videoHeight) / v.videoWidth);
+      canvas.width = width;
+      canvas.height = height;
+      context.drawImage(v, 0, 0, width, height);
+      const whole = context.getImageData(0, 0, width, height);
+      const found = jsQR(whole.data, width, height, { inversionAttempts: "attemptBoth" });
+      if (found) return found.data;
+      const side = Math.min(v.videoWidth, v.videoHeight) * 0.6;
+      canvas.width = 600;
+      canvas.height = 600;
+      context.drawImage(
+        v,
+        (v.videoWidth - side) / 2,
+        (v.videoHeight - side) / 2,
+        side,
+        side,
+        0,
+        0,
+        600,
+        600,
+      );
+      const middle = context.getImageData(0, 0, 600, 600);
+      return jsQR(middle.data, 600, 600, { inversionAttempts: "attemptBoth" })?.data ?? null;
+    };
+    let started = Date.now();
+    let last = { value: "", at: 0 };
+    let shown: ReturnType<typeof setTimeout> | undefined;
     const scan = () => {
       if (cancelled) return;
       const v = video.current;
-      if (v && v.readyState >= 2 && context) {
-        canvas.width = 640;
-        canvas.height = Math.round((640 * v.videoHeight) / v.videoWidth);
-        context.drawImage(v, 0, 0, canvas.width, canvas.height);
-        const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
-        const code = jsQR(pixels.data, pixels.width, pixels.height);
-        if (code) {
-          callbacks.current.onCode(code.data);
-          return;
+      if (v && v.readyState >= 2 && v.videoWidth) {
+        const value = read(v);
+        const now = Date.now();
+        /* The same code again within 3 seconds is the same scan. Keep watching for others. */
+        if (value && (value !== last.value || now - last.at > 3000)) {
+          last = { value, at: now };
+          started = now;
+          setHint("read");
+          clearTimeout(shown);
+          shown = setTimeout(() => !cancelled && setHint("point"), 1500);
+          callbacks.current.onCode(value);
+        } else if (!value) {
+          const waited = now - started;
+          setHint((h) =>
+            h === "read" ? h : waited > 10000 ? "type" : waited > 5000 ? "closer" : "point",
+          );
         }
       }
-      timer = setTimeout(scan, 250);
+      timer = setTimeout(scan, 200);
     };
     (async () => {
       try {
         stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" }, width: { ideal: 640 } },
+          video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 } },
           audio: false,
         });
         if (cancelled) {
@@ -90,6 +133,7 @@ export function QrScanner({
     return () => {
       cancelled = true;
       clearTimeout(timer);
+      clearTimeout(shown);
       stream?.getTracks().forEach((t) => t.stop());
       cameraTrack.current = undefined;
       callbacks.current.onTorchAvailable?.(false);
@@ -111,7 +155,13 @@ export function QrScanner({
           className="absolute size-full object-cover"
         />
       ) : null}
-      <div className="pointer-events-none relative size-260 text-ds-brand" aria-hidden>
+      <div
+        className={cn(
+          "pointer-events-none relative size-260 transition-colors duration-200",
+          hint === "read" ? "text-ds-success" : "text-ds-brand",
+        )}
+        aria-hidden
+      >
         <svg viewBox="0 0 260 260" className="absolute inset-0 size-full">
           <path
             d="M 4 32 V 4 H 32 M 228 4 H 256 V 32 M 256 228 V 256 H 228 M 32 256 H 4 V 228"
@@ -122,10 +172,18 @@ export function QrScanner({
           />
         </svg>
         {/* The scan line sweeps the frame like a real scanner. It rests in the middle with reduced motion. */}
-        <span className="qr-scan-line absolute inset-x-14 top-1/2 h-2 rounded-full bg-ds-brand shadow-[0_0_12px_3px_rgb(255_214_10/0.55)]" />
+        {hint !== "read" && (
+          <span className="qr-scan-line absolute inset-x-14 top-1/2 h-2 rounded-full bg-ds-brand shadow-[0_0_12px_3px_rgb(255_214_10/0.55)]" />
+        )}
       </div>
-      <p className="absolute right-16 bottom-24 left-16 text-center text-label">
-        Point at the QR on the driver&apos;s phone
+      <p aria-live="polite" className="absolute right-16 bottom-24 left-16 text-center text-label">
+        {hint === "read"
+          ? "Code read."
+          : hint === "closer"
+            ? "Hold it closer and keep it still."
+            : hint === "type"
+              ? "Still can’t read it? Type the code below."
+              : "Point at the QR on the driver’s phone."}
       </p>
     </div>
   );

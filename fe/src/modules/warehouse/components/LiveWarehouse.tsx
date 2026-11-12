@@ -311,8 +311,13 @@ function ScanAndConfirm({
               <QrScanner
                 active={camera}
                 onCode={(value) => {
-                  setCode(value);
-                  void lookUp(value);
+                  /* Show what was read in the boxes, tidied the same way as typing. */
+                  const tidy = value
+                    .replace(/[^a-zA-Z0-9]/g, "")
+                    .toUpperCase()
+                    .slice(0, 8);
+                  setCode(tidy);
+                  void lookUp(tidy);
                 }}
                 onBlocked={() => setCamera(false)}
                 className="aspect-square w-full max-w-360 overflow-hidden rounded-row"
