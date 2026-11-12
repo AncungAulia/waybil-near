@@ -171,9 +171,12 @@ export function Approvals({ me }: { me: string }) {
               ))
             )}
           </div>
-          <div className="flex flex-col gap-24">
-            {/* The team card stays in view while the page scrolls. */}
-            <Panel className="approval-team z-10 lg:sticky lg:top-104">
+          {/*
+           * The whole column stays in view while the proposals scroll. The decided list scrolls
+           * inside its own card, so the column never runs past the window.
+           */}
+          <div className="flex flex-col gap-24 lg:sticky lg:top-104 lg:max-h-[calc(100dvh-128px)]">
+            <Panel className="approval-team shrink-0">
               <div className="flex flex-col gap-4">
                 <h2 className="text-[17px] leading-21 font-semibold">Team approval</h2>
                 <p className="text-label text-ds-muted">
@@ -186,30 +189,32 @@ export function Approvals({ me }: { me: string }) {
                 ))}
               </div>
             </Panel>
-            <Panel title="Recently decided" className="approval-recent">
-              {closed.length === 0 && (
-                <p className="text-label text-ds-muted">Nothing has been decided yet.</p>
-              )}
-              {closed.map((p) => (
-                <div key={p.id} className="approval-recent-row py-12">
-                  <p className="flex flex-wrap items-center gap-x-8 gap-y-2 text-label font-medium break-all">
-                    {describe(p.kind, data.shippers, name).title}
-                    <Tag>{p.status}</Tag>
-                  </p>
-                  <p className="text-caption text-ds-muted">
-                    Proposed {day(p.created_at)}. {p.approvals.length} approved and{" "}
-                    {p.rejections.length} rejected.
-                  </p>
-                  {data.reasons
-                    .filter((r) => r.proposalId === p.id)
-                    .map((r) => (
-                      <p key={r.id} className="mt-2 text-caption text-ds-ink-2 break-all">
-                        {r.actor} said no because of {REASON_WORDS[r.reason]}.{" "}
-                        {r.note && `“${r.note}”`}
-                      </p>
-                    ))}
-                </div>
-              ))}
+            <Panel title="Recently decided" className="approval-recent lg:min-h-0 lg:flex-1">
+              <div className="-mx-4 flex flex-col px-4 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+                {closed.length === 0 && (
+                  <p className="text-label text-ds-muted">Nothing has been decided yet.</p>
+                )}
+                {closed.map((p) => (
+                  <div key={p.id} className="approval-recent-row py-12">
+                    <p className="flex flex-wrap items-center gap-x-8 gap-y-2 text-label font-medium break-all">
+                      {describe(p.kind, data.shippers, name).title}
+                      <Tag>{p.status}</Tag>
+                    </p>
+                    <p className="text-caption text-ds-muted">
+                      Proposed {day(p.created_at)}. {p.approvals.length} approved and{" "}
+                      {p.rejections.length} rejected.
+                    </p>
+                    {data.reasons
+                      .filter((r) => r.proposalId === p.id)
+                      .map((r) => (
+                        <p key={r.id} className="mt-2 text-caption text-ds-ink-2 break-all">
+                          {r.actor} said no because of {REASON_WORDS[r.reason]}.{" "}
+                          {r.note && `“${r.note}”`}
+                        </p>
+                      ))}
+                  </div>
+                ))}
+              </div>
             </Panel>
           </div>
         </div>
