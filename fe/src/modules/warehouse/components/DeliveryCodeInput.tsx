@@ -18,7 +18,7 @@ export function DeliveryCodeInput({
   return (
     <label
       className={cn(
-        "warehouse-code relative mx-auto block w-fit max-w-full rounded-small",
+        "warehouse-code relative mx-auto block w-full max-w-488 rounded-small",
         compact && "warehouse-code-compact",
       )}
     >
