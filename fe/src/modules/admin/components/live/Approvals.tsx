@@ -172,7 +172,8 @@ export function Approvals({ me }: { me: string }) {
             )}
           </div>
           <div className="flex flex-col gap-24">
-            <Panel className="approval-team">
+            {/* The team card stays in view while the page scrolls. */}
+            <Panel className="approval-team z-10 lg:sticky lg:top-104">
               <div className="flex flex-col gap-4">
                 <h2 className="text-[17px] leading-21 font-semibold">Team approval</h2>
                 <p className="text-label text-ds-muted">

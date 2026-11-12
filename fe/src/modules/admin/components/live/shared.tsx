@@ -121,11 +121,23 @@ export function Loading({ label = "Loading." }: { label?: string }) {
   );
 }
 
-export function Header({ title, note }: { title: string; note: string }) {
+/** The page title and its line, with an optional fact on the right, level with the line. */
+export function Header({
+  title,
+  note,
+  aside,
+}: {
+  title: string;
+  note: string;
+  aside?: React.ReactNode;
+}) {
   return (
-    <header>
-      <h1 className="text-title break-all">{title}</h1>
-      <p className="mt-6 text-label text-ds-muted">{note}</p>
+    <header className="flex flex-wrap items-end justify-between gap-12">
+      <div className="min-w-0">
+        <h1 className="text-title break-all">{title}</h1>
+        <p className="mt-6 text-label text-ds-muted">{note}</p>
+      </div>
+      {aside}
     </header>
   );
 }

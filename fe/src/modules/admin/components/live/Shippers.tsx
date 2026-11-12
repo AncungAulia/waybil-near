@@ -45,15 +45,18 @@ export function Shippers() {
   if (error) return <Failed error={error} reload={reload} />;
   return (
     <>
-      <Header title="Shippers" note="New applications and the companies already shipping" />
+      <Header
+        title="Shippers"
+        note="New applications and the companies already shipping"
+        aside={
+          data && <p className="text-label font-medium">{data.waiting.length} waiting for review</p>
+        }
+      />
       {!data ? (
         <Loading label="Loading the shippers." />
       ) : (
         <div className="grid items-start gap-24 lg:grid-cols-[1fr_420px]">
           <div className="flex flex-col gap-20">
-            <h2 className="text-[15px] leading-18 font-medium">
-              {data.waiting.length} waiting for review
-            </h2>
             {data.waiting.length === 0 ? (
               <Panel className="admin-empty-applications">
                 <Empty
