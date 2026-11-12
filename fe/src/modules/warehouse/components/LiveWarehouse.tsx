@@ -9,7 +9,7 @@ import type {
   Shipment,
   WarehouseDestinationsResponse,
 } from "@waybil/shared";
-import { Camera, Check, Package, Scan, Truck } from "@phosphor-icons/react";
+import { Camera, Package, Scan, Truck } from "@phosphor-icons/react";
 import { RoleShell } from "@/components/layout/RoleShell";
 import { Panel } from "@/components/layout/Panel";
 import { Button, ButtonLink } from "@/components/ui/Button";
@@ -264,22 +264,56 @@ function ScanAndConfirm({
 
   if (done)
     return (
-      <Panel className="items-center gap-16 text-center">
+      /* A rare, happy moment: it fills the window and plays a short celebration once. */
+      <Panel className={cn("relative items-center gap-16 text-center", FILL_PAGE)}>
         <BackLink href="/warehouse" className="self-start">
           Back to arrivals
         </BackLink>
-        <span className="grid size-64 place-items-center rounded-full bg-ds-brand text-ds-ink">
-          <Check size={30} weight="bold" />
-        </span>
-        <h1 className="text-title">{done.reported ? "Problem reported" : "Confirmed"}</h1>
-        <p className="max-w-360 text-label text-ds-muted">
-          {done.reported
-            ? "The company reviews the report before the driver gets paid."
-            : "The driver got paid just now."}
-        </p>
-        <ProofLink tx={done.tx} />
+        <div className="flex flex-1 flex-col items-center justify-center gap-16">
+          <span className="relative grid size-88 place-items-center">
+            <span aria-hidden className="confirm-ring absolute inset-0 rounded-full bg-ds-brand" />
+            <span
+              aria-hidden
+              className="confirm-ring confirm-ring-late absolute inset-0 rounded-full bg-ds-brand"
+            />
+            <span
+              className={cn(
+                "confirm-pop relative grid size-88 place-items-center rounded-full",
+                done.reported ? "bg-ds-danger-soft text-ds-danger" : "bg-ds-brand text-ds-ink",
+              )}
+            >
+              <svg viewBox="0 0 24 24" className="size-40" aria-hidden>
+                <path
+                  className="confirm-check"
+                  d="M5 12.5l4.5 4.5L19 7.5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </span>
+          </span>
+          <h1 className="confirm-rise text-title" style={{ animationDelay: "250ms" }}>
+            {done.reported ? "Problem reported" : "Confirmed"}
+          </h1>
+          <p
+            className="confirm-rise max-w-360 text-label text-ds-muted"
+            style={{ animationDelay: "300ms" }}
+          >
+            {done.reported
+              ? "The company reviews the report before the driver gets paid."
+              : "The driver got paid just now."}
+          </p>
+          <span className="confirm-rise" style={{ animationDelay: "350ms" }}>
+            <ProofLink tx={done.tx} />
+          </span>
+        </div>
         <Button
           variant="secondary"
+          className="confirm-rise w-full justify-between md:w-auto"
+          style={{ animationDelay: "400ms" }}
           onClick={() => {
             setDone(null);
             setFound(null);
