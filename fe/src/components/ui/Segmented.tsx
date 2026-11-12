@@ -36,7 +36,7 @@ export function Segmented<T extends string>({
       aria-label={label}
       className={cn(
         "gap-4 rounded-full border border-ds-line bg-ds-bg p-4",
-        fill ? "grid w-full auto-cols-fr grid-flow-col md:inline-flex md:w-auto" : "inline-flex",
+        fill ? "grid w-full auto-cols-fr grid-flow-col md:inline-flex md:w-fit" : "inline-flex",
         className,
       )}
     >
