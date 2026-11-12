@@ -8,7 +8,7 @@ import {
   type RoutePreview,
   type TripCreate,
 } from "@waybil/shared";
-import { MapPin, UserPlus } from "@phosphor-icons/react";
+import { MapPin, MapTrifold, UserPlus } from "@phosphor-icons/react";
 import { Panel } from "@/components/layout/Panel";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -263,12 +263,15 @@ export function NewLiveShipment({ data, refresh }: { data: LiveShipperData; refr
                 </p>
               </>
             ) : (
-              pickup &&
-              chosen && (
-                <p className="text-caption text-ds-muted">
-                  This destination has no pin on the map yet, so the trip will have no map.
+              /* Keeps the map's place, so the shipper sees a route will show here. */
+              <div className="flex h-220 flex-col items-center justify-center gap-10 rounded-row bg-ds-canvas p-24 text-center">
+                <MapTrifold size={28} className="text-ds-muted" aria-hidden />
+                <p className="max-w-260 text-label text-ds-muted">
+                  {pickup && chosen
+                    ? "This destination has no pin on the map, so the trip will have no map."
+                    : "Choose a pickup point and a destination to see the route here."}
                 </p>
-              )
+              </div>
             )}
             <div className="flex justify-between gap-12 text-label">
               <span className="text-ds-muted">The driver gets on arrival</span>
