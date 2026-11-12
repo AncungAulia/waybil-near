@@ -305,31 +305,45 @@ function ScanAndConfirm({
       </header>
       {!found ? (
         <Panel className={cn("justify-center", FILL_UNDER_HEADER)}>
-          {camera && (
-            <QrScanner
-              active={camera}
-              onCode={(value) => {
+          {/* Two ways in, one under the other: the camera, then the typed code. */}
+          <div className="mx-auto flex w-full max-w-488 flex-col items-center gap-18">
+            {camera && (
+              <QrScanner
+                active={camera}
+                onCode={(value) => {
+                  setCode(value);
+                  void lookUp(value);
+                }}
+                onBlocked={() => setCamera(false)}
+                className="aspect-square w-full max-w-360 overflow-hidden rounded-row"
+              />
+            )}
+            {camera && (
+              <div className="flex w-full items-center gap-12 text-caption text-ds-muted">
+                <span aria-hidden className="h-px flex-1 bg-ds-line" />
+                or type the code
+                <span aria-hidden className="h-px flex-1 bg-ds-line" />
+              </div>
+            )}
+            <DeliveryCodeInput
+              value={code}
+              onChange={(value) => {
                 setCode(value);
-                void lookUp(value);
+                setNotFound(false);
+                if (value.length === 8) void lookUp(value);
               }}
-              onBlocked={() => setCamera(false)}
-              className="aspect-square w-full max-w-360 self-center overflow-hidden rounded-row"
+              invalid={notFound}
             />
-          )}
-          <DeliveryCodeInput
-            value={code}
-            onChange={(value) => {
-              setCode(value);
-              setNotFound(false);
-              if (value.length === 8) void lookUp(value);
-            }}
-            invalid={notFound}
-          />
-          {notFound && (
-            <p role="alert" className="text-center text-label text-ds-danger">
-              This code is not a truck on its way to you. Check it with the driver.
-            </p>
-          )}
+            {notFound ? (
+              <p role="alert" className="text-center text-label text-ds-danger">
+                This code is not a truck on its way to you. Check it with the driver.
+              </p>
+            ) : (
+              <p className="max-w-320 text-center text-caption text-ds-muted">
+                The 8 characters are under the QR on the driver’s phone.
+              </p>
+            )}
+          </div>
         </Panel>
       ) : (
         <Panel title={`Delivery #${found.id}`}>
