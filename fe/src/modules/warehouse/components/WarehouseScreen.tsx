@@ -172,9 +172,9 @@ export function WarehouseScreen({
                   : state.startsWith("W3")
                     ? "Everything received at Harbor Hub"
                     : state === "W2.7"
-                      ? "Shipment #1041 · Sam"
+                      ? "Shipment #1041 with Sam"
                       : ["W2.3", "W2.5"].includes(state)
-                        ? "From Sam's phone · just now"
+                        ? "Sent from Sam's phone just now"
                         : "Scan the driver's QR"}
               </p>
             )}

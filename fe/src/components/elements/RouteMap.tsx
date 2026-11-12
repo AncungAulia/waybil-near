@@ -43,7 +43,7 @@ export function RouteMap({
   onPick?: (lat: number, lng: number) => void;
   /** The status pill in the top left corner, for example "On the road". */
   chip?: React.ReactNode;
-  /** A note in the bottom left corner, for example "Demo · simulated location". */
+  /** A note in the bottom left corner, for example "Simulated location for the demo". */
   badge?: React.ReactNode;
   className?: string;
   /** Fades the map behind `overlay`, for an empty state. */

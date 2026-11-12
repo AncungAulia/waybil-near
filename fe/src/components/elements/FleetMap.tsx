@@ -28,7 +28,7 @@ export function FleetMap({ shipments }: { shipments: Shipment[] }) {
       <RouteMap
         trips={views}
         dim={count === 0}
-        badge={simulated ? "Demo · simulated location" : undefined}
+        badge={simulated ? "Simulated location for the demo" : undefined}
         overlay={
           count === 0 ? (
             <p className="rounded-full bg-ds-bg px-14 py-8 text-label">

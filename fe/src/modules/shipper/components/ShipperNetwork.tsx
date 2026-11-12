@@ -86,10 +86,14 @@ export function ShipperNetwork({
               <NetworkRow
                 name="Sam"
                 avatar="Sam Carter"
-                meta="NWF-204 · 12 trips with you"
+                meta="Truck NWF-204. 12 trips with you."
                 status="Connected"
               />
-              <NetworkRow name="Jordan Lee" meta="JLE-118 · 4 trips with you" status="Connected" />
+              <NetworkRow
+                name="Jordan Lee"
+                meta="Truck JLE-118. 4 trips with you."
+                status="Connected"
+              />
               <NetworkRow
                 name="Chris Novak"
                 meta="Invited 2 h ago over WhatsApp"
@@ -124,15 +128,21 @@ export function ShipperNetwork({
             <>
               <NetworkRow
                 name="Harbor Hub"
-                meta="9 Pier Street · Lena receives here"
+                meta="9 Pier Street. Lena receives here."
                 status="Linked"
               />
               <NetworkRow
                 name="Riverton branch"
-                meta="40 River Road · Invite not opened yet"
+                meta="40 River Road. The invite is not opened yet."
                 status="Waiting"
               />
-              {added && <NetworkRow name={place} meta={address + " · " + email} status="Waiting" />}
+              {added && (
+                <NetworkRow
+                  name={place}
+                  meta={`${address}. Invite sent to ${email}.`}
+                  status="Waiting"
+                />
+              )}
             </>
           )}
         </Panel>

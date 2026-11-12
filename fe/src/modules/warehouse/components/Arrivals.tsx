@@ -15,8 +15,10 @@ export function Arrivals({ arriving, onScan }: { arriving: boolean; onScan: () =
             <Truck size={18} className="shrink-0" />
             Arriving in about 5 minutes
           </p>
-          <p className="text-title">Sam · NWF-204</p>
-          <p className="text-label text-ds-ink-2">#1041 from Northwind · 120 crates of coffee</p>
+          <p className="text-title">Sam, truck NWF-204</p>
+          <p className="text-label text-ds-ink-2">
+            #1041 from Northwind carries 120 crates of coffee.
+          </p>
           <Button
             icon={<Scan size={17} />}
             className="w-full justify-between md:w-fit"

@@ -64,7 +64,7 @@ export function ShipmentList({
                   {route ?? `Eastport to ${city}`}
                 </span>
                 <span className="text-[12.5px] leading-[17px] text-ds-muted">
-                  #{shipment.id} · {driver} · {cargo}
+                  {driver} carries {cargo} on #{shipment.id}.
                 </span>
               </span>
             </span>
@@ -109,7 +109,7 @@ export function ShipmentList({
             <span className="min-w-0 flex-1">
               <span className="block text-body font-medium">{route ?? `Eastport to ${city}`}</span>
               <span className="mt-4 block text-[12.5px] text-ds-muted">
-                #{shipment.id} · {driver} · {due.replace(/^Due /, "due ")}
+                {driver} drives #{shipment.id}. {due.charAt(0).toUpperCase() + due.slice(1)}.
               </span>
             </span>
           </span>

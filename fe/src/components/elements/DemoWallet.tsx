@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Plus, Copy, Check, SignOut, GasPump, Clock, SealCheck } from "@phosphor-icons/react";
 import { ActionSheet } from "@/components/layout/ActionSheet";
 import { Button } from "@/components/ui/Button";
+import { Tag } from "@/components/ui/Tag";
 import { Money } from "./Money";
 import { ArrowUpRightGlyph, SystemGlyph } from "./icons";
 import { cn } from "@/lib/cn";
@@ -161,19 +162,19 @@ export function DemoWallet({
       >
         <div className="flex items-center gap-12 p-4">
           <div className="min-w-0 flex-1">
-            <p className="text-body font-medium">
-              {live
-                ? live.name || live.accountId
-                : role === "investor"
-                  ? "Maya Harper"
-                  : role === "admin"
-                    ? "Risk lead"
-                    : "Northwind Freight Co."}
+            <p className="flex flex-wrap items-center gap-x-8 gap-y-2 text-body font-medium">
+              <span className="break-words">
+                {live
+                  ? live.name || live.accountId
+                  : role === "investor"
+                    ? "Maya Harper"
+                    : role === "admin"
+                      ? "Risk lead"
+                      : "Northwind Freight Co."}
+              </span>
+              <Tag>{role === "admin" ? "Admin" : role === "investor" ? "Investor" : "Shipper"}</Tag>
             </p>
-            <p className="mt-2 break-words text-[12.5px] leading-[1.45] text-ds-muted">
-              {role === "admin" ? "Admin" : role === "investor" ? "Investor" : "Shipper"} ·{" "}
-              {account}
-            </p>
+            <p className="mt-2 break-words text-[12.5px] leading-[1.45] text-ds-muted">{account}</p>
           </div>
           <button
             type="button"

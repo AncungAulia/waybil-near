@@ -12,6 +12,7 @@ import { RoleShell } from "@/components/layout/RoleShell";
 import { Panel } from "@/components/layout/Panel";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { NameTag } from "@/components/ui/Tag";
 import { StatusPill } from "@/components/elements/StatusPill";
 import { QrScanner } from "@/components/elements/QrScanner";
 import { ProofLink } from "@/components/elements/ProofLink";
@@ -161,8 +162,8 @@ function List({ history, shipments }: { history: boolean; shipments: Shipment[] 
               <span className="min-w-0 flex-1">
                 <span className="block text-body font-medium">Delivery #{s.id}</span>
                 <span className="block text-caption break-all text-ds-muted">
-                  {s.qty} {s.unit} · {name(s.driver)}
-                  {history && s.arrived_at && ` · ${day(s.arrived_at)}`}
+                  {name(s.driver)} brings {s.qty} {s.unit}.
+                  {history && s.arrived_at && ` It arrived ${day(s.arrived_at)}.`}
                 </span>
               </span>
               <StatusPill status={statusChip(s)} />
@@ -456,8 +457,8 @@ function Joined({ fallback }: { fallback: React.ReactNode }) {
       {places.map((p) => (
         <Panel key={p.id} className="gap-12">
           <div>
-            <p className="text-label font-semibold">{p.name}</p>
-            <p className="text-caption text-ds-muted">{name(p.shipperId)} · Waiting to be added</p>
+            <NameTag name={p.name} tag="Waiting to be added" bold />
+            <p className="text-caption text-ds-muted">For {name(p.shipperId)}</p>
             <p className="mt-4 text-caption text-ds-muted">{p.address}</p>
           </div>
           <RouteMap pin={{ lat: p.lat, lng: p.lng }} className="h-240 w-full md:h-320" />

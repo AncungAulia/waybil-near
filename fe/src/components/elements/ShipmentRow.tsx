@@ -6,13 +6,13 @@ import { StatusPill } from "./StatusPill";
 /*
  * Shipment row from design/waybil.pen → Row/Shipment and the States board.
  * The route, the facts underneath, then the bill and the status on the right.
- * The meta line is the only place the middle dot is allowed: short facts, no verb.
+ * The meta line holds short facts in a sentence.
  */
 
 export function ShipmentRow({
   /** Where it goes, for example "Eastport to Harbor City". */
   route,
-  /** Short facts joined by middle dots, for example "#1042 · Sam · due Dec 11". */
+  /** Short facts, for example "Sam drives #1042. Due Dec 11." */
   meta,
   /** The bill, already formatted, for example "300.00". */
   amount,

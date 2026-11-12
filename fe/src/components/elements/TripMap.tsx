@@ -39,27 +39,25 @@ export function TripMap({
       : status === "Cancelled"
         ? "Cancelled before pickup"
         : "Arrived";
+  /* One short sentence, for example "12 km left, about 20 min to go." */
   const facts = onRoad
-    ? [
-        `${Math.round(left.kmLeft)} km left`,
-        ...(left.minutesLeft != null ? [`about ${eta(left.minutesLeft)}`] : []),
-      ]
-    : [
-        `${Math.round(trip.distanceKm)} km`,
-        ...(trip.durationMin != null ? [`about ${eta(trip.durationMin)} by road`] : []),
-      ];
+    ? `${Math.round(left.kmLeft)} km left${left.minutesLeft != null ? `, about ${eta(left.minutesLeft)} to go` : ""}.`
+    : `The trip is ${Math.round(trip.distanceKm)} km${trip.durationMin != null ? `, about ${eta(trip.durationMin)} by road` : ""}.`;
 
   return (
     <div className="flex flex-col gap-8">
       <RouteMap
         trips={[{ ...view, truck: truck ? view.truck : null }]}
         chip={chip}
-        badge={truck?.simulated ? "Demo · simulated location" : undefined}
+        badge={truck?.simulated ? "Simulated location for the demo" : undefined}
         className={cn("h-260 w-full md:h-360", className)}
       />
-      <p className="text-caption text-ds-muted">
-        {trip.pickup.name} to {trip.destination.name} · {facts.join(" · ")}
-      </p>
+      <div>
+        <p className="text-caption text-ds-muted">
+          {trip.pickup.name} to {trip.destination.name}
+        </p>
+        <p className="text-caption text-ds-muted">{facts}</p>
+      </div>
     </div>
   );
 }

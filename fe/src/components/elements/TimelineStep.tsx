@@ -29,7 +29,7 @@ const STEP: Record<Step, { marker: string; icon: typeof Check | null; title: str
 export function TimelineStep({
   state,
   title,
-  /** When it happened, or when it is due, for example "Nov 13 · 08:14". */
+  /** When it happened, or when it is due, for example "Nov 13, 08:14". */
   time,
   className,
 }: {

@@ -101,7 +101,7 @@ export function ShipperPayment({
               />
               <KeyValue
                 label="Paid on time"
-                value={`${Math.round((record.onTime / record.total) * 100)}% · ${record.onTime} of ${record.total} bills`}
+                value={`${Math.round((record.onTime / record.total) * 100)}%, ${record.onTime} of ${record.total} bills`}
               />
             </div>
             <DemoRecord
@@ -123,7 +123,7 @@ export function ShipperPayment({
           <>
             <div className="flex flex-col gap-4 rounded-[20px] bg-ds-canvas px-20 py-18">
               <p className="text-[13px] leading-[16px] text-ds-muted">
-                Shipment #{shipmentId} · due {shortDate(millis(shipment.due_at)!)}
+                Shipment #{shipmentId} is due {shortDate(millis(shipment.due_at)!)}.
               </p>
               <Money
                 amount={bill}

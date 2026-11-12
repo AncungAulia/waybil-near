@@ -143,7 +143,7 @@ export function LiveShipment({
         <div className="min-w-0">
           <h1 className="text-title break-all">{row.route}</h1>
           <p className="mt-6 text-label break-all text-ds-muted">
-            #{s.id} · {row.driver} · {row.cargo}
+            {row.driver} carries {row.cargo} on #{s.id}.
           </p>
         </div>
         <StatusPill status={statusChip(s)} />

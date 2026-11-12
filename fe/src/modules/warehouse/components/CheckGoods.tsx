@@ -23,7 +23,7 @@ export function CheckGoods({
       <Panel title="Shipment #1041" className="warehouse-shipment" gap={4}>
         <div>
           <KeyValue label="From" value="Northwind, Eastport" />
-          <KeyValue label="Driver" value="Sam · NWF-204" />
+          <KeyValue label="Driver" value="Sam, truck NWF-204" />
           <KeyValue label="Cargo" value="120 crates of coffee" />
           <KeyValue label="Picked up" value="Today, 09:14" />
         </div>

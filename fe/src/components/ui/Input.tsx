@@ -2,6 +2,7 @@
 
 import { useId, type ComponentProps, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
+import { Tag } from "./Tag";
 
 /*
  * Input from design/waybil.pen → Atom "Input" and the States board.
@@ -76,9 +77,9 @@ export function Input({
           )}
         />
         {(suffix || locked) && (
-          <span className="shrink-0 text-label text-ds-muted">
+          <span className="flex shrink-0 items-center gap-8 text-label text-ds-muted">
             {suffix}
-            {locked && (suffix ? " · locked" : "locked")}
+            {locked && <Tag>Locked</Tag>}
           </span>
         )}
       </div>

@@ -40,9 +40,9 @@ export const DEFAULT_GOOD_QTY = "112";
 export const DEFAULT_REPORT_NOTE = "8 crates arrived wet, 4 of them torn open.";
 /** The trucks expected today, as driver, shipment and arrival time. */
 export const EXPECTED_ARRIVALS = [
-  ["Sam · from Eastport", "#1041 · 120 crates of coffee · Northwind", "in 1 h 20 min"],
-  ["Jordan Lee · from Riverton", "#1047 · 80 sacks of sugar · Blue Ridge", "in 2 h 40 min"],
-  ["Chris Novak · from Millbrook", "#1050 · 40 crates of eggs · Northwind", "Not left yet"],
+  ["Sam from Eastport", "Northwind sends 120 crates of coffee on #1041.", "in 1 h 20 min"],
+  ["Jordan Lee from Riverton", "Blue Ridge sends 80 sacks of sugar on #1047.", "in 2 h 40 min"],
+  ["Chris Novak from Millbrook", "Northwind sends 40 crates of eggs on #1050.", "Not left yet"],
 ] as const;
 /** Sam's arrival time once the truck is almost here (W1.2). */
 export const ARRIVING_SOON = "in 5 min";

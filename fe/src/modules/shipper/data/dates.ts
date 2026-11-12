@@ -31,11 +31,11 @@ export const daysBetween = (from: number, to: number) =>
   Math.round((Math.floor(to / DAY) * DAY - Math.floor(from / DAY) * DAY) / DAY);
 const days = (n: number) => `${n} ${n === 1 ? "day" : "days"}`;
 
-/** "Dec 11, 2026 · in 29 days", "Nov 12, 2026 · today" or "Nov 9, 2026 · 3 days late". */
+/** "Dec 11, 2026, in 29 days", "Nov 12, 2026, today" or "Nov 9, 2026, 3 days late". */
 export function dueSummary(dueAt: string, now = DEMO_NOW) {
   const due = millis(dueAt)!;
   const left = daysBetween(now, due);
-  return `${longDate(due)} · ${left > 0 ? `in ${days(left)}` : left === 0 ? "today" : `${days(-left)} late`}`;
+  return `${longDate(due)}, ${left > 0 ? `in ${days(left)}` : left === 0 ? "today" : `${days(-left)} late`}`;
 }
 
 /** How a payment on `paid` sits against the due date, for example "29 days early". */
@@ -45,7 +45,7 @@ export function timing(dueAt: string, paid = DEMO_NOW) {
 }
 
 /**
- * "Nov 12 · 14:05", the way the progress card writes a moment the person just made. The
+ * "Nov 12, 14:05", the way the progress card writes a moment the person just made. The
  * demo keeps its fixed day and takes the clock time from the browser. Only call it after
  * mount, since the server has another clock.
  */
@@ -55,5 +55,5 @@ export function demoMoment(ms: number) {
     minute: "2-digit",
     hourCycle: "h23",
   }).format(new Date(ms));
-  return `${shortDate(DEMO_NOW)} · ${time}`;
+  return `${shortDate(DEMO_NOW)}, ${time}`;
 }
