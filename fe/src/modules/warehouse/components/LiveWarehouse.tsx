@@ -1,4 +1,5 @@
 "use client";
+import { qk } from "@/lib/queryKeys";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { useState } from "react";
 import { BackLink } from "@/components/elements/BackLink";
@@ -69,7 +70,7 @@ const day = (ns: string | null) =>
     : "";
 
 export function LiveWarehouse({ view, account }: { view: WarehouseView; account: string }) {
-  const { data, failed, reload } = useLive(() => load(), account, 10000);
+  const { data, failed, reload } = useLive(() => load(), qk.warehouse(account), 10000);
   const current =
     view === "scan" ? "/warehouse/scan" : view === "history" ? "/warehouse/history" : "/warehouse";
   return (

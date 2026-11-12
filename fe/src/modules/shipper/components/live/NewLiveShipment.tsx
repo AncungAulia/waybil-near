@@ -1,4 +1,5 @@
 "use client";
+import { qk } from "@/lib/queryKeys";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -50,7 +51,7 @@ export function NewLiveShipment({ data, refresh }: { data: LiveShipperData; refr
   /* The road between the two, worked out by the server before anything is approved. */
   const preview = useLive(
     () => api<RoutePreview>(`/places/route?from=${pickup!.id}&to=${destPlace!.id}`),
-    pickup && destPlace ? `${pickup.id}-${destPlace.id}` : null,
+    pickup && destPlace ? qk.routePreview(pickup.id, destPlace.id) : null,
   );
   const [qty, setQty] = useState("");
   const [unit, setUnit] = useState("");

@@ -5,10 +5,21 @@ import { api } from "@/lib/api";
 import { truckNow, type TruckOnMap } from "@/lib/route";
 import type { MapTrip } from "@/components/elements/RouteMap";
 import { useLive } from "./useLive";
+import { qk } from "@/lib/queryKeys";
+import { useAuth } from "@/providers/AuthProvider";
 
-/** The shipper's saved places, or a warehouse's destinations. Reads again every 10 seconds. */
+/**
+ * The signed-in shipper's saved places, or a warehouse's destinations, from the shared cache.
+ * Reads again every 10 seconds.
+ */
 export function usePlaces(enabled = true) {
-  return useLive(() => api<PlacesResponse>("/places"), enabled ? "places" : null, 10000);
+  const { profile } = useAuth();
+  const account = profile?.accountId;
+  return useLive(
+    () => api<PlacesResponse>("/places"),
+    enabled && account ? qk.places(account) : null,
+    10000,
+  );
 }
 
 /**
@@ -19,7 +30,7 @@ export function useTrips(ids: number[]) {
   const key = [...new Set(ids)].sort((a, b) => a - b).join(",");
   const live = useLive(
     () => api<TripsResponse>(`/trips?ids=${key}`).then((r) => r.trips),
-    key || null,
+    key ? qk.trips(key) : null,
     10000,
   );
   return { ...live, trips: live.data ?? [] };

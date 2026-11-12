@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { qk } from "@/lib/queryKeys";
 import { parseUsdc, type ProposalKind, type Shipper } from "@waybil/shared";
 import { Panel } from "@/components/layout/Panel";
 import { Button } from "@/components/ui/Button";
@@ -40,39 +42,23 @@ export function toUnits(value: string) {
 }
 export const asInput = (units: bigint) => String(Number(units) / 1000000);
 
-/** Loads once per key and on reload. Errors become a plain sentence. */
+/**
+ * Loads a team page from the shared cache (providers/QueryProvider) and on reload. Errors
+ * become a plain sentence. `key` names the page and what it shows, for example "approvals".
+ */
 export function useLoad<T>(load: () => Promise<T>, key: string) {
-  const loader = useRef(load);
-  useEffect(() => {
-    loader.current = load;
-  });
-  const [result, setResult] = useState<{ key: string; data?: T; error?: string } | null>(null);
-  const [version, setVersion] = useState(0);
-  useEffect(() => {
-    let stale = false;
-    loader
-      .current()
-      .then((data) => !stale && setResult({ key, data }))
-      .catch(
-        (error: unknown) =>
-          !stale &&
-          setResult({
-            key,
-            error:
-              error instanceof ApiError
-                ? error.message
-                : "We could not load this page. Try again in a moment.",
-          }),
-      );
-    return () => {
-      stale = true;
-    };
-  }, [key, version]);
-  const current = result?.key === key ? result : null;
+  const query = useQuery({ queryKey: qk.admin(key), queryFn: load });
+  const { refetch } = query;
+  const error = query.error;
   return {
-    data: current?.data,
-    error: current?.error,
-    reload: useCallback(() => setVersion((v) => v + 1), []),
+    data: query.data,
+    error:
+      query.data === undefined && error
+        ? error instanceof ApiError
+          ? error.message
+          : "We could not load this page. Try again in a moment."
+        : undefined,
+    reload: useCallback(() => void refetch(), [refetch]),
   };
 }
 

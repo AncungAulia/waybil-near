@@ -1,6 +1,7 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
-import { useAutoRefresh } from "@/hooks/useAutoRefresh";
+import { useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { qk } from "@/lib/queryKeys";
 import type { Shipment, Shipper } from "@waybil/shared";
 import {
   getInvestor,
@@ -30,9 +31,6 @@ async function allShipments() {
 }
 const BATCH = 10;
 
-/* One fresh read per account, so switching wallets never shows another account's pool. */
-const cache = new Map<string, { at: number; promise: Promise<LivePool> }>();
-
 async function load(accountId: string): Promise<LivePool> {
   const [pool, investor, wallet, queue, shipments] = await Promise.all([
     getPool(),
@@ -59,51 +57,24 @@ async function load(accountId: string): Promise<LivePool> {
   };
 }
 
-/** The investor's pool, position and wallet from testnet. Pass no account to stay idle. */
+/**
+ * The investor's pool, position and wallet from testnet, from the shared cache, read again
+ * every 10 seconds while the tab is in view. The key holds the account, so switching wallets
+ * never shows another account's pool. Pass no account to stay idle.
+ */
 export function useLivePool(accountId: string | undefined) {
-  const [state, setState] = useState<{
-    accountId: string;
-    data: LivePool | null;
-    failed: boolean;
-  } | null>(null);
-  const [version, setVersion] = useState(0);
-  useEffect(() => {
-    if (!accountId) return;
-    let stale = false;
-    /* Moving between pool pages reuses a fresh read. Refresh (version > 0) reads again. */
-    let entry = cache.get(accountId);
-    if (!entry || version > 0 || Date.now() - entry.at > 15000) {
-      entry = { at: Date.now(), promise: load(accountId) };
-      cache.set(accountId, entry);
-    }
-    const { promise } = entry;
-    promise.catch(() => {
-      if (cache.get(accountId)?.promise === promise) cache.delete(accountId);
-    });
-    promise
-      .then((value) => {
-        if (!stale) setState({ accountId, data: value, failed: false });
-      })
-      .catch(() => {
-        if (stale) return;
-        setState((s) => ({
-          accountId,
-          data: s?.accountId === accountId ? s.data : null,
-          failed: true,
-        }));
-      });
-    return () => {
-      stale = true;
-    };
-  }, [accountId, version]);
-  /* Data read for another account is never shown. */
-  const current = accountId && state?.accountId === accountId ? state : null;
-  const refresh = useCallback(() => setVersion((v) => v + 1), []);
-  useAutoRefresh(refresh, 10000, !!accountId);
+  const query = useQuery({
+    queryKey: qk.pool(accountId ?? ""),
+    queryFn: () => load(accountId!),
+    enabled: !!accountId,
+    refetchInterval: 10_000,
+  });
+  const { refetch } = query;
+  const refresh = useCallback(() => void refetch(), [refetch]);
   return {
-    data: current?.data ?? null,
+    data: accountId ? (query.data ?? null) : null,
     /* A failed background read keeps the pool on screen. Only a first load can fail. */
-    failed: (current?.failed ?? false) && !current?.data,
+    failed: !!accountId && query.isError && query.data === undefined,
     refresh,
   };
 }

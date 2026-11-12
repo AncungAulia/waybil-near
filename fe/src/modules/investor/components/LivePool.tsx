@@ -1,4 +1,5 @@
 "use client";
+import { qk } from "@/lib/queryKeys";
 import { useState } from "react";
 import Link from "next/link";
 import {
@@ -397,7 +398,7 @@ export function LiveHistory({ accountId, queue }: { accountId: string; queue: Qu
   const mine = queue.filter((entry) => entry.investor === accountId);
   const { data, failed, reload } = useLive(
     () => api<PoolHistoryResponse>("/me/history"),
-    accountId,
+    qk.poolHistory(accountId),
   );
   return (
     <>

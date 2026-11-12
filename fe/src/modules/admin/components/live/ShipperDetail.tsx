@@ -74,7 +74,7 @@ export function ShipperDetail({ account }: { account: string }) {
         : Promise.resolve([] as Shipment[]),
     ]);
     return { shipper, application, detail, review, pauses, shipments };
-  }, account);
+  }, `shipper:${account}`);
   const [sheet, setSheet] = useState<"limit" | "pause" | "decide" | "proof" | null>(null);
   const [reason, setReason] = useState("");
   const [note, setNote] = useState("");

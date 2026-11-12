@@ -1,4 +1,5 @@
 "use client";
+import { qk } from "@/lib/queryKeys";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -65,7 +66,7 @@ export function LiveDriver({
       readAll((from, limit) => listShipmentsByDriver(account, { from, limit })).then((list) =>
         list.sort((a, b) => b.id - a.id),
       ),
-    account,
+    qk.driverTrips(account),
     10000,
   );
   const current =
@@ -192,7 +193,7 @@ function Trip({
   /* The random code the warehouse needs, from the backend, once the goods are on the truck. */
   const arrival = useLive(
     () => apiCall<ArrivalCodeResponse>(`/trips/${s!.id}/code`),
-    s?.status === "PickedUp" ? `code-${s.id}` : null,
+    s?.status === "PickedUp" ? qk.arrivalCode(s.id) : null,
   );
   const code = arrival.data?.code ?? null;
   /* A company with no name set would keep the page waiting, so stop waiting after 3 seconds. */
