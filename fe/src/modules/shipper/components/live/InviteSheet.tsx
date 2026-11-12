@@ -9,6 +9,7 @@ import { api } from "@/lib/api";
 import { Alert, failure } from "./shared";
 import { PhoneInput } from "@/components/elements/PhoneInput";
 import { PlacePicker } from "@/components/elements/PlacePicker";
+import { Segmented } from "@/components/ui/Segmented";
 import { dialCode, phoneError, toE164 } from "@/lib/phone";
 
 export function InviteSheet({
@@ -36,8 +37,13 @@ export function InviteSheet({
   /* The number as the backend wants it (E.164), or undefined while it isn't valid. */
   const e164 = toE164(phone, phoneCountry);
   const phoneOk = !!e164;
+  /* A place is a destination (a warehouse that confirms arrivals) or a pickup point (where trucks load). */
+  const [kind, setKind] = useState<"destination" | "pickup">("destination");
+  const pickup = type === "warehouse" && kind === "pickup";
   const pinned = !!spot.address.trim() && spot.lat != null && spot.lng != null;
-  const ready = name.trim() && phoneOk && (type === "driver" || pinned);
+  const ready = pickup
+    ? name.trim() && pinned
+    : name.trim() && phoneOk && (type === "driver" || pinned);
 
   async function send() {
     setBusy(true);
@@ -49,7 +55,7 @@ export function InviteSheet({
           ? (
               await api<{ place: Place }>("/places", {
                 body: {
-                  kind: "destination",
+                  kind,
                   name: name.trim(),
                   address: spot.address.trim(),
                   lat: spot.lat!,
@@ -58,6 +64,12 @@ export function InviteSheet({
               })
             ).place
           : null;
+      /* A pickup point needs no invite. It is ready for the next shipment. */
+      if (pickup) {
+        onSent();
+        onClose();
+        return;
+      }
       const result = await api<InviteCreatedResponse>("/invites", {
         body: {
           type,
@@ -76,10 +88,7 @@ export function InviteSheet({
   }
 
   return (
-    <ActionSheet
-      title={type === "driver" ? "Invite a driver" : "Add a destination"}
-      onClose={onClose}
-    >
+    <ActionSheet title={type === "driver" ? "Invite a driver" : "Add a place"} onClose={onClose}>
       {link ? (
         <>
           <p className="text-label">
@@ -105,35 +114,64 @@ export function InviteSheet({
         </>
       ) : (
         <>
+          {type === "warehouse" && (
+            <Segmented
+              options={[
+                { value: "destination", label: "Destination" },
+                { value: "pickup", label: "Pickup point" },
+              ]}
+              value={kind}
+              onChange={setKind}
+            />
+          )}
           <Input
-            label={type === "driver" ? "Driver’s name" : "Destination name"}
+            label={
+              type === "driver"
+                ? "Driver’s name"
+                : pickup
+                  ? "Pickup point name"
+                  : "Destination name"
+            }
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
-          <PhoneInput
-            label={type === "driver" ? "WhatsApp number" : "Receiver’s WhatsApp number"}
-            value={phone}
-            onChange={setPhone}
-            code={dialCode(phoneCountry)}
-            onCodeChange={() => {}}
-            country={phoneCountry}
-            onCountryChange={setPhoneCountry}
-            showHint={false}
-            error={
-              phone.replace(/\D/g, "").length > 5 && !phoneOk
-                ? phoneError(phone, phoneCountry)
-                : undefined
-            }
-          />
-          {type === "warehouse" && <PlacePicker label="Address" value={spot} onChange={setSpot} />}
+          {!pickup && (
+            <PhoneInput
+              label={type === "driver" ? "WhatsApp number" : "Receiver’s WhatsApp number"}
+              value={phone}
+              onChange={setPhone}
+              code={dialCode(phoneCountry)}
+              onCodeChange={() => {}}
+              country={phoneCountry}
+              onCountryChange={setPhoneCountry}
+              showHint={false}
+              error={
+                phone.replace(/\D/g, "").length > 5 && !phoneOk
+                  ? phoneError(phone, phoneCountry)
+                  : undefined
+              }
+            />
+          )}
+          {type === "warehouse" && (
+            <PlacePicker
+              label="Address"
+              value={spot}
+              onChange={setSpot}
+              hint={
+                pickup
+                  ? "Trucks load your goods here."
+                  : "The warehouse here confirms each arrival."
+              }
+            />
+          )}
           {error && <Alert>{error}</Alert>}
           <Button
             disabled={!ready}
             loading={busy}
-            loadingLabel="Sending"
+            loadingLabel={pickup ? "Saving" : "Sending"}
             onClick={() => void send()}
           >
-            Make the invite link
+            {pickup ? "Save the pickup point" : "Make the invite link"}
           </Button>
         </>
       )}

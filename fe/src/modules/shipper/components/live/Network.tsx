@@ -10,7 +10,6 @@ import { nearblocksUrl, WAYBIL_CONTRACT } from "@/lib/env";
 import { callContract } from "@/lib/wallet";
 import { names, waitingToAdd, type LiveShipperData } from "../../data/live";
 import { InviteSheet } from "./InviteSheet";
-import { PickupSheet } from "./PickupSheet";
 import { usePlaces } from "@/hooks/useTrips";
 import { NetworkEmpty } from "../ShipperNetwork";
 import { cn } from "@/lib/cn";
@@ -36,7 +35,6 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
       : "";
   };
   const [inviting, setInviting] = useState<"driver" | "warehouse" | null>(null);
-  const [addingPickup, setAddingPickup] = useState(false);
   const { data: placeList, reload: reloadPlaces } = usePlaces();
   const pickups = (placeList?.places ?? []).filter((p) => p.kind === "pickup");
   const [busy, setBusy] = useState<string | null>(null);
@@ -59,7 +57,7 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
       ? shared
       : null;
   /* No drivers and no destinations yet. The two empty cards then fill the rest of the window. */
-  const bare = !data.network.drivers.length && !data.network.destinations.length;
+  const bare = !data.network.drivers.length && !data.network.destinations.length && !pickups.length;
 
   async function add(type: "driver" | "warehouse", account: string, label: string) {
     setBusy(account);
@@ -97,8 +95,8 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
             className="w-full min-w-0 md:w-auto"
             onClick={() => setInviting("warehouse")}
           >
-            <span className="md:hidden">Destination</span>
-            <span className="hidden md:inline">Add a destination</span>
+            <span className="md:hidden">Place</span>
+            <span className="hidden md:inline">Add a place</span>
           </Button>
           <Button
             icon={<UserPlus size={17} />}
@@ -150,33 +148,6 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
           ))}
         </Panel>
       )}
-      <Panel
-        title="Pickup points"
-        action={
-          <Button
-            variant="secondary"
-            icon={<MapPin size={17} />}
-            onClick={() => setAddingPickup(true)}
-          >
-            Add
-          </Button>
-        }
-      >
-        {placeList && pickups.length === 0 && (
-          <p className="text-label text-ds-muted">
-            Add where trucks load your goods. Every shipment starts at one of these.
-          </p>
-        )}
-        {pickups.map((p) => (
-          <Member
-            key={p.id}
-            name={p.name}
-            facts={["Pickup point", p.address]}
-            href={`https://www.openstreetmap.org/?mlat=${p.lat}&mlon=${p.lng}#map=16/${p.lat}/${p.lng}`}
-            linkLabel="Map"
-          />
-        ))}
-      </Panel>
       {/* With nothing in the network yet, the two empty cards fill the window, as the board draws it. */}
       <div
         className={cn("grid gap-16 lg:grid-cols-2", "flex-1", bare && "grid-rows-2 lg:grid-rows-1")}
@@ -197,7 +168,18 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
           })}
         </Panel>
         <Panel title="Destinations" className="h-full">
-          {data.network.destinations.length === 0 && <NetworkEmpty kind="warehouse" />}
+          {data.network.destinations.length === 0 && pickups.length === 0 && (
+            <NetworkEmpty kind="warehouse" />
+          )}
+          {pickups.map((p) => (
+            <Member
+              key={p.id}
+              name={p.name}
+              facts={["Pickup point", p.address]}
+              href={`https://www.openstreetmap.org/?mlat=${p.lat}&mlon=${p.lng}#map=16/${p.lat}/${p.lng}`}
+              linkLabel="Map"
+            />
+          ))}
           {data.network.destinations.map((d) => (
             <Member
               key={d.id}
@@ -254,11 +236,15 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
           </Button>
         </ActionSheet>
       )}
-      {addingPickup && (
-        <PickupSheet onClose={() => setAddingPickup(false)} onSaved={reloadPlaces} />
-      )}
       {inviting && (
-        <InviteSheet type={inviting} onClose={() => setInviting(null)} onSent={() => refresh()} />
+        <InviteSheet
+          type={inviting}
+          onClose={() => setInviting(null)}
+          onSent={() => {
+            refresh();
+            reloadPlaces();
+          }}
+        />
       )}
     </div>
   );
