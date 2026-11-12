@@ -15,3 +15,4 @@ export const placeCreate = z
   })
   .strict();
 export const placeId = z.uuid();
+export const placeRoute = z.object({ from: z.uuid(), to: z.uuid() });

@@ -174,3 +174,42 @@ it("names the address at a moved pin and keeps the pin's own position", async ()
   expect((await reverse("lat=95&lng=106.8")).status).toBe(400);
   expect((await reverse("lat=-6.2&lng=106.8", driver)).status).toBe(403);
 });
+
+it("previews the road between two of the shipper's places and keeps it per pair", async () => {
+  const deps = testDeps();
+  const token = await signedIn(deps, "shipper");
+  const other = await signedIn(deps, "warehouse");
+  const fetcher = vi.fn().mockResolvedValue(
+    Response.json({
+      features: [
+        {
+          geometry: {
+            type: "LineString",
+            coordinates: [
+              [106.8, -6.2],
+              [106.9, -6.25],
+              [107.0, -6.3],
+            ],
+          },
+          properties: { summary: { distance: 25000, duration: 1800 } },
+        },
+      ],
+    }),
+  );
+  const places = new Places(deps.store, "https://photon.example/", fetcher, Date.now, "key");
+  const app = createApp(deps, placeRoutes(deps, places));
+  const create = (body: object) =>
+    request(app).post("/v1/places").auth(token, { type: "bearer" }).send(body);
+  const a = (await create(pickup)).body.place;
+  const b = (await create({ ...pickup, kind: "destination", name: "Dock", lat: -6.3, lng: 107 }))
+    .body.place;
+  const preview = (as = token) =>
+    request(app).get(`/v1/places/route?from=${a.id}&to=${b.id}`).auth(as, { type: "bearer" });
+  const first = await preview();
+  expect(first.status).toBe(200);
+  expect(first.body.routeSource).toBe("road");
+  expect(first.body.route.coordinates).toHaveLength(3);
+  await preview();
+  expect(fetcher).toHaveBeenCalledTimes(1);
+  expect((await preview(other)).status).toBe(403);
+});

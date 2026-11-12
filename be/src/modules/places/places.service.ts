@@ -7,10 +7,11 @@ import type {
   PlaceSuggestion,
   PlacesResponse,
   Principal,
+  RoutePreview,
 } from "@waybil/shared";
 import type { Store } from "../../types/db";
-import type { Fetcher } from "../../lib/routing";
-import { allowed, unavailable } from "../../lib/errors";
+import { planRoute, type Fetcher } from "../../lib/routing";
+import { allowed, requireValue, unavailable } from "../../lib/errors";
 import type { InviteRecord } from "../invites/invites.service";
 
 interface PhotonFeature {
@@ -64,7 +65,32 @@ export class Places {
     private photonUrl: string,
     private fetcher: Fetcher = fetch,
     private now = () => Date.now(),
+    private orsKey?: string,
   ) {}
+
+  /* Routes already worked out, by place pair. Places never move, so they stay right. */
+  private routes = new Map<string, RoutePreview>();
+
+  /**
+   * The road between two of the shipper's own places, so a new shipment can show it before
+   * it is approved. The same routing as a trip, kept in memory per pair.
+   */
+  async route(actor: Principal, fromId: string, toId: string): Promise<RoutePreview> {
+    allowed(actor.role === "shipper");
+    const [from, to] = await Promise.all(
+      [fromId, toId].map(
+        async (id) => requireValue(await this.store.get<Place>("places", id)).value,
+      ),
+    );
+    allowed(from!.shipperId === actor.accountId && to!.shipperId === actor.accountId);
+    const key = `${from!.id}|${to!.id}`;
+    const known = this.routes.get(key);
+    if (known) return known;
+    const plan = await planRoute(from!, to!, this.orsKey, this.fetcher);
+    /* Keep a road route. A straight line may only mean the service was busy. */
+    if (plan.routeSource === "road") this.routes.set(key, plan);
+    return plan;
+  }
 
   /** Address suggestions from Photon. The query and the results are never logged. */
   async search(actor: Principal, q: string): Promise<PlaceSearchResponse> {
