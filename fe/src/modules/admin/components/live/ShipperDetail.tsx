@@ -33,7 +33,7 @@ import { ProofLink } from "@/components/elements/ProofLink";
 import { BackLink } from "@/components/elements/BackLink";
 import { Skeleton, SkeletonGroup } from "@/components/elements/Skeleton";
 import { api } from "@/lib/api";
-import { getShipper, listShipmentsByShipper, readAll } from "@/lib/near";
+import { getShipper, listProposals, listShipmentsByShipper, readAll } from "@/lib/near";
 import { WAYBIL_CONTRACT } from "@/lib/env";
 import { callContract } from "@/lib/wallet";
 import { notify } from "@/lib/notify";
@@ -72,7 +72,7 @@ export function ShipperDetail({ account }: { account: string }) {
       applications
         .filter((a) => a.shipperId === account)
         .sort((x, y) => y.createdAt.localeCompare(x.createdAt))[0] ?? null;
-    const [detail, review, pauses, shipments] = await Promise.all([
+    const [detail, review, pauses, shipments, open] = await Promise.all([
       application
         ? api<ApplicationDetail>(`/admin/applications/${application.id}`)
         : Promise.resolve(null),
@@ -87,8 +87,14 @@ export function ShipperDetail({ account }: { account: string }) {
       shipper
         ? readAll((from, limit) => listShipmentsByShipper(account, { from, limit }))
         : Promise.resolve([] as Shipment[]),
+      listProposals("Open", 50).catch(() => []),
     ]);
-    return { shipper, application, detail, review, pauses, shipments };
+    /* What already waits for the team about this company, so it is not proposed twice. */
+    const waiting = {
+      unpause: open.some((p) => "Unpause" in p.kind && p.kind.Unpause.shipper === account),
+      limit: open.some((p) => "SetLimit" in p.kind && p.kind.SetLimit.shipper === account),
+    };
+    return { shipper, application, detail, review, pauses, shipments, waiting };
   }, `shipper:${account}`);
   const [sheet, setSheet] = useState<"limit" | "pause" | "decide" | "proof" | null>(null);
   const [reason, setReason] = useState("");
@@ -96,6 +102,7 @@ export function ShipperDetail({ account }: { account: string }) {
   const [limit, setLimit] = useState("");
   const [sheetError, setSheetError] = useState<string | null>(null);
   const [proof, setProof] = useState<string | null>(null);
+  const [sent, setSent] = useState({ unpause: false, limit: false });
   const invalidate = useInvalidate();
   const action = useMutation({
     mutationFn: (run: () => Promise<Note>) => run(),
@@ -127,6 +134,10 @@ export function ShipperDetail({ account }: { account: string }) {
       </>
     );
   const { shipper, application, detail, review, pauses, shipments } = data;
+  const waiting = {
+    unpause: data.waiting.unpause || sent.unpause,
+    limit: data.waiting.limit || sent.limit,
+  };
   if (!shipper && !application)
     return (
       <>
@@ -157,15 +168,21 @@ export function ShipperDetail({ account }: { account: string }) {
       await api("/admin/pauses", {
         body: { shipperId: account, reason: code, note: note.trim(), txHash: tx },
       }).catch(() => undefined);
+      /* A new pause can be turned back on again, so the earlier request no longer counts. */
+      setSent((prev) => ({ ...prev, unpause: false }));
       return { title: `${title} is paused`, meta: "It cannot approve new trips now.", tx };
     });
   /* A proposal counts as the sender's approval, so it needs one more member. */
   const propose = (kind: ProposalKind, meta: string) =>
-    send(async () => ({
-      title: "Sent to the team",
-      meta,
-      tx: await callContract(WAYBIL_CONTRACT, "propose", { kind }, { gas: GAS }),
-    }));
+    send(async () => {
+      const tx = await callContract(WAYBIL_CONTRACT, "propose", { kind }, { gas: GAS });
+      /* Remembered here too, because the chain shows the new proposal a few seconds later. */
+      setSent((prev) => ({
+        unpause: prev.unpause || "Unpause" in kind,
+        limit: prev.limit || "SetLimit" in kind,
+      }));
+      return { title: "Sent to the team", meta, tx };
+    });
   const title = application?.company.name ?? accountLabel(account);
   const used = shipper ? BigInt(shipper.owed) + BigInt(shipper.committed) : 0n;
   const cap = shipper ? BigInt(shipper.limit) : 0n;
@@ -290,6 +307,7 @@ export function ShipperDetail({ account }: { account: string }) {
                 <div className="grid gap-10 md:flex md:flex-wrap">
                   <Button
                     variant="secondary"
+                    disabled={waiting.limit}
                     onClick={() => {
                       setLimit(asInput(BigInt(shipper.limit)));
                       setNote("");
@@ -303,6 +321,7 @@ export function ShipperDetail({ account }: { account: string }) {
                     <Button
                       variant="secondary"
                       loading={busy}
+                      disabled={waiting.unpause}
                       onClick={() =>
                         void propose(
                           { Unpause: { shipper: account } },
@@ -327,6 +346,13 @@ export function ShipperDetail({ account }: { account: string }) {
                     </Button>
                   )}
                 </div>
+                {(waiting.unpause || waiting.limit) && (
+                  <p className="text-caption text-ds-muted">
+                    {waiting.unpause
+                      ? "Turning it back on already waits for the team in Approvals."
+                      : "A new limit already waits for the team in Approvals."}
+                  </p>
+                )}
               </section>
               <Panel title="Shipments" className="flex-1">
                 <div className="grid grid-cols-3 gap-8">
