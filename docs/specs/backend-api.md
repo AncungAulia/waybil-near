@@ -52,7 +52,7 @@ can map verified subject hashes to reserved demo slugs. A per-account full-acces
 key is encrypted with AES-256-GCM and identity-bound AAD. Only its encryption secret lives
 in environment settings. Recovery replaces the previous device key and increments the
 profile session version. No role/account/identity changes are accepted by the profile route.
-Profile update fields are name, E.164 phone, email and optional driver truckPlate.
+Profile update fields are name, E.164 phone, email and optional driver truckPlate. A plate is letters and numbers in up to four groups split by a space or a hyphen, with at least one of each, 2 to 15 characters (`isValidPlate` in `@waybil/shared`). It is stored upper case with single spaces, so "b 1234  eof" becomes "B 1234 EOF".
 
 New env: `RECOVERY_ENCRYPTION_KEY` (base64 of 32 random bytes), `GOOGLE_ACCOUNT_NAMES`
 (optional JSON object mapping subject hashes to account slugs). Account creation uses the
