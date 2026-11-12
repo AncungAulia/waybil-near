@@ -13,7 +13,6 @@ import { Button, ButtonLink } from "@/components/ui/Button";
 import { Money } from "@/components/elements/Money";
 import { StatusPill } from "@/components/elements/StatusPill";
 import { DeliveryQr } from "@/components/elements/DeliveryQr";
-import { ProofLink } from "@/components/elements/ProofLink";
 import { BackLink } from "@/components/elements/BackLink";
 import { TripMap } from "@/components/elements/TripMap";
 import { TimelineStep } from "@/components/elements/TimelineStep";
@@ -34,6 +33,7 @@ import { api as apiCall, ApiError } from "@/lib/api";
 import { CONTRACT_RECORD_URL } from "@/lib/env";
 import { listShipmentsByDriver, readAll } from "@/lib/near";
 import { relay } from "@/lib/relay";
+import { notify } from "@/lib/notify";
 import type { ArrivalCodeResponse } from "@waybil/shared";
 import { statusChip } from "@/lib/status";
 import { cn } from "@/lib/cn";
@@ -174,21 +174,24 @@ function Trips({ trips }: { trips: Shipment[] }) {
 /* K2 for one trip. */
 function Trip({ account, shipment: s }: { account: string; shipment: Shipment | undefined }) {
   const invalidate = useInvalidate();
-  const [error, setError] = useState<string | null>(null);
-  const [tx, setTx] = useState<string | null>(null);
-  /* The relayer records the pickup. Its retries live in relay(). */
+  /* The relayer records the pickup. Its retries live in relay(). The result is a toast. */
   const confirm = useMutation({
     mutationFn: (id: number) => relay(account, "confirm_pickup", { id }),
     onSuccess: (result) => {
-      setTx(result.txHash);
-      if (result.status === "failed") setError("The pickup was not recorded. Try again.");
+      if (result.status === "failed")
+        notify.error("Pickup not recorded", { meta: "Try again in a moment.", tx: result.txHash });
+      else
+        notify.success("Pickup recorded", {
+          meta: "Show the QR code at the destination.",
+          tx: result.txHash,
+        });
       /* The trip is on the road now, so its status and its truck on the map change. */
       void invalidate(qk.driverTrips(account), qk.allTrips());
     },
     onError: (e) =>
-      setError(
-        e instanceof ApiError ? e.message : "The pickup could not be sent. Check your signal.",
-      ),
+      notify.error("Pickup not sent", {
+        meta: e instanceof ApiError ? e.message : "Check your signal and try again.",
+      }),
   });
   const busy = confirm.isPending;
   const [copied, setCopied] = useState(false);
@@ -221,7 +224,6 @@ function Trip({ account, shipment: s }: { account: string; shipment: Shipment | 
     );
 
   function pickup(id: number) {
-    setError(null);
     confirm.mutate(id);
   }
   /* The page shows once the trip and the company name are in, so nothing changes under the reader. */
@@ -272,20 +274,9 @@ function Trip({ account, shipment: s }: { account: string; shipment: Shipment | 
           )}
         </div>
         <div className="flex flex-col gap-16">
-          {tx && (
-            <Panel className="gap-8">
-              <p className="text-label">Recorded.</p>
-              <ProofLink tx={tx} />
-            </Panel>
-          )}
           {s.status === "Approved" && (
             <Panel title="Waiting for pickup">
               <p className="text-label text-ds-muted">Load the goods, then confirm the pickup.</p>
-              {error && (
-                <p role="alert" className="rounded-row bg-ds-danger-result p-14 text-label">
-                  {error}
-                </p>
-              )}
               {trip && (
                 <ButtonLink
                   href={directionsUrl(trip.pickup.lat, trip.pickup.lng)}
