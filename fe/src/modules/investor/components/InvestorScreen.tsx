@@ -175,7 +175,9 @@ export function InvestorScreen({
           : BigInt(balance.cash)
         : ceiling;
     const value = (base * BigInt(percent)) / 100n;
-    setAmount(`${value / 1000000n}.${(value % 1000000n).toString().padStart(6, "0")}`);
+    /* Whole units and only the decimals it needs, so 50% of 1,000 reads "500". */
+    const cents = (value % 1000000n).toString().padStart(6, "0").replace(/0+$/, "");
+    setAmount(cents ? `${value / 1000000n}.${cents}` : `${value / 1000000n}`);
   }
   const close = () => {
     setTxError(null);
