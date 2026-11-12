@@ -1,5 +1,8 @@
 "use client";
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useInvalidate } from "@/hooks/useInvalidate";
+import { qk } from "@/lib/queryKeys";
 import { formatUsdc, parseUsdc } from "@waybil/shared";
 import { RoleShell } from "@/components/layout/RoleShell";
 import { Panel } from "@/components/layout/Panel";
@@ -48,13 +51,51 @@ export function InvestorScreen({
     [filter, setFilter] = useState("All"),
     [risks, setRisks] = useState(false),
     [receipt, setReceipt] = useState<TransferReceipt | null>(null),
-    [pending, setPending] = useState(false),
     [txError, setTxError] = useState<string | null>(null);
   const saved = useDemoPool();
   /* The live path reads testnet for the signed-in investor. The gallery keeps its fixtures. */
   const { profile } = useAuth();
   const live = LIVE && !preview && profile?.role === "investor" ? profile : null;
   const { data, failed, refresh } = useLivePool(live?.accountId);
+  const invalidate = useInvalidate();
+  /* Moving money changes the pool, the investor's history and the wallet balance. */
+  const moved = (accountId: string) =>
+    invalidate(qk.pool(accountId), qk.poolHistory(accountId), qk.usdc(accountId));
+  const sendMoney = useMutation({
+    mutationFn: ({
+      accountId,
+      deposit,
+      units,
+    }: {
+      accountId: string;
+      deposit: boolean;
+      units: bigint;
+      paid: bigint;
+      queued: bigint;
+    }) =>
+      deposit
+        ? ensureUsdcStorage(accountId).then(() =>
+            callContract(
+              USDC_CONTRACT,
+              "ft_transfer_call",
+              { receiver_id: WAYBIL_CONTRACT, amount: String(units), msg: "deposit" },
+              { deposit: "1", gas: TX_GAS },
+            ),
+          )
+        : callContract(WAYBIL_CONTRACT, "withdraw", { amount: String(units) }, { gas: TX_GAS }),
+    onSuccess: (tx, { accountId, deposit, units, paid, queued }) => {
+      setReceipt({ amount: String(units), paid: String(paid), queued: String(queued), tx });
+      void moved(accountId);
+      setState(deposit ? "I2.4" : "I2.7");
+    },
+    onError: (failure) => setTxError(wallError(failure)),
+  });
+  const pending = sendMoney.isPending;
+  const payOut = useMutation({
+    mutationFn: () => callContract(WAYBIL_CONTRACT, "process_queue", {}, { gas: TX_GAS }),
+    onSuccess: () => (live ? moved(live.accountId) : undefined),
+    onError: (failure) => setTxError(wallError(failure)),
+  });
   const fixture = INVESTOR_FIXTURES[initialState];
   const [previewBalance, setPreviewBalance] = useState<DemoPoolBalance | null>(null);
   const balance = live
@@ -110,41 +151,12 @@ export function InvestorScreen({
     preview && !receipt ? (deposit ? "26000000000" : "24000000000") : balance.total;
   const settledShare =
     Number(settledTotal) > 0 ? Math.round((Number(settledValue) / Number(settledTotal)) * 100) : 0;
-  async function submitLive(accountId: string) {
+  function submitLive(accountId: string) {
     setTxError(null);
-    setPending(true);
-    try {
-      const tx = deposit
-        ? await ensureUsdcStorage(accountId).then(() =>
-            callContract(
-              USDC_CONTRACT,
-              "ft_transfer_call",
-              { receiver_id: WAYBIL_CONTRACT, amount: String(units), msg: "deposit" },
-              { deposit: "1", gas: TX_GAS },
-            ),
-          )
-        : await callContract(
-            WAYBIL_CONTRACT,
-            "withdraw",
-            { amount: String(units) },
-            { gas: TX_GAS },
-          );
-      setReceipt({ amount: String(units), paid: String(paid), queued: String(queued), tx });
-      refresh();
-      setState(deposit ? "I2.4" : "I2.7");
-    } catch (failure) {
-      setTxError(wallError(failure));
-    } finally {
-      setPending(false);
-    }
+    sendMoney.mutate({ accountId, deposit, units, paid, queued });
   }
-  async function payQueue() {
-    try {
-      await callContract(WAYBIL_CONTRACT, "process_queue", {}, { gas: TX_GAS });
-      refresh();
-    } catch (failure) {
-      setTxError(wallError(failure));
-    }
+  function payQueue() {
+    payOut.mutate();
   }
   function submit() {
     if (units <= 0n || error) return;
@@ -190,7 +202,7 @@ export function InvestorScreen({
         setAmount("1000");
         setState(busy ? "I2.6" : "I2.5");
       }}
-      onPayQueue={() => void payQueue()}
+      onPayQueue={payQueue}
     />
   );
   return (
