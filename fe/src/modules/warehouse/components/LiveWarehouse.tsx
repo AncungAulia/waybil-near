@@ -346,7 +346,7 @@ function ScanAndConfirm({
           </div>
         </Panel>
       ) : (
-        <Panel title={`Delivery #${found.id}`} className="min-h-[calc(100dvh-266px)] md:min-h-0">
+        <Panel title={`Delivery #${found.id}`} className={FILL_UNDER_HEADER}>
           <p className="text-label break-all text-ds-muted">
             {found.qty} {found.unit} from {name(found.driver)}
           </p>
@@ -433,25 +433,28 @@ function ScanAndConfirm({
               <p className="text-caption text-ds-muted">Up to 5 JPG or PNG photos, 2 MB each.</p>
             </>
           )}
-          {/* On a phone the card fills the screen and the buttons sit at the bottom, by the thumb. */}
-          <div aria-hidden className="flex-1 md:hidden" />
+          {/* The card fills the window and the buttons sit at the bottom, by the thumb on a phone. */}
+          <div aria-hidden className="flex-1" />
           {error && (
             <p role="alert" className="rounded-row bg-ds-danger-result p-14 text-label">
               {error}
             </p>
           )}
-          <Button
-            className="h-52 w-full justify-between"
-            disabled={!ready}
-            loading={busy}
-            loadingLabel="Recording"
-            onClick={() => void confirm(found)}
-          >
-            {reporting ? "Send the report" : "Confirm delivery"}
-          </Button>
-          <Button variant="quiet" onClick={() => setFound(null)}>
-            Scan a different code
-          </Button>
+          {/* Full width on a phone. From a tablet up, side by side in the bottom right corner. */}
+          <div className="flex flex-col gap-10 md:flex-row-reverse md:justify-start md:self-end">
+            <Button
+              className="h-52 w-full justify-between md:w-auto"
+              disabled={!ready}
+              loading={busy}
+              loadingLabel="Recording"
+              onClick={() => void confirm(found)}
+            >
+              {reporting ? "Send the report" : "Confirm delivery"}
+            </Button>
+            <Button variant="quiet" className="md:w-auto" onClick={() => setFound(null)}>
+              Scan a different code
+            </Button>
+          </div>
         </Panel>
       )}
     </>
