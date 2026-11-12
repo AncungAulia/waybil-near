@@ -51,6 +51,10 @@ export function Meter({ data }: { data: LiveShipperData }) {
       limit={formatUsdc(limit)}
       value={limit > 0n ? Number((used * 1000n) / limit) / 1000 : 0}
       left={formatUsdc(limit > used ? limit - used : used - limit)}
+      describe={(at, inUse) => {
+        const mark = (limit * BigInt(Math.round(at * 1000))) / 1000n;
+        return `The ${formatUsdc(mark)} USDC mark of your limit is ${inUse ? "in use" : "free"}.`;
+      }}
       className="w-full"
     />
   );
