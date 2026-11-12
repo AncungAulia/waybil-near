@@ -89,7 +89,7 @@ export function DriverSetup({
         <Input
           className={cn(touched.has("plate") && errors.plate && "[&>div]:bg-ds-bg")}
           label="Truck plate number"
-          placeholder="B 1234 EOF"
+          placeholder="Your plate number"
           value={draft.plate}
           disabled={waiting}
           onChange={(e) => edit("plate", e.target.value.toUpperCase())}

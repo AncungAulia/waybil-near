@@ -53,6 +53,6 @@ export function driverErrors(
     phone: phoneError(draft.phone, phoneCode),
     plate: isValidPlate(draft.plate)
       ? undefined
-      : "Use the letters and numbers on your plate, like B 1234 EOF.",
+      : "Use only the letters and numbers on your plate.",
   };
 }
