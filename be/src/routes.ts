@@ -35,6 +35,8 @@ import { Places } from "./modules/places/places.service";
 import { placeRoutes } from "./modules/places/places.routes";
 import { Trips } from "./modules/trips/trips.service";
 import { tripRoutes } from "./modules/trips/trips.routes";
+import { Arrivals } from "./modules/arrivals/arrivals.service";
+import { arrivalRoutes } from "./modules/arrivals/arrivals.routes";
 
 export function createRuntime(deps: AppDeps) {
   const router = Router();
@@ -78,6 +80,7 @@ export function createRuntime(deps: AppDeps) {
     ),
   );
   router.use(tripRoutes(deps, new Trips(deps.store, deps.chain, deps.env)));
+  router.use(arrivalRoutes(deps, new Arrivals(deps.store, deps.chain)));
   router.use(inviteRoutes(deps, invites, (accountId) => auth.subjectFor(accountId)));
   router.use(profileRoutes(deps, new Profiles(deps.store, deps.chain)));
   router.use(
