@@ -17,6 +17,8 @@ import { Money } from "@/components/elements/Money";
 import { StatusPill } from "@/components/elements/StatusPill";
 import { TripMap } from "@/components/elements/TripMap";
 import { Skeleton } from "@/components/elements/Skeleton";
+import { NameTag } from "@/components/ui/Tag";
+import { cn } from "@/lib/cn";
 import { usePlaces, useTrips } from "@/hooks/useTrips";
 import { forgetPickup, pickupFor } from "../data/pendingTrip";
 import { SearchPicker } from "@/components/ui/SearchPicker";
@@ -155,45 +157,19 @@ export function LiveShipment({
         <StatusPill status={statusChip(s)} />
       </header>
       <DoneNote done={done} />
-      {/* The map's place is held while the trip loads, so nothing jumps in later. */}
-      {!tripData ? (
-        <Skeleton className="h-260 w-full rounded-row md:h-360" />
-      ) : (
-        <TripMap trip={trips[0]} status={s.status} />
-      )}
-      {tripData && !trips[0] && (s.status === "Approved" || s.status === "PickedUp") && (
-        <AddTrip shipment={s} onAdded={reloadTrips} />
-      )}
-      <div className="grid items-start gap-24 lg:grid-cols-[minmax(0,1fr)_400px]">
-        <Panel title="Trip" gap={4}>
-          {steps.map((step) => (
-            <div key={step.title} className="py-10">
-              <p className="text-label break-all">{step.title}</p>
-              <p className="text-caption text-ds-muted">{shortDay(step.at)}</p>
-              {step.detail && <p className="text-caption text-ds-ink-2">{step.detail}</p>}
-            </div>
-          ))}
-          {warehouse && (
-            <p className="py-10 text-caption break-all text-ds-muted">
-              {trips[0] && (
-                <>
-                  Pickup at {trips[0].pickup.address}
-                  <br />
-                </>
-              )}
-              Destination at {places[warehouse]?.address || warehouse}
-            </p>
-          )}
-          <a
-            className="link focus-ring mt-4 inline-block text-caption"
-            href={CONTRACT_RECORD_URL}
-            target="_blank"
-            rel="noreferrer"
-          >
-            See the record on NearBlocks ↗
-          </a>
-        </Panel>
-        <Panel title="Bill">
+      {/* The route and the bill side by side, the same height. */}
+      <div className="grid items-stretch gap-24 lg:grid-cols-[minmax(0,1fr)_400px]">
+        {!tripData ? (
+          /* The map's place is held while the trip loads, so nothing jumps in later. */
+          <Skeleton className="h-320 w-full rounded-card md:h-420" />
+        ) : trips[0] ? (
+          <Panel title="Route">
+            <TripMap trip={trips[0]} status={s.status} />
+          </Panel>
+        ) : s.status === "Approved" || s.status === "PickedUp" ? (
+          <AddTrip shipment={s} onAdded={reloadTrips} />
+        ) : null}
+        <Panel title="Bill" className={cn("h-full", tripData && !trips[0] && "lg:col-start-2")}>
           <div className="flex justify-between gap-12 text-label">
             <span className="text-ds-muted">The driver gets</span>
             <Money amount={s.advance} />
@@ -221,6 +197,39 @@ export function LiveShipment({
           )}
         </Panel>
       </div>
+      <Panel title="Trip">
+        <div className="grid gap-24 md:grid-cols-2">
+          <div className="flex flex-col">
+            {steps.map((step) => (
+              <div key={step.title} className="py-8">
+                <p className="text-label break-all">{step.title}</p>
+                <p className="text-caption text-ds-muted">{shortDay(step.at)}</p>
+                {step.detail && <p className="text-caption text-ds-ink-2">{step.detail}</p>}
+              </div>
+            ))}
+          </div>
+          <div className="flex flex-col gap-14">
+            {trips[0] && (
+              <Stop label="Pickup" name={trips[0].pickup.name} address={trips[0].pickup.address} />
+            )}
+            {warehouse && (
+              <Stop
+                label="Destination"
+                name={trips[0]?.destination.name ?? places[warehouse]?.name ?? warehouse}
+                address={trips[0]?.destination.address ?? places[warehouse]?.address ?? ""}
+              />
+            )}
+            <a
+              className="link focus-ring inline-block text-caption"
+              href={CONTRACT_RECORD_URL}
+              target="_blank"
+              rel="noreferrer"
+            >
+              See the record on NearBlocks ↗
+            </a>
+          </div>
+        </div>
+      </Panel>
       {s.status === "Reported" && report && (
         <Panel title="Problem report">
           <p className="text-label">
@@ -354,7 +363,7 @@ function AddTrip({
   if (noted) return null;
   if (data && !pickups.length) return null;
   return (
-    <Panel title="Show this trip on the map">
+    <Panel title="Show this trip on the map" className="h-full">
       <p className="text-label text-ds-muted">
         This shipment has no map yet. Choose where the goods are picked up.
       </p>
@@ -391,5 +400,15 @@ function AddTrip({
         Show the map
       </Button>
     </Panel>
+  );
+}
+
+/* One end of the trip: what it is as a tag, its name and its address. */
+function Stop({ label, name, address }: { label: string; name: string; address: string }) {
+  return (
+    <div>
+      <NameTag name={name} tag={label} bold />
+      {address && <p className="text-caption text-ds-muted">{address}</p>}
+    </div>
   );
 }
