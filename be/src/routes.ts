@@ -31,6 +31,10 @@ import { profileRoutes } from "./modules/profiles/profiles.routes";
 import { PoolHistory } from "./modules/history/history.service";
 import { NearBlocksEvents } from "./modules/history/history.source";
 import { historyRoutes } from "./modules/history/history.routes";
+import { Places } from "./modules/places/places.service";
+import { placeRoutes } from "./modules/places/places.routes";
+import { Trips } from "./modules/trips/trips.service";
+import { tripRoutes } from "./modules/trips/trips.routes";
 
 export function createRuntime(deps: AppDeps) {
   const router = Router();
@@ -67,6 +71,8 @@ export function createRuntime(deps: AppDeps) {
   router.use(creditRoutes(deps, credit));
   router.use(applicationRoutes(deps, applications));
   router.use(reportRoutes(deps, reports));
+  router.use(placeRoutes(deps, new Places(deps.store, deps.env.PHOTON_URL)));
+  router.use(tripRoutes(deps, new Trips(deps.store, deps.chain, deps.env)));
   router.use(inviteRoutes(deps, invites, (accountId) => auth.subjectFor(accountId)));
   router.use(profileRoutes(deps, new Profiles(deps.store, deps.chain)));
   router.use(
