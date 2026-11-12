@@ -304,7 +304,7 @@ function ScanAndConfirm({
         </p>
       </header>
       {!found ? (
-        <Panel>
+        <Panel className={cn("justify-center", FILL_UNDER_HEADER)}>
           {camera && (
             <QrScanner
               active={camera}

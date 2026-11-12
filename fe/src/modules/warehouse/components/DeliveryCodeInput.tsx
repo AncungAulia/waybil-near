@@ -41,12 +41,13 @@ export function DeliveryCodeInput({
         }}
         className="absolute inset-0 z-10 w-full cursor-text opacity-0"
       />
-      <span aria-hidden className="grid grid-cols-8 gap-8">
+      <span aria-hidden className="grid grid-cols-8 gap-6 md:gap-8">
         {Array.from({ length: 8 }, (_, i) => (
           <span
             key={i}
             className={cn(
-              "grid h-60 min-w-0 place-items-center rounded-[16px] border-[1.5px] bg-ds-canvas font-mono text-[22px]",
+              /* Square boxes on every width, never taller than 60 px. */
+              "grid aspect-square max-h-60 min-w-0 place-items-center rounded-[12px] border-[1.5px] bg-ds-canvas font-mono text-[20px] md:rounded-[16px] md:text-[22px]",
               invalid
                 ? "border-ds-danger"
                 : i === Math.min(cursor, 7)

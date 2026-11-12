@@ -150,7 +150,8 @@ export function RoleShell({
       <header className="sticky top-0 z-30 -mx-16 flex h-56 items-center justify-between bg-ds-canvas/80 px-16 backdrop-blur-xl backdrop-saturate-150 md:hidden">
         <Logo />
         <div className="flex items-center gap-8">
-          {role === "warehouse" && (
+          {/* The demo's warehouse name. A live warehouse has its own places, not this one. */}
+          {role === "warehouse" && !live && (
             <span className="flex items-center gap-6 rounded-full bg-ds-bg px-12 py-8 text-[12.5px] font-medium">
               <Warehouse size={14} />
               Harbor Hub
