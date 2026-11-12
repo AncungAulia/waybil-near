@@ -9,8 +9,15 @@ import {
   type QueueEntry,
   type Shipment,
 } from "@waybil/shared";
-import { ArrowLineDown, Clock, Package, SealCheck } from "@phosphor-icons/react";
+import {
+  ArrowLineDown,
+  Clock,
+  ClockCounterClockwise,
+  Package,
+  SealCheck,
+} from "@phosphor-icons/react";
 import { Panel } from "@/components/layout/Panel";
+import { FILL_UNDER_HEADER, FillEmpty } from "@/components/elements/EmptyState";
 import { Money } from "@/components/elements/Money";
 import { FanMeter } from "@/components/elements/FanMeter";
 import { StatusPill } from "@/components/elements/StatusPill";
@@ -211,62 +218,56 @@ export function LiveDeliveries({ deliveries }: { deliveries: Shipment[] }) {
           ))}
         </div>
       )}
-      <Panel
-        gap={4}
-        className={cn(
-          "px-20 py-8",
-          deliveries.length === 0 && "min-h-[calc(100dvh-330px)] md:min-h-[calc(100dvh-290px)]",
-        )}
-      >
-        {deliveries.length === 0 ? (
-          <div className="grid min-h-360 flex-1 place-content-center gap-16 text-center">
-            <img src="/illustrations/investor.svg" alt="" className="mx-auto h-96" />
-            <h2 className="text-heading">No deliveries yet</h2>
-            <p className="max-w-340 text-label text-ds-muted">
-              When the pool pays a driver early, the delivery shows up here with its proof.
-            </p>
+      {deliveries.length === 0 ? (
+        <FillEmpty
+          image="/illustrations/investor.svg"
+          title="No deliveries yet"
+          body="When the pool pays a driver early, the delivery shows up here with its proof."
+          className={FILL_UNDER_HEADER}
+        />
+      ) : (
+        <Panel gap={4} className="px-20 py-8">
+          <div className="hidden gap-16 py-12 text-caption text-ds-muted md:grid md:grid-cols-[1fr_140px_150px_170px]">
+            <span>Delivery</span>
+            <span>Paid early</span>
+            <span>Status</span>
+            <span>Bill</span>
           </div>
-        ) : (
-          <>
-            <div className="hidden gap-16 py-12 text-caption text-ds-muted md:grid md:grid-cols-[1fr_140px_150px_170px]">
-              <span>Delivery</span>
-              <span>Paid early</span>
-              <span>Status</span>
-              <span>Bill</span>
-            </div>
-            {shown.map((s) => (
-              <Link
-                href={`/pool/deliveries/${s.id}`}
-                key={s.id}
-                className="tap focus-ring grid items-center gap-10 py-14 hover:bg-ds-canvas md:grid-cols-[1fr_140px_150px_170px] md:gap-16"
-              >
-                <span className="flex min-w-0 items-center gap-12">
-                  <span className="grid size-40 shrink-0 place-items-center rounded-full bg-ds-canvas">
-                    <Package size={17} />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-body break-all">{name(s.shipper)}</span>
-                    <span className="block text-caption break-all text-ds-muted">
-                      #{s.id} · {name(s.driver)}
-                    </span>
+          {shown.length === 0 && (
+            <p className="py-14 text-label text-ds-muted">No delivery fits this filter yet.</p>
+          )}
+          {shown.map((s) => (
+            <Link
+              href={`/pool/deliveries/${s.id}`}
+              key={s.id}
+              className="tap focus-ring grid items-center gap-10 py-14 hover:bg-ds-canvas md:grid-cols-[1fr_140px_150px_170px] md:gap-16"
+            >
+              <span className="flex min-w-0 items-center gap-12">
+                <span className="grid size-40 shrink-0 place-items-center rounded-full bg-ds-canvas">
+                  <Package size={17} />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-body break-all">{name(s.shipper)}</span>
+                  <span className="block text-caption break-all text-ds-muted">
+                    #{s.id} · {name(s.driver)}
                   </span>
                 </span>
-                <Money amount={s.advance} className="text-label" />
-                <span className="justify-self-start">
-                  <StatusPill status={statusChip(s)} />
-                </span>
-                <p className="text-label text-ds-ink-2">
-                  {s.status === "Repaid"
-                    ? `Paid back ${day(s.repaid_at)}`
-                    : s.status === "CoveredByReserve"
-                      ? "Covered by the reserve"
-                      : `Bill due ${day(s.due_at)}`}
-                </p>
-              </Link>
-            ))}
-          </>
-        )}
-      </Panel>
+              </span>
+              <Money amount={s.advance} className="text-label" />
+              <span className="justify-self-start">
+                <StatusPill status={statusChip(s)} />
+              </span>
+              <p className="text-label text-ds-ink-2">
+                {s.status === "Repaid"
+                  ? `Paid back ${day(s.repaid_at)}`
+                  : s.status === "CoveredByReserve"
+                    ? "Covered by the reserve"
+                    : `Bill due ${day(s.due_at)}`}
+              </p>
+            </Link>
+          ))}
+        </Panel>
+      )}
     </>
   );
 }
@@ -422,49 +423,58 @@ export function LiveHistory({ accountId, queue }: { accountId: string; queue: Qu
           ))}
         </Panel>
       )}
-      <Panel gap={4} className="px-20 py-8">
-        {failed && !data ? (
-          <div className="flex flex-col items-start gap-12 py-14">
-            <p className="text-label text-ds-muted">
-              We could not load your history right now. Try again in a minute.
-            </p>
-            <button className="link focus-ring text-label" onClick={reload}>
-              Try again
-            </button>
-          </div>
-        ) : !data ? (
-          <SkeletonGroup label="Loading your history.">
-            <SkeletonRow />
-            <SkeletonRow />
-            <SkeletonRow />
-            <SkeletonRow />
-          </SkeletonGroup>
-        ) : data.items.length === 0 ? (
-          <p className="py-14 text-label text-ds-muted">
-            Nothing yet. Your first deposit shows up here.
-          </p>
-        ) : (
-          data.items.map((item) => (
-            <div
-              key={`${item.txHash}-${item.kind}-${item.at}`}
-              className="flex items-center gap-12 py-14"
-            >
-              <span className="grid size-38 shrink-0 place-items-center rounded-full bg-ds-canvas">
-                {item.kind === "deposit" ? <ArrowLineDown size={16} /> : <Clock size={16} />}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-body">{KIND[item.kind].label}</span>
-                <span className="block text-caption text-ds-muted">{isoDay(item.at)}</span>
-                <ProofLink tx={item.txHash} className="text-caption" />
-              </span>
-              <span className="shrink-0 text-label tabular-nums">
-                {KIND[item.kind].sign}
-                <Money amount={item.amount} />
-              </span>
+      {data && data.items.length === 0 && mine.length === 0 ? (
+        <FillEmpty
+          icon={<ClockCounterClockwise size={26} />}
+          title="Nothing here yet"
+          body="Your first deposit shows up here, with its proof."
+          className={FILL_UNDER_HEADER}
+        />
+      ) : (
+        <Panel gap={4} className="px-20 py-8">
+          {failed && !data ? (
+            <div className="flex flex-col items-start gap-12 py-14">
+              <p className="text-label text-ds-muted">
+                We could not load your history right now. Try again in a minute.
+              </p>
+              <button className="link focus-ring text-label" onClick={reload}>
+                Try again
+              </button>
             </div>
-          ))
-        )}
-      </Panel>
+          ) : !data ? (
+            <SkeletonGroup label="Loading your history.">
+              <SkeletonRow />
+              <SkeletonRow />
+              <SkeletonRow />
+              <SkeletonRow />
+            </SkeletonGroup>
+          ) : data.items.length === 0 ? (
+            <p className="py-14 text-label text-ds-muted">
+              Nothing yet. Your first deposit shows up here.
+            </p>
+          ) : (
+            data.items.map((item) => (
+              <div
+                key={`${item.txHash}-${item.kind}-${item.at}`}
+                className="flex items-center gap-12 py-14"
+              >
+                <span className="grid size-38 shrink-0 place-items-center rounded-full bg-ds-canvas">
+                  {item.kind === "deposit" ? <ArrowLineDown size={16} /> : <Clock size={16} />}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-body">{KIND[item.kind].label}</span>
+                  <span className="block text-caption text-ds-muted">{isoDay(item.at)}</span>
+                  <ProofLink tx={item.txHash} className="text-caption" />
+                </span>
+                <span className="shrink-0 text-label tabular-nums">
+                  {KIND[item.kind].sign}
+                  <Money amount={item.amount} />
+                </span>
+              </div>
+            ))
+          )}
+        </Panel>
+      )}
     </>
   );
 }

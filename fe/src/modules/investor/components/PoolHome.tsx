@@ -4,6 +4,8 @@ import { Panel } from "@/components/layout/Panel";
 import { Button } from "@/components/ui/Button";
 import { Money } from "@/components/elements/Money";
 import { FanMeter, MeterLegend } from "@/components/elements/FanMeter";
+import { Skeleton } from "@/components/elements/Skeleton";
+import { cn } from "@/lib/cn";
 import { formatNumber } from "@/lib/format";
 import type { DemoPoolBalance } from "../data/demo";
 import { queueCash, queuePosition, type LivePool } from "../data/live";
@@ -43,6 +45,8 @@ export function PoolHome({
   onPayQueue: () => void;
 }) {
   const live = liveAccount !== null;
+  /* Live numbers wait for testnet. Until they arrive the cards show skeletons, never a 0.00. */
+  const loading = live && !data;
   return (
     <div className="flex flex-col gap-16 md:gap-24">
       <header>
@@ -63,19 +67,35 @@ export function PoolHome({
           <p className="text-label text-ds-line">Your money in the pool</p>
           {/* The amount scales with the card so it fits a 320 px phone. It reaches full size by 390. */}
           <div className="@container">
-            <Money
-              amount={balance.value}
-              className="text-[clamp(26px,14cqw,36px)] font-medium tracking-tight md:text-amount"
-            />
+            {loading ? (
+              <span className="flex h-[clamp(39px,21cqw,54px)] items-center md:h-54">
+                <Skeleton className="h-32 w-200 max-w-full bg-ds-bg/15" />
+              </span>
+            ) : (
+              <Money
+                amount={balance.value}
+                className="text-[clamp(26px,14cqw,36px)] font-medium tracking-tight md:text-amount"
+              />
+            )}
           </div>
           <p className="text-label text-ds-brand">
-            {firstVisit
-              ? "Deposit USDC to start earning."
-              : live
-                ? `Your share is ${share}%.`
-                : `Your share is ${share}%. You earned 9.72 USDC in this sample.`}
+            {loading ? (
+              <Skeleton className="my-3 w-140 bg-ds-bg/15" />
+            ) : firstVisit ? (
+              "Deposit USDC to start earning."
+            ) : live ? (
+              `Your share is ${share}%.`
+            ) : (
+              `Your share is ${share}%. You earned 9.72 USDC in this sample.`
+            )}
           </p>
-          <div className="flex flex-col gap-10 md:flex-row [&>button]:justify-between">
+          {/* On a phone the two actions share the width, half each. */}
+          <div
+            className={cn(
+              "grid gap-10 md:flex [&>button]:min-w-0 [&>button]:justify-between",
+              !firstVisit && "grid-cols-2",
+            )}
+          >
             <Button variant="moment" icon={<Plus size={17} />} onClick={onDeposit}>
               Deposit
             </Button>
@@ -102,20 +122,34 @@ export function PoolHome({
         <Panel
           title="The pool"
           action={
-            <span className="text-caption text-ds-muted">
-              {Math.round(utilization * 100)}% paid out
-            </span>
+            loading ? (
+              <Skeleton className="h-10 w-72" />
+            ) : (
+              <span className="text-caption text-ds-muted">
+                {Math.round(utilization * 100)}% paid out
+              </span>
+            )
           }
         >
           <div className="@container flex flex-col gap-4">
-            <Money
-              amount={balance.total}
-              className="text-[clamp(26px,13cqw,40px)] leading-[1.1] font-medium tracking-[-0.035em]"
-            />
+            {loading ? (
+              <span className="flex h-[clamp(29px,14.3cqw,44px)] items-center">
+                <Skeleton className="h-28 w-220 max-w-full" />
+              </span>
+            ) : (
+              <Money
+                amount={balance.total}
+                className="text-[clamp(26px,13cqw,40px)] leading-[1.1] font-medium tracking-[-0.035em]"
+              />
+            )}
             <p className="text-caption text-ds-muted">
-              {busy && !live
-                ? "23,000.00 is paid out early and 2,000.00 is free."
-                : `${formatUsdc(BigInt(balance.total) - BigInt(balance.cash))} USDC is paid out early. ${formatUsdc(BigInt(balance.cash))} USDC is free.`}
+              {loading ? (
+                <Skeleton className="my-3 h-10 w-260 max-w-full" />
+              ) : busy && !live ? (
+                "23,000.00 is paid out early and 2,000.00 is free."
+              ) : (
+                `${formatUsdc(BigInt(balance.total) - BigInt(balance.cash))} USDC is paid out early. ${formatUsdc(BigInt(balance.cash))} USDC is free.`
+              )}
             </p>
           </div>
           <div className="py-20">

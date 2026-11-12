@@ -163,12 +163,27 @@ function ApplicationCard({
               ? "The assistant gives no limit. Check the papers."
               : "The private check is still running."}
       </p>
-      <div className="admin-card-actions flex items-center justify-between gap-10">
-        <ButtonLink variant="secondary" href={`/admin/shippers/${a.shipperId}`}>
-          View details
+      {/* On a phone the actions share the full width, half each when there are two. */}
+      <div
+        className={cn(
+          "admin-card-actions grid gap-10 md:flex md:items-center md:justify-between",
+          a.proposalId === null && "grid-cols-2",
+        )}
+      >
+        <ButtonLink
+          variant="secondary"
+          href={`/admin/shippers/${a.shipperId}`}
+          className="w-full min-w-0 md:w-auto"
+        >
+          <span className="md:hidden">Details</span>
+          <span className="hidden md:inline">View details</span>
         </ButtonLink>
         {a.proposalId === null && (
-          <Button icon={<Scales size={17} />} onClick={onDecide}>
+          <Button
+            icon={<Scales size={17} />}
+            className="w-full min-w-0 md:w-auto"
+            onClick={onDecide}
+          >
             Decide
           </Button>
         )}

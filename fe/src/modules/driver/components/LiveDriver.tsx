@@ -3,7 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatUsdc, type Shipment } from "@waybil/shared";
-import { Copy, Package, Truck } from "@phosphor-icons/react";
+import { ArrowDown, Buildings, Copy, Package, Truck } from "@phosphor-icons/react";
 import { RoleShell } from "@/components/layout/RoleShell";
 import { Panel } from "@/components/layout/Panel";
 import { Button } from "@/components/ui/Button";
@@ -12,6 +12,7 @@ import { StatusPill } from "@/components/elements/StatusPill";
 import { DeliveryQr } from "@/components/elements/DeliveryQr";
 import { ProofLink } from "@/components/elements/ProofLink";
 import { BackLink } from "@/components/elements/BackLink";
+import { FILL_UNDER_HEADER, FillEmpty } from "@/components/elements/EmptyState";
 import { SkeletonGroup, SkeletonHeader, SkeletonListPanel } from "@/components/elements/Skeleton";
 import { useLive } from "@/hooks/useLive";
 import { useNames } from "@/hooks/useNames";
@@ -130,13 +131,12 @@ function Trips({ trips }: { trips: Shipment[] }) {
         </p>
       </header>
       {trips.length === 0 ? (
-        <Panel className="grid min-h-320 place-content-center gap-12 text-center">
-          <img src="/illustrations/driver.svg" alt="" className="mx-auto h-96" />
-          <h2 className="text-heading">No trips yet</h2>
-          <p className="mx-auto max-w-340 text-label text-ds-muted">
-            When a company sends you a trip, it shows up here.
-          </p>
-        </Panel>
+        <FillEmpty
+          image="/illustrations/driver.svg"
+          title="No trips yet"
+          body="When a company sends you a trip, it shows up here."
+          className={FILL_UNDER_HEADER}
+        />
       ) : (
         <>
           <Panel title="Open trips" gap={4}>
@@ -307,32 +307,37 @@ function Payouts({ trips }: { trips: Shipment[] }) {
         <h1 className="text-title">Payouts</h1>
         <p className="mt-6 text-label text-ds-muted">Money you got the moment goods arrived.</p>
       </header>
-      <Panel title="Total paid">
-        <Money amount={String(total)} className="text-amount" />
-      </Panel>
-      <Panel gap={4}>
-        {paid.length === 0 ? (
-          <p className="py-12 text-label text-ds-muted">
-            No payouts yet. You get paid when a warehouse confirms your delivery.
-          </p>
-        ) : (
-          paid.map((s) => (
-            <Link
-              key={s.id}
-              href={`/driver/trips/${s.id}`}
-              className="tap focus-ring -mx-12 flex items-center justify-between gap-12 rounded-row px-12 py-12 hover:bg-ds-canvas"
-            >
-              <span className="min-w-0">
-                <span className="block text-label">Trip #{s.id}</span>
-                <span className="block text-caption break-all text-ds-muted">
-                  {day(s.paid_at)} · {name(s.shipper)}
+      {paid.length === 0 ? (
+        <FillEmpty
+          icon={<ArrowDown size={26} />}
+          title="No payouts yet"
+          body="You get paid the moment a warehouse confirms your delivery."
+          className={FILL_UNDER_HEADER}
+        />
+      ) : (
+        <>
+          <Panel title="Total paid">
+            <Money amount={String(total)} className="text-amount" />
+          </Panel>
+          <Panel gap={4}>
+            {paid.map((s) => (
+              <Link
+                key={s.id}
+                href={`/driver/trips/${s.id}`}
+                className="tap focus-ring -mx-12 flex items-center justify-between gap-12 rounded-row px-12 py-12 hover:bg-ds-canvas"
+              >
+                <span className="min-w-0">
+                  <span className="block text-label">Trip #{s.id}</span>
+                  <span className="block text-caption break-all text-ds-muted">
+                    {day(s.paid_at)} · {name(s.shipper)}
+                  </span>
                 </span>
-              </span>
-              <Money amount={s.advance} className="shrink-0 text-label" />
-            </Link>
-          ))
-        )}
-      </Panel>
+                <Money amount={s.advance} className="shrink-0 text-label" />
+              </Link>
+            ))}
+          </Panel>
+        </>
+      )}
     </>
   );
 }
@@ -347,22 +352,25 @@ function Companies({ trips }: { trips: Shipment[] }) {
         <h1 className="text-title">Companies</h1>
         <p className="mt-6 text-label text-ds-muted">The companies that send you trips.</p>
       </header>
-      <Panel gap={4}>
-        {companies.length === 0 ? (
-          <p className="py-12 text-label text-ds-muted">
-            No company has sent you a trip yet. Accept an invite link to work with one.
-          </p>
-        ) : (
-          companies.map((c) => (
+      {companies.length === 0 ? (
+        <FillEmpty
+          icon={<Buildings size={26} />}
+          title="No companies yet"
+          body="Accept an invite link from a company to start getting trips from it."
+          className={FILL_UNDER_HEADER}
+        />
+      ) : (
+        <Panel gap={4}>
+          {companies.map((c) => (
             <div key={c} className="py-12">
               <p className="text-label break-all">{name(c)}</p>
               <p className="text-caption text-ds-muted">
                 {trips.filter((s) => s.shipper === c).length} trips
               </p>
             </div>
-          ))
-        )}
-      </Panel>
+          ))}
+        </Panel>
+      )}
     </>
   );
 }

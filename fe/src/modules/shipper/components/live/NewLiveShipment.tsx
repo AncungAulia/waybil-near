@@ -7,6 +7,7 @@ import { Panel } from "@/components/layout/Panel";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Money } from "@/components/elements/Money";
+import { FillEmpty } from "@/components/elements/EmptyState";
 import { WAYBIL_CONTRACT } from "@/lib/env";
 import { listShipmentsByShipper } from "@/lib/near";
 import { callContract } from "@/lib/wallet";
@@ -86,14 +87,17 @@ export function NewLiveShipment({ data, refresh }: { data: LiveShipperData; refr
         </p>
       </header>
       {empty ? (
-        <Panel className="grid min-h-240 place-content-center gap-12 text-center">
-          <p className="max-w-380 text-label text-ds-muted">
-            You need a driver and a destination in your network first.
-          </p>
-          <ButtonLink href="/shipper/network" className="mx-auto" icon={<UserPlus size={17} />}>
-            Open your network
-          </ButtonLink>
-        </Panel>
+        <FillEmpty
+          image="/illustrations/network/empty-driver.svg"
+          title="Add a driver and a destination first"
+          body="A shipment goes from a driver in your network to one of your destinations."
+          action={
+            <ButtonLink href="/shipper/network" icon={<UserPlus size={17} />}>
+              Open your network
+            </ButtonLink>
+          }
+          className="min-h-[calc(100dvh-338px)] md:min-h-[calc(100dvh-284px)] lg:min-h-[calc(100dvh-292px)]"
+        />
       ) : (
         <div className="grid items-start gap-24 lg:grid-cols-[minmax(0,1fr)_400px]">
           <Panel title="Trip">

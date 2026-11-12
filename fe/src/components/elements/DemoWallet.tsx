@@ -12,6 +12,7 @@ import { USDC_CONTRACT } from "@/lib/env";
 import { usdcBalance, view } from "@/lib/near";
 import { callContract, disconnectWallet } from "@/lib/wallet";
 import { useAuth } from "@/providers/AuthProvider";
+import { Skeleton } from "./Skeleton";
 export type DemoWalletState = "G1" | "G2" | "G3" | "G4" | "G5" | "X6" | "X7";
 
 /*
@@ -197,7 +198,18 @@ export function DemoWallet({
         </div>
         <div className="flex flex-col gap-4 rounded-[16px] bg-ds-canvas px-16 py-14">
           <p className="text-[12.5px] leading-[1.45] text-ds-muted">USDC</p>
-          <Money amount={String(shownBalance)} className="text-[22px] leading-[1.2] font-medium" />
+          {/* Until the real balance arrives, a shimmer holds its place instead of a false 0.00. */}
+          {live && real.balance === null ? (
+            <span role="status" aria-busy="true" className="flex h-[26.4px] items-center">
+              <Skeleton className="h-20 w-160 bg-ds-surface-3" />
+              <span className="sr-only">Loading your USDC balance.</span>
+            </span>
+          ) : (
+            <Money
+              amount={String(shownBalance)}
+              className="text-[22px] leading-[1.2] font-medium"
+            />
+          )}
           <p className="text-[11.5px] leading-[1.45] text-ds-muted">For bills and deposits</p>
         </div>
         <div className="h-1 bg-ds-line" />

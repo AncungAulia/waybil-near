@@ -203,7 +203,11 @@ export function ShipperDetail({ account }: { account: string }) {
           </p>
         </div>
         {!shipper && application && application.proposalId === null && (
-          <Button icon={<Scales size={17} />} onClick={() => setSheet("decide")}>
+          <Button
+            icon={<Scales size={17} />}
+            className="w-full md:w-auto"
+            onClick={() => setSheet("decide")}
+          >
             Decide
           </Button>
         )}
@@ -237,7 +241,8 @@ export function ShipperDetail({ account }: { account: string }) {
                 }
               />
               <Fact label="Late bills" value={String(shipper.late_bills)} />
-              <div className="flex flex-wrap gap-10 pt-8">
+              {/* On a phone the two actions stack at full width, so neither label is cut. */}
+              <div className="grid gap-10 pt-8 md:flex md:flex-wrap">
                 <Button
                   variant="secondary"
                   onClick={() => {

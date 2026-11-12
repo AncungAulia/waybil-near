@@ -16,6 +16,8 @@ import { CaretDown, CaretUpDown, Check, MagnifyingGlass } from "@phosphor-icons/
 const MAX_SHOWN = 300;
 /* About the height of the open list (search box plus the scrolling rows). */
 const LIST_ROOM = 360;
+/* The search box, the gaps around the list and a little air from the edge. */
+const SEARCH_ROOM = 84;
 type Option = { value: string; label: string; flag?: string; detail?: string };
 /** A flag is an image path, or an emoji drawn from the ISO2 code when no image exists. */
 function Flag({ flag }: { flag: string }) {
@@ -98,6 +100,8 @@ export function SearchPicker({
    * list spill out, because its focus trap would close the sheet or block the search box.
    */
   const [up, setUp] = useState(false);
+  /* The rows get only the room there is, so the search box always stays in view. */
+  const [room, setRoom] = useState<number | null>(null);
   useLayoutEffect(() => {
     if (!open || !trigger.current) return;
     const rect = trigger.current.getBoundingClientRect();
@@ -111,7 +115,11 @@ export function SearchPicker({
       break;
     }
     const below = bottom - rect.bottom;
-    setUp(below < LIST_ROOM && rect.top - top > below);
+    const above = rect.top - top;
+    const flip = below < LIST_ROOM && above > below;
+    setUp(flip);
+    /* The space in that direction, less the search box, the gaps and a little air. */
+    setRoom(Math.max(120, Math.floor((flip ? above : below) - SEARCH_ROOM)));
   }, [open]);
   const needle = query.trim().toLowerCase();
   const matches = options.filter((o) =>
@@ -273,6 +281,11 @@ export function SearchPicker({
             role="listbox"
             aria-label={label}
             className={cn("max-h-220 overflow-y-auto", appearance === "company" && "max-h-300")}
+            style={
+              room
+                ? { maxHeight: `${Math.min(room, appearance === "company" ? 300 : 220)}px` }
+                : undefined
+            }
           >
             {filtered.length ? (
               filtered.map((o, i) => (

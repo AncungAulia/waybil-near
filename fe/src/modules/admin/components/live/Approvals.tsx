@@ -279,12 +279,18 @@ function ProposalCard({
         {voted ? (
           <p className="text-[13px] leading-16 text-ds-ink-2">Your vote is recorded.</p>
         ) : (
-          <div className="flex w-full flex-col-reverse gap-10 md:w-auto md:flex-row md:gap-12">
-            <Button variant="quiet" className="justify-center" disabled={busy} onClick={onReject}>
+          <div className="grid w-full grid-cols-2 gap-10 md:flex md:w-auto md:gap-12">
+            <Button
+              variant="quiet"
+              className="w-full min-w-0 justify-center md:w-auto"
+              disabled={busy}
+              onClick={onReject}
+            >
               Reject
             </Button>
             <Button
               icon={<Check size={17} weight="bold" />}
+              className="w-full min-w-0 md:w-auto"
               loading={busy}
               loadingLabel="Waiting for wallet"
               onClick={onApprove}

@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { UserPlus } from "@phosphor-icons/react";
+import { Plus, UserPlus } from "@phosphor-icons/react";
 import { Panel } from "@/components/layout/Panel";
 import { Button } from "@/components/ui/Button";
 import { WAYBIL_CONTRACT } from "@/lib/env";
@@ -66,12 +66,24 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
             The drivers and destinations you can send trips to.
           </p>
         </div>
-        <div className="flex gap-10">
-          <Button variant="secondary" onClick={() => setInviting("warehouse")}>
-            Add a destination
+        {/* On a phone the two actions share the full width, half each, with shorter labels. */}
+        <div className="grid w-full grid-cols-2 gap-10 md:flex md:w-auto">
+          <Button
+            variant="secondary"
+            icon={<Plus size={17} />}
+            className="w-full min-w-0 md:w-auto"
+            onClick={() => setInviting("warehouse")}
+          >
+            <span className="md:hidden">Destination</span>
+            <span className="hidden md:inline">Add a destination</span>
           </Button>
-          <Button icon={<UserPlus size={17} />} onClick={() => setInviting("driver")}>
-            Invite a driver
+          <Button
+            icon={<UserPlus size={17} />}
+            className="w-full min-w-0 md:w-auto"
+            onClick={() => setInviting("driver")}
+          >
+            <span className="md:hidden">Invite driver</span>
+            <span className="hidden md:inline">Invite a driver</span>
           </Button>
         </div>
       </header>

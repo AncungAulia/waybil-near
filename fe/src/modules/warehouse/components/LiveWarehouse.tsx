@@ -7,7 +7,7 @@ import type {
   Shipment,
   WarehouseDestinationsResponse,
 } from "@waybil/shared";
-import { Camera, Check, Scan, Truck } from "@phosphor-icons/react";
+import { Camera, Check, Package, Scan, Truck } from "@phosphor-icons/react";
 import { RoleShell } from "@/components/layout/RoleShell";
 import { Panel } from "@/components/layout/Panel";
 import { Button, ButtonLink } from "@/components/ui/Button";
@@ -15,6 +15,12 @@ import { Input } from "@/components/ui/Input";
 import { StatusPill } from "@/components/elements/StatusPill";
 import { QrScanner } from "@/components/elements/QrScanner";
 import { ProofLink } from "@/components/elements/ProofLink";
+import {
+  FILL_PAGE,
+  FILL_UNDER_HEADER,
+  FILL_UNDER_HEADER_ACTION,
+  FillEmpty,
+} from "@/components/elements/EmptyState";
 import { SkeletonGroup, SkeletonHeader, SkeletonListPanel } from "@/components/elements/Skeleton";
 import { useLive } from "@/hooks/useLive";
 import { api, ApiError } from "@/lib/api";
@@ -79,13 +85,13 @@ export function LiveWarehouse({ view, account }: { view: WarehouseView; account:
             <SkeletonListPanel rows={4} title={false} />
           </SkeletonGroup>
         ) : data.destinations.length === 0 ? (
-          <Panel className="grid min-h-320 place-content-center gap-12 text-center">
-            <h1 className="text-heading">No destination yet</h1>
-            <p className="mx-auto max-w-360 text-label text-ds-muted">
-              The company that invited you adds this address to its network. Arrivals show up here
-              after that.
-            </p>
-          </Panel>
+          <FillEmpty
+            as="h1"
+            image="/illustrations/network/empty-warehouse.svg"
+            title="No destination yet"
+            body="The company that invited you adds this address to its network. Arrivals show up here after that."
+            className={FILL_PAGE}
+          />
         ) : view === "scan" ? (
           <ScanAndConfirm account={account} shipments={data.shipments} reload={reload} />
         ) : (
@@ -118,18 +124,30 @@ function List({ history, shipments }: { history: boolean; shipments: Shipment[] 
           </p>
         </div>
         {!history && (
-          <ButtonLink href="/warehouse/scan" icon={<Scan size={17} />}>
+          <ButtonLink href="/warehouse/scan" icon={<Scan size={17} />} className="w-full md:w-auto">
             Scan a delivery
           </ButtonLink>
         )}
       </header>
-      <Panel gap={4}>
-        {shipments.length === 0 ? (
-          <p className="py-12 text-label text-ds-muted">
-            {history ? "No confirmed deliveries yet." : "No trucks are on the way right now."}
-          </p>
+      {shipments.length === 0 ? (
+        history ? (
+          <FillEmpty
+            icon={<Package size={26} />}
+            title="Nothing received yet"
+            body="Deliveries you confirm or report show up here."
+            className={FILL_UNDER_HEADER}
+          />
         ) : (
-          shipments.map((s) => (
+          <FillEmpty
+            image="/illustrations/warehouse/empty.svg"
+            title="No trucks on the way"
+            body="When a company sends a trip to you, it shows up here with the driver’s name."
+            className={FILL_UNDER_HEADER_ACTION}
+          />
+        )
+      ) : (
+        <Panel gap={4}>
+          {shipments.map((s) => (
             <div key={s.id} className="flex items-center gap-12 py-12">
               <span className="grid size-40 shrink-0 place-items-center rounded-full bg-ds-canvas">
                 <Truck size={18} />
@@ -143,9 +161,9 @@ function List({ history, shipments }: { history: boolean; shipments: Shipment[] 
               </span>
               <StatusPill status={statusChip(s)} />
             </div>
-          ))
-        )}
-      </Panel>
+          ))}
+        </Panel>
+      )}
     </>
   );
 }
