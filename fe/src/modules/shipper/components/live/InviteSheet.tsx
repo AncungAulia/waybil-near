@@ -9,6 +9,8 @@ import { api } from "@/lib/api";
 import { Alert, failure } from "./shared";
 import { PhoneInput } from "@/components/elements/PhoneInput";
 import { PlacePicker } from "@/components/elements/PlacePicker";
+import { RouteMap } from "@/components/elements/RouteMap";
+import { cn } from "@/lib/cn";
 import { RadioCards } from "@/components/ui/RadioCards";
 import { dialCode, phoneError, toE164 } from "@/lib/phone";
 
@@ -38,6 +40,7 @@ export function InviteSheet({
   const e164 = toE164(phone, phoneCountry);
   const phoneOk = !!e164;
   /* A place is a destination (a warehouse that confirms arrivals) or a pickup point (where trucks load). */
+  const placeSheet = type === "warehouse";
   const [kind, setKind] = useState<"destination" | "pickup">("destination");
   const pickup = type === "warehouse" && kind === "pickup";
   const pinned = !!spot.address.trim() && spot.lat != null && spot.lng != null;
@@ -88,7 +91,12 @@ export function InviteSheet({
   }
 
   return (
-    <ActionSheet title={type === "driver" ? "Invite a driver" : "Add a place"} onClose={onClose}>
+    <ActionSheet
+      title={type === "driver" ? "Invite a driver" : "Add a place"}
+      onClose={onClose}
+      /* On a wide screen a place sheet puts the form on the left and a large map on the right. */
+      className={cn(placeSheet && !link && "lg:w-1000")}
+    >
       {link ? (
         <>
           <p className="text-label">
@@ -114,65 +122,77 @@ export function InviteSheet({
         </>
       ) : (
         <>
-          {type === "warehouse" && (
-            <RadioCards
-              name="place-kind"
-              options={[
-                {
-                  value: "destination",
-                  title: "Destination",
-                  body: "A warehouse that receives goods and confirms each arrival.",
-                },
-                {
-                  value: "pickup",
-                  title: "Pickup point",
-                  body: "Where trucks load your goods, such as a factory or a depot.",
-                },
-              ]}
-              value={kind}
-              onChange={setKind}
-            />
-          )}
-          <Input
-            label={
-              type === "driver"
-                ? "Driver’s name"
-                : pickup
-                  ? "Pickup point name"
-                  : "Destination name"
-            }
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-          {!pickup && (
-            <PhoneInput
-              label={type === "driver" ? "WhatsApp number" : "Receiver’s WhatsApp number"}
-              value={phone}
-              onChange={setPhone}
-              code={dialCode(phoneCountry)}
-              onCodeChange={() => {}}
-              country={phoneCountry}
-              onCountryChange={setPhoneCountry}
-              showHint={false}
-              error={
-                phone.replace(/\D/g, "").length > 5 && !phoneOk
-                  ? phoneError(phone, phoneCountry)
-                  : undefined
-              }
-            />
-          )}
-          {type === "warehouse" && (
-            <PlacePicker
-              label="Address"
-              value={spot}
-              onChange={setSpot}
-              hint={
-                pickup
-                  ? "Trucks load your goods here."
-                  : "The warehouse here confirms each arrival."
-              }
-            />
-          )}
+          <div className={cn("grid gap-16", placeSheet && "lg:grid-cols-2 lg:gap-28")}>
+            <div className="flex min-w-0 flex-col gap-16">
+              {type === "warehouse" && (
+                <RadioCards
+                  name="place-kind"
+                  options={[
+                    {
+                      value: "destination",
+                      title: "Destination",
+                      body: "A warehouse that receives goods and confirms each arrival.",
+                    },
+                    {
+                      value: "pickup",
+                      title: "Pickup point",
+                      body: "Where trucks load your goods, such as a factory or a depot.",
+                    },
+                  ]}
+                  value={kind}
+                  onChange={setKind}
+                />
+              )}
+              <Input
+                label={
+                  type === "driver"
+                    ? "Driver’s name"
+                    : pickup
+                      ? "Pickup point name"
+                      : "Destination name"
+                }
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+              {!pickup && (
+                <PhoneInput
+                  label={type === "driver" ? "WhatsApp number" : "Receiver’s WhatsApp number"}
+                  value={phone}
+                  onChange={setPhone}
+                  code={dialCode(phoneCountry)}
+                  onCodeChange={() => {}}
+                  country={phoneCountry}
+                  onCountryChange={setPhoneCountry}
+                  showHint={false}
+                  error={
+                    phone.replace(/\D/g, "").length > 5 && !phoneOk
+                      ? phoneError(phone, phoneCountry)
+                      : undefined
+                  }
+                />
+              )}
+              {type === "warehouse" && (
+                <PlacePicker
+                  label="Address"
+                  value={spot}
+                  onChange={setSpot}
+                  hint={
+                    pickup
+                      ? "Trucks load your goods here."
+                      : "The warehouse here confirms each arrival."
+                  }
+                  showMap={false}
+                />
+              )}
+            </div>
+            {placeSheet && (
+              <RouteMap
+                pin={spot.lat != null && spot.lng != null ? { lat: spot.lat, lng: spot.lng } : null}
+                onPick={(lat, lng) => setSpot((s) => ({ ...s, lat, lng }))}
+                className="h-240 w-full lg:h-full lg:min-h-440"
+              />
+            )}
+          </div>
           {error && <Alert>{error}</Alert>}
           <Button
             disabled={!ready}

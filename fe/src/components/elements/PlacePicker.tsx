@@ -27,11 +27,14 @@ export function PlacePicker({
   value,
   onChange,
   hint,
+  showMap = true,
 }: {
   label: string;
   value: { address: string; lat: number | null; lng: number | null };
   onChange: (next: { address: string; lat: number | null; lng: number | null }) => void;
   hint?: string;
+  /** False when the screen draws the map elsewhere, for example beside a wide form. */
+  showMap?: boolean;
 }) {
   const [results, setResults] = useState<PlaceSuggestion[]>([]);
   const [searching, setSearching] = useState(false);
@@ -120,11 +123,13 @@ export function PlacePicker({
           </ul>
         )}
       </div>
-      <RouteMap
-        pin={pin}
-        onPick={(lat, lng) => onChange({ ...value, lat, lng })}
-        className={cn("h-220 w-full")}
-      />
+      {showMap && (
+        <RouteMap
+          pin={pin}
+          onPick={(lat, lng) => onChange({ ...value, lat, lng })}
+          className={cn("h-220 w-full")}
+        />
+      )}
     </div>
   );
 }
