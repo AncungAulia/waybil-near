@@ -99,3 +99,15 @@ export interface TripsResponse {
 export const LOCATION_STALE_MS = 10 * 60 * 1000;
 /** The driver's phone sends at most one point in this time. */
 export const LOCATION_EVERY_MS = 30 * 1000;
+
+/** GET /v1/trips/:shipmentId/code: the code the driver shows at the destination. */
+export interface ArrivalCodeResponse {
+  code: string;
+}
+/** POST /v1/arrivals/lookup */
+export interface ArrivalLookup {
+  code: string;
+}
+export interface ArrivalLookupResponse {
+  shipmentId: number;
+}

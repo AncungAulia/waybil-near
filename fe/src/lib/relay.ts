@@ -149,6 +149,8 @@ export async function relay(
   senderId: string,
   methodName: DelegateAction["methodName"],
   args: object,
+  /** The code the driver showed, which a delivery confirmation must carry. */
+  arrivalCode?: string,
 ): Promise<RelayResponse> {
   const key = await deviceKey();
   const publicKey = base58ToBytes(key.publicKey.replace(/^ed25519:/, ""));
@@ -170,7 +172,9 @@ export async function relay(
   let rebuilt = false;
   for (let tries = 0; tries < 40; tries++) {
     try {
-      const result = await api<RelayResponse>("/relay", { body: { signedDelegate } });
+      const result = await api<RelayResponse>("/relay", {
+        body: { signedDelegate, ...(arrivalCode && { arrivalCode }) },
+      });
       if (result.status !== "pending") return result;
       /* There is no status GET. Sending the same delegate again is safe and reports it. */
       await wait(2000);
@@ -188,14 +192,11 @@ export async function relay(
 }
 
 /*
- * The arrival code. No spec defines it yet (#80, open question 2), so it is the shipment id
- * in base 36, eight characters long. The backend still checks that the caller is that
- * destination's warehouse and that the truck has picked the shipment up.
+ * The arrival code is random and kept by the backend (docs/specs/backend-api.md, "Arrival
+ * codes"). This only tidies what a person typed or scanned: upper case, no spaces, and the
+ * 8 characters the backend uses (no 0, 1, I, L or O). Anything else is null.
  */
-export const arrivalCode = (id: number) => id.toString(36).toUpperCase().padStart(8, "0");
-export function shipmentFromCode(code: string) {
-  const clean = code.trim().toUpperCase();
-  if (!/^[0-9A-Z]{8}$/.test(clean)) return null;
-  const id = parseInt(clean, 36);
-  return Number.isSafeInteger(id) && id > 0 ? id : null;
+export function cleanArrivalCode(value: string) {
+  const code = value.replace(/\s+/g, "").toUpperCase();
+  return /^[2-9A-HJ-KM-NP-Z]{8}$/.test(code) ? code : null;
 }

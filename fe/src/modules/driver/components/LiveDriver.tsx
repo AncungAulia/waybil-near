@@ -18,6 +18,7 @@ import { sharingNote, useShareLocation } from "@/hooks/useShareLocation";
 import { directionsUrl, duration } from "@/lib/route";
 import { FILL_UNDER_HEADER, FillEmpty } from "@/components/elements/EmptyState";
 import {
+  Skeleton,
   SkeletonGroup,
   SkeletonHeader,
   SkeletonListPanel,
@@ -25,10 +26,11 @@ import {
 } from "@/components/elements/Skeleton";
 import { useLive } from "@/hooks/useLive";
 import { useNames } from "@/hooks/useNames";
-import { ApiError } from "@/lib/api";
+import { api as apiCall, ApiError } from "@/lib/api";
 import { CONTRACT_RECORD_URL } from "@/lib/env";
 import { listShipmentsByDriver, readAll } from "@/lib/near";
-import { arrivalCode, relay } from "@/lib/relay";
+import { relay } from "@/lib/relay";
+import type { ArrivalCodeResponse } from "@waybil/shared";
 import { statusChip } from "@/lib/status";
 import { cn } from "@/lib/cn";
 
@@ -187,6 +189,12 @@ function Trip({
   const { trips, data: tripData } = useTrips(s ? [s.id] : []);
   const trip = trips[0];
   const sharing = useShareLocation(s?.id, s?.status === "PickedUp");
+  /* The random code the warehouse needs, from the backend, once the goods are on the truck. */
+  const arrival = useLive(
+    () => apiCall<ArrivalCodeResponse>(`/trips/${s!.id}/code`),
+    s?.status === "PickedUp" ? `code-${s.id}` : null,
+  );
+  const code = arrival.data?.code ?? null;
   /* A company with no name set would keep the page waiting, so stop waiting after 3 seconds. */
   const [waited, setWaited] = useState(false);
   useEffect(() => {
@@ -221,7 +229,6 @@ function Trip({
       setBusy(false);
     }
   }
-  const code = arrivalCode(s.id);
   /* The page shows once the trip and the company name are in, so nothing changes under the reader. */
   if (!tripData || (name(s.shipper) === s.shipper && !waited))
     return (
@@ -311,13 +318,25 @@ function Trip({
               <p className="text-label text-ds-muted">
                 The warehouse scans this QR or types the code to confirm the delivery.
               </p>
-              <DeliveryQr code={code} />
-              <p className="text-center font-mono text-[28px] tracking-[0.2em]">{code}</p>
+              {code ? (
+                <>
+                  <DeliveryQr code={code} />
+                  <p className="text-center font-mono text-[28px] tracking-[0.2em]">{code}</p>
+                </>
+              ) : arrival.failed ? (
+                <p role="alert" className="rounded-row bg-ds-danger-result p-14 text-label">
+                  The code could not load. Check your signal and open this trip again.
+                </p>
+              ) : (
+                <Skeleton className="mx-auto h-260 w-220 rounded-row" />
+              )}
               <Button
                 variant="secondary"
                 icon={<Copy size={17} />}
                 className="w-full justify-between"
+                disabled={!code}
                 onClick={async () => {
+                  if (!code) return;
                   try {
                     await navigator.clipboard.writeText(code);
                     setCopied(true);

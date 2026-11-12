@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { BackLink } from "@/components/elements/BackLink";
 import type {
+  ArrivalLookupResponse,
   ReportReason,
   ReportSaved,
   Shipment,
@@ -30,7 +31,7 @@ import { api, ApiError } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { listShipmentsByDestination, readAll } from "@/lib/near";
 import { useNames } from "@/hooks/useNames";
-import { relay, shipmentFromCode } from "@/lib/relay";
+import { cleanArrivalCode, relay } from "@/lib/relay";
 import { statusChip } from "@/lib/status";
 import { DeliveryCodeInput } from "./DeliveryCodeInput";
 import "./warehouse.css";
@@ -199,11 +200,20 @@ function ScanAndConfirm({
   const [done, setDone] = useState<{ tx: string; reported: boolean } | null>(null);
   const name = useNames([found?.driver]);
 
-  function lookUp(value: string) {
-    const id = shipmentFromCode(value);
+  /* The code the driver showed, kept to send with the confirmation. */
+  const [arrivalCode, setArrivalCode] = useState<string | null>(null);
+  /* The backend knows which shipment a random code belongs to, and answers only for ours. */
+  async function lookUp(value: string) {
+    const code = cleanArrivalCode(value);
+    let id: number | null = null;
+    if (code)
+      id = await api<ArrivalLookupResponse>("/arrivals/lookup", { body: { code } })
+        .then((r) => r.shipmentId)
+        .catch(() => null);
     const shipment = shipments.find((s) => s.id === id && s.status === "PickedUp" && !s.arrived_at);
     setNotFound(!shipment);
     if (shipment) {
+      setArrivalCode(code);
       setFound(shipment);
       setGood(String(shipment.qty));
       setCamera(false);
@@ -236,7 +246,7 @@ function ScanAndConfirm({
         photos.forEach((p) => form.append("photos", p));
         args = (await api<ReportSaved>("/reports", { body: form })).confirmArgs;
       }
-      const result = await relay(account, "confirm_delivery", args);
+      const result = await relay(account, "confirm_delivery", args, arrivalCode ?? undefined);
       if (result.status === "failed") throw new Error("failed");
       setDone({ tx: result.txHash, reported: reporting });
       reload();
@@ -300,7 +310,7 @@ function ScanAndConfirm({
               active={camera}
               onCode={(value) => {
                 setCode(value);
-                lookUp(value);
+                void lookUp(value);
               }}
               onBlocked={() => setCamera(false)}
               className="aspect-square w-full max-w-360 self-center overflow-hidden rounded-row"
@@ -311,7 +321,7 @@ function ScanAndConfirm({
             onChange={(value) => {
               setCode(value);
               setNotFound(false);
-              if (value.length === 8) lookUp(value);
+              if (value.length === 8) void lookUp(value);
             }}
             invalid={notFound}
           />
