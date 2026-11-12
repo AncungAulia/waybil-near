@@ -255,16 +255,10 @@ export function ShipperDetail({ account }: { account: string }) {
         <div className="flex min-w-0 flex-col gap-24">
           {shipper ? (
             <>
-              {/* The credit as an ink card with the dotted glow, like the other money cards. */}
-              <section className="relative isolate flex flex-col gap-20 overflow-hidden rounded-card bg-ds-ink p-24 text-ds-bg">
-                <img
-                  src="/illustrations/investor-glow.png"
-                  alt=""
-                  className="pointer-events-none absolute inset-0 -z-10 size-full object-cover"
-                />
+              <section className="flex flex-col gap-20 rounded-card bg-ds-bg p-24">
                 <div className="flex flex-wrap items-start justify-between gap-12">
                   <div>
-                    <p className="text-label text-ds-bg/70">Credit limit</p>
+                    <p className="text-label text-ds-muted">Credit limit</p>
                     <Money amount={shipper.limit} className="mt-4 block text-amount" />
                   </div>
                   <AdminBadge tone={shipper.paused ? "warning" : "success"}>
@@ -273,8 +267,7 @@ export function ShipperDetail({ account }: { account: string }) {
                       : "New trips allowed"}
                   </AdminBadge>
                 </div>
-                {/* The meter sits on a white inset, so its ink ticks show on the dark card. */}
-                <div className="flex flex-col gap-8 rounded-row bg-ds-bg p-16 text-ds-ink">
+                <div className="flex flex-col gap-8">
                   <FanMeter
                     value={usedShare}
                     label="Credit used"
