@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Plus, UserPlus } from "@phosphor-icons/react";
+import { ArrowUpRight, Plus, UserPlus } from "@phosphor-icons/react";
 import { Panel } from "@/components/layout/Panel";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { ActionSheet } from "@/components/layout/ActionSheet";
@@ -243,9 +243,12 @@ function Member({ name, facts, account }: { name: string; facts: string[]; accou
         href={nearblocksUrl(`/address/${account}`)}
         target="_blank"
         rel="noopener noreferrer"
-        className="link focus-ring hidden shrink-0 text-[14px] font-medium sm:inline"
+        aria-label={`See ${name} on NearBlocks`}
+        className="link focus-ring tap grid size-40 shrink-0 place-items-center rounded-full bg-ds-canvas text-[14px] font-medium sm:flex sm:size-auto sm:bg-transparent"
       >
-        See the record on NearBlocks ↗
+        {/* A short label on wider screens, the arrow alone on a phone. */}
+        <span className="hidden sm:inline">NearBlocks ↗</span>
+        <ArrowUpRight size={17} className="sm:hidden" aria-hidden />
       </a>
     </div>
   );
