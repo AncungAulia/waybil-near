@@ -24,7 +24,8 @@ import { StatusPill } from "@/components/elements/StatusPill";
 import { TripMap } from "@/components/elements/TripMap";
 import { TimelineRail, TimelineStep } from "@/components/elements/TimelineStep";
 import { duration, remaining, truckNow } from "@/lib/route";
-import { SkeletonTripPage } from "@/components/elements/Skeleton";
+import { Skeleton, SkeletonTripPage } from "@/components/elements/Skeleton";
+import { RadioCards } from "@/components/ui/RadioCards";
 import { Tag } from "@/components/ui/Tag";
 import { cn } from "@/lib/cn";
 import { useClock, usePlaces, useTrips } from "@/hooks/useTrips";
@@ -75,6 +76,7 @@ export function LiveShipment({ data, id }: { data: LiveShipperData; id: number }
     text: string;
     tx: string;
   } | null>(null);
+  const [settleChoice, setSettleChoice] = useState<"good" | "full" | "other">("good");
   const [sheet, setSheet] = useState<"cancel" | "pay" | "settle" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [amount, setAmount] = useState("");
@@ -247,6 +249,7 @@ export function LiveShipment({ data, id }: { data: LiveShipperData; id: number }
           )}
         </div>
         <div className="flex flex-col gap-16">
+          {s.status === "Reported" && <ReportCard report={report} qty={s.qty} unit={s.unit} />}
           <BillCard
             status={s.status}
             bill={s.bill}
@@ -294,32 +297,6 @@ export function LiveShipment({ data, id }: { data: LiveShipperData; id: number }
           </Panel>
         </div>
       </div>
-      {s.status === "Reported" && report && (
-        <Panel title="Problem report">
-          <p className="text-label">
-            {report.goodQty} of {s.qty} {s.unit} arrived in good shape.{" "}
-            {report.reasons.map((r) => REASONS[r]).join(", ")}.
-          </p>
-          {report.note && <p className="text-label text-ds-ink-2">{report.note}</p>}
-          <div className="flex flex-wrap gap-10">
-            {report.photos.map((p) => (
-              <a
-                key={p.sha256}
-                href={p.signedUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="focus-ring overflow-hidden rounded-small"
-              >
-                <img
-                  src={p.signedUrl}
-                  alt="Photo from the warehouse"
-                  className="size-96 object-cover"
-                />
-              </a>
-            ))}
-          </div>
-        </Panel>
-      )}
       {sheet === "cancel" && (
         <ActionSheet title="Cancel this shipment?" onClose={() => setSheet(null)}>
           <p className="text-label">
@@ -358,24 +335,53 @@ export function LiveShipment({ data, id }: { data: LiveShipperData; id: number }
       {sheet === "settle" && report && (
         <ActionSheet title="Settle the report" onClose={() => setSheet(null)}>
           <p className="text-label text-ds-muted">
-            {report.goodQty} of {s.qty} {s.unit} arrived in good shape. Pay the driver for those, or
-            choose another amount up to {formatUsdc(BigInt(s.advance))} USDC.
+            {report.goodQty} of {s.qty} {s.unit} arrived in good shape. Choose what the driver gets.
+            Your bill changes with it.
           </p>
-          <Input
-            label="The driver gets"
-            suffix="USDC"
-            inputMode="decimal"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            error={
-              amount && !settleOk
-                ? `Enter an amount above zero and up to ${formatUsdc(BigInt(s.advance))} USDC.`
-                : undefined
-            }
+          <RadioCards
+            name="settle"
+            className="sm:grid-cols-1"
+            options={[
+              {
+                value: "good",
+                title: `For the good ${s.unit}`,
+                body: `${formatUsdc(driverAmountForGoodUnits(BigInt(s.bill), report.goodQty, s.qty))} USDC for ${report.goodQty} of ${s.qty}.`,
+              },
+              {
+                value: "full",
+                title: "The full amount",
+                body: `${formatUsdc(BigInt(s.advance))} USDC, as if everything arrived well.`,
+              },
+              { value: "other", title: "Another amount", body: "Type what the driver gets." },
+            ]}
+            value={settleChoice}
+            onChange={(choice) => {
+              setSettleChoice(choice);
+              if (choice === "good")
+                setAmount(
+                  asUsdcInput(driverAmountForGoodUnits(BigInt(s.bill), report.goodQty, s.qty)),
+                );
+              if (choice === "full") setAmount(asUsdcInput(BigInt(s.advance)));
+            }}
           />
+          {settleChoice === "other" && (
+            <Input
+              label="The driver gets"
+              suffix="USDC"
+              inputMode="decimal"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              error={
+                amount && !settleOk
+                  ? `Enter an amount above zero and up to ${formatUsdc(BigInt(s.advance))} USDC.`
+                  : undefined
+              }
+            />
+          )}
           {settleOk && (
             <p className="text-label">
-              Your new bill is {formatUsdc(billForDriverAmount(driverAmount))} USDC.
+              The driver gets {formatUsdc(driverAmount)} USDC. Your new bill is{" "}
+              {formatUsdc(billForDriverAmount(driverAmount))} USDC.
             </p>
           )}
           {error && <Alert>{error}</Alert>}
@@ -587,5 +593,72 @@ function BillRow({
       <span className={strong ? "text-ds-ink" : "text-ds-muted"}>{label}</span>
       <span className="text-right">{children}</span>
     </div>
+  );
+}
+
+/* "12.5" for 12.5 USDC, with no trailing zeros, for an amount field. */
+function asUsdcInput(units: bigint) {
+  const cents = (units % 1000000n).toString().padStart(6, "0").replace(/0+$/, "");
+  return cents ? `${units / 1000000n}.${cents}` : `${units / 1000000n}`;
+}
+
+/*
+ * What the warehouse found, at the top of the right column while the bill is on hold: how much
+ * arrived well, why, the note and the photos. A skeleton holds its place while it loads.
+ */
+function ReportCard({
+  report,
+  qty,
+  unit,
+}: {
+  report: ReportDetail | null | undefined;
+  qty: number;
+  unit: string;
+}) {
+  if (!report)
+    return (
+      <Panel title="Problem report">
+        <Skeleton className="h-16 w-3/4 rounded-small" />
+        <Skeleton className="h-16 w-1/2 rounded-small" />
+        <Skeleton className="h-80 w-full rounded-row" />
+      </Panel>
+    );
+  return (
+    <Panel title="Problem report">
+      <p className="text-label">
+        {report.goodQty} of {qty} {unit} arrived in good shape.
+      </p>
+      <div className="flex flex-wrap gap-6">
+        {report.reasons.map((r) => (
+          <Tag key={r}>{REASONS[r]}</Tag>
+        ))}
+      </div>
+      {report.note && (
+        <blockquote className="rounded-row bg-ds-canvas p-14 text-label text-ds-ink-2">
+          {report.note}
+        </blockquote>
+      )}
+      {report.photos.length > 0 ? (
+        <div className="grid grid-cols-3 gap-8">
+          {report.photos.map((p) => (
+            <a
+              key={p.sha256}
+              href={p.signedUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="focus-ring aspect-square overflow-hidden rounded-small"
+            >
+              <img
+                src={p.signedUrl}
+                alt="Photo from the warehouse"
+                className="size-full object-cover"
+              />
+            </a>
+          ))}
+        </div>
+      ) : (
+        <p className="text-caption text-ds-muted">The warehouse added no photos.</p>
+      )}
+    </Panel>
   );
 }
