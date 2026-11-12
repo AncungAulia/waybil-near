@@ -10,7 +10,9 @@ import {
 import { Scales } from "@phosphor-icons/react";
 import { Panel } from "@/components/layout/Panel";
 import { Button, ButtonLink } from "@/components/ui/Button";
-import { Money } from "@/components/elements/Money";
+import { FanMeter } from "@/components/elements/FanMeter";
+import { Tag } from "@/components/ui/Tag";
+import { accountLabel } from "@/lib/accountLabel";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { getShipper, listProposals } from "@/lib/near";
@@ -37,8 +39,13 @@ export function Shippers() {
     return {
       waiting: applications.filter((a) => ["in_review", "needs_more"].includes(a.state)),
       active: names
-        .map((n, i) => ({ account: n, shipper: shippers[i] }))
-        .filter((r): r is { account: string; shipper: Shipper } => !!r.shipper),
+        .map((n, i) => ({
+          account: n,
+          shipper: shippers[i],
+          /* The name from its application, otherwise the account without ".testnet". */
+          name: applications.find((a) => a.shipperId === n)?.company.name ?? accountLabel(n),
+        }))
+        .filter((r): r is { account: string; shipper: Shipper; name: string } => !!r.shipper),
     };
   }, "shippers");
   const [deciding, setDeciding] = useState<ApplicationListItem | null>(null);
@@ -55,10 +62,11 @@ export function Shippers() {
       {!data ? (
         <Loading label="Loading the shippers." />
       ) : (
-        <div className="grid items-start gap-24 lg:grid-cols-[1fr_420px]">
+        /* Both columns fill the window and end level. */
+        <div className="grid gap-24 lg:min-h-[calc(100dvh-260px)] lg:grid-cols-[1fr_420px]">
           <div className="flex flex-col gap-20">
             {data.waiting.length === 0 ? (
-              <Panel className="admin-empty-applications">
+              <Panel className="admin-empty-applications flex-1 justify-center">
                 <Empty
                   title="No new applications"
                   text="New companies show up here when they apply."
@@ -71,7 +79,11 @@ export function Shippers() {
               ))
             )}
           </div>
-          <Panel title="Active shippers" className="admin-active-list">
+          <Panel
+            title="Active shippers"
+            className="admin-active-list h-full"
+            action={<Tag>{data.active.length} companies</Tag>}
+          >
             {data.active.length === 0 ? (
               <Empty
                 title="No active shippers yet"
@@ -79,35 +91,49 @@ export function Shippers() {
                 icon="company"
               />
             ) : (
-              <div className="flex flex-col gap-4">
-                {data.active.map(({ account, shipper }) => (
-                  <Link
-                    key={account}
-                    href={`/admin/shippers/${account}`}
-                    className="tap focus-ring flex items-center justify-between gap-12 rounded-small py-10 hover:bg-ds-canvas"
-                  >
-                    <p className="min-w-0 text-[15px] leading-18 font-medium break-all">
-                      {account}
-                    </p>
-                    <div className="shrink-0 text-right">
-                      <Money amount={shipper.limit} className="text-[15px] leading-18" />
-                      <p
-                        className={cn(
-                          "mt-2 text-[13px] leading-16",
-                          shipper.paused || shipper.late_bills
-                            ? "text-ds-warning"
-                            : "text-ds-success",
-                        )}
-                      >
-                        {shipper.paused
-                          ? "Paused"
-                          : shipper.late_bills
-                            ? `${shipper.late_bills} late`
-                            : "On time"}
-                      </p>
-                    </div>
-                  </Link>
-                ))}
+              <div className="-mx-12 flex flex-col gap-4">
+                {data.active.map(({ account, shipper, name }) => {
+                  const limit = BigInt(shipper.limit);
+                  const used = BigInt(shipper.owed) + BigInt(shipper.committed);
+                  const share = limit > 0n ? Number((used * 1000n) / limit) / 1000 : 0;
+                  const trouble = !!shipper.paused || shipper.late_bills > 0;
+                  return (
+                    <Link
+                      key={account}
+                      href={`/admin/shippers/${account}`}
+                      title={account}
+                      className="tap focus-ring flex flex-col rounded-row px-12 py-12 hover:bg-ds-canvas"
+                    >
+                      <div className="min-w-0">
+                        <div className="flex min-w-0 items-center justify-between gap-8">
+                          <p className="min-w-0 truncate text-[15px] leading-18 font-medium">
+                            {name}
+                          </p>
+                          <AdminBadge tone={trouble ? "warning" : "success"}>
+                            {shipper.paused
+                              ? "Paused"
+                              : shipper.late_bills
+                                ? `${shipper.late_bills} late`
+                                : "On time"}
+                          </AdminBadge>
+                        </div>
+                        {/* How much of its limit is in use, on the same meter as the pool. */}
+                        <FanMeter
+                          value={share}
+                          label={`${name} credit used`}
+                          describe={(at, inUse) => {
+                            const mark = (limit * BigInt(Math.round(at * 1000))) / 1000n;
+                            return `The ${formatUsdc(mark)} USDC mark of the limit is ${inUse ? "in use" : "free"}.`;
+                          }}
+                          className="mt-10 w-full"
+                        />
+                        <p className="mt-6 text-caption text-ds-muted">
+                          {formatUsdc(used)} of {formatUsdc(limit)} USDC in use.
+                        </p>
+                      </div>
+                    </Link>
+                  );
+                })}
               </div>
             )}
           </Panel>

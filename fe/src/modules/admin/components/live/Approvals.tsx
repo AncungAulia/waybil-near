@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useInvalidate } from "@/hooks/useInvalidate";
 import { qk } from "@/lib/queryKeys";
+import { accountLabel } from "@/lib/accountLabel";
 import { cn } from "@/lib/cn";
 import {
   formatUsdc,
@@ -12,7 +13,7 @@ import {
   type ProposalReasonsResponse,
   type Shipper,
 } from "@waybil/shared";
-import { ArrowRight, Check, User, X } from "@phosphor-icons/react";
+import { ArrowRight, Check, X } from "@phosphor-icons/react";
 import { Panel } from "@/components/layout/Panel";
 import { ActionSheet } from "@/components/layout/ActionSheet";
 import { Button } from "@/components/ui/Button";
@@ -83,7 +84,9 @@ export function Approvals({ me }: { me: string }) {
     tx: string;
   } | null>(null);
   const invalidate = useInvalidate();
-  const name = useNames(data?.proposals.map((p) => shipperOf(p.kind)) ?? []);
+  const known = useNames(data?.proposals.map((p) => shipperOf(p.kind)) ?? []);
+  /* A profile name when there is one, otherwise the account without ".testnet". */
+  const name = (id: string) => (known(id) === id ? accountLabel(id) : known(id));
 
   /* Records the vote, then saves the reason for a rejection with the backend. */
   async function record({ p, approve }: { p: Proposal; approve: boolean }) {
@@ -177,36 +180,47 @@ export function Approvals({ me }: { me: string }) {
            * latest five, so the column fits the window without a scroll of its own.
            */}
           <div className="flex flex-col gap-24 lg:sticky lg:top-104">
-            <Panel className="approval-team shrink-0">
+            {/* The team as an ink card with the dotted glow, one tile per member. */}
+            <section className="approval-team relative isolate flex shrink-0 flex-col gap-20 overflow-hidden rounded-card bg-ds-ink p-24 text-ds-bg">
+              <img
+                src="/illustrations/investor-glow.png"
+                alt=""
+                className="pointer-events-none absolute inset-0 -z-10 size-full object-cover"
+              />
               <div className="flex flex-col gap-4">
                 <h2 className="text-[17px] leading-21 font-semibold">Team approval</h2>
-                <p className="text-label text-ds-muted">
+                <p className="text-label text-ds-bg/70">
                   A change goes through when 2 of the {data.team.length} team members approve it.
                 </p>
               </div>
-              {/* Each member with a person badge. Yours is yellow and tagged You. */}
-              <div className="flex flex-col gap-12">
+              <div className="grid grid-cols-3 gap-8">
                 {data.team.map((member) => (
-                  <div key={member} className="flex min-w-0 items-center gap-12">
+                  <div
+                    key={member}
+                    title={member}
+                    className={cn(
+                      "flex min-w-0 flex-col items-center gap-8 rounded-row p-12 text-center",
+                      member === me ? "bg-ds-bg/14" : "bg-ds-bg/6",
+                    )}
+                  >
                     <span
                       className={cn(
-                        "grid size-40 shrink-0 place-items-center rounded-full text-ds-ink",
-                        member === me ? "bg-ds-brand" : "bg-ds-canvas",
+                        "grid size-44 place-items-center rounded-full text-[15px] font-semibold",
+                        member === me ? "bg-ds-brand text-ds-ink" : "bg-ds-bg/12 text-ds-bg",
                       )}
                     >
-                      <User size={20} weight={member === me ? "fill" : "regular"} />
+                      {accountLabel(member).slice(0, 1)}
                     </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-label font-medium" title={member}>
-                        {member}
+                    <div className="w-full min-w-0">
+                      <p className="truncate text-label font-medium">{accountLabel(member)}</p>
+                      <p className="text-caption text-ds-bg/60">
+                        {member === me ? "You" : "Member"}
                       </p>
-                      <p className="text-caption text-ds-muted">Team member</p>
                     </div>
-                    {member === me && <Tag className="shrink-0">You</Tag>}
                   </div>
                 ))}
               </div>
-            </Panel>
+            </section>
             <Panel title="Recently decided" className="approval-recent">
               {closed.length === 0 && (
                 <p className="text-label text-ds-muted">Nothing has been decided yet.</p>
@@ -231,7 +245,7 @@ export function Approvals({ me }: { me: string }) {
                     .filter((r) => r.proposalId === p.id)
                     .map((r) => (
                       <p key={r.id} className="mt-2 text-caption text-ds-ink-2 break-all">
-                        {r.actor} said no because of {REASON_WORDS[r.reason]}.{" "}
+                        {accountLabel(r.actor)} said no because of {REASON_WORDS[r.reason]}.{" "}
                         {r.note && `“${r.note}”`}
                       </p>
                     ))}
@@ -349,7 +363,8 @@ function ProposalCard({
   onApprove: () => void;
   onReject: () => void;
 }) {
-  const name = useNames([shipperOf(p.kind)]);
+  const known = useNames([shipperOf(p.kind)]);
+  const name = (id: string) => (known(id) === id ? accountLabel(id) : known(id));
   const change = describe(p.kind, shippers, name);
   const voted = p.approvals.includes(me) || p.rejections.includes(me);
   return (
@@ -358,8 +373,10 @@ function ProposalCard({
         <div className="flex min-w-0 flex-col gap-4">
           <h2 className="text-[17px] leading-21 font-semibold break-all">{change.title}</h2>
           <p className="text-[13px] leading-16 text-ds-muted break-all">
-            {p.from_assistant ? "Suggested by the credit assistant" : `Proposed by ${p.by}`} on{" "}
-            {day(p.created_at)}. This is proposal #{p.id}.
+            {p.from_assistant
+              ? "Suggested by the credit assistant"
+              : `Proposed by ${accountLabel(p.by)}`}{" "}
+            on {day(p.created_at)}. This is proposal #{p.id}.
           </p>
         </div>
         <AdminBadge tone="brand">Waiting for the team</AdminBadge>
@@ -381,7 +398,8 @@ function ProposalCard({
           key={r.id}
           className="rounded-[14px] bg-ds-danger-stamp p-14 text-[13px] leading-16 text-ds-report-ink break-all"
         >
-          {r.actor} said no because of {REASON_WORDS[r.reason]}. {r.note && `“${r.note}”`}
+          {accountLabel(r.actor)} said no because of {REASON_WORDS[r.reason]}.{" "}
+          {r.note && `“${r.note}”`}
         </p>
       ))}
       <div className="flex flex-wrap items-center justify-between gap-16 pt-16">

@@ -13,7 +13,17 @@ import {
   type ProposalKind,
   type Shipment,
 } from "@waybil/shared";
-import { FileText, Pause, Scales } from "@phosphor-icons/react";
+import {
+  CheckCircle,
+  FileText,
+  Package,
+  Pause,
+  Scales,
+  Truck,
+  Warning,
+} from "@phosphor-icons/react";
+import { accountLabel } from "@/lib/accountLabel";
+import { FanMeter } from "@/components/elements/FanMeter";
 import { Panel } from "@/components/layout/Panel";
 import { ActionSheet } from "@/components/layout/ActionSheet";
 import { Button } from "@/components/ui/Button";
@@ -147,7 +157,7 @@ export function ShipperDetail({ account }: { account: string }) {
       await api("/admin/pauses", {
         body: { shipperId: account, reason: code, note: note.trim(), txHash: tx },
       }).catch(() => undefined);
-      return { title: `${account} is paused`, meta: "It cannot approve new trips now.", tx };
+      return { title: `${title} is paused`, meta: "It cannot approve new trips now.", tx };
     });
   /* A proposal counts as the sender's approval, so it needs one more member. */
   const propose = (kind: ProposalKind, meta: string) =>
@@ -156,6 +166,12 @@ export function ShipperDetail({ account }: { account: string }) {
       meta,
       tx: await callContract(WAYBIL_CONTRACT, "propose", { kind }, { gas: GAS }),
     }));
+  const title = application?.company.name ?? accountLabel(account);
+  const used = shipper ? BigInt(shipper.owed) + BigInt(shipper.committed) : 0n;
+  const cap = shipper ? BigInt(shipper.limit) : 0n;
+  const free = cap > used ? cap - used : 0n;
+  const usedShare = cap > 0n ? Number((used * 1000n) / cap) / 1000 : 0;
+  const repaid = shipments.filter((sh) => sh.status === "Repaid").length;
   const units = toUnits(limit);
   const invalidLimit = units <= 0n || units > 10000000000n;
 
@@ -207,18 +223,22 @@ export function ShipperDetail({ account }: { account: string }) {
     <>
       {back}
       <header className="flex flex-wrap items-center justify-between gap-12 md:items-end">
-        <div className="min-w-0">
-          <h1 className="text-title break-all">{application?.company.name ?? account}</h1>
-          <p className="mt-6 flex flex-wrap items-center gap-8 text-label text-ds-muted break-all">
-            {shipper ? (
-              <>
-                {account}
-                <Tag>Active shipper</Tag>
-              </>
-            ) : (
-              `Applied ${day(application?.createdAt)}`
-            )}
-          </p>
+        <div className="flex min-w-0 items-center gap-16">
+          <div className="min-w-0">
+            <h1 className="text-title truncate" title={account}>
+              {title}
+            </h1>
+            <p className="mt-6 flex flex-wrap items-center gap-8 text-label text-ds-muted">
+              {shipper ? (
+                <>
+                  <Tag>Active shipper</Tag>
+                  {shipper.paused && <Tag>Paused</Tag>}
+                </>
+              ) : (
+                `Applied ${day(application?.createdAt)}`
+              )}
+            </p>
+          </div>
         </div>
         {!shipper && application && application.proposalId === null && (
           <Button
@@ -230,76 +250,134 @@ export function ShipperDetail({ account }: { account: string }) {
           </Button>
         )}
       </header>
-      <div className="admin-detail-grid grid items-start gap-24 lg:grid-cols-[minmax(0,1fr)_440px]">
+      {/* Both columns fill the window and end level. */}
+      <div className="admin-detail-grid grid gap-24 lg:min-h-[calc(100dvh-300px)] lg:grid-cols-[minmax(0,1fr)_440px]">
         <div className="flex min-w-0 flex-col gap-24">
           {shipper ? (
-            <Panel title="Credit">
-              <AdminTiles
-                items={[
-                  { label: "Limit", value: <Money amount={shipper.limit} /> },
-                  {
-                    label: "In use",
-                    value: (
-                      <Money amount={String(BigInt(shipper.owed) + BigInt(shipper.committed))} />
-                    ),
-                  },
-                  {
-                    label: "Shipments",
-                    value: `${shipments.length} in total, ${shipments.filter((s) => s.status === "Repaid").length} repaid`,
-                  },
-                ]}
-              />
-              <Fact
-                label="New trips"
-                value={
-                  shipper.paused
-                    ? `Paused for ${REASON_WORDS[shipper.paused] ?? shipper.paused}`
-                    : "Allowed"
-                }
-              />
-              <Fact label="Late bills" value={String(shipper.late_bills)} />
-              {/* On a phone the two actions stack at full width, so neither label is cut. */}
-              <div className="grid gap-10 pt-8 md:flex md:flex-wrap">
-                <Button
-                  variant="secondary"
-                  onClick={() => {
-                    setLimit(asInput(BigInt(shipper.limit)));
-                    setNote("");
-                    setSheetError(null);
-                    setSheet("limit");
-                  }}
-                >
-                  Change limit
-                </Button>
-                {shipper.paused ? (
+            <>
+              {/* The credit as an ink card with the dotted glow, like the other money cards. */}
+              <section className="relative isolate flex flex-col gap-20 overflow-hidden rounded-card bg-ds-ink p-24 text-ds-bg">
+                <img
+                  src="/illustrations/investor-glow.png"
+                  alt=""
+                  className="pointer-events-none absolute inset-0 -z-10 size-full object-cover"
+                />
+                <div className="flex flex-wrap items-start justify-between gap-12">
+                  <div>
+                    <p className="text-label text-ds-bg/70">Credit limit</p>
+                    <Money amount={shipper.limit} className="mt-4 block text-amount" />
+                  </div>
+                  <AdminBadge tone={shipper.paused ? "warning" : "success"}>
+                    {shipper.paused
+                      ? `Paused for ${REASON_WORDS[shipper.paused] ?? shipper.paused}`
+                      : "New trips allowed"}
+                  </AdminBadge>
+                </div>
+                {/* The meter sits on a white inset, so its ink ticks show on the dark card. */}
+                <div className="flex flex-col gap-8 rounded-row bg-ds-bg p-16 text-ds-ink">
+                  <FanMeter
+                    value={usedShare}
+                    label="Credit used"
+                    describe={(at, inUse) => {
+                      const mark = (cap * BigInt(Math.round(at * 1000))) / 1000n;
+                      return `The ${formatUsdc(mark)} USDC mark of the limit is ${inUse ? "in use" : "free"}.`;
+                    }}
+                    className="w-full"
+                  />
+                  <p className="text-caption text-ds-muted">
+                    {formatUsdc(used)} USDC in use. {formatUsdc(free)} USDC free.
+                  </p>
+                </div>
+                {/* On a phone the two actions stack at full width, so neither label is cut. */}
+                <div className="grid gap-10 md:flex md:flex-wrap">
                   <Button
                     variant="secondary"
-                    loading={busy}
-                    onClick={() =>
-                      void propose(
-                        { Unpause: { shipper: account } },
-                        "It turns back on when one more member approves it.",
-                      )
-                    }
-                  >
-                    Turn back on
-                  </Button>
-                ) : (
-                  <Button
-                    variant="danger"
-                    icon={<Pause size={17} />}
                     onClick={() => {
-                      setReason("");
+                      setLimit(asInput(BigInt(shipper.limit)));
                       setNote("");
                       setSheetError(null);
-                      setSheet("pause");
+                      setSheet("limit");
                     }}
                   >
-                    Pause new shipments
+                    Change limit
                   </Button>
+                  {shipper.paused ? (
+                    <Button
+                      variant="secondary"
+                      loading={busy}
+                      onClick={() =>
+                        void propose(
+                          { Unpause: { shipper: account } },
+                          "It turns back on when one more member approves it.",
+                        )
+                      }
+                    >
+                      Turn back on
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="danger"
+                      icon={<Pause size={17} />}
+                      onClick={() => {
+                        setReason("");
+                        setNote("");
+                        setSheetError(null);
+                        setSheet("pause");
+                      }}
+                    >
+                      Pause new shipments
+                    </Button>
+                  )}
+                </div>
+              </section>
+              <Panel title="Shipments" className="flex-1">
+                <div className="grid grid-cols-3 gap-8">
+                  {[
+                    { label: "In total", value: shipments.length, icon: <Package size={18} /> },
+                    { label: "Repaid", value: repaid, icon: <CheckCircle size={18} /> },
+                    { label: "Late bills", value: shipper.late_bills, icon: <Warning size={18} /> },
+                  ].map((t) => (
+                    <div
+                      key={t.label}
+                      className="flex flex-col gap-8 rounded-row bg-ds-canvas p-14"
+                    >
+                      <span className="grid size-32 place-items-center rounded-full bg-ds-bg">
+                        {t.icon}
+                      </span>
+                      <p className="text-[22px] leading-26 font-semibold">{t.value}</p>
+                      <p className="text-caption text-ds-muted">{t.label}</p>
+                    </div>
+                  ))}
+                </div>
+                {shipments.length === 0 ? (
+                  <p className="text-label text-ds-muted">No shipments yet.</p>
+                ) : (
+                  <div className="-mx-12 flex flex-col">
+                    {[...shipments]
+                      .sort((x, y) => y.id - x.id)
+                      .slice(0, 5)
+                      .map((sh) => (
+                        <div
+                          key={sh.id}
+                          className="flex items-center gap-12 rounded-row px-12 py-10"
+                        >
+                          <span className="grid size-36 shrink-0 place-items-center rounded-full bg-ds-canvas">
+                            <Truck size={17} />
+                          </span>
+                          <p className="min-w-0 flex-1 truncate text-label font-medium">
+                            Shipment #{sh.id}
+                          </p>
+                          <Tag className="shrink-0">{sh.status}</Tag>
+                          <Money
+                            amount={sh.bill}
+                            className="w-120 shrink-0 text-right text-label"
+                          />
+                        </div>
+                      ))}
+                  </div>
                 )}
-              </div>
-            </Panel>
+              </Panel>
+            </>
           ) : (
             detail && (
               <>
@@ -380,14 +458,23 @@ export function ShipperDetail({ account }: { account: string }) {
         <div className="flex min-w-0 flex-col gap-24">
           {reviewPanel}
           {shipper && (
-            <Panel title="Pauses">
+            <Panel title="Pauses" className="flex-1">
               {pauses.length === 0 && (
-                <p className="text-label text-ds-muted">The team has not paused this company.</p>
+                <div className="grid flex-1 place-content-center justify-items-center gap-10 py-24 text-center">
+                  <span className="grid size-56 place-items-center rounded-full bg-ds-canvas text-ds-muted">
+                    <CheckCircle size={26} />
+                  </span>
+                  <p className="text-[16px] leading-20 font-medium">No pauses</p>
+                  <p className="max-w-280 text-label text-ds-muted">
+                    The team has not paused this company.
+                  </p>
+                </div>
               )}
               {pauses.map((p) => (
                 <div key={p.id} className="py-8">
                   <p className="text-label break-all">
-                    {p.actor} paused it for {REASON_WORDS[p.reason]} on {day(p.createdAt)}.
+                    {accountLabel(p.actor)} paused it for {REASON_WORDS[p.reason]} on{" "}
+                    {day(p.createdAt)}.
                   </p>
                   {p.note && <p className="text-caption text-ds-ink-2">{p.note}</p>}
                   <ProofLink tx={p.txHash} className="text-caption" />
