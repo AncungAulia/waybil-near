@@ -3,8 +3,10 @@ import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Plus, UserPlus } from "@phosphor-icons/react";
 import { Panel } from "@/components/layout/Panel";
-import { Button } from "@/components/ui/Button";
-import { WAYBIL_CONTRACT } from "@/lib/env";
+import { Button, ButtonLink } from "@/components/ui/Button";
+import { ActionSheet } from "@/components/layout/ActionSheet";
+import { Avatar } from "@/components/elements/Avatar";
+import { nearblocksUrl, WAYBIL_CONTRACT } from "@/lib/env";
 import { callContract } from "@/lib/wallet";
 import { names, waitingToAdd, type LiveShipperData } from "../../data/live";
 import { InviteSheet } from "./InviteSheet";
@@ -34,6 +36,12 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
   const [inviting, setInviting] = useState<"driver" | "warehouse" | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [done, setDone] = useState<Done>(null);
+  /* A successful add opens a dialog with its record. A failure stays as a note on the page. */
+  const [added, setAdded] = useState<{
+    label: string;
+    type: "driver" | "warehouse";
+    tx: string;
+  } | null>(null);
   const waiting = waitingToAdd(data);
   const open = data.invites.filter((i) => !i.acceptedBy);
   /* A driver's own link (/c/<account>) opens this page with ?driver=<account>. */
@@ -58,7 +66,7 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
         type === "driver" ? { driver: account } : { warehouse: account },
         { gas: GAS },
       );
-      setDone({ text: `${label} is in your network now.`, tx });
+      setAdded({ label, type, tx });
       refresh();
     } catch (e) {
       setDone({ text: failure(e) });
@@ -139,35 +147,35 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
       )}
       {/* With nothing in the network yet, the two empty cards fill the window, as the board draws it. */}
       <div
-        className={cn(
-          "grid gap-16 lg:grid-cols-2",
-          bare ? "flex-1 grid-rows-2 lg:grid-rows-1" : "items-start",
-        )}
+        className={cn("grid gap-16 lg:grid-cols-2", "flex-1", bare && "grid-rows-2 lg:grid-rows-1")}
       >
-        <Panel title="Drivers" className={cn(bare && "h-full")}>
+        <Panel title="Drivers" className="h-full">
           {data.network.drivers.length === 0 && <NetworkEmpty kind="driver" />}
-          {data.network.drivers.map((d) => (
-            <div key={d} className="py-8">
-              <p className="text-label break-all">{people[d] ?? name(d)}</p>
-              {people[d] && (
-                <p className="text-caption break-all text-ds-muted">
-                  {signedUpAs(d, people[d]).replace(/^ · /, "") || d}
-                </p>
-              )}
-            </div>
-          ))}
+          {data.network.drivers.map((d) => {
+            const label = people[d] ?? name(d);
+            const signedUp = signedUpAs(d, label).replace(/^ · /, "");
+            return (
+              <Member
+                key={d}
+                name={label}
+                facts={["Driver", "Ready for trips", ...(signedUp ? [signedUp] : [])]}
+                account={d}
+              />
+            );
+          })}
         </Panel>
-        <Panel title="Destinations" className={cn(bare && "h-full")}>
+        <Panel title="Destinations" className="h-full">
           {data.network.destinations.length === 0 && <NetworkEmpty kind="warehouse" />}
           {data.network.destinations.map((d) => (
-            <div key={d.id} className="py-8">
-              <p className="text-label break-all">{places[d.warehouse]?.name ?? d.warehouse}</p>
-              {places[d.warehouse] && (
-                <p className="text-caption break-all text-ds-muted">
-                  {places[d.warehouse]!.address || d.warehouse}
-                </p>
-              )}
-            </div>
+            <Member
+              key={d.id}
+              name={places[d.warehouse]?.name ?? name(d.warehouse)}
+              facts={[
+                "Destination",
+                ...(places[d.warehouse]?.address ? [places[d.warehouse]!.address] : []),
+              ]}
+              account={d.warehouse}
+            />
           ))}
         </Panel>
       </div>
@@ -190,9 +198,55 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
           ))}
         </Panel>
       )}
+      {added && (
+        <ActionSheet
+          title={added.type === "driver" ? "Driver added" : "Destination added"}
+          onClose={() => setAdded(null)}
+        >
+          <p className="text-label">
+            {added.label} is in your network now.{" "}
+            {added.type === "driver"
+              ? "You can pick them when you make a new shipment."
+              : "You can send shipments there now."}
+          </p>
+          <ButtonLink
+            href={nearblocksUrl(`/txns/${added.tx}`)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full justify-between"
+          >
+            See the record on NearBlocks
+          </ButtonLink>
+          <Button variant="quiet" onClick={() => setAdded(null)}>
+            Close
+          </Button>
+        </ActionSheet>
+      )}
       {inviting && (
         <InviteSheet type={inviting} onClose={() => setInviting(null)} onSent={() => refresh()} />
       )}
+    </div>
+  );
+}
+
+/* One person or place in the network: who it is, short facts, and their account on NearBlocks. */
+function Member({ name, facts, account }: { name: string; facts: string[]; account: string }) {
+  return (
+    <div className="flex items-center gap-12 border-b border-ds-line py-12 last:border-b-0">
+      <Avatar name={name} />
+      <div className="min-w-0 flex-1">
+        <p className="text-label font-semibold break-words">{name}</p>
+        <p className="text-caption text-ds-muted">{facts.join(" · ")}</p>
+        <p className="text-caption break-all text-ds-muted">{account}</p>
+      </div>
+      <a
+        href={nearblocksUrl(`/address/${account}`)}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="link focus-ring hidden shrink-0 text-[14px] font-medium sm:inline"
+      >
+        See the record on NearBlocks ↗
+      </a>
     </div>
   );
 }
