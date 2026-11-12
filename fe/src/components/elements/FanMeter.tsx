@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { useChanged } from "@/hooks/useChanged";
 
@@ -31,6 +31,7 @@ export function FanMeter({
   /** "ink" holds the bars at ink instead of letting them turn amber and red. */
   tone,
   appearance,
+  describe,
   className,
 }: {
   value: number;
@@ -38,8 +39,14 @@ export function FanMeter({
   markerLabel?: string;
   tone?: "ink";
   appearance?: "credit";
+  /**
+   * When given, pointing at or touching the ruler shows a small tooltip for that point, for
+   * example "10,160 USDC is free.". `at` runs from 0 to 1 along the ruler.
+   */
+  describe?: (at: number, inUse: boolean) => string;
   className?: string;
 }) {
+  const [hover, setHover] = useState<number | null>(null);
   const credit = appearance === "credit";
   const ticks = credit ? 60 : TICKS;
   const major = credit ? 20 : MAJOR;
@@ -87,7 +94,19 @@ export function FanMeter({
       aria-valuemax={100}
       aria-valuetext={`${pct} percent`}
       key={value}
+      onPointerMove={
+        describe
+          ? (e) => {
+              const box = e.currentTarget.getBoundingClientRect();
+              const at = Math.min(1, Math.max(0, (e.clientX - box.left) / box.width));
+              /* Snap to the nearest tick, so the tooltip sits on a line. */
+              setHover(Math.round(at * ticks) / ticks);
+            }
+          : undefined
+      }
+      onPointerLeave={describe ? () => setHover(null) : undefined}
       className={cn(
+        describe && "cursor-default touch-none",
         changed && "swap",
         "relative inline-flex h-34 w-320 max-w-full items-end justify-between",
         markerLabel && "w-full",
@@ -111,6 +130,15 @@ export function FanMeter({
           style={{ left: `${marker * 100}%` }}
           className="absolute bottom-0 h-full w-3 -translate-x-1/2 bg-ds-brand"
         />
+      )}
+      {describe && hover !== null && (
+        <span
+          role="tooltip"
+          style={{ left: `clamp(70px, ${hover * 100}%, calc(100% - 70px))` }}
+          className="pointer-events-none absolute bottom-full z-10 mb-8 -translate-x-1/2 rounded-[10px] bg-ds-ink px-10 py-6 text-caption whitespace-nowrap text-ds-bg shadow-float"
+        >
+          {describe(hover, hover <= marker && value > 0)}
+        </span>
       )}
     </span>
   );

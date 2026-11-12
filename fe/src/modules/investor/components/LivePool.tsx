@@ -121,7 +121,15 @@ export function LiveSections({
                   <span className="min-w-0 break-all">{name(account)}</span>
                   <span className="text-ds-muted">{Math.round(pct * 100)}%</span>
                 </div>
-                <FanMeter value={pct} label={`${account} credit used`} className="w-full" />
+                <FanMeter
+                  value={pct}
+                  label={`${account} credit used`}
+                  describe={(at, inUse) => {
+                    const mark = (BigInt(shipper.limit) * BigInt(Math.round(at * 1000))) / 1000n;
+                    return `The ${formatUsdc(mark)} USDC mark of the limit is ${inUse ? "in use" : "free"}.`;
+                  }}
+                  className="w-full"
+                />
                 <p className="text-caption text-ds-muted">
                   <Money amount={String(used)} /> of <Money amount={shipper.limit} />.{" "}
                   {shipper.paused

@@ -167,6 +167,10 @@ export function PoolHome({
               label="Pool money paid out"
               value={utilization}
               markerLabel={`${formatUsdc(lent)} paid out`}
+              describe={(at, inUse) => {
+                const mark = (BigInt(balance.total) * BigInt(Math.round(at * 1000))) / 1000n;
+                return `The ${formatUsdc(mark)} USDC mark is ${inUse ? "paid out early" : "still free"}.`;
+              }}
               className="w-full"
             />
             <div className="mt-8 flex justify-between text-caption text-ds-muted">
