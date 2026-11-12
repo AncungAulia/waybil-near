@@ -93,56 +93,56 @@ export function NewLiveShipment({ data }: { data: LiveShipperData }) {
 
   /* Records the shipment, waits for it to show, then saves its trip. */
   async function record() {
-      /*
-       * Remember the pickup point before the wallet opens. If the trip can't be saved below,
-       * the shipment page finishes it from this note.
-       */
-      rememberPickup({
-        pickupId: pickup!.id,
+    /*
+     * Remember the pickup point before the wallet opens. If the trip can't be saved below,
+     * the shipment page finishes it from this note.
+     */
+    rememberPickup({
+      pickupId: pickup!.id,
+      driver,
+      destination: Number(destination),
+      after: Math.max(0, ...data.shipments.map((x) => x.id)),
+    });
+    const tx = await callContract(
+      WAYBIL_CONTRACT,
+      "create_shipment",
+      {
         driver,
         destination: Number(destination),
-        after: Math.max(0, ...data.shipments.map((x) => x.id)),
-      });
-      const tx = await callContract(
-        WAYBIL_CONTRACT,
-        "create_shipment",
-        {
-          driver,
-          destination: Number(destination),
-          qty: Number(qty),
-          unit: unit.trim(),
-          bill: String(bill),
-          due_at: dueAt(due),
-        },
-        { gas: GAS },
-      );
-      /*
-       * The wallet gives only the hash, so the new id is the newest shipment now. Reads lag a
-       * few seconds behind a new transaction, so ask again every second until it shows.
-       */
-      setRecording(true);
-      const before = Math.max(0, ...data.shipments.map((x) => x.id));
-      let newest: { id: number } | undefined;
-      for (let attempt = 0; attempt < 20 && !newest; attempt++) {
-        if (attempt) await new Promise((r) => setTimeout(r, 1000));
-        newest = (
-          await listShipmentsByShipper(data.account, {
-            from: Math.max(0, data.shipments.length - 5),
-            limit: 50,
-          }).catch(() => [])
-        )
-          .filter((x) => x.id > before && x.driver === driver)
-          .sort((a, b) => b.id - a.id)[0];
-      }
-      /* Join the pickup point and the destination into the trip the map shows. */
-      if (newest && pickup)
-        await api(`/trips/${newest.id}`, {
-          method: "PUT",
-          body: { pickupPlaceId: pickup.id } satisfies TripCreate,
-        })
-          .then(() => forgetPickup())
-          .catch(() => undefined);
-      return { tx, newest };
+        qty: Number(qty),
+        unit: unit.trim(),
+        bill: String(bill),
+        due_at: dueAt(due),
+      },
+      { gas: GAS },
+    );
+    /*
+     * The wallet gives only the hash, so the new id is the newest shipment now. Reads lag a
+     * few seconds behind a new transaction, so ask again every second until it shows.
+     */
+    setRecording(true);
+    const before = Math.max(0, ...data.shipments.map((x) => x.id));
+    let newest: { id: number } | undefined;
+    for (let attempt = 0; attempt < 20 && !newest; attempt++) {
+      if (attempt) await new Promise((r) => setTimeout(r, 1000));
+      newest = (
+        await listShipmentsByShipper(data.account, {
+          from: Math.max(0, data.shipments.length - 5),
+          limit: 50,
+        }).catch(() => [])
+      )
+        .filter((x) => x.id > before && x.driver === driver)
+        .sort((a, b) => b.id - a.id)[0];
+    }
+    /* Join the pickup point and the destination into the trip the map shows. */
+    if (newest && pickup)
+      await api(`/trips/${newest.id}`, {
+        method: "PUT",
+        body: { pickupPlaceId: pickup.id } satisfies TripCreate,
+      })
+        .then(() => forgetPickup())
+        .catch(() => undefined);
+    return { tx, newest };
   }
   const create = useMutation({
     mutationFn: record,

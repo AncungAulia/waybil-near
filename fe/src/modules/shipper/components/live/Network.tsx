@@ -71,7 +71,14 @@ export function Network({ data }: { data: LiveShipperData }) {
   const bare = !data.network.drivers.length && !data.network.destinations.length && !pickups.length;
 
   const adding = useMutation({
-    mutationFn: ({ type, account }: { type: "driver" | "warehouse"; account: string; label: string }) =>
+    mutationFn: ({
+      type,
+      account,
+    }: {
+      type: "driver" | "warehouse";
+      account: string;
+      label: string;
+    }) =>
       callContract(
         WAYBIL_CONTRACT,
         type === "driver" ? "add_driver" : "add_destination",
@@ -242,12 +249,7 @@ export function Network({ data }: { data: LiveShipperData }) {
           </Button>
         </ActionSheet>
       )}
-      {inviting && (
-        <InviteSheet
-          type={inviting}
-          onClose={() => setInviting(null)}
-        />
-      )}
+      {inviting && <InviteSheet type={inviting} onClose={() => setInviting(null)} />}
     </div>
   );
 }

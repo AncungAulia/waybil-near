@@ -53,32 +53,32 @@ export function InviteSheet({
 
   /* Saves the place, then sends the invite. Answers with the invite code, or null for a pickup. */
   async function save() {
-      /* A destination is saved as a place first, so its pin shows on every trip map. */
-      const place =
-        type === "warehouse"
-          ? (
-              await api<{ place: Place }>("/places", {
-                body: {
-                  kind,
-                  name: name.trim(),
-                  address: spot.address.trim(),
-                  lat: spot.lat!,
-                  lng: spot.lng!,
-                } satisfies PlaceCreate,
-              })
-            ).place
-          : null;
-      /* A pickup point needs no invite. It is ready for the next shipment. */
-      if (pickup) return null;
-      const result = await api<InviteCreatedResponse>("/invites", {
-        body: {
-          type,
-          name: name.trim(),
-          phone: e164,
-          ...(place && { address: place.address, placeId: place.id }),
-        },
-      });
-      return result.invite.code;
+    /* A destination is saved as a place first, so its pin shows on every trip map. */
+    const place =
+      type === "warehouse"
+        ? (
+            await api<{ place: Place }>("/places", {
+              body: {
+                kind,
+                name: name.trim(),
+                address: spot.address.trim(),
+                lat: spot.lat!,
+                lng: spot.lng!,
+              } satisfies PlaceCreate,
+            })
+          ).place
+        : null;
+    /* A pickup point needs no invite. It is ready for the next shipment. */
+    if (pickup) return null;
+    const result = await api<InviteCreatedResponse>("/invites", {
+      body: {
+        type,
+        name: name.trim(),
+        phone: e164,
+        ...(place && { address: place.address, placeId: place.id }),
+      },
+    });
+    return result.invite.code;
   }
   const sending = useMutation({
     mutationFn: save,
