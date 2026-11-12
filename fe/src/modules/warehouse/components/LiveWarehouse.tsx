@@ -245,7 +245,8 @@ function ScanAndConfirm({ account, shipments }: { account: string; shipments: Sh
     !!found &&
     goodQty >= 0 &&
     goodQty <= found.qty &&
-    (!reporting || (reasons.length > 0 && reasons.length <= 4));
+    /* A report needs a reason and a short note. The backend refuses one without a note. */
+    (!reporting || (reasons.length > 0 && reasons.length <= 4 && note.trim().length > 0));
 
   /* Saves the report first when there is a problem, then has the relayer record the delivery. */
   async function record(s: Shipment) {
@@ -476,9 +477,15 @@ function ScanAndConfirm({ account, shipments }: { account: string; shipments: Sh
                 Note
                 <textarea
                   value={note}
+                  maxLength={2000}
+                  required
+                  placeholder="Three crates were wet at the bottom."
                   onChange={(e) => setNote(e.target.value)}
-                  className="min-h-96 rounded-[14px] bg-ds-canvas p-12 text-[14px] outline-none focus-visible:outline-2 focus-visible:outline-ds-ink"
+                  className="min-h-96 rounded-[14px] bg-ds-canvas p-12 text-[14px] outline-none placeholder:text-ds-off-ink focus-visible:outline-2 focus-visible:outline-ds-ink"
                 />
+                <span className="text-caption text-ds-muted">
+                  Tell the company what happened in one sentence. It is needed to send the report.
+                </span>
               </label>
               <label className="tap focus-ring flex w-fit cursor-pointer items-center gap-8 rounded-full bg-ds-canvas px-14 py-10 text-label hover:bg-ds-canvas-hover">
                 <Camera size={17} />
