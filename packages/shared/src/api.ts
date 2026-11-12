@@ -148,6 +148,8 @@ export interface InviteCreate {
   name: string;
   phone: string;
   address?: string;
+  /** A warehouse invite points at a destination place the shipper saved on the map. */
+  placeId?: string;
 }
 export interface PublicInvite {
   shipperName: string;
