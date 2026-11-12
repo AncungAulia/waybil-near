@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import type {
   Place,
   PlaceCreate,
+  PlaceReverseResponse,
   PlaceSearchResponse,
   PlaceSuggestion,
   PlacesResponse,
@@ -71,6 +72,34 @@ export class Places {
     const url = new URL(`${this.photonUrl.replace(/\/+$/, "")}/api/`);
     url.searchParams.set("q", q);
     url.searchParams.set("limit", "5");
+    const features = await this.photon(url);
+    const results = [];
+    for (const feature of features) {
+      const item = suggestion(feature);
+      if (item) results.push(item);
+      if (results.length === 5) break;
+    }
+    return { results };
+  }
+
+  /**
+   * The address at a pin the shipper moved, from Photon's reverse search. The result keeps
+   * the pin's own position, so the saved place is exactly where the pin was dropped.
+   */
+  async reverse(actor: Principal, lat: number, lng: number): Promise<PlaceReverseResponse> {
+    allowed(actor.role === "shipper");
+    const url = new URL(`${this.photonUrl.replace(/\/+$/, "")}/reverse`);
+    url.searchParams.set("lat", String(lat));
+    url.searchParams.set("lon", String(lng));
+    url.searchParams.set("limit", "1");
+    for (const feature of await this.photon(url)) {
+      const item = suggestion(feature);
+      if (item) return { result: { label: item.label, lat, lng } };
+    }
+    return { result: null };
+  }
+
+  private async photon(url: URL): Promise<PhotonFeature[]> {
     let features: PhotonFeature[];
     try {
       const response = await this.fetcher(url, {
@@ -84,13 +113,7 @@ export class Places {
     } catch {
       unavailable();
     }
-    const results = [];
-    for (const feature of features) {
-      const item = suggestion(feature);
-      if (item) results.push(item);
-      if (results.length === 5) break;
-    }
-    return { results };
+    return features;
   }
 
   /**

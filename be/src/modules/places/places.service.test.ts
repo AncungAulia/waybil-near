@@ -137,3 +137,40 @@ it("saves places for a shipper and shows a warehouse only its accepted destinati
   expect(theirs.body.places.map((p: { id: string }) => p.id)).toEqual([dock.id]);
   expect((await request(app).get("/v1/places").auth(driver, { type: "bearer" })).status).toBe(403);
 });
+
+it("names the address at a moved pin and keeps the pin's own position", async () => {
+  const deps = testDeps();
+  const token = await signedIn(deps, "shipper");
+  const driver = await signedIn(deps, "driver");
+  const fetcher = vi
+    .fn()
+    .mockResolvedValueOnce(
+      Response.json({
+        features: [
+          {
+            geometry: { coordinates: [106.81, -6.21] },
+            properties: { name: "Sample Depot", city: "Bekasi", country: "Indonesia" },
+          },
+        ],
+      }),
+    )
+    .mockResolvedValueOnce(Response.json({ features: [] }))
+    .mockRejectedValueOnce(new Error("down"));
+  const app = createApp(
+    deps,
+    placeRoutes(deps, new Places(deps.store, "https://photon.example/", fetcher)),
+  );
+  const reverse = (q: string, as = token) =>
+    request(app).get(`/v1/places/reverse?${q}`).auth(as, { type: "bearer" });
+  const found = await reverse("lat=-6.2&lng=106.8");
+  expect(found.body).toEqual({
+    result: { label: "Sample Depot, Bekasi, Indonesia", lat: -6.2, lng: 106.8 },
+  });
+  const url = fetcher.mock.calls[0]![0] as URL;
+  expect(url.pathname).toBe("/reverse");
+  expect(url.searchParams.get("lon")).toBe("106.8");
+  expect((await reverse("lat=-6.2&lng=106.8")).body).toEqual({ result: null });
+  expect((await reverse("lat=-6.2&lng=106.8")).body.error.code).toBe("E_UNAVAILABLE");
+  expect((await reverse("lat=95&lng=106.8")).status).toBe(400);
+  expect((await reverse("lat=-6.2&lng=106.8", driver)).status).toBe(403);
+});
