@@ -346,7 +346,7 @@ function ScanAndConfirm({
           </div>
         </Panel>
       ) : (
-        <Panel title={`Delivery #${found.id}`}>
+        <Panel title={`Delivery #${found.id}`} className="min-h-[calc(100dvh-266px)] md:min-h-0">
           <p className="text-label break-all text-ds-muted">
             {found.qty} {found.unit} from {name(found.driver)}
           </p>
@@ -433,6 +433,8 @@ function ScanAndConfirm({
               <p className="text-caption text-ds-muted">Up to 5 JPG or PNG photos, 2 MB each.</p>
             </>
           )}
+          {/* On a phone the card fills the screen and the buttons sit at the bottom, by the thumb. */}
+          <div aria-hidden className="flex-1 md:hidden" />
           {error && (
             <p role="alert" className="rounded-row bg-ds-danger-result p-14 text-label">
               {error}
