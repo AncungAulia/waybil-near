@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useInvalidate } from "@/hooks/useInvalidate";
 import { qk } from "@/lib/queryKeys";
+import { cn } from "@/lib/cn";
 import {
   formatUsdc,
   type Proposal,
@@ -11,7 +12,7 @@ import {
   type ProposalReasonsResponse,
   type Shipper,
 } from "@waybil/shared";
-import { ArrowRight, Check, X } from "@phosphor-icons/react";
+import { ArrowRight, Check, ShieldCheck, X } from "@phosphor-icons/react";
 import { Panel } from "@/components/layout/Panel";
 import { ActionSheet } from "@/components/layout/ActionSheet";
 import { Button } from "@/components/ui/Button";
@@ -25,7 +26,7 @@ import { callContract } from "@/lib/wallet";
 import { notify } from "@/lib/notify";
 import { ResultDialog } from "@/components/elements/ResultDialog";
 import { AdminActionFields } from "../AdminActionFields";
-import { AdminBadge, Empty, Fact } from "../AdminParts";
+import { AdminBadge, Empty } from "../AdminParts";
 import {
   day,
   describe,
@@ -183,9 +184,26 @@ export function Approvals({ me }: { me: string }) {
                   A change goes through when 2 of the {data.team.length} team members approve it.
                 </p>
               </div>
-              <div>
+              {/* Each member with a team badge. Yours is yellow and tagged You. */}
+              <div className="flex flex-col gap-12">
                 {data.team.map((member) => (
-                  <Fact key={member} label={member === me ? "You" : "Member"} value={member} />
+                  <div key={member} className="flex min-w-0 items-center gap-12">
+                    <span
+                      className={cn(
+                        "grid size-40 shrink-0 place-items-center rounded-full text-ds-ink",
+                        member === me ? "bg-ds-brand" : "bg-ds-canvas",
+                      )}
+                    >
+                      <ShieldCheck size={20} weight={member === me ? "fill" : "regular"} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-label font-medium" title={member}>
+                        {member}
+                      </p>
+                      <p className="text-caption text-ds-muted">Team member</p>
+                    </div>
+                    {member === me && <Tag className="shrink-0">You</Tag>}
+                  </div>
                 ))}
               </div>
             </Panel>
@@ -195,10 +213,16 @@ export function Approvals({ me }: { me: string }) {
               )}
               {closed.slice(0, 5).map((p) => (
                 <div key={p.id} className="approval-recent-row py-12">
-                  <p className="flex flex-wrap items-center gap-x-8 gap-y-2 text-label font-medium break-all">
-                    {describe(p.kind, data.shippers, name).title}
-                    <Tag>{p.status}</Tag>
-                  </p>
+                  {/* The title gives way with an ellipsis, so it never runs into the tag. */}
+                  <div className="flex min-w-0 items-center justify-between gap-12">
+                    <p
+                      className="min-w-0 truncate text-label font-medium"
+                      title={describe(p.kind, data.shippers, name).title}
+                    >
+                      {describe(p.kind, data.shippers, name).title}
+                    </p>
+                    <Tag className="shrink-0">{p.status}</Tag>
+                  </div>
                   <p className="text-caption text-ds-muted">
                     Proposed {day(p.created_at)}. {p.approvals.length} approved and{" "}
                     {p.rejections.length} rejected.
