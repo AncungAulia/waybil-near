@@ -493,9 +493,7 @@ export function ShipperDetail({ account }: { account: string }) {
       {(sheet === "limit" || sheet === "pause") && shipper && (
         <ActionSheet
           className={`admin-sheet admin-sheet-${sheet}`}
-          title={
-            sheet === "limit" ? `Change ${account}’s limit` : `Pause ${account}’s new shipments?`
-          }
+          title={sheet === "limit" ? `Change ${title}’s limit` : `Pause ${title}’s new shipments?`}
           onClose={() => setSheet(null)}
         >
           <AdminActionFields
