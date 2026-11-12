@@ -148,7 +148,7 @@ export function LiveSections({
             <Link
               key={`${kind}-${s.id}`}
               href={`/pool/deliveries/${s.id}`}
-              className="tap focus-ring flex items-center gap-12 py-12 hover:bg-ds-canvas"
+              className="tap focus-ring -mx-12 flex items-center gap-12 rounded-[16px] px-12 py-12 hover:bg-ds-canvas"
             >
               <span className="grid size-36 shrink-0 place-items-center rounded-full bg-ds-canvas">
                 {kind === "paid" ? <ArrowLineDown size={16} /> : <SealCheck size={16} />}
@@ -241,7 +241,7 @@ export function LiveDeliveries({ deliveries }: { deliveries: Shipment[] }) {
             <Link
               href={`/pool/deliveries/${s.id}`}
               key={s.id}
-              className="tap focus-ring grid items-center gap-10 py-14 hover:bg-ds-canvas md:grid-cols-[1fr_140px_150px_170px] md:gap-16"
+              className="tap focus-ring -mx-12 grid items-center gap-10 rounded-[16px] px-12 py-14 hover:bg-ds-canvas md:grid-cols-[1fr_140px_150px_170px] md:gap-16"
             >
               <span className="flex min-w-0 items-center gap-12">
                 <span className="grid size-40 shrink-0 place-items-center rounded-full bg-ds-canvas">

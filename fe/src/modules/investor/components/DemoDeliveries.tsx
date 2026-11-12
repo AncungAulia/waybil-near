@@ -103,7 +103,7 @@ export function DemoDeliveries({
                 <Link
                   href={`/pool/deliveries/${r.id}`}
                   key={r.id}
-                  className="tap focus-ring grid items-center gap-10 py-14 hover:bg-ds-canvas md:grid-cols-[1fr_140px_130px_170px] md:gap-16"
+                  className="tap focus-ring -mx-12 grid items-center gap-10 rounded-[16px] px-12 py-14 hover:bg-ds-canvas md:grid-cols-[1fr_140px_130px_170px] md:gap-16"
                 >
                   <span className="flex items-center gap-12">
                     <span className="grid size-40 shrink-0 place-items-center rounded-full bg-ds-canvas">

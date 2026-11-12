@@ -98,7 +98,7 @@ export function DemoPoolSections() {
             <Link
               key={h.title}
               href="/pool/history"
-              className="tap focus-ring flex items-center gap-12 py-12 hover:bg-ds-canvas"
+              className="tap focus-ring -mx-12 flex items-center gap-12 rounded-[16px] px-12 py-12 hover:bg-ds-canvas"
             >
               <span className="grid size-36 shrink-0 place-items-center rounded-full bg-ds-canvas">
                 {h.icon}
