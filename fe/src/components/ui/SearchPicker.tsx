@@ -18,6 +18,8 @@ const MAX_SHOWN = 300;
 const LIST_ROOM = 360;
 /* The search box, the gaps around the list and a little air from the edge. */
 const SEARCH_ROOM = 84;
+/* About one row of the list, with its detail line. */
+const ROW = 52;
 type Option = { value: string; label: string; flag?: string; detail?: string };
 /** A flag is an image path, or an emoji drawn from the ISO2 code when no image exists. */
 function Flag({ flag }: { flag: string }) {
@@ -116,7 +118,9 @@ export function SearchPicker({
     }
     const below = bottom - rect.bottom;
     const above = rect.top - top;
-    const flip = below < LIST_ROOM && above > below;
+    /* A short list needs only its own rows. Only a list that can't fit below opens upward. */
+    const need = Math.min(LIST_ROOM, SEARCH_ROOM + Math.max(1, options.length) * ROW);
+    const flip = below < need && above > below;
     setUp(flip);
     /* The space in that direction, less the search box, the gaps and a little air. */
     setRoom(Math.max(120, Math.floor((flip ? above : below) - SEARCH_ROOM)));
