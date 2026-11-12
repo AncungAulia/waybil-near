@@ -12,7 +12,7 @@ import {
   type ProposalReasonsResponse,
   type Shipper,
 } from "@waybil/shared";
-import { ArrowRight, Check, ShieldCheck, X } from "@phosphor-icons/react";
+import { ArrowRight, Check, User, X } from "@phosphor-icons/react";
 import { Panel } from "@/components/layout/Panel";
 import { ActionSheet } from "@/components/layout/ActionSheet";
 import { Button } from "@/components/ui/Button";
@@ -184,7 +184,7 @@ export function Approvals({ me }: { me: string }) {
                   A change goes through when 2 of the {data.team.length} team members approve it.
                 </p>
               </div>
-              {/* Each member with a team badge. Yours is yellow and tagged You. */}
+              {/* Each member with a person badge. Yours is yellow and tagged You. */}
               <div className="flex flex-col gap-12">
                 {data.team.map((member) => (
                   <div key={member} className="flex min-w-0 items-center gap-12">
@@ -194,7 +194,7 @@ export function Approvals({ me }: { me: string }) {
                         member === me ? "bg-ds-brand" : "bg-ds-canvas",
                       )}
                     >
-                      <ShieldCheck size={20} weight={member === me ? "fill" : "regular"} />
+                      <User size={20} weight={member === me ? "fill" : "regular"} />
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-label font-medium" title={member}>
