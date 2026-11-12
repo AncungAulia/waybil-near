@@ -98,8 +98,14 @@ export class PoolHistory {
     }
     /* The listing is complete, so these receipts are seen. Their transactions wait in pending. */
     fresh.forEach((id) => this.seen.add(id));
-    for (const txHash of found)
-      if (!this.done.has(txHash) && !this.pending.includes(txHash)) this.pending.push(txHash);
+    /*
+     * New transactions go to the front, so a deposit or withdrawal made a moment ago is read
+     * on the next scan instead of waiting behind the older history still being filled in.
+     */
+    const newer = found.filter(
+      (txHash) => !this.done.has(txHash) && !this.pending.includes(txHash),
+    );
+    this.pending = [...newer, ...this.pending];
     this.loadedAt = this.now();
 
     for (let read = 0; read < TX_BUDGET && this.pending.length; read++) {
