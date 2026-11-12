@@ -3,7 +3,7 @@ import type { AppDeps } from "../../app";
 import { authenticate, principal, roles } from "../../middlewares/auth";
 import { limiter } from "../../middlewares/rate-limit";
 import { parse } from "../../middlewares/validate";
-import { placeCreate, placeReverse, placeSearch } from "./places.schema";
+import { placeCreate, placeReverse, placeRoute, placeSearch } from "./places.schema";
 import { Places } from "./places.service";
 
 export function placeRoutes(deps: AppDeps, places: Places) {
@@ -15,6 +15,10 @@ export function placeRoutes(deps: AppDeps, places: Places) {
   router.get("/places/reverse", limiter(30), auth, roles("shipper"), async (req, res) => {
     const { lat, lng } = parse(placeReverse, req.query);
     res.json(await places.reverse(principal(req), lat, lng));
+  });
+  router.get("/places/route", limiter(30), auth, roles("shipper"), async (req, res) => {
+    const { from, to } = parse(placeRoute, req.query);
+    res.json(await places.route(principal(req), from, to));
   });
   router.get("/places", auth, roles("shipper", "warehouse"), async (req, res) => {
     res.json(await places.list(principal(req)));

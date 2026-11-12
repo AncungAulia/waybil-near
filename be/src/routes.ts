@@ -71,7 +71,12 @@ export function createRuntime(deps: AppDeps) {
   router.use(creditRoutes(deps, credit));
   router.use(applicationRoutes(deps, applications));
   router.use(reportRoutes(deps, reports));
-  router.use(placeRoutes(deps, new Places(deps.store, deps.env.PHOTON_URL)));
+  router.use(
+    placeRoutes(
+      deps,
+      new Places(deps.store, deps.env.PHOTON_URL, fetch, Date.now, deps.env.ORS_API_KEY),
+    ),
+  );
   router.use(tripRoutes(deps, new Trips(deps.store, deps.chain, deps.env)));
   router.use(inviteRoutes(deps, invites, (accountId) => auth.subjectFor(accountId)));
   router.use(profileRoutes(deps, new Profiles(deps.store, deps.chain)));
