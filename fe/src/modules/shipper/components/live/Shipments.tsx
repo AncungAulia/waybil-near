@@ -5,7 +5,8 @@ import { Package, Plus } from "@phosphor-icons/react";
 import { ButtonLink } from "@/components/ui/Button";
 import { Segmented } from "@/components/ui/Segmented";
 import { ShipmentList } from "../ShipmentList";
-import { toRow, type LiveShipperData } from "../../data/live";
+import { toRow, withTrips, type LiveShipperData } from "../../data/live";
+import { useTrips } from "@/hooks/useTrips";
 
 /* P6. */
 const FILTERS = ["All", "Bills to pay", "On the road", "Done"] as const;
@@ -17,7 +18,11 @@ export function Shipments({ data }: { data: LiveShipperData }) {
     (filter === "Bills to pay" && status === "Paid") ||
     (filter === "On the road" && ["Approved", "PickedUp", "Reported"].includes(status)) ||
     (filter === "Done" && ["Repaid", "Cancelled", "CoveredByReserve"].includes(status));
-  const rows = data.shipments.filter((s) => match(s.status)).map((s) => toRow(s, data));
+  const { trips } = useTrips(data.shipments.map((s) => s.id));
+  const rows = withTrips(
+    data.shipments.filter((s) => match(s.status)).map((s) => toRow(s, data)),
+    trips,
+  );
   return (
     <>
       <header className="flex flex-wrap items-end justify-between gap-12">

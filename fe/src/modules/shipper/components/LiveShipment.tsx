@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/Input";
 import { Money } from "@/components/elements/Money";
 import { StatusPill } from "@/components/elements/StatusPill";
 import { TripMap } from "@/components/elements/TripMap";
+import { Skeleton } from "@/components/elements/Skeleton";
 import { usePlaces, useTrips } from "@/hooks/useTrips";
 import { forgetPickup, pickupFor } from "../data/pendingTrip";
 import { SearchPicker } from "@/components/ui/SearchPicker";
@@ -154,7 +155,12 @@ export function LiveShipment({
         <StatusPill status={statusChip(s)} />
       </header>
       <DoneNote done={done} />
-      <TripMap trip={trips[0]} status={s.status} />
+      {/* The map's place is held while the trip loads, so nothing jumps in later. */}
+      {!tripData ? (
+        <Skeleton className="h-260 w-full rounded-row md:h-360" />
+      ) : (
+        <TripMap trip={trips[0]} status={s.status} />
+      )}
       {tripData && !trips[0] && (s.status === "Approved" || s.status === "PickedUp") && (
         <AddTrip shipment={s} onAdded={reloadTrips} />
       )}

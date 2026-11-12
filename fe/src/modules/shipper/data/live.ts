@@ -1,4 +1,4 @@
-import type { Invite, Network, Shipment, Shipper } from "@waybil/shared";
+import type { Invite, Network, Shipment, Shipper, Trip } from "@waybil/shared";
 import type { DemoShipmentRow } from "./fixtures";
 
 /* The shipper's testnet data in the shapes the screens draw (#84). */
@@ -32,6 +32,14 @@ export const shortDay = (ns: string | null | undefined) =>
   ns ? SHORT.format(new Date(ms(ns))) : "";
 
 /** One row for the shipment lists. */
+/** "Pickup Solo to Warehouse Bantul" when the trip is known, otherwise the row as it was. */
+export function withTrips(rows: DemoShipmentRow[], trips: Trip[]): DemoShipmentRow[] {
+  return rows.map((row) => {
+    const trip = trips.find((t) => t.shipmentId === row.shipment.id);
+    return trip ? { ...row, route: `${trip.pickup.name} to ${trip.destination.name}` } : row;
+  });
+}
+
 export function toRow(s: Shipment, data: LiveShipperData, now = Date.now()): DemoShipmentRow {
   const { people, places } = names(data.invites);
   const warehouse = data.network.destinations.find((d) => d.id === s.destination)?.warehouse;

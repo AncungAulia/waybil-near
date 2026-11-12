@@ -8,7 +8,8 @@ import { Money } from "@/components/elements/Money";
 import { Stat } from "@/components/elements/Stat";
 import { FleetMap } from "@/components/elements/FleetMap";
 import { ShipmentList } from "../ShipmentList";
-import { billsToPay, toRow, type LiveShipperData } from "../../data/live";
+import { billsToPay, toRow, withTrips, type LiveShipperData } from "../../data/live";
+import { useTrips } from "@/hooks/useTrips";
 import { Meter } from "./shared";
 
 /* P1. */
@@ -16,7 +17,12 @@ export function Home({ data, name }: { data: LiveShipperData; name: string }) {
   const router = useRouter();
   const shipper = data.shipper!;
   const bills = billsToPay(data.shipments);
-  const rows = data.shipments.slice(0, 5).map((s) => toRow(s, data));
+  const recent = data.shipments.slice(0, 5);
+  const { trips } = useTrips(recent.map((s) => s.id));
+  const rows = withTrips(
+    recent.map((s) => toRow(s, data)),
+    trips,
+  );
   /* A first shipment needs a driver and a destination in the network. */
   const ready = data.network.drivers.length > 0 && data.network.destinations.length > 0;
   return (
