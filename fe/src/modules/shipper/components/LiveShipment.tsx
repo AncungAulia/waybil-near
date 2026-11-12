@@ -14,6 +14,8 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Money } from "@/components/elements/Money";
 import { StatusPill } from "@/components/elements/StatusPill";
+import { TripMap } from "@/components/elements/TripMap";
+import { useTrips } from "@/hooks/useTrips";
 import { api } from "@/lib/api";
 import { CONTRACT_RECORD_URL, USDC_CONTRACT, WAYBIL_CONTRACT } from "@/lib/env";
 import { statusChip } from "@/lib/status";
@@ -40,6 +42,7 @@ export function LiveShipment({
 }) {
   const created = useSearchParams().get("tx");
   const s = data.shipments.find((x) => x.id === id);
+  const { trips } = useTrips(s ? [s.id] : []);
   const [done, setDone] = useState<Done>(
     created ? { text: "The shipment is approved. The driver can pick it up.", tx: created } : null,
   );
@@ -146,6 +149,7 @@ export function LiveShipment({
         <StatusPill status={statusChip(s)} />
       </header>
       <DoneNote done={done} />
+      <TripMap trip={trips[0]} status={s.status} />
       <div className="grid items-start gap-24 lg:grid-cols-[minmax(0,1fr)_400px]">
         <Panel title="Trip" gap={4}>
           {steps.map((step) => (

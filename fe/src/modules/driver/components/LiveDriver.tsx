@@ -3,15 +3,19 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatUsdc, type Shipment } from "@waybil/shared";
-import { ArrowDown, Buildings, Copy, Package, Truck } from "@phosphor-icons/react";
+import { ArrowDown, Buildings, Copy, NavigationArrow, Package, Truck } from "@phosphor-icons/react";
 import { RoleShell } from "@/components/layout/RoleShell";
 import { Panel } from "@/components/layout/Panel";
-import { Button } from "@/components/ui/Button";
+import { Button, ButtonLink } from "@/components/ui/Button";
 import { Money } from "@/components/elements/Money";
 import { StatusPill } from "@/components/elements/StatusPill";
 import { DeliveryQr } from "@/components/elements/DeliveryQr";
 import { ProofLink } from "@/components/elements/ProofLink";
 import { BackLink } from "@/components/elements/BackLink";
+import { TripMap } from "@/components/elements/TripMap";
+import { useTrips } from "@/hooks/useTrips";
+import { sharingNote, useShareLocation } from "@/hooks/useShareLocation";
+import { directionsUrl } from "@/lib/route";
 import { FILL_UNDER_HEADER, FillEmpty } from "@/components/elements/EmptyState";
 import { SkeletonGroup, SkeletonHeader, SkeletonListPanel } from "@/components/elements/Skeleton";
 import { useLive } from "@/hooks/useLive";
@@ -174,6 +178,9 @@ function Trip({
   const [tx, setTx] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const name = useNames([s?.shipper]);
+  const { trips } = useTrips(s ? [s.id] : []);
+  const trip = trips[0];
+  const sharing = useShareLocation(s?.id, s?.status === "PickedUp");
   const back = <BackLink href="/driver">Trips</BackLink>;
   if (!s)
     return (
@@ -215,6 +222,31 @@ function Trip({
         </div>
         <StatusPill status={statusChip(s)} />
       </header>
+      {trip && (
+        <div className="flex flex-col gap-10">
+          <TripMap trip={trip} status={s.status} />
+          {s.status === "PickedUp" && (
+            <p className="text-caption text-ds-muted">{sharingNote(sharing.state)}</p>
+          )}
+          {(s.status === "Approved" || s.status === "PickedUp") && (
+            <ButtonLink
+              href={directionsUrl(
+                s.status === "Approved" ? trip.pickup.lat : trip.destination.lat,
+                s.status === "Approved" ? trip.pickup.lng : trip.destination.lng,
+              )}
+              target="_blank"
+              rel="noopener noreferrer"
+              variant="secondary"
+              icon={<NavigationArrow size={17} />}
+              className="w-full justify-between md:w-auto md:self-start"
+            >
+              {s.status === "Approved"
+                ? "Directions to the pickup"
+                : "Directions to the destination"}
+            </ButtonLink>
+          )}
+        </div>
+      )}
       {tx && (
         <Panel className="gap-8">
           <p className="text-label">Recorded.</p>

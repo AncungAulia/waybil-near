@@ -6,6 +6,7 @@ import { Panel } from "@/components/layout/Panel";
 import { ButtonLink } from "@/components/ui/Button";
 import { Money } from "@/components/elements/Money";
 import { Stat } from "@/components/elements/Stat";
+import { FleetMap } from "@/components/elements/FleetMap";
 import { ShipmentList } from "../ShipmentList";
 import { billsToPay, toRow, type LiveShipperData } from "../../data/live";
 import { Meter } from "./shared";
@@ -56,6 +57,7 @@ export function Home({ data, name }: { data: LiveShipperData; name: string }) {
           </p>
         </div>
       )}
+      {ready && <FleetMap shipments={data.shipments} />}
       <div className="grid gap-16 md:grid-cols-3">
         <Stat
           className="w-full"
