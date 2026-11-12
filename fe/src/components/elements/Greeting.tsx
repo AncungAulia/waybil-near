@@ -10,15 +10,20 @@ export function greeting(date = new Date()) {
   return "Good night";
 }
 
+/** The first three words of a name, so "Aulia Nur Fajri Tri Anggoro" reads "Aulia Nur Fajri". */
+export const shortName = (name: string) => name.trim().split(/\s+/).slice(0, 3).join(" ");
+
 /**
- * The page title that greets the person by the time of day on their own device. The server
- * renders in its own time zone, so the text may change once in the browser, which React is
- * told to expect. A long name wraps between words.
+ * The page title that greets the person by the time of day on their own device. It stays on
+ * one line, with the first three words of the name, cut short with an ellipsis on a narrow
+ * phone. The server renders in its own time zone, so the text may change once in the
+ * browser, which React is told to expect.
  */
 export function Greeting({ name, className }: { name?: string; className?: string }) {
+  const text = name ? `${greeting()}, ${shortName(name)}` : greeting();
   return (
-    <h1 suppressHydrationWarning className={cn("text-title break-words", className)}>
-      {name ? `${greeting()}, ${name}` : greeting()}
+    <h1 suppressHydrationWarning title={text} className={cn("text-title truncate", className)}>
+      {text}
     </h1>
   );
 }
