@@ -15,8 +15,9 @@ import { api } from "@/lib/api";
 import { listProposals } from "@/lib/near";
 import { WAYBIL_CONTRACT } from "@/lib/env";
 import { callContract } from "@/lib/wallet";
+import { notify } from "@/lib/notify";
 import { AdminActionFields } from "../AdminActionFields";
-import { asInput, day, failure, GAS, toUnits, type Done } from "./shared";
+import { asInput, day, failure, GAS, toUnits } from "./shared";
 
 const APPLICATION_REASONS: Record<string, ApplicationRejectionReason> = {
   "Documents do not match": "unclear_documents",
@@ -33,7 +34,8 @@ export function DecideSheet({
 }: {
   application: ApplicationListItem;
   onClose: () => void;
-  onDone: (done: Done) => void;
+  /** Called once the decision is sent. Its toast is already showing. */
+  onDone: () => void;
 }) {
   const suggested = a.review?.suggestedLimit ? BigInt(a.review.suggestedLimit) : null;
   const [rejection, setRejection] = useState(false);
@@ -46,12 +48,15 @@ export function DecideSheet({
   const invalidate = useInvalidate();
 
   /* Rejects the application, or proposes its starting limit and links the proposal to it. */
-  async function decide(): Promise<Done> {
+  async function decide(): Promise<{ title: string; meta: string; tx?: string }> {
     if (rejection) {
       await api(`/admin/applications/${a.id}/reject`, {
         body: { reason: APPLICATION_REASONS[reason] ?? "other", note: note.trim() },
       });
-      return { text: `${a.company.name} was told why it was not approved.` };
+      return {
+        title: "Application rejected",
+        meta: `${a.company.name} was told why it was not approved.`,
+      };
     }
     const tx = await callContract(
       WAYBIL_CONTRACT,
@@ -66,17 +71,20 @@ export function DecideSheet({
     if (proposal)
       await api(`/admin/applications/${a.id}/proposal`, { body: { proposalId: proposal.id } });
     return {
-      text: `You approved a ${formatUsdc(units)} USDC starting limit for ${a.company.name}. It goes live when one more team member approves it.`,
+      title: `${formatUsdc(units)} USDC limit proposed`,
+      meta: "It goes live when one more member approves it.",
       tx,
     };
   }
   const decision = useMutation({
     mutationFn: decide,
-    onSuccess: (done) => {
+    onSuccess: ({ title, meta, tx }) => {
+      notify.success(title, { meta, tx });
       /* Every team page can show this application or its proposal. */
       void invalidate(qk.allAdmin());
-      onDone(done);
+      onDone();
     },
+    /* Errors stay in the open sheet, next to the button. */
     onError: (e) => setError(failure(e)),
   });
   const busy = decision.isPending;

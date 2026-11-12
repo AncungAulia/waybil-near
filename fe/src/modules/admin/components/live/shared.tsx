@@ -4,7 +4,6 @@ import { qk } from "@/lib/queryKeys";
 import { parseUsdc, type ProposalKind, type Shipper } from "@waybil/shared";
 import { Panel } from "@/components/layout/Panel";
 import { Button } from "@/components/ui/Button";
-import { ProofLink } from "@/components/elements/ProofLink";
 import { Skeleton, SkeletonGroup, SkeletonRow } from "@/components/elements/Skeleton";
 import { ApiError } from "@/lib/api";
 import { Empty } from "../AdminParts";
@@ -97,17 +96,6 @@ export const shipperOf = (kind: ProposalKind) =>
         ? kind.Unpause.shipper
         : null;
 
-/** A sentence and its record after something was sent. */
-export type Done = { text: string; tx?: string } | null;
-export function DoneNote({ done }: { done: Done }) {
-  if (!done) return null;
-  return (
-    <Panel className="gap-8">
-      <p className="text-label">{done.text}</p>
-      {done.tx && <ProofLink tx={done.tx} />}
-    </Panel>
-  );
-}
 export function Failed({ error, reload }: { error: string; reload: () => void }) {
   return (
     <Panel>

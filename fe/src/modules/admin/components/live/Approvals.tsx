@@ -19,15 +19,16 @@ import { Tag } from "@/components/ui/Tag";
 import { Money } from "@/components/elements/Money";
 import { api } from "@/lib/api";
 import { useNames } from "@/hooks/useNames";
-import { getShipper, getTeam, listProposals } from "@/lib/near";
+import { getProposal, getShipper, getTeam, listProposals } from "@/lib/near";
 import { WAYBIL_CONTRACT } from "@/lib/env";
 import { callContract } from "@/lib/wallet";
+import { notify } from "@/lib/notify";
+import { ResultDialog } from "@/components/elements/ResultDialog";
 import { AdminActionFields } from "../AdminActionFields";
 import { AdminBadge, Empty, Fact } from "../AdminParts";
 import {
   day,
   describe,
-  DoneNote,
   failure,
   Failed,
   GAS,
@@ -36,7 +37,6 @@ import {
   REASON_WORDS,
   shipperOf,
   useLoad,
-  type Done,
 } from "./shared";
 
 const VOTE_REASONS: Record<string, ProposalReasonInput["reason"]> = {
@@ -70,53 +70,75 @@ export function Approvals({ me }: { me: string }) {
       reasons: reasons.flat(),
     };
   }, "approvals");
-  const [done, setDone] = useState<Done>(null);
   const [rejecting, setRejecting] = useState<Proposal | null>(null);
   const [reason, setReason] = useState("");
   const [note, setNote] = useState("");
+  const [rejectError, setRejectError] = useState<string | null>(null);
+  /* A vote that makes a change go through opens a dialog. Other votes end with a toast. */
+  const [passed, setPassed] = useState<{
+    title: string;
+    amount?: string;
+    text: string;
+    tx: string;
+  } | null>(null);
   const invalidate = useInvalidate();
+  const name = useNames(data?.proposals.map((p) => shipperOf(p.kind)) ?? []);
 
   /* Records the vote, then saves the reason for a rejection with the backend. */
-  async function record({ p, approve }: { p: Proposal; approve: boolean }): Promise<Done> {
+  async function record({ p, approve }: { p: Proposal; approve: boolean }) {
     const tx = await callContract(WAYBIL_CONTRACT, "vote", { id: p.id, approve }, { gas: GAS });
-    let text = approve ? "Your approval is recorded." : "Your rejection is recorded.";
+    /* Two approvals carry it out. Read it back to know, since a late vote can expire it. */
+    const after = approve ? await getProposal(p.id).catch(() => null) : null;
+    const approved = approve && (after ? after.status === "Approved" : p.approvals.length >= 1);
+    let text = !approve
+      ? "The reason is saved with it."
+      : after?.status === "Expired"
+        ? "It had expired, so nothing changed."
+        : "It goes through when one more member approves it.";
     if (!approve) {
       const body = { reason: VOTE_REASONS[reason] ?? "other", note: note.trim() };
       /* The vote must be final before the backend sees it, so try once more after a moment. */
       await api(`/admin/proposals/${p.id}/reasons`, { body }).catch(async () => {
         await new Promise((wait) => setTimeout(wait, 2500));
         await api(`/admin/proposals/${p.id}/reasons`, { body }).catch(() => {
-          text = "Your rejection is recorded. The reason could not be saved.";
+          text = "The reason could not be saved.";
         });
       });
     }
-    return { text, tx };
+    return { text, tx, approved };
   }
   const voting = useMutation({
     mutationFn: record,
-    onSuccess: (next) => {
-      setDone(next);
+    onSuccess: ({ text, tx, approved }, { p, approve }) => {
+      if (approved) setPassed({ ...outcome(p, name), tx });
+      else
+        notify.success(approve ? "Your approval is recorded" : "Your rejection is recorded", {
+          meta: text,
+          tx,
+        });
       setRejecting(null);
       /* A vote can start a shipper or change a limit, which other team pages show too. */
       void invalidate(qk.allAdmin());
     },
-    onError: (e) => setDone({ text: failure(e) }),
+    /* A rejection keeps its error in the open sheet. An approval shows a toast. */
+    onError: (e, { approve }) =>
+      approve
+        ? notify.error("Your approval was not sent", { meta: failure(e) })
+        : setRejectError(failure(e)),
   });
   /* The proposal being voted on, while its wallet request is open. */
   const busy = voting.isPending ? voting.variables.p.id : null;
   function vote(p: Proposal, approve: boolean) {
-    setDone(null);
+    setRejectError(null);
     voting.mutate({ p, approve });
   }
 
-  const name = useNames(data?.proposals.map((p) => shipperOf(p.kind)) ?? []);
   if (error) return <Failed error={error} reload={reload} />;
   const open = data?.proposals.filter((p) => p.status === "Open") ?? [];
   const closed = data?.proposals.filter((p) => p.status !== "Open").slice(0, 6) ?? [];
   return (
     <>
       <Header title="Approvals" note="Changes that need the team" />
-      <DoneNote done={done} />
       {!data ? (
         <Loading label="Loading the approvals." />
       ) : (
@@ -142,6 +164,7 @@ export function Approvals({ me }: { me: string }) {
                   onReject={() => {
                     setReason("");
                     setNote("");
+                    setRejectError(null);
                     setRejecting(p);
                   }}
                 />
@@ -210,6 +233,11 @@ export function Approvals({ me }: { me: string }) {
             invalidLimit={false}
             subtitle={describe(rejecting.kind, data.shippers, name).title}
           />
+          {rejectError && (
+            <p role="alert" className="rounded-row bg-ds-danger-result p-14 text-label">
+              {rejectError}
+            </p>
+          )}
           <div className="admin-sheet-actions flex justify-end gap-10">
             <Button variant="quiet" onClick={() => setRejecting(null)}>
               Cancel
@@ -227,8 +255,53 @@ export function Approvals({ me }: { me: string }) {
           </div>
         </ActionSheet>
       )}
+      {passed && (
+        <ResultDialog
+          title={passed.title}
+          amount={passed.amount}
+          tx={passed.tx}
+          onClose={() => setPassed(null)}
+        >
+          {passed.text}
+        </ResultDialog>
+      )}
     </>
   );
+}
+
+/** What a change that just went through did, in a short title and a sentence. */
+function outcome(
+  p: Proposal,
+  name: (accountId: string) => string,
+): { title: string; amount?: string; text: string } {
+  const k = p.kind;
+  if ("StartShipper" in k) {
+    const company = name(k.StartShipper.shipper);
+    return {
+      title: `${company} is live`,
+      amount: k.StartShipper.limit,
+      text: `The team approved it. ${company} can send shipments up to this limit now.`,
+    };
+  }
+  if ("SetLimit" in k)
+    return {
+      title: "Limit changed",
+      amount: k.SetLimit.limit,
+      text: `The team approved it. This is ${name(k.SetLimit.shipper)}’s new limit.`,
+    };
+  if ("Unpause" in k)
+    return {
+      title: `${name(k.Unpause.shipper)} is back on`,
+      text: "The team approved it. The company can send new shipments again.",
+    };
+  if ("CoverFromReserve" in k)
+    return {
+      title: "Bill covered",
+      text: `The team approved it. The reserve paid bill #${k.CoverFromReserve.shipment_id}.`,
+    };
+  if ("Upgrade" in k)
+    return { title: "New version approved", text: "The team approved the new version of Waybil." };
+  return { title: "Setting changed", text: "The team approved it. The new setting is in use now." };
 }
 
 function ProposalCard({

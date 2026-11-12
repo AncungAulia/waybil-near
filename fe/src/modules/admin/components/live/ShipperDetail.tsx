@@ -26,13 +26,13 @@ import { api } from "@/lib/api";
 import { getShipper, listShipmentsByShipper, readAll } from "@/lib/near";
 import { WAYBIL_CONTRACT } from "@/lib/env";
 import { callContract } from "@/lib/wallet";
+import { notify } from "@/lib/notify";
 import { AdminActionFields } from "../AdminActionFields";
 import { AdminBadge, AdminTiles, Empty, Fact } from "../AdminParts";
 import { DecideSheet } from "./DecideSheet";
 import {
   asInput,
   day,
-  DoneNote,
   failure,
   Failed,
   GAS,
@@ -40,8 +40,10 @@ import {
   REASON_WORDS,
   toUnits,
   useLoad,
-  type Done,
 } from "./shared";
+
+/** The toast a sent action ends with. */
+type Note = { title: string; meta: string; tx: string };
 
 const PAUSE_REASONS: Record<string, "payment_risk" | "late_bills" | "other"> = {
   "Late bill": "late_bills",
@@ -82,19 +84,20 @@ export function ShipperDetail({ account }: { account: string }) {
   const [reason, setReason] = useState("");
   const [note, setNote] = useState("");
   const [limit, setLimit] = useState("");
-  const [done, setDone] = useState<Done>(null);
   const [sheetError, setSheetError] = useState<string | null>(null);
   const [proof, setProof] = useState<string | null>(null);
   const invalidate = useInvalidate();
   const action = useMutation({
-    mutationFn: (run: () => Promise<Done>) => run(),
-    onSuccess: (next) => {
-      setDone(next);
+    mutationFn: (run: () => Promise<Note>) => run(),
+    onSuccess: ({ title, meta, tx }) => {
+      notify.success(title, { meta, tx });
       setSheet(null);
       /* A pause or a proposal shows on this page, in the list and in approvals. */
       void invalidate(qk.allAdmin());
     },
-    onError: (e) => setSheetError(failure(e)),
+    /* An error from an open sheet stays next to its button. Otherwise it is a toast. */
+    onError: (e) =>
+      sheet ? setSheetError(failure(e)) : notify.error("It was not sent", { meta: failure(e) }),
   });
   const busy = action.isPending;
 
@@ -128,7 +131,7 @@ export function ShipperDetail({ account }: { account: string }) {
       </>
     );
 
-  function send(run: () => Promise<Done>) {
+  function send(run: () => Promise<Note>) {
     setSheetError(null);
     action.mutate(run);
   }
@@ -144,11 +147,13 @@ export function ShipperDetail({ account }: { account: string }) {
       await api("/admin/pauses", {
         body: { shipperId: account, reason: code, note: note.trim(), txHash: tx },
       }).catch(() => undefined);
-      return { text: `${account} is paused. It cannot approve new trips.`, tx };
+      return { title: `${account} is paused`, meta: "It cannot approve new trips now.", tx };
     });
-  const propose = (kind: ProposalKind, text: string) =>
+  /* A proposal counts as the sender's approval, so it needs one more member. */
+  const propose = (kind: ProposalKind, meta: string) =>
     send(async () => ({
-      text,
+      title: "Sent to the team",
+      meta,
       tx: await callContract(WAYBIL_CONTRACT, "propose", { kind }, { gas: GAS }),
     }));
   const units = toUnits(limit);
@@ -225,7 +230,6 @@ export function ShipperDetail({ account }: { account: string }) {
           </Button>
         )}
       </header>
-      <DoneNote done={done} />
       <div className="admin-detail-grid grid items-start gap-24 lg:grid-cols-[minmax(0,1fr)_440px]">
         <div className="flex min-w-0 flex-col gap-24">
           {shipper ? (
@@ -274,7 +278,7 @@ export function ShipperDetail({ account }: { account: string }) {
                     onClick={() =>
                       void propose(
                         { Unpause: { shipper: account } },
-                        `You asked the team to turn ${account} back on.`,
+                        "It turns back on when one more member approves it.",
                       )
                     }
                   >
@@ -397,10 +401,7 @@ export function ShipperDetail({ account }: { account: string }) {
         <DecideSheet
           application={{ ...application, review }}
           onClose={() => setSheet(null)}
-          onDone={(next) => {
-            setDone(next);
-            setSheet(null);
-          }}
+          onDone={() => setSheet(null)}
         />
       )}
       {(sheet === "limit" || sheet === "pause") && shipper && (
@@ -447,7 +448,7 @@ export function ShipperDetail({ account }: { account: string }) {
                 onClick={() =>
                   void propose(
                     { SetLimit: { shipper: account, limit: String(units) } },
-                    `You asked the team to change the limit to ${formatUsdc(units)} USDC.`,
+                    `The new limit of ${formatUsdc(units)} USDC needs one more approval.`,
                   )
                 }
               >

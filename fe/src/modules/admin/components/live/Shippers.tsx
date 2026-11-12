@@ -16,7 +16,7 @@ import { cn } from "@/lib/cn";
 import { getShipper, listProposals } from "@/lib/near";
 import { AdminBadge, Empty } from "../AdminParts";
 import { DecideSheet } from "./DecideSheet";
-import { day, DoneNote, Failed, Header, Loading, useLoad, type Done } from "./shared";
+import { day, Failed, Header, Loading, useLoad } from "./shared";
 
 /* M2. Applications waiting for review, and the companies already shipping. */
 export function Shippers() {
@@ -42,12 +42,10 @@ export function Shippers() {
     };
   }, "shippers");
   const [deciding, setDeciding] = useState<ApplicationListItem | null>(null);
-  const [done, setDone] = useState<Done>(null);
   if (error) return <Failed error={error} reload={reload} />;
   return (
     <>
       <Header title="Shippers" note="New applications and the companies already shipping" />
-      <DoneNote done={done} />
       {!data ? (
         <Loading label="Loading the shippers." />
       ) : (
@@ -116,10 +114,7 @@ export function Shippers() {
         <DecideSheet
           application={deciding}
           onClose={() => setDeciding(null)}
-          onDone={(next) => {
-            setDone(next);
-            setDeciding(null);
-          }}
+          onDone={() => setDeciding(null)}
         />
       )}
     </>
