@@ -1,4 +1,5 @@
 import { formatUsdc } from "@waybil/shared";
+import { Greeting } from "@/components/elements/Greeting";
 import { Plus } from "@phosphor-icons/react";
 import { Panel } from "@/components/layout/Panel";
 import { Button } from "@/components/ui/Button";
@@ -50,7 +51,11 @@ export function PoolHome({
   return (
     <div className="flex flex-col gap-16 md:gap-24">
       <header>
-        <h1 className="text-title">{firstVisit ? `Welcome, ${name}` : `Hi, ${name}`}</h1>
+        {firstVisit ? (
+          <h1 className="text-title break-words">Welcome, {name}</h1>
+        ) : (
+          <Greeting name={name} />
+        )}
         <p className="mt-6 text-label text-ds-muted">
           {firstVisit
             ? "Here’s how the pool is doing. Deposit to start earning."

@@ -1,4 +1,5 @@
 "use client";
+import { Greeting } from "@/components/elements/Greeting";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Package, Plus, UserPlus, Warning } from "@phosphor-icons/react";
@@ -28,8 +29,8 @@ export function Home({ data, name }: { data: LiveShipperData; name: string }) {
   return (
     <>
       <header className="flex flex-wrap items-end justify-between gap-12">
-        <div>
-          <h1 className="text-title break-all">Hi, {name}</h1>
+        <div className="min-w-0">
+          <Greeting name={name} />
           <p className="mt-6 text-label text-ds-muted">
             Approve trips before the truck leaves. Your drivers get paid on arrival.
           </p>

@@ -1,4 +1,6 @@
 "use client";
+import { useAuth } from "@/providers/AuthProvider";
+import { Greeting } from "@/components/elements/Greeting";
 import { qk } from "@/lib/queryKeys";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { useState } from "react";
@@ -123,12 +125,17 @@ export function LiveWarehouse({ view, account }: { view: WarehouseView; account:
 
 /* W1 and W3. */
 function List({ history, shipments }: { history: boolean; shipments: Shipment[] }) {
+  const { profile } = useAuth();
   const name = useNames(shipments.map((s) => s.driver));
   return (
     <>
       <header className="flex flex-wrap items-end justify-between gap-12">
-        <div>
-          <h1 className="text-title">{history ? "History" : "Arrivals"}</h1>
+        <div className="min-w-0">
+          {history ? (
+            <h1 className="text-title">History</h1>
+          ) : (
+            <Greeting name={profile?.name || undefined} />
+          )}
           <p className="mt-6 text-label text-ds-muted">
             {history
               ? "Deliveries you confirmed."

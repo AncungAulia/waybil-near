@@ -1,4 +1,6 @@
 "use client";
+import { useAuth } from "@/providers/AuthProvider";
+import { Greeting } from "@/components/elements/Greeting";
 import { qk } from "@/lib/queryKeys";
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -133,12 +135,13 @@ function Row({ s }: { s: Shipment }) {
 
 /* K1. */
 function Trips({ trips }: { trips: Shipment[] }) {
+  const { profile } = useAuth();
   const open = trips.filter((s) => ["Approved", "PickedUp", "Reported"].includes(s.status));
   const done = trips.filter((s) => !open.includes(s));
   return (
     <>
       <header>
-        <h1 className="text-title">Trips</h1>
+        <Greeting name={profile?.name || undefined} />
         <p className="mt-6 text-label text-ds-muted">
           Confirm pickup, show your QR at the destination, and get paid on arrival.
         </p>
