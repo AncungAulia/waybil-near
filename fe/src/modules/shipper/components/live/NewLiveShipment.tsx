@@ -1,13 +1,17 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { advanceFor, formatUsdc, parseUsdc } from "@waybil/shared";
-import { UserPlus } from "@phosphor-icons/react";
+import { advanceFor, formatUsdc, parseUsdc, type TripCreate } from "@waybil/shared";
+import { MapPin, UserPlus } from "@phosphor-icons/react";
 import { Panel } from "@/components/layout/Panel";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Money } from "@/components/elements/Money";
 import { FillEmpty } from "@/components/elements/EmptyState";
+import { RouteMap } from "@/components/elements/RouteMap";
+import { api } from "@/lib/api";
+import { km } from "@/lib/route";
+import { usePlaces } from "@/hooks/useTrips";
 import { WAYBIL_CONTRACT } from "@/lib/env";
 import { listShipmentsByShipper } from "@/lib/near";
 import { callContract } from "@/lib/wallet";
@@ -23,6 +27,17 @@ export function NewLiveShipment({ data, refresh }: { data: LiveShipperData; refr
   const [destination, setDestination] = useState(
     data.network.destinations[0] ? String(data.network.destinations[0].id) : "",
   );
+  const { data: placeList } = usePlaces();
+  const pickups = (placeList?.places ?? []).filter((p) => p.kind === "pickup");
+  const [pickupChoice, setPickup] = useState("");
+  const pickupId = pickupChoice || pickups[0]?.id || "";
+  const pickup = pickups.find((p) => p.id === pickupId);
+  /* The destination's pin is the place on the warehouse invite this destination came from. */
+  const chosen = data.network.destinations.find((d) => String(d.id) === destination);
+  const destPlaceId = data.invites.find(
+    (i) => i.type === "warehouse" && i.acceptedBy === chosen?.warehouse && i.placeId,
+  )?.placeId;
+  const destPlace = (placeList?.places ?? []).find((p) => p.id === destPlaceId);
   const [qty, setQty] = useState("");
   const [unit, setUnit] = useState("crates");
   const [fee, setFee] = useState("");
@@ -43,7 +58,15 @@ export function NewLiveShipment({ data, refresh }: { data: LiveShipperData; refr
   const unitOk = /^[a-z]{1,20}$/i.test(unit.trim());
   const dueOk = !!due && due > day(0) && due <= day(60);
   const ready =
-    !!driver && !!destination && qtyOk && unitOk && bill > 0n && !over && dueOk && !shipper.paused;
+    !!driver &&
+    !!destination &&
+    !!pickup &&
+    qtyOk &&
+    unitOk &&
+    bill > 0n &&
+    !over &&
+    dueOk &&
+    !shipper.paused;
   const empty = data.network.drivers.length === 0 || data.network.destinations.length === 0;
 
   async function approve() {
@@ -70,6 +93,12 @@ export function NewLiveShipment({ data, refresh }: { data: LiveShipperData; refr
           limit: 50,
         })
       ).sort((a, b) => b.id - a.id);
+      /* Join the pickup point and the destination into the trip the map shows. */
+      if (newest && pickup)
+        await api(`/trips/${newest.id}`, {
+          method: "PUT",
+          body: { pickupPlaceId: pickup.id } satisfies TripCreate,
+        }).catch(() => undefined);
       refresh();
       router.push(newest ? `/shipper/shipments/${newest.id}?tx=${tx}` : "/shipper/shipments");
     } catch (e) {
@@ -114,6 +143,31 @@ export function NewLiveShipment({ data, refresh }: { data: LiveShipperData; refr
                   </option>
                 ))}
               </select>
+            </label>
+            <label className="flex flex-col gap-8 text-label">
+              Pickup from
+              {pickups.length ? (
+                <select
+                  className="focus-ring h-48 rounded-[14px] bg-ds-canvas px-12"
+                  value={pickupId}
+                  onChange={(e) => setPickup(e.target.value)}
+                >
+                  {pickups.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <ButtonLink
+                  href="/shipper/network"
+                  variant="secondary"
+                  icon={<MapPin size={17} />}
+                  className="w-full justify-between"
+                >
+                  Add a pickup point first
+                </ButtonLink>
+              )}
             </label>
             <label className="flex flex-col gap-8 text-label">
               Destination
@@ -167,6 +221,37 @@ export function NewLiveShipment({ data, refresh }: { data: LiveShipperData; refr
             />
           </Panel>
           <Panel title="Summary">
+            {pickup && destPlace ? (
+              <>
+                <RouteMap
+                  className="h-200 w-full"
+                  chip="Route preview"
+                  trips={[
+                    {
+                      id: "preview",
+                      pickup,
+                      destination: destPlace,
+                      route: [
+                        [pickup.lng, pickup.lat],
+                        [destPlace.lng, destPlace.lat],
+                      ],
+                    },
+                  ]}
+                />
+                <p className="text-caption text-ds-muted">
+                  {pickup.name} to {destPlace.name} is about{" "}
+                  {Math.round(km([pickup.lng, pickup.lat], [destPlace.lng, destPlace.lat]))} km in a
+                  straight line. The road route is drawn once you approve.
+                </p>
+              </>
+            ) : (
+              pickup &&
+              chosen && (
+                <p className="text-caption text-ds-muted">
+                  This destination has no pin on the map yet, so the trip will have no map.
+                </p>
+              )
+            )}
             <div className="flex justify-between gap-12 text-label">
               <span className="text-ds-muted">The driver gets on arrival</span>
               <Money amount={String(advanceFor(bill))} />

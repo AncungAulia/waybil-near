@@ -1,0 +1,56 @@
+/* Markers and chrome for RouteMap. Black on light grey tiles, the truck ringed in brand yellow. */
+.wb-map {
+  background: #ececea;
+}
+.wb-map .maplibregl-ctrl-group {
+  border-radius: 999px;
+  overflow: hidden;
+  box-shadow: none;
+  border: 1px solid var(--color-ds-line);
+}
+.wb-map .maplibregl-ctrl-attrib {
+  font-size: 11px;
+}
+.wb-pin-pickup {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--color-ds-ink);
+  border: 3px solid #fff;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
+}
+.wb-pin-destination {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--color-ds-ink);
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.25);
+  cursor: pointer;
+}
+.wb-pin-destination::after {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--color-ds-brand);
+}
+.wb-pin-truck {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: var(--color-ds-ink);
+  color: var(--color-ds-brand);
+  border: 3px solid var(--color-ds-brand);
+  box-shadow: 0 0 0 8px rgb(255 214 10 / 0.3);
+}
+.wb-pin-truck[data-stale="true"] {
+  color: #fff;
+  border-color: var(--color-ds-filter-count);
+  box-shadow: none;
+  filter: grayscale(1);
+}

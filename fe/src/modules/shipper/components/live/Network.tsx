@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { ArrowUpRight, Plus, UserPlus } from "@phosphor-icons/react";
+import { ArrowUpRight, MapPin, Plus, UserPlus } from "@phosphor-icons/react";
 import { Panel } from "@/components/layout/Panel";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { ActionSheet } from "@/components/layout/ActionSheet";
@@ -10,6 +10,8 @@ import { nearblocksUrl, WAYBIL_CONTRACT } from "@/lib/env";
 import { callContract } from "@/lib/wallet";
 import { names, waitingToAdd, type LiveShipperData } from "../../data/live";
 import { InviteSheet } from "./InviteSheet";
+import { PickupSheet } from "./PickupSheet";
+import { usePlaces } from "@/hooks/useTrips";
 import { NetworkEmpty } from "../ShipperNetwork";
 import { cn } from "@/lib/cn";
 import { useNames } from "@/hooks/useNames";
@@ -34,6 +36,9 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
       : "";
   };
   const [inviting, setInviting] = useState<"driver" | "warehouse" | null>(null);
+  const [addingPickup, setAddingPickup] = useState(false);
+  const { data: placeList, reload: reloadPlaces } = usePlaces();
+  const pickups = (placeList?.places ?? []).filter((p) => p.kind === "pickup");
   const [busy, setBusy] = useState<string | null>(null);
   const [done, setDone] = useState<Done>(null);
   /* A successful add opens a dialog with its record. A failure stays as a note on the page. */
@@ -145,6 +150,33 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
           ))}
         </Panel>
       )}
+      <Panel
+        title="Pickup points"
+        action={
+          <Button
+            variant="secondary"
+            icon={<MapPin size={17} />}
+            onClick={() => setAddingPickup(true)}
+          >
+            Add
+          </Button>
+        }
+      >
+        {placeList && pickups.length === 0 && (
+          <p className="text-label text-ds-muted">
+            Add where trucks load your goods. Every shipment starts at one of these.
+          </p>
+        )}
+        {pickups.map((p) => (
+          <Member
+            key={p.id}
+            name={p.name}
+            facts={["Pickup point", p.address]}
+            href={`https://www.openstreetmap.org/?mlat=${p.lat}&mlon=${p.lng}#map=16/${p.lat}/${p.lng}`}
+            linkLabel="Map"
+          />
+        ))}
+      </Panel>
       {/* With nothing in the network yet, the two empty cards fill the window, as the board draws it. */}
       <div
         className={cn("grid gap-16 lg:grid-cols-2", "flex-1", bare && "grid-rows-2 lg:grid-rows-1")}
@@ -222,6 +254,9 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
           </Button>
         </ActionSheet>
       )}
+      {addingPickup && (
+        <PickupSheet onClose={() => setAddingPickup(false)} onSaved={reloadPlaces} />
+      )}
       {inviting && (
         <InviteSheet type={inviting} onClose={() => setInviting(null)} onSent={() => refresh()} />
       )}
@@ -230,26 +265,40 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
 }
 
 /* One person or place in the network: who it is, short facts, and their account on NearBlocks. */
-function Member({ name, facts, account }: { name: string; facts: string[]; account: string }) {
+function Member({
+  name,
+  facts,
+  account,
+  href = account ? nearblocksUrl(`/address/${account}`) : undefined,
+  linkLabel = "NearBlocks",
+}: {
+  name: string;
+  facts: string[];
+  account?: string;
+  href?: string;
+  linkLabel?: string;
+}) {
   return (
     <div className="flex items-center gap-12 border-b border-ds-line py-12 last:border-b-0">
       <Avatar name={name} />
       <div className="min-w-0 flex-1">
         <p className="text-label font-semibold break-words">{name}</p>
         <p className="text-caption text-ds-muted">{facts.join(" · ")}</p>
-        <p className="text-caption break-all text-ds-muted">{account}</p>
+        {account && <p className="text-caption break-all text-ds-muted">{account}</p>}
       </div>
-      <a
-        href={nearblocksUrl(`/address/${account}`)}
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label={`See ${name} on NearBlocks`}
-        className="link focus-ring tap grid size-40 shrink-0 place-items-center rounded-full bg-ds-canvas text-[14px] font-medium sm:flex sm:size-auto sm:bg-transparent"
-      >
-        {/* A short label on wider screens, the arrow alone on a phone. */}
-        <span className="hidden sm:inline">NearBlocks ↗</span>
-        <ArrowUpRight size={17} className="sm:hidden" aria-hidden />
-      </a>
+      {href && (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`See ${name} on ${linkLabel === "Map" ? "the map" : linkLabel}`}
+          className="link focus-ring tap grid size-40 shrink-0 place-items-center rounded-full bg-ds-canvas text-[14px] font-medium sm:flex sm:size-auto sm:bg-transparent"
+        >
+          {/* A short label on wider screens, the arrow alone on a phone. */}
+          <span className="hidden sm:inline">{linkLabel} ↗</span>
+          <ArrowUpRight size={17} className="sm:hidden" aria-hidden />
+        </a>
+      )}
     </div>
   );
 }

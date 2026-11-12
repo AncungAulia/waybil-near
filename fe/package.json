@@ -17,6 +17,7 @@
     "clsx": "^2.1.1",
     "jsqr": "^1.4.0",
     "libphonenumber-js": "^1.13.16",
+    "maplibre-gl": "5.15.0",
     "next": "16.4.5",
     "qrcode.react": "^4.2.0",
     "react": "19.3.0",
