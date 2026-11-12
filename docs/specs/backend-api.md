@@ -119,6 +119,43 @@ warehouse find its destinations, which the contract keeps per shipper.
 | GET | `/v1/profiles?ids=a,b` | Signed in | One to 50 account IDs, comma separated. Returns `ProfilesResponse` `{ profiles: [{ accountId, role, name }] }` for the accounts that have a profile. Unknown accounts are left out. Never returns phone, email or truck plate. `name` is the company name from the shipper's newest application that was not rejected, otherwise the profile name, otherwise empty. |
 | GET | `/v1/me/destinations` | Warehouse | `WarehouseDestinationsResponse` `{ destinations: [{ id, shipperId, shipperName }] }`. The shippers come from the warehouse invites this account accepted, and each shipper's `get_network` gives the destinations that point to this account. A destination appears once the shipper has called `add_destination`. |
 
+## Places and trips
+
+Shippers save pickup points and receiving addresses as places with a pin on the map. A
+shipment's trip joins a pickup place and the destination's place, keeps the road between
+them, and holds the newest truck location the driver's phone sent. Types are in
+`packages/shared/src/places.ts`. The contract is unchanged. Decision record 0014.
+
+- Address search proxies Photon (`PHOTON_URL`, default `https://photon.komoot.io`, no key).
+  It never calls public Nominatim, whose policy forbids search as you type.
+- The road comes from OpenRouteService directions (`ORS_API_KEY`), truck profile first, then
+  car, 8 seconds each. Without a key, or when both fail, the trip keeps a straight line with
+  its haversine distance and `durationMin: null`, and `routeSource` is `straight`. The route
+  is worked out once, when the trip is created.
+- A warehouse invite can carry `placeId`, a destination place of the same shipper. Its
+  address is copied from the place. The destination of shipment N is the place of the
+  warehouse invite that shipper sent and the destination's warehouse accepted.
+- Location sharing runs only while the shipment is `PickedUp` on chain. The driver's phone
+  sends at most one point every 30 seconds (`LOCATION_EVERY_MS`). A closer point returns 429
+  `E_RATE_LIMIT`. Only the newest point is kept. `recordedAt` in the future becomes now. A point
+  older than 10 minutes (`LOCATION_STALE_MS`) shows as "Location paused" on screens.
+- Demo simulation: with `DEMO_LOCATION_SIMULATION=on` a picked up trip also returns
+  `simulation { startedAt, durationSec }`. `startedAt` is the pickup time on chain and
+  `durationSec` is `DEMO_TRIP_SECONDS` (default 180). Screens move the truck along the route
+  and label it "Demo · simulated location". The server never confirms a delivery by itself.
+- Who sees a trip: the shipper, the shipment's driver, and the warehouse of its destination.
+  Investors never see places, routes or locations.
+
+| Method | Path | Who | What |
+|---|---|---|---|
+| GET | `/v1/places/search?q=` | Shipper | `q` is 3 to 200 characters. 30 requests a minute. Returns `PlaceSearchResponse` `{ results: [{ label, lat, lng }] }`, at most 5. The label joins name, street, city, state and country without repeats. Provider failure is 503 `E_UNAVAILABLE`. |
+| GET | `/v1/places` | Shipper, warehouse | `PlacesResponse`. A shipper gets its own places. A warehouse gets the destination places of the invites it accepted. |
+| POST | `/v1/places` | Shipper | Body `PlaceCreate`: kind, name (1 to 120), address (1 to 300), lat (-90 to 90), lng (-180 to 180). Returns 201 `{ place }`. |
+| PUT | `/v1/trips/:shipmentId` | Shipper of the shipment | Body `TripCreate { pickupPlaceId }`. The pickup place must be the shipper's own `pickup` place. Works out the route and stores the trip. Repeating it with the same pickup returns the same trip. A different pickup on an existing trip is 409 `E_CONFLICT`. A destination with no place is 409 `E_NO_PLACE`. Returns `{ trip }`. |
+| GET | `/v1/trips/:shipmentId` | Shipper, driver, warehouse | `{ trip }`. 404 when the shipment has no trip. |
+| GET | `/v1/trips?ids=1,2` | Shipper, driver, warehouse | `TripsResponse` for up to 50 shipment IDs. Trips the caller may not see, or that don't exist, are left out. |
+| POST | `/v1/trips/:shipmentId/location` | Driver of the shipment | Body `LocationUpdate { lat, lng, recordedAt? }`. 409 `E_NOT_ON_ROAD` unless the shipment is `PickedUp`. Returns `{ location }`. |
+
 ## Pool history
 
 The contract keeps no list of an investor's past deposits and withdrawals, only its events
@@ -317,7 +354,7 @@ as an executed transaction or a sent email. Live deployment/scheduler setup rema
 
 `profiles`, `invites`, `applications`, `application_documents`, `credit_reviews`,
 `reports`, `report_photos`, `proposal_reasons`, `pause_notes`, `email_log`,
-`auth_challenges`, `auth_identities`, `relay_requests`, `work_leases`, `job_runs`.
+`auth_challenges`, `auth_identities`, `relay_requests`, `work_leases`, `job_runs`, `places`, `trips`.
 Storage buckets `documents` and `report-photos` are private. Links are signed and short-lived.
 
 ## Env (`be/.env.example`)
@@ -328,7 +365,8 @@ Storage buckets `documents` and `report-photos` are private. Links are signed an
 `NEAR_AI_API_KEY`, `NEAR_AI_MODEL`, `NEAR_AI_TRUSTED_SIGNERS_JSON`, `CREDIT_POLICY_JSON`,
 `CREDIT_AUTO_LIMITS`, `CREDIT_WORKER_ENABLED`, `JOBS_WORKER_ENABLED`, `EMAIL_API_KEY`,
 `EMAIL_FROM`, `NEARBLOCKS_API_URL` (default `https://api-testnet.nearblocks.io`),
-`NEARBLOCKS_API_KEY` (optional). Additional auth/origin configuration is listed in `be/.env.example` and the
+`NEARBLOCKS_API_KEY` (optional), `PHOTON_URL` (default `https://photon.komoot.io`), `ORS_API_KEY`
+(optional), `DEMO_LOCATION_SIMULATION` (`on` or off), `DEMO_TRIP_SECONDS` (default 180). Additional auth/origin configuration is listed in `be/.env.example` and the
 feature sections above.
 
 ## Production safety and diagnostics
@@ -404,6 +442,8 @@ with no provider payload. Default messages are listed below.
 | `E_INTERNAL` | Something went wrong. Please try again. |
 | `E_TOO_LARGE` | Use a file up to 2 MB, or take a smaller photo. |
 | `E_RATE_LIMIT` | Please wait before trying again. |
+| `E_NO_PLACE` | Pick this destination on the map first. |
+| `E_NOT_ON_ROAD` | Location is shared only while the truck is on the road. |
 | `E_ACCOUNT_CONFIG` | Account setup is unavailable. Please try again later. |
 | `E_AI` | The private check could not finish. Please try again later. |
 | `E_AI_PROOF` | The private check could not be verified. |

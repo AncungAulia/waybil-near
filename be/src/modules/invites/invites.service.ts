@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import type { Invite, InviteCreate, Principal, PublicInvite, Shipper } from "@waybil/shared";
+import type { Invite, InviteCreate, Place, Principal, PublicInvite, Shipper } from "@waybil/shared";
 import type { Store } from "../../types/db";
 import type { Chain } from "../../lib/near";
 import { allowed, ApiException, conflict, requireValue } from "../../lib/errors";
@@ -22,9 +22,10 @@ export class Invites {
     requireValue(
       await this.chain.view<Shipper | null>("get_shipper", { account_id: actor.accountId }),
     );
+    const details = await this.withPlace(actor, input);
     const code = randomBytes(12).toString("hex");
     const invite: InviteRecord = {
-      ...input,
+      ...details,
       code,
       shipperId: actor.accountId,
       /* The invite page reads "<company> invited you", so it uses the company name when there is one. */
@@ -40,6 +41,18 @@ export class Invites {
       invite: this.publicOwner(invite),
       link: new URL(`/join/${code}`, this.appUrl).toString(),
     };
+  }
+  /**
+   * A warehouse invite may point at a destination place this shipper saved. The invite then
+   * carries the place's address, so the warehouse sees the same address as the pin.
+   */
+  private async withPlace(actor: Principal, input: InviteCreate): Promise<InviteCreate> {
+    if (input.placeId === undefined) return input;
+    if (input.type !== "warehouse") throw new ApiException(400, "E_VALIDATION");
+    const place = requireValue(await this.store.get<Place>("places", input.placeId)).value;
+    allowed(place.shipperId === actor.accountId);
+    if (place.kind !== "destination") throw new ApiException(400, "E_VALIDATION");
+    return { ...input, address: place.address };
   }
   async read(code: string): Promise<PublicInvite> {
     const { value } = requireValue(await this.store.get<InviteRecord>("invites", code));

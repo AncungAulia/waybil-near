@@ -3,3 +3,4 @@ export * from "./shipment";
 export * from "./api";
 export * from "./codes";
 export * from "./plate";
+export * from "./places";
