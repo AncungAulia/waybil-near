@@ -155,7 +155,8 @@ export function RouteMap({
     }
     if (pin) {
       const marker = place("pin", "wb-pin-destination", [pin.lng, pin.lat], "Your pin");
-      if (!marker.isDraggable()) {
+      /* Only a picker can drag the pin. Elsewhere it just marks the spot. */
+      if (!marker.isDraggable() && pick.current) {
         marker.setDraggable(true);
         marker.on("dragend", () => {
           const at = marker.getLngLat();

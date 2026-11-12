@@ -23,6 +23,8 @@ import {
 } from "@/components/elements/EmptyState";
 import { SkeletonGroup, SkeletonHeader, SkeletonListPanel } from "@/components/elements/Skeleton";
 import { useLive } from "@/hooks/useLive";
+import { usePlaces } from "@/hooks/useTrips";
+import { RouteMap } from "@/components/elements/RouteMap";
 import { api, ApiError } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { listShipmentsByDestination, readAll } from "@/lib/near";
@@ -85,12 +87,16 @@ export function LiveWarehouse({ view, account }: { view: WarehouseView; account:
             <SkeletonListPanel rows={4} title={false} />
           </SkeletonGroup>
         ) : data.destinations.length === 0 ? (
-          <FillEmpty
-            as="h1"
-            image="/illustrations/network/empty-warehouse.svg"
-            title="No destination yet"
-            body="The company that invited you adds this address to its network. Arrivals show up here after that."
-            className={FILL_PAGE}
+          <Joined
+            fallback={
+              <FillEmpty
+                as="h1"
+                image="/illustrations/network/empty-warehouse.svg"
+                title="No destination yet"
+                body="The company that invited you adds this address to its network. Arrivals show up here after that."
+                className={FILL_PAGE}
+              />
+            }
           />
         ) : view === "scan" ? (
           <ScanAndConfirm account={account} shipments={data.shipments} reload={reload} />
@@ -421,6 +427,42 @@ function ScanAndConfirm({
           </Button>
         </Panel>
       )}
+    </>
+  );
+}
+
+/*
+ * Shown after the warehouse accepted an invite and before the company added the address to
+ * its network on chain. It names the place and the company, so the staff know they are in the
+ * right spot and only wait for one more step.
+ */
+function Joined({ fallback }: { fallback: React.ReactNode }) {
+  const { data } = usePlaces();
+  const places = (data?.places ?? []).filter((p) => p.kind === "destination");
+  const name = useNames(places.map((p) => p.shipperId));
+  if (!data) return <SkeletonListPanel rows={2} title={false} />;
+  if (!places.length) return <>{fallback}</>;
+  return (
+    <>
+      <header>
+        <h1 className="text-title">
+          {places.length === 1 ? places[0]!.name : "Your destinations"}
+        </h1>
+        <p className="mt-6 text-label text-ds-muted">
+          You joined. The company still has to add this address to its network. Arrivals show up
+          here after that.
+        </p>
+      </header>
+      {places.map((p) => (
+        <Panel key={p.id} className="gap-12">
+          <div>
+            <p className="text-label font-semibold">{p.name}</p>
+            <p className="text-caption text-ds-muted">{name(p.shipperId)} · Waiting to be added</p>
+            <p className="mt-4 text-caption text-ds-muted">{p.address}</p>
+          </div>
+          <RouteMap pin={{ lat: p.lat, lng: p.lng }} className="h-240 w-full md:h-320" />
+        </Panel>
+      ))}
     </>
   );
 }
