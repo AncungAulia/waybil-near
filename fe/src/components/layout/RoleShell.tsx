@@ -22,6 +22,7 @@ import { Logo } from "./Logo";
 import { cn } from "@/lib/cn";
 import { useAuth } from "@/providers/AuthProvider";
 import { useNames } from "@/hooks/useNames";
+import { usePlaces } from "@/hooks/useTrips";
 
 const LABELS = {
   driver: "Driver",
@@ -66,6 +67,19 @@ export function RoleShell({
   /* The signed-in person, when this shell is their own role. Otherwise the demo names. */
   const { profile } = useAuth();
   const live = profile?.role === role ? profile : null;
+  /* A signed-in warehouse sees the name of its own place, or how many it has. */
+  const { data: placeData } = usePlaces(role === "warehouse" && !!live);
+  const myPlaces = (placeData?.places ?? []).filter((p) => p.kind === "destination");
+  const placeChip =
+    role !== "warehouse"
+      ? null
+      : !live
+        ? "Harbor Hub"
+        : myPlaces.length === 1
+          ? myPlaces[0]!.name
+          : myPlaces.length > 1
+            ? `${myPlaces.length} places`
+            : null;
   /*
    * The person's own name first. A shipper who has not saved a contact person yet shows the
    * company name from its application, and the account id only when there is neither.
@@ -129,34 +143,33 @@ export function RoleShell({
         sticky
         className="hidden md:block"
         wallet={
-          hasWallet ? (
-            <button
-              type="button"
-              aria-label="Open account menu"
-              aria-haspopup="dialog"
-              aria-expanded={wallet !== null}
-              onClick={openWallet}
-              className="press focus-ring flex items-center gap-10 rounded-full border border-ds-line px-6 py-4 pr-12"
-            >
-              {identity}
-              <CaretDown size={14} />
-            </button>
-          ) : (
-            <div className="flex items-center gap-10 rounded-full px-6 py-4 pr-12">{identity}</div>
-          )
+          <>
+            {placeChip && <PlaceChip name={placeChip} />}
+            {hasWallet ? (
+              <button
+                type="button"
+                aria-label="Open account menu"
+                aria-haspopup="dialog"
+                aria-expanded={wallet !== null}
+                onClick={openWallet}
+                className="press focus-ring flex items-center gap-10 rounded-full border border-ds-line px-6 py-4 pr-12"
+              >
+                {identity}
+                <CaretDown size={14} />
+              </button>
+            ) : (
+              <div className="flex items-center gap-10 rounded-full px-6 py-4 pr-12">
+                {identity}
+              </div>
+            )}
+          </>
         }
       />
       {/* The phone header stays on top over a blurred canvas. It is already short, so it never shrinks. */}
       <header className="sticky top-0 z-30 -mx-16 flex h-56 items-center justify-between bg-ds-canvas/80 px-16 backdrop-blur-xl backdrop-saturate-150 md:hidden">
         <Logo />
         <div className="flex items-center gap-8">
-          {/* The demo's warehouse name. A live warehouse has its own places, not this one. */}
-          {role === "warehouse" && !live && (
-            <span className="flex items-center gap-6 rounded-full bg-ds-bg px-12 py-8 text-[12.5px] font-medium">
-              <Warehouse size={14} />
-              Harbor Hub
-            </span>
-          )}
+          {placeChip && <PlaceChip name={placeChip} />}
           {hasWallet ? (
             <button
               aria-label="Open account menu"
@@ -205,5 +218,15 @@ export function RoleShell({
         </nav>
       )}
     </div>
+  );
+}
+
+/* The warehouse's own place, as a small chip next to the person. */
+function PlaceChip({ name }: { name: string }) {
+  return (
+    <span className="flex max-w-180 items-center gap-6 rounded-full bg-ds-bg px-12 py-8 text-[12.5px] font-medium md:bg-ds-canvas">
+      <Warehouse size={14} className="shrink-0" />
+      <span className="truncate">{name}</span>
+    </span>
   );
 }
