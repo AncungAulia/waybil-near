@@ -2,6 +2,8 @@
 import { qk } from "@/lib/queryKeys";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useInvalidate } from "@/hooks/useInvalidate";
 import { BackLink } from "@/components/elements/BackLink";
 import type {
   ArrivalLookupResponse,
@@ -103,7 +105,7 @@ export function LiveWarehouse({ view, account }: { view: WarehouseView; account:
             }
           />
         ) : view === "scan" ? (
-          <ScanAndConfirm account={account} shipments={data.shipments} reload={reload} />
+          <ScanAndConfirm account={account} shipments={data.shipments} />
         ) : (
           <List
             history={view === "history"}
@@ -179,15 +181,7 @@ function List({ history, shipments }: { history: boolean; shipments: Shipment[] 
 }
 
 /* W2. Scan or type the code, count the goods, confirm or report. */
-function ScanAndConfirm({
-  account,
-  shipments,
-  reload,
-}: {
-  account: string;
-  shipments: Shipment[];
-  reload: () => void;
-}) {
+function ScanAndConfirm({ account, shipments }: { account: string; shipments: Shipment[] }) {
   const [code, setCode] = useState("");
   const [camera, setCamera] = useState(true);
   const [found, setFound] = useState<Shipment | null>(null);
@@ -204,9 +198,9 @@ function ScanAndConfirm({
   const [reasons, setReasons] = useState<ReportReason[]>([]);
   const [note, setNote] = useState("");
   const [photos, setPhotos] = useState<File[]>([]);
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<{ tx: string; reported: boolean } | null>(null);
+  const invalidate = useInvalidate();
   const name = useNames([found?.driver]);
 
   /* The code the driver showed, kept to send with the confirmation. */
@@ -246,37 +240,41 @@ function ScanAndConfirm({
     goodQty <= found.qty &&
     (!reporting || (reasons.length > 0 && reasons.length <= 4));
 
-  async function confirm(s: Shipment) {
-    setBusy(true);
-    setError(null);
-    try {
-      let args: { id: number; good_qty: number; report_hash: string | null } = {
-        id: s.id,
-        good_qty: goodQty,
-        report_hash: null,
-      };
-      if (reporting) {
-        const form = new FormData();
-        form.set(
-          "report",
-          JSON.stringify({ shipmentId: s.id, goodQty, reasons, note: note.trim() }),
-        );
-        photos.forEach((p) => form.append("photos", p));
-        args = (await api<ReportSaved>("/reports", { body: form })).confirmArgs;
-      }
-      const result = await relay(account, "confirm_delivery", args, arrivalCode ?? undefined);
-      if (result.status === "failed") throw new Error("failed");
-      setDone({ tx: result.txHash, reported: reporting });
-      reload();
-    } catch (e) {
+  /* Saves the report first when there is a problem, then has the relayer record the delivery. */
+  async function record(s: Shipment) {
+    let args: { id: number; good_qty: number; report_hash: string | null } = {
+      id: s.id,
+      good_qty: goodQty,
+      report_hash: null,
+    };
+    if (reporting) {
+      const form = new FormData();
+      form.set("report", JSON.stringify({ shipmentId: s.id, goodQty, reasons, note: note.trim() }));
+      photos.forEach((p) => form.append("photos", p));
+      args = (await api<ReportSaved>("/reports", { body: form })).confirmArgs;
+    }
+    const result = await relay(account, "confirm_delivery", args, arrivalCode ?? undefined);
+    if (result.status === "failed") throw new Error("failed");
+    return { tx: result.txHash, reported: reporting };
+  }
+  const confirmation = useMutation({
+    mutationFn: record,
+    onSuccess: (result) => {
+      setDone(result);
+      /* The delivery moves to history, and its trip ends on the map. */
+      void invalidate(qk.warehouse(account), qk.allTrips());
+    },
+    onError: (e) =>
       setError(
         e instanceof ApiError
           ? e.message
           : "The delivery was not recorded. Check your signal and try again.",
-      );
-    } finally {
-      setBusy(false);
-    }
+      ),
+  });
+  const busy = confirmation.isPending;
+  function confirm(s: Shipment) {
+    setError(null);
+    confirmation.mutate(s);
   }
 
   if (done)
@@ -510,7 +508,7 @@ function ScanAndConfirm({
               disabled={!ready}
               loading={busy}
               loadingLabel="Recording"
-              onClick={() => void confirm(found)}
+              onClick={() => confirm(found)}
             >
               {reporting ? "Send the report" : "Confirm delivery"}
             </Button>
