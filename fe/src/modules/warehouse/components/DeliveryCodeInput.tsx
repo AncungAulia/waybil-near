@@ -15,6 +15,8 @@ export function DeliveryCodeInput({
   compact?: boolean;
 }) {
   const [cursor, setCursor] = useState(value.length);
+  /* The box for the next character is outlined only while the field has focus. */
+  const [focused, setFocused] = useState(false);
   return (
     <label
       className={cn(
@@ -30,6 +32,8 @@ export function DeliveryCodeInput({
         /* No maxLength. A pasted "7K2Q 9F4M" has 9 characters, and onChange trims it to 8. */
         value={value}
         aria-invalid={invalid}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
         onSelect={(event) => setCursor(event.currentTarget.selectionStart ?? value.length)}
         onChange={(event) => {
           const next = event.target.value
@@ -50,7 +54,7 @@ export function DeliveryCodeInput({
               "grid aspect-square max-h-60 min-w-0 place-items-center rounded-[12px] border-[1.5px] bg-ds-canvas font-mono text-[20px] md:rounded-[16px] md:text-[22px]",
               invalid
                 ? "border-ds-danger"
-                : i === Math.min(cursor, 7)
+                : focused && i === Math.min(cursor, 7)
                   ? "border-ds-ink"
                   : "border-transparent",
             )}
