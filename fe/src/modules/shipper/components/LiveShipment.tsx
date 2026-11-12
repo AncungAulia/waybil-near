@@ -24,7 +24,7 @@ import { StatusPill } from "@/components/elements/StatusPill";
 import { TripMap } from "@/components/elements/TripMap";
 import { TimelineRail, TimelineStep } from "@/components/elements/TimelineStep";
 import { duration, remaining, truckNow } from "@/lib/route";
-import { Skeleton, SkeletonTripPage } from "@/components/elements/Skeleton";
+import { SkeletonTripPage } from "@/components/elements/Skeleton";
 import { RadioCards } from "@/components/ui/RadioCards";
 import { Tag } from "@/components/ui/Tag";
 import { cn } from "@/lib/cn";
@@ -249,7 +249,6 @@ export function LiveShipment({ data, id }: { data: LiveShipperData; id: number }
           )}
         </div>
         <div className="flex flex-col gap-16">
-          {s.status === "Reported" && <ReportCard report={report} qty={s.qty} unit={s.unit} />}
           <BillCard
             status={s.status}
             bill={s.bill}
@@ -334,9 +333,10 @@ export function LiveShipment({ data, id }: { data: LiveShipperData; id: number }
       )}
       {sheet === "settle" && report && (
         <ActionSheet title="Settle the report" onClose={() => setSheet(null)}>
-          <p className="text-label text-ds-muted">
-            {report.goodQty} of {s.qty} {s.unit} arrived in good shape. Choose what the driver gets.
-            Your bill changes with it.
+          {/* What the warehouse found, then what to pay for it. */}
+          <ReportDetails report={report} qty={s.qty} unit={s.unit} />
+          <p className="text-label font-medium">
+            Choose what the driver gets. Your bill changes with it.
           </p>
           <RadioCards
             name="settle"
@@ -602,44 +602,23 @@ function asUsdcInput(units: bigint) {
   return cents ? `${units / 1000000n}.${cents}` : `${units / 1000000n}`;
 }
 
-/*
- * What the warehouse found, at the top of the right column while the bill is on hold: how much
- * arrived well, why, the note and the photos. A skeleton holds its place while it loads.
- */
-function ReportCard({
-  report,
-  qty,
-  unit,
-}: {
-  report: ReportDetail | null | undefined;
-  qty: number;
-  unit: string;
-}) {
-  if (!report)
-    return (
-      <Panel title="Problem report">
-        <Skeleton className="h-16 w-3/4 rounded-small" />
-        <Skeleton className="h-16 w-1/2 rounded-small" />
-        <Skeleton className="h-80 w-full rounded-row" />
-      </Panel>
-    );
+/* What the warehouse found: how much arrived well, why, the note and the photos. */
+function ReportDetails({ report, qty, unit }: { report: ReportDetail; qty: number; unit: string }) {
   return (
-    <Panel title="Problem report">
+    <div className="flex flex-col gap-10 rounded-row bg-ds-canvas p-14">
       <p className="text-label">
         {report.goodQty} of {qty} {unit} arrived in good shape.
       </p>
       <div className="flex flex-wrap gap-6">
         {report.reasons.map((r) => (
-          <Tag key={r}>{REASONS[r]}</Tag>
+          <Tag key={r} className="bg-ds-bg">
+            {REASONS[r]}
+          </Tag>
         ))}
       </div>
-      {report.note && (
-        <blockquote className="rounded-row bg-ds-canvas p-14 text-label text-ds-ink-2">
-          {report.note}
-        </blockquote>
-      )}
+      {report.note && <p className="text-label text-ds-ink-2">“{report.note}”</p>}
       {report.photos.length > 0 ? (
-        <div className="grid grid-cols-3 gap-8">
+        <div className="grid grid-cols-4 gap-6">
           {report.photos.map((p) => (
             <a
               key={p.sha256}
@@ -659,6 +638,6 @@ function ReportCard({
       ) : (
         <p className="text-caption text-ds-muted">The warehouse added no photos.</p>
       )}
-    </Panel>
+    </div>
   );
 }
