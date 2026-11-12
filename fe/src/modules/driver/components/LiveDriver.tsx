@@ -247,7 +247,8 @@ function Trip({ account, shipment: s }: { account: string; shipment: Shipment | 
         <StatusPill status={statusChip(s)} />
       </header>
       {/* The map on the left, at the full height of the cards on the right. */}
-      <div className="grid gap-16 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-24">
+      {/* Both columns fill the window and end level, the last card stretching to the map. */}
+      <div className="grid gap-16 lg:min-h-[calc(100dvh-300px)] lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-24">
         <div className="flex flex-col gap-10">
           {trip ? (
             <>
@@ -376,7 +377,7 @@ function Trip({ account, shipment: s }: { account: string; shipment: Shipment | 
             paidOn={s.paid_at ? day(s.paid_at) : ""}
             destination={trip?.destination.name ?? "the warehouse"}
           />
-          <Panel title="Trip">
+          <Panel title="Trip" className="lg:flex-1">
             <div className="flex flex-col gap-12">
               <Fact label="Company">{name(s.shipper)}</Fact>
               <Fact label="Pickup">{trip?.pickup.name ?? "Not set"}</Fact>

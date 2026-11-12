@@ -189,7 +189,8 @@ export function LiveShipment({ data, id }: { data: LiveShipperData; id: number }
       </header>
       <DoneNote done={done} />
       {/* The map on the left. The bill, progress and trip facts stack on the right. */}
-      <div className="grid gap-16 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-24">
+      {/* Both columns fill the window and end level, the last card stretching to the map. */}
+      <div className="grid gap-16 lg:min-h-[calc(100dvh-300px)] lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-24">
         {/* The map takes the full height of the cards beside it. */}
         <div className="flex flex-col gap-10">
           {trip ? (
@@ -232,7 +233,7 @@ export function LiveShipment({ data, id }: { data: LiveShipperData; id: number }
               ))}
             </div>
           </Panel>
-          <Panel title="Trip">
+          <Panel title="Trip" className="lg:flex-1">
             <div className="flex flex-col gap-12">
               <BillRow label="Driver">{row.driver}</BillRow>
               <BillRow label="Cargo">{row.cargo}</BillRow>
