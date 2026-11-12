@@ -1,13 +1,15 @@
 "use client";
 import { cn } from "@/lib/cn";
 
-/** "Good morning" from 5:00, "Good afternoon" from 12:00, "Good evening" from 17:00, else "Good night". */
+/*
+ * "Good morning" from 5:00 and "Good afternoon" from 12:00. From 17:00 through the night it
+ * is "Good evening", because "Good night" reads as a goodbye.
+ */
 export function greeting(date = new Date()) {
   const hour = date.getHours();
   if (hour >= 5 && hour < 12) return "Good morning";
   if (hour >= 12 && hour < 17) return "Good afternoon";
-  if (hour >= 17 && hour < 21) return "Good evening";
-  return "Good night";
+  return "Good evening";
 }
 
 /** The first three words of a name, so "Aulia Nur Fajri Tri Anggoro" reads "Aulia Nur Fajri". */
