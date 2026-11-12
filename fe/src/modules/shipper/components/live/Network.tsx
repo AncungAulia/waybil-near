@@ -11,7 +11,7 @@ import { InviteSheet } from "./InviteSheet";
 import { NetworkEmpty } from "../ShipperNetwork";
 import { cn } from "@/lib/cn";
 import { useNames } from "@/hooks/useNames";
-import { DoneNote, failure, GAS, type Done } from "./shared";
+import { DoneNote, failure, FULL, GAS, type Done } from "./shared";
 
 /* P5. */
 export function Network({ data, refresh }: { data: LiveShipperData; refresh: () => void }) {
@@ -45,14 +45,8 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
     !waiting.some((i) => i.acceptedBy === shared)
       ? shared
       : null;
-  /* Nothing yet: no drivers, no destinations, no invite waiting or to add. */
-  const bare =
-    !data.network.drivers.length &&
-    !data.network.destinations.length &&
-    !waiting.length &&
-    !open.length &&
-    !sharedDriver &&
-    !done;
+  /* No drivers and no destinations yet. The two empty cards then fill the rest of the window. */
+  const bare = !data.network.drivers.length && !data.network.destinations.length;
 
   async function add(type: "driver" | "warehouse", account: string, label: string) {
     setBusy(account);
@@ -74,7 +68,7 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
   }
 
   return (
-    <>
+    <div className={cn("flex flex-col gap-24", FULL)}>
       <header className="flex flex-wrap items-end justify-between gap-12">
         <div>
           <h1 className="text-title">Network</h1>
@@ -147,9 +141,7 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
       <div
         className={cn(
           "grid gap-16 lg:grid-cols-2",
-          bare
-            ? "min-h-[calc(100dvh-268px)] grid-rows-2 md:min-h-[calc(100dvh-252px)] lg:min-h-[calc(100dvh-260px)] lg:grid-rows-1"
-            : "items-start",
+          bare ? "flex-1 grid-rows-2 lg:grid-rows-1" : "items-start",
         )}
       >
         <Panel title="Drivers" className={cn(bare && "h-full")}>
@@ -201,6 +193,6 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
       {inviting && (
         <InviteSheet type={inviting} onClose={() => setInviting(null)} onSent={() => refresh()} />
       )}
-    </>
+    </div>
   );
 }
