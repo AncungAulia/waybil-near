@@ -81,6 +81,10 @@ export function RouteMap({
         m.on("load", () => !cancelled && setReady(true));
         m.on("click", (e) => pick.current?.(e.lngLat.lat, e.lngLat.lng));
         map.current = m;
+        /* A map opened inside a sheet starts while the sheet still moves. Follow its real size. */
+        const fit = new ResizeObserver(() => m.resize());
+        fit.observe(box.current);
+        m.once("remove", () => fit.disconnect());
         /* A style that never loads leaves an empty box. Say so instead. */
         window.setTimeout(() => !cancelled && !m.isStyleLoaded() && setFailed(true), 15000);
       })

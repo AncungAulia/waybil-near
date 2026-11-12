@@ -9,7 +9,7 @@ import { api } from "@/lib/api";
 import { Alert, failure } from "./shared";
 import { PhoneInput } from "@/components/elements/PhoneInput";
 import { PlacePicker } from "@/components/elements/PlacePicker";
-import { Segmented } from "@/components/ui/Segmented";
+import { RadioCards } from "@/components/ui/RadioCards";
 import { dialCode, phoneError, toE164 } from "@/lib/phone";
 
 export function InviteSheet({
@@ -115,10 +115,19 @@ export function InviteSheet({
       ) : (
         <>
           {type === "warehouse" && (
-            <Segmented
+            <RadioCards
+              name="place-kind"
               options={[
-                { value: "destination", label: "Destination" },
-                { value: "pickup", label: "Pickup point" },
+                {
+                  value: "destination",
+                  title: "Destination",
+                  body: "A warehouse that receives goods and confirms each arrival.",
+                },
+                {
+                  value: "pickup",
+                  title: "Pickup point",
+                  body: "Where trucks load your goods, such as a factory or a depot.",
+                },
               ]}
               value={kind}
               onChange={setKind}
