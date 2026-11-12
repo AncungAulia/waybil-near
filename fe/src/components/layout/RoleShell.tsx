@@ -127,7 +127,7 @@ export function RoleShell({
         links={links}
         current={current}
         sticky
-        className="hidden md:block"
+        className="hidden md:flex"
         wallet={
           hasWallet ? (
             <button

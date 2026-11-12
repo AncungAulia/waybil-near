@@ -18,10 +18,10 @@ export interface NavLink {
 }
 
 /*
- * Once the page scrolls, the pill gets a little shorter and lifts off the content. It is a
- * layout change seen many times a day, so it is small and quick: 72 to 60 px over 200 ms
- * with the ease-in-out token, and no movement at all with reduced motion. Two thresholds
- * stop it from flickering when the page rests near the top.
+ * Once the page scrolls, the pill gets a little shorter and narrower and lifts off the content.
+ * It is a layout change seen many times a day, so it is small and quick: 72 to 60 px tall and
+ * up to 1080 px wide, over 200 ms with the ease-in-out token, and no movement at all with
+ * reduced motion. Two thresholds stop it from flickering when the page rests near the top.
  */
 function useScrolled(on: boolean) {
   const [scrolled, setScrolled] = useState(false);
@@ -57,8 +57,8 @@ export function Navbar({
       className={cn(
         "flex h-72 w-full items-center justify-between rounded-full border border-ds-line bg-ds-bg px-20",
         sticky &&
-          "bg-ds-bg/80 backdrop-blur-xl backdrop-saturate-150 transition-[height,box-shadow] duration-200 ease-in-out motion-reduce:transition-none",
-        compact && "h-60 shadow-float",
+          "mx-auto max-w-full transition-[height,max-width,box-shadow] duration-200 ease-in-out motion-reduce:transition-none",
+        compact && "h-60 max-w-1080 shadow-float",
         !sticky && className,
       )}
     >
@@ -97,8 +97,18 @@ export function Navbar({
   );
   if (!sticky) return nav;
   /*
-   * The sticky box keeps the full 72 px, so the page under it never jumps. Only the pill
-   * inside it gets shorter.
+   * The sticky band keeps its full height, so the page under it never jumps. Only the pill
+   * inside it changes. The band is the page colour from the top of the window to below the
+   * pill, so nothing that scrolls under it shows around the pill's round ends.
    */
-  return <div className={cn("sticky top-16 z-30 h-72", className)}>{nav}</div>;
+  return (
+    <div
+      className={cn(
+        "sticky top-0 z-30 -mx-32 -mt-20 flex h-104 items-center bg-ds-canvas px-32 pt-8 lg:-mx-40 lg:px-40",
+        className,
+      )}
+    >
+      {nav}
+    </div>
+  );
 }
