@@ -10,6 +10,7 @@ export const HTTP_ERRORS = {
   E_RATE_LIMIT: "Please wait before trying again.",
   E_NO_PLACE: "Pick this destination on the map first.",
   E_NOT_ON_ROAD: "Location is shared only while the truck is on the road.",
+  E_ARRIVAL_CODE: "This code does not match this delivery.",
   E_ACCOUNT_CONFIG: "Account setup is unavailable. Please try again later.",
   E_AI: "The private check could not finish. Please try again later.",
   E_AI_PROOF: "The private check could not be verified.",

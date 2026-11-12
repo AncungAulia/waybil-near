@@ -158,6 +158,26 @@ them, and holds the newest truck location the driver's phone sent. Types are in
 | GET | `/v1/trips?ids=1,2` | Shipper, driver, warehouse | `TripsResponse` for up to 50 shipment IDs. Trips the caller may not see, or that don't exist, are left out. |
 | POST | `/v1/trips/:shipmentId/location` | Driver of the shipment | Body `LocationUpdate { lat, lng, recordedAt? }`. 409 `E_NOT_ON_ROAD` unless the shipment is `PickedUp`. Returns `{ location }`. |
 
+## Arrival codes
+
+The driver shows a code at the destination and the warehouse types or scans it. The code is
+random and kept by the backend, so a warehouse confirms a delivery only after seeing the
+driver's screen. Types are in `packages/shared/src/places.ts`. Decision record 0015.
+
+- A code is 8 characters from `23456789ABCDEFGHJKMNPQRSTUVWXYZ` (no 0, 1, I, L or O), made with
+  a secure random source, one per shipment, unique across shipments. It is stored in the
+  `arrival_codes` table with the shipment id and never logged.
+- The contract does not check the code. The backend relay does, which covers every
+  confirmation sent through the app.
+
+| Method | Path | Who | What |
+|---|---|---|---|
+| GET | `/v1/trips/:shipmentId/code` | Driver of the shipment | `ArrivalCodeResponse` `{ code }`. Made on the first call and the same after that. 409 `E_NOT_ON_ROAD` unless the shipment is `PickedUp`. |
+| POST | `/v1/arrivals/lookup` | Warehouse | Body `ArrivalLookup` `{ code }`, case and spaces ignored. 20 requests a minute per account. Returns `ArrivalLookupResponse` `{ shipmentId }` when the code belongs to a shipment whose destination is this warehouse. Any other code is 404 `E_NOT_FOUND`, the same answer whether the code is unknown or belongs to another warehouse. |
+
+`POST /v1/relay` takes an optional `arrivalCode`. A `confirm_delivery` request must carry the
+arrival code of the shipment in its arguments, otherwise 400 `E_ARRIVAL_CODE`.
+
 ## Pool history
 
 The contract keeps no list of an investor's past deposits and withdrawals, only its events
@@ -356,7 +376,7 @@ as an executed transaction or a sent email. Live deployment/scheduler setup rema
 
 `profiles`, `invites`, `applications`, `application_documents`, `credit_reviews`,
 `reports`, `report_photos`, `proposal_reasons`, `pause_notes`, `email_log`,
-`auth_challenges`, `auth_identities`, `relay_requests`, `work_leases`, `job_runs`, `places`, `trips`.
+`auth_challenges`, `auth_identities`, `relay_requests`, `work_leases`, `job_runs`, `places`, `trips`, `arrival_codes`.
 Storage buckets `documents` and `report-photos` are private. Links are signed and short-lived.
 
 ## Env (`be/.env.example`)
@@ -446,6 +466,7 @@ with no provider payload. Default messages are listed below.
 | `E_RATE_LIMIT` | Please wait before trying again. |
 | `E_NO_PLACE` | Pick this destination on the map first. |
 | `E_NOT_ON_ROAD` | Location is shared only while the truck is on the road. |
+| `E_ARRIVAL_CODE` | This code does not match this delivery. |
 | `E_ACCOUNT_CONFIG` | Account setup is unavailable. Please try again later. |
 | `E_AI` | The private check could not finish. Please try again later. |
 | `E_AI_PROOF` | The private check could not be verified. |
