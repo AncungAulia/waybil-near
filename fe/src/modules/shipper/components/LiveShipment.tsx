@@ -20,7 +20,7 @@ import { StatusPill } from "@/components/elements/StatusPill";
 import { TripMap } from "@/components/elements/TripMap";
 import { TimelineStep } from "@/components/elements/TimelineStep";
 import { duration, remaining, truckNow } from "@/lib/route";
-import { Skeleton } from "@/components/elements/Skeleton";
+import { SkeletonTripPage } from "@/components/elements/Skeleton";
 import { Tag } from "@/components/ui/Tag";
 import { cn } from "@/lib/cn";
 import { useClock, usePlaces, useTrips } from "@/hooks/useTrips";
@@ -172,18 +172,16 @@ export function LiveShipment({
   const trip = trips[0];
   const days = Math.ceil((Number(BigInt(s.due_at) / 1_000_000n) - Date.now()) / 86400000);
 
+  /* The page shows once its trip is in, so the title and cards never change under the reader. */
+  if (!tripData) return <SkeletonTripPage label="Loading this shipment." />;
   return (
     <>
       <header className="flex flex-wrap items-center justify-between gap-12">
         <div className="min-w-0">
           {/* The title waits for the trip, so it never changes under the reader. */}
-          {!tripData ? (
-            <Skeleton className="h-36 w-320 max-w-full rounded-small" />
-          ) : (
-            <h1 className="text-title break-all">
-              {trips[0] ? `${trips[0].pickup.name} to ${trips[0].destination.name}` : row.route}
-            </h1>
-          )}
+          <h1 className="text-title break-all">
+            {trips[0] ? `${trips[0].pickup.name} to ${trips[0].destination.name}` : row.route}
+          </h1>
           <p className="mt-6 text-label break-all text-ds-muted">
             Shipment #{s.id}. {row.driver} carries {row.cargo}.
           </p>
@@ -195,10 +193,7 @@ export function LiveShipment({
       <div className="grid gap-16 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-24">
         {/* The map takes the full height of the cards beside it. */}
         <div className="flex flex-col gap-10">
-          {!tripData ? (
-            /* The map's place is held while the trip loads, so nothing jumps in later. */
-            <Skeleton className="h-340 w-full rounded-card lg:h-560" />
-          ) : trip ? (
+          {trip ? (
             <>
               <TripMap
                 trip={trip}

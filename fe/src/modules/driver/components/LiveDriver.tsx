@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatUsdc, type Shipment } from "@waybil/shared";
@@ -18,10 +18,10 @@ import { sharingNote, useShareLocation } from "@/hooks/useShareLocation";
 import { directionsUrl, duration } from "@/lib/route";
 import { FILL_UNDER_HEADER, FillEmpty } from "@/components/elements/EmptyState";
 import {
-  Skeleton,
   SkeletonGroup,
   SkeletonHeader,
   SkeletonListPanel,
+  SkeletonTripPage,
 } from "@/components/elements/Skeleton";
 import { useLive } from "@/hooks/useLive";
 import { useNames } from "@/hooks/useNames";
@@ -187,6 +187,12 @@ function Trip({
   const { trips, data: tripData } = useTrips(s ? [s.id] : []);
   const trip = trips[0];
   const sharing = useShareLocation(s?.id, s?.status === "PickedUp");
+  /* A company with no name set would keep the page waiting, so stop waiting after 3 seconds. */
+  const [waited, setWaited] = useState(false);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setWaited(true), 3000);
+    return () => window.clearTimeout(timer);
+  }, []);
   const back = <BackLink href="/driver">Trips</BackLink>;
   if (!s)
     return (
@@ -216,37 +222,33 @@ function Trip({
     }
   }
   const code = arrivalCode(s.id);
+  /* The page shows once the trip and the company name are in, so nothing changes under the reader. */
+  if (!tripData || (name(s.shipper) === s.shipper && !waited))
+    return (
+      <>
+        {back}
+        <SkeletonTripPage label="Loading this trip." />
+      </>
+    );
   return (
     <>
       {back}
       <header className="flex flex-wrap items-center justify-between gap-12">
         <div className="min-w-0">
           {/* The title waits for the trip and the company name, so it never flashes raw ids. */}
-          {!tripData || name(s.shipper) === s.shipper ? (
-            <>
-              <Skeleton className="h-36 w-300 max-w-full rounded-small" />
-              <Skeleton className="mt-8 h-16 w-180 rounded-small" />
-            </>
-          ) : (
-            <>
-              <h1 className="text-title break-words">
-                {trip ? `${trip.pickup.name} to ${trip.destination.name}` : `Trip #${s.id}`}
-              </h1>
-              <p className="mt-6 text-label break-all text-ds-muted">
-                Trip #{s.id} for {name(s.shipper)}.
-              </p>
-            </>
-          )}
+          <h1 className="text-title break-words">
+            {trip ? `${trip.pickup.name} to ${trip.destination.name}` : `Trip #${s.id}`}
+          </h1>
+          <p className="mt-6 text-label break-all text-ds-muted">
+            Trip #{s.id} for {name(s.shipper)}.
+          </p>
         </div>
         <StatusPill status={statusChip(s)} />
       </header>
       {/* The map on the left, at the full height of the cards on the right. */}
       <div className="grid gap-16 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-24">
         <div className="flex flex-col gap-10">
-          {!tripData ? (
-            /* The map's place is held while the trip loads. */
-            <Skeleton className="h-300 w-full rounded-card lg:h-auto lg:min-h-480 lg:flex-1" />
-          ) : trip ? (
+          {trip ? (
             <>
               <TripMap
                 trip={trip}

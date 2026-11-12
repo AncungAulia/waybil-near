@@ -113,3 +113,23 @@ export function SkeletonListPanel({
     </Panel>
   );
 }
+
+/**
+ * A trip or shipment page while it loads: the title, a large map on the left and a column of
+ * cards on the right, the same shape as the page that follows.
+ */
+export function SkeletonTripPage({ label }: { label: string }) {
+  return (
+    <SkeletonGroup label={label} className="flex flex-col gap-24">
+      <SkeletonHeader />
+      <div className="grid gap-16 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-24">
+        <Skeleton className="h-300 w-full rounded-card lg:h-auto lg:min-h-560" />
+        <div className="flex flex-col gap-16">
+          <Skeleton className="h-180 w-full rounded-card" />
+          <Skeleton className="h-220 w-full rounded-card" />
+          <Skeleton className="h-200 w-full rounded-card" />
+        </div>
+      </div>
+    </SkeletonGroup>
+  );
+}
