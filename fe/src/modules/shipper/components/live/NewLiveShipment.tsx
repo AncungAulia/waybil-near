@@ -56,6 +56,8 @@ export function NewLiveShipment({ data, refresh }: { data: LiveShipperData; refr
   const [fee, setFee] = useState("");
   const [due, setDue] = useState("");
   const [busy, setBusy] = useState(false);
+  /* After the wallet signs, while the new shipment is being read back. */
+  const [recording, setRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /* A local calendar day, the same way the date picker counts them. */
   const day = (offset: number) => {
@@ -102,13 +104,24 @@ export function NewLiveShipment({ data, refresh }: { data: LiveShipperData; refr
         },
         { gas: GAS },
       );
-      /* The wallet gives only the hash, so the new id is the newest shipment now. */
-      const [newest] = (
-        await listShipmentsByShipper(data.account, {
-          from: Math.max(0, data.shipments.length - 5),
-          limit: 50,
-        })
-      ).sort((a, b) => b.id - a.id);
+      /*
+       * The wallet gives only the hash, so the new id is the newest shipment now. Reads lag a
+       * few seconds behind a new transaction, so ask again every second until it shows.
+       */
+      setRecording(true);
+      const before = Math.max(0, ...data.shipments.map((x) => x.id));
+      let newest: { id: number } | undefined;
+      for (let attempt = 0; attempt < 20 && !newest; attempt++) {
+        if (attempt) await new Promise((r) => setTimeout(r, 1000));
+        newest = (
+          await listShipmentsByShipper(data.account, {
+            from: Math.max(0, data.shipments.length - 5),
+            limit: 50,
+          }).catch(() => [])
+        )
+          .filter((x) => x.id > before && x.driver === driver)
+          .sort((a, b) => b.id - a.id)[0];
+      }
       /* Join the pickup point and the destination into the trip the map shows. */
       if (newest && pickup)
         await api(`/trips/${newest.id}`, {
@@ -120,6 +133,7 @@ export function NewLiveShipment({ data, refresh }: { data: LiveShipperData; refr
     } catch (e) {
       setError(failure(e));
       setBusy(false);
+      setRecording(false);
     }
   }
 
@@ -288,7 +302,7 @@ export function NewLiveShipment({ data, refresh }: { data: LiveShipperData; refr
               className="h-52 w-full justify-between"
               disabled={!ready}
               loading={busy}
-              loadingLabel="Waiting for wallet"
+              loadingLabel={recording ? "Recording the shipment" : "Waiting for wallet"}
               onClick={() => void approve()}
             >
               Approve shipment
