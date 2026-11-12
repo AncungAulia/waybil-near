@@ -326,7 +326,7 @@ function ScanAndConfirm({
             invalid={notFound}
           />
           {notFound && (
-            <p role="alert" className="text-label text-ds-danger">
+            <p role="alert" className="text-center text-label text-ds-danger">
               This code is not a truck on its way to you. Check it with the driver.
             </p>
           )}
