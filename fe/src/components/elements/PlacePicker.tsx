@@ -1,11 +1,39 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import type { PlaceSearchResponse, PlaceSuggestion } from "@waybil/shared";
+import type { PlaceReverseResponse, PlaceSearchResponse, PlaceSuggestion } from "@waybil/shared";
 import { MapPin } from "@phosphor-icons/react";
 import { Input } from "@/components/ui/Input";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { RouteMap } from "./RouteMap";
+
+/**
+ * Moves the pin and then names the address under it. The pin moves at once. The address
+ * follows when the lookup answers, and stays as it was when nothing is found there.
+ */
+export async function movePin(
+  lat: number,
+  lng: number,
+  set: (
+    update: (prev: { address: string; lat: number | null; lng: number | null }) => {
+      address: string;
+      lat: number | null;
+      lng: number | null;
+    },
+  ) => void,
+) {
+  set((prev) => ({ ...prev, lat, lng }));
+  try {
+    const { result } = await api<PlaceReverseResponse>(`/places/reverse?lat=${lat}&lng=${lng}`);
+    /* Only when the pin is still where this lookup was asked for. */
+    if (result)
+      set((prev) =>
+        prev.lat === lat && prev.lng === lng ? { ...prev, address: result.label } : prev,
+      );
+  } catch {
+    /* The pin is what counts. The typed address stays. */
+  }
+}
 
 export interface PickedPlace {
   address: string;
@@ -42,10 +70,16 @@ export function PlacePicker({
   const [open, setOpen] = useState(false);
   /* Search only for what the person typed, not for a label they picked. */
   const typed = useRef(false);
+  const field = useRef<HTMLInputElement>(null);
+  const latest = useRef(value);
+  useEffect(() => {
+    latest.current = value;
+  });
 
   useEffect(() => {
     const q = value.address.trim();
-    if (!typed.current || q.length < MIN_CHARS) return;
+    /* Search only while the person is typing here, not when a moved pin fills the address. */
+    if (!typed.current || q.length < MIN_CHARS || document.activeElement !== field.current) return;
     const ctrl = new AbortController();
     const timer = window.setTimeout(() => {
       setSearching(true);
@@ -77,6 +111,7 @@ export function PlacePicker({
       <div className="relative">
         <Input
           label={label}
+          ref={field}
           value={value.address}
           autoComplete="off"
           placeholder="Search a street, area or building"
@@ -126,7 +161,12 @@ export function PlacePicker({
       {showMap && pin && (
         <RouteMap
           pin={pin}
-          onPick={(lat, lng) => onChange({ ...value, lat, lng })}
+          onPick={(lat, lng) =>
+            void movePin(lat, lng, (update) => {
+              latest.current = update(latest.current);
+              onChange(latest.current);
+            })
+          }
           className={cn("h-220 w-full")}
         />
       )}

@@ -35,6 +35,10 @@ export interface PlaceSuggestion {
 export interface PlaceSearchResponse {
   results: PlaceSuggestion[];
 }
+/** GET /v1/places/reverse: the address at a pin, or null when there is none nearby. */
+export interface PlaceReverseResponse {
+  result: PlaceSuggestion | null;
+}
 export interface PlacesResponse {
   places: Place[];
 }

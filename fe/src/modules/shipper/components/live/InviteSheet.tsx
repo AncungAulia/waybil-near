@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/Input";
 import { api } from "@/lib/api";
 import { Alert, failure } from "./shared";
 import { PhoneInput } from "@/components/elements/PhoneInput";
-import { PlacePicker } from "@/components/elements/PlacePicker";
+import { movePin, PlacePicker } from "@/components/elements/PlacePicker";
 import { RouteMap } from "@/components/elements/RouteMap";
 import { cn } from "@/lib/cn";
 import { RadioCards } from "@/components/ui/RadioCards";
@@ -190,7 +190,7 @@ export function InviteSheet({
               (spot.lat != null && spot.lng != null ? (
                 <RouteMap
                   pin={{ lat: spot.lat, lng: spot.lng }}
-                  onPick={(lat, lng) => setSpot((s) => ({ ...s, lat, lng }))}
+                  onPick={(lat, lng) => void movePin(lat, lng, setSpot)}
                   className="h-240 w-full lg:h-full lg:min-h-440"
                 />
               ) : (
