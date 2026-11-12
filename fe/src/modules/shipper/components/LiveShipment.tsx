@@ -22,7 +22,7 @@ import { Money } from "@/components/elements/Money";
 import { ResultDialog } from "@/components/elements/ResultDialog";
 import { StatusPill } from "@/components/elements/StatusPill";
 import { TripMap } from "@/components/elements/TripMap";
-import { TimelineStep } from "@/components/elements/TimelineStep";
+import { TimelineRail, TimelineStep } from "@/components/elements/TimelineStep";
 import { duration, remaining, truckNow } from "@/lib/route";
 import { SkeletonTripPage } from "@/components/elements/Skeleton";
 import { Tag } from "@/components/ui/Tag";
@@ -257,7 +257,7 @@ export function LiveShipment({ data, id }: { data: LiveShipperData; id: number }
             onSettle={report ? () => setSheet("settle") : undefined}
           />
           <Panel title="Progress">
-            <div className="flex flex-col gap-16">
+            <TimelineRail>
               {timeline.map((step) => (
                 <div key={step.title}>
                   <TimelineStep state={step.state} title={step.title} time={step.time} />
@@ -266,7 +266,7 @@ export function LiveShipment({ data, id }: { data: LiveShipperData; id: number }
                   )}
                 </div>
               ))}
-            </div>
+            </TimelineRail>
           </Panel>
           <Panel title="Trip" className="lg:flex-1">
             <div className="flex flex-col gap-12">

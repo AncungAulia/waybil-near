@@ -17,7 +17,7 @@ import { StatusPill } from "@/components/elements/StatusPill";
 import { DeliveryQr } from "@/components/elements/DeliveryQr";
 import { BackLink } from "@/components/elements/BackLink";
 import { TripMap } from "@/components/elements/TripMap";
-import { TimelineStep } from "@/components/elements/TimelineStep";
+import { TimelineRail, TimelineStep } from "@/components/elements/TimelineStep";
 import { useTrips } from "@/hooks/useTrips";
 import { sharingNote, useShareLocation } from "@/hooks/useShareLocation";
 import { directionsUrl, duration } from "@/lib/route";
@@ -373,11 +373,11 @@ function Trip({ account, shipment: s }: { account: string; shipment: Shipment | 
             destination={trip?.destination.name ?? "the warehouse"}
           />
           <Panel title="Progress">
-            <div className="flex flex-col gap-16">
+            <TimelineRail>
               {driverSteps(s, trip?.destination.name ?? "the warehouse").map((step) => (
                 <TimelineStep key={step.title} {...step} />
               ))}
-            </div>
+            </TimelineRail>
           </Panel>
           <Panel title="Trip" className="lg:flex-1">
             <div className="flex flex-col gap-12">

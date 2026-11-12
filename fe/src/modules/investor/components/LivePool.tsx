@@ -23,7 +23,7 @@ import { FILL_UNDER_HEADER, FillEmpty } from "@/components/elements/EmptyState";
 import { Money } from "@/components/elements/Money";
 import { FanMeter } from "@/components/elements/FanMeter";
 import { StatusPill } from "@/components/elements/StatusPill";
-import { TimelineStep } from "@/components/elements/TimelineStep";
+import { TimelineRail, TimelineStep } from "@/components/elements/TimelineStep";
 import { Stat } from "@/components/elements/Stat";
 import {
   SkeletonGroup,
@@ -390,7 +390,7 @@ export function LiveDelivery({
           </Panel>
         </div>
         <Panel title="Proof it happened" className="h-full">
-          <div className="flex flex-1 flex-col justify-between gap-16">
+          <TimelineRail spread>
             {steps.map((step, i) => (
               <div key={step.title}>
                 <TimelineStep
@@ -403,7 +403,7 @@ export function LiveDelivery({
                 )}
               </div>
             ))}
-          </div>
+          </TimelineRail>
           <a
             className="link focus-ring inline-block pt-8 text-caption"
             href={CONTRACT_RECORD_URL}

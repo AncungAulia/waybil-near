@@ -48,7 +48,7 @@ export function TimelineStep({
         className,
       )}
     >
-      <span className={cn("grid shrink-0 place-items-center rounded-full", marker)}>
+      <span className={cn("relative z-[1] grid shrink-0 place-items-center rounded-full", marker)}>
         {Icon && (
           <Icon
             size={state === "failed" || state === "paused" ? 12 : 14}
@@ -61,6 +61,32 @@ export function TimelineStep({
         <span className={cn("truncate text-[14.5px] font-medium", titleTone)}>{title}</span>
         <span className="truncate text-[12.5px] text-ds-muted">{time}</span>
       </span>
+    </div>
+  );
+}
+
+/**
+ * A column of TimelineSteps joined by a thin line through their markers, from the first to
+ * the last. `spread` spaces the steps over the full height of their card.
+ */
+export function TimelineRail({
+  children,
+  spread = false,
+  className,
+}: {
+  children: React.ReactNode;
+  spread?: boolean;
+  className?: string;
+}) {
+  return (
+    <div
+      className={cn("relative flex flex-col gap-16", spread && "flex-1 justify-between", className)}
+    >
+      <span
+        aria-hidden
+        className="absolute top-12 bottom-12 left-[11.25px] w-[1.5px] rounded-full bg-ds-line-strong"
+      />
+      {children}
     </div>
   );
 }
