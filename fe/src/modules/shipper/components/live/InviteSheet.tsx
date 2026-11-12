@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { api } from "@/lib/api";
 import { Alert, failure } from "./shared";
+import { PhoneInput } from "@/modules/onboarding/components/PhoneInput";
+import { dialCode, phoneError, toE164 } from "@/modules/onboarding/data/validation";
 
 export function InviteSheet({
   type,
@@ -18,13 +20,17 @@ export function InviteSheet({
   onSent: () => void;
 }) {
   const [name, setName] = useState("");
-  const [phone, setPhone] = useState("+");
+  const [phone, setPhone] = useState("");
+  /* Indonesia first, since most demo trucks run there. The picker lists every country. */
+  const [phoneCountry, setPhoneCountry] = useState("ID");
   const [address, setAddress] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [link, setLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const phoneOk = /^\+[1-9]\d{6,14}$/.test(phone.replace(/\s/g, ""));
+  /* The number as the backend wants it (E.164), or undefined while it isn't valid. */
+  const e164 = toE164(phone, phoneCountry);
+  const phoneOk = !!e164;
   const ready = name.trim() && phoneOk && (type === "driver" || address.trim());
 
   async function send() {
@@ -35,7 +41,7 @@ export function InviteSheet({
         body: {
           type,
           name: name.trim(),
-          phone: phone.replace(/\s/g, ""),
+          phone: e164,
           ...(type === "warehouse" && { address: address.trim() }),
         },
       });
@@ -83,13 +89,19 @@ export function InviteSheet({
             value={name}
             onChange={(e) => setName(e.target.value)}
           />
-          <Input
+          <PhoneInput
             label={type === "driver" ? "WhatsApp number" : "Receiver’s WhatsApp number"}
-            inputMode="tel"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={setPhone}
+            code={dialCode(phoneCountry)}
+            onCodeChange={() => {}}
+            country={phoneCountry}
+            onCountryChange={setPhoneCountry}
+            showHint={false}
             error={
-              phone.length > 4 && !phoneOk ? "Use the country code, like +12075550142." : undefined
+              phone.replace(/\D/g, "").length > 5 && !phoneOk
+                ? phoneError(phone, phoneCountry)
+                : undefined
             }
           />
           {type === "warehouse" && (

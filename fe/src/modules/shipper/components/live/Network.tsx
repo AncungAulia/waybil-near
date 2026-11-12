@@ -8,6 +8,8 @@ import { WAYBIL_CONTRACT } from "@/lib/env";
 import { callContract } from "@/lib/wallet";
 import { names, waitingToAdd, type LiveShipperData } from "../../data/live";
 import { InviteSheet } from "./InviteSheet";
+import { NetworkEmpty } from "../ShipperNetwork";
+import { cn } from "@/lib/cn";
 import { DoneNote, failure, GAS, type Done } from "./shared";
 
 /* P5. */
@@ -27,6 +29,14 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
     !waiting.some((i) => i.acceptedBy === shared)
       ? shared
       : null;
+  /* Nothing yet: no drivers, no destinations, no invite waiting or to add. */
+  const bare =
+    !data.network.drivers.length &&
+    !data.network.destinations.length &&
+    !waiting.length &&
+    !open.length &&
+    !sharedDriver &&
+    !done;
 
   async function add(type: "driver" | "warehouse", account: string, label: string) {
     setBusy(account);
@@ -104,11 +114,17 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
           ))}
         </Panel>
       )}
-      <div className="grid items-start gap-16 lg:grid-cols-2">
-        <Panel title="Drivers">
-          {data.network.drivers.length === 0 && (
-            <p className="text-label text-ds-muted">No drivers yet. Invite your first one.</p>
-          )}
+      {/* With nothing in the network yet, the two empty cards fill the window, as the board draws it. */}
+      <div
+        className={cn(
+          "grid gap-16 lg:grid-cols-2",
+          bare
+            ? "min-h-[calc(100dvh-268px)] grid-rows-2 md:min-h-[calc(100dvh-252px)] lg:min-h-[calc(100dvh-260px)] lg:grid-rows-1"
+            : "items-start",
+        )}
+      >
+        <Panel title="Drivers" className={cn(bare && "h-full")}>
+          {data.network.drivers.length === 0 && <NetworkEmpty kind="driver" />}
           {data.network.drivers.map((d) => (
             <div key={d} className="py-8">
               <p className="text-label break-all">{people[d] ?? d}</p>
@@ -116,10 +132,8 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
             </div>
           ))}
         </Panel>
-        <Panel title="Destinations">
-          {data.network.destinations.length === 0 && (
-            <p className="text-label text-ds-muted">No destinations yet. Add your first one.</p>
-          )}
+        <Panel title="Destinations" className={cn(bare && "h-full")}>
+          {data.network.destinations.length === 0 && <NetworkEmpty kind="warehouse" />}
           {data.network.destinations.map((d) => (
             <div key={d.id} className="py-8">
               <p className="text-label break-all">{places[d.warehouse]?.name ?? d.warehouse}</p>

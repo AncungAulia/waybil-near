@@ -27,7 +27,10 @@ export function PhoneInput({
   appearance,
   showHint = true,
   popoverAlign,
+  label = "Phone or WhatsApp",
 }: {
+  /** The field label, for example "WhatsApp number". */
+  label?: string;
   value: string;
   onChange: (value: string) => void;
   code: string;
@@ -50,7 +53,7 @@ export function PhoneInput({
     "";
   return (
     <Input
-      label="Phone or WhatsApp"
+      label={label}
       className={appearance === "company" ? "[&>div]:gap-12 [&>div]:pr-16 [&>div]:pl-6" : undefined}
       value={value}
       onChange={(e) => onChange(e.target.value)}

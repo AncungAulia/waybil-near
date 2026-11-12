@@ -289,7 +289,7 @@ function NetworkRow({
   );
 }
 
-function NetworkEmpty({ kind }: { kind: "driver" | "warehouse" }) {
+export function NetworkEmpty({ kind }: { kind: "driver" | "warehouse" }) {
   return (
     <div className="flex min-h-[199.5px] flex-1 flex-col items-center justify-center gap-10 text-center">
       <img src={"/illustrations/network/empty-" + kind + ".svg"} alt="" className="h-102 w-136" />
