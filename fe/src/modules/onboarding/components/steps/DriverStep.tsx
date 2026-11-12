@@ -4,7 +4,8 @@ import { LinkSimple, PaperPlaneTilt } from "@phosphor-icons/react";
 import type { Profile } from "@waybil/shared";
 import { useOrigin } from "@/hooks/useOrigin";
 import { Button, ButtonLink } from "@/components/ui/Button";
-import { api, ApiError } from "@/lib/api";
+import { api, ApiError, readSession, saveSession } from "@/lib/api";
+import { useAuth } from "@/providers/AuthProvider";
 import { LIVE } from "@/lib/env";
 import type { OnboardingState } from "../../data/fixtures";
 import { DriverSetup } from "../DriverSetup";
@@ -22,14 +23,19 @@ export function DriverFormStep({
   signInError: string | null;
   setSignInError: Dispatch<SetStateAction<string | null>>;
 }) {
+  /* A driver who signed in with Google starts with that name, and can change it. */
+  const { profile } = useAuth();
   async function saveDriver(driver: { name: string; phone: string; plate: string }) {
     setSignInError(null);
     setState("D5");
     try {
-      await api("/me/profile", {
+      const updated = await api<Profile>("/me/profile", {
         method: "PUT",
         body: { name: driver.name, phone: driver.phone, truckPlate: driver.plate },
       });
+      /* The session keeps the new name and plate, so the invite step knows the driver is set up. */
+      const current = readSession();
+      if (current) saveSession({ ...current, profile: updated });
       setState("D6");
     } catch (error) {
       setSignInError(
@@ -47,6 +53,7 @@ export function DriverFormStep({
       )}
       <DriverSetup
         state={state}
+        initialName={LIVE ? (profile?.name ?? "") : undefined}
         onFinish={(driver) => (LIVE ? void saveDriver(driver) : setState("D5"))}
       />
     </>

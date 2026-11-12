@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import type { Shipment, Shipper } from "@waybil/shared";
 import {
   getInvestor,
@@ -97,9 +98,12 @@ export function useLivePool(accountId: string | undefined) {
   }, [accountId, version]);
   /* Data read for another account is never shown. */
   const current = accountId && state?.accountId === accountId ? state : null;
+  const refresh = useCallback(() => setVersion((v) => v + 1), []);
+  useAutoRefresh(refresh, 10000, !!accountId);
   return {
     data: current?.data ?? null,
-    failed: current?.failed ?? false,
-    refresh: useCallback(() => setVersion((v) => v + 1), []),
+    /* A failed background read keeps the pool on screen. Only a first load can fail. */
+    failed: (current?.failed ?? false) && !current?.data,
+    refresh,
   };
 }

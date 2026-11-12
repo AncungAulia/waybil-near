@@ -95,7 +95,18 @@ export function useGoogleSignIn({
       if (id !== attempt.current) return;
       signIn(session);
       setGoogleWaiting(false);
-      if (withInvite && inviteCode) await acceptInvite();
+      /*
+       * A new driver fills in their name, number and truck first. D6 then leads back to the
+       * invite, which they accept there. Anyone else accepts the invite right away.
+       */
+      if (
+        withInvite &&
+        publicInvite?.type === "driver" &&
+        session.profile.role === "driver" &&
+        !session.profile.truckPlate
+      )
+        setState("D1");
+      else if (withInvite && inviteCode) await acceptInvite();
       else if (session.profile.role === "driver" && !session.profile.truckPlate) setState("D1");
       else dashboard(HOME[session.profile.role] ?? "/start");
     } catch (error) {

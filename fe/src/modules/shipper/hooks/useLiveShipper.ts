@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import type { InvitesResponse } from "@waybil/shared";
 import { api } from "@/lib/api";
 import { getNetwork, getShipper, listShipmentsByShipper, readAll, usdcBalance } from "@/lib/near";
@@ -52,10 +53,14 @@ export function useLiveShipper(account: string | undefined) {
       stale = true;
     };
   }, [account, version]);
+  const refresh = useCallback(() => setVersion((v) => v + 1), []);
+  useAutoRefresh(refresh, 10000, !!account);
+  const own = !!account && data?.account === account;
   return {
     /* Data read for another account is never shown while this one loads. */
-    data: account && data?.account === account ? data : null,
-    failed: !!account && failedFor === account,
-    refresh: useCallback(() => setVersion((v) => v + 1), []),
+    data: own ? data : null,
+    /* A failed background read keeps what is on screen. Only a first load can fail. */
+    failed: !!account && failedFor === account && !own,
+    refresh,
   };
 }

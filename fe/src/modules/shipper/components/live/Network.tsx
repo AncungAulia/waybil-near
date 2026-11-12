@@ -10,11 +10,27 @@ import { names, waitingToAdd, type LiveShipperData } from "../../data/live";
 import { InviteSheet } from "./InviteSheet";
 import { NetworkEmpty } from "../ShipperNetwork";
 import { cn } from "@/lib/cn";
+import { useNames } from "@/hooks/useNames";
 import { DoneNote, failure, GAS, type Done } from "./shared";
 
 /* P5. */
 export function Network({ data, refresh }: { data: LiveShipperData; refresh: () => void }) {
   const { people, places } = names(data.invites);
+  /*
+   * The shipper's own name for each person leads, the way a phone contact does. When the
+   * person signed up under another name, it shows under it so the two never look like a mix-up.
+   */
+  const name = useNames([
+    ...data.network.drivers,
+    ...data.invites.flatMap((i) => (i.acceptedBy ? [i.acceptedBy] : [])),
+  ]);
+  const signedUpAs = (account: string | null | undefined, label: string) => {
+    if (!account) return "";
+    const own = name(account);
+    return own !== account && own.trim().toLowerCase() !== label.trim().toLowerCase()
+      ? ` · Signed up as ${own}`
+      : "";
+  };
   const [inviting, setInviting] = useState<"driver" | "warehouse" | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [done, setDone] = useState<Done>(null);
@@ -113,6 +129,7 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
                 <p className="text-label">{i.name}</p>
                 <p className="text-caption break-all text-ds-muted">
                   {i.type === "driver" ? "Driver" : "Destination"} · accepted your invite
+                  {signedUpAs(i.acceptedBy, i.name)}
                 </p>
               </div>
               <Button
@@ -139,8 +156,12 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
           {data.network.drivers.length === 0 && <NetworkEmpty kind="driver" />}
           {data.network.drivers.map((d) => (
             <div key={d} className="py-8">
-              <p className="text-label break-all">{people[d] ?? d}</p>
-              {people[d] && <p className="text-caption break-all text-ds-muted">{d}</p>}
+              <p className="text-label break-all">{people[d] ?? name(d)}</p>
+              {people[d] && (
+                <p className="text-caption break-all text-ds-muted">
+                  {signedUpAs(d, people[d]).replace(/^ · /, "") || d}
+                </p>
+              )}
             </div>
           ))}
         </Panel>

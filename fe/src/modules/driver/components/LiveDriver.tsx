@@ -46,14 +46,15 @@ export function LiveDriver({
   account: string;
   shipmentId?: number;
 }) {
-  /* An open trip reads again every 6 seconds, so the payout shows up on its own. */
+  /* Trips read again every 10 seconds while the tab is in view, so a new trip, a pickup and
+   * the payout show up on their own. */
   const { data, failed, reload } = useLive(
     () =>
       readAll((from, limit) => listShipmentsByDriver(account, { from, limit })).then((list) =>
         list.sort((a, b) => b.id - a.id),
       ),
     account,
-    view === "trip" ? 6000 : 0,
+    10000,
   );
   const current =
     view === "payouts" ? "/driver/payouts" : view === "companies" ? "/driver/companies" : "/driver";

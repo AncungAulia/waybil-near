@@ -64,7 +64,7 @@ const day = (ns: string | null) =>
     : "";
 
 export function LiveWarehouse({ view, account }: { view: WarehouseView; account: string }) {
-  const { data, failed, reload } = useLive(() => load(), account, view === "arrivals" ? 15000 : 0);
+  const { data, failed, reload } = useLive(() => load(), account, 10000);
   const current =
     view === "scan" ? "/warehouse/scan" : view === "history" ? "/warehouse/history" : "/warehouse";
   return (

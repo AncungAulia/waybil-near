@@ -10,14 +10,17 @@ import { cn } from "@/lib/cn";
 export function DriverSetup({
   state,
   onFinish,
+  initialName,
 }: {
   state: OnboardingState;
+  /** The name to start with on D1, for example the one from Google. */
+  initialName?: string;
   /** `phone` is in E.164, for example "+12075550199". */
   onFinish: (driver: { name: string; phone: string; plate: string }) => void;
 }) {
   const filled = state !== "D1";
   const [draft, setDraft] = useState({
-      name: filled ? "Sam Carter" : "",
+      name: filled ? "Sam Carter" : (initialName ?? ""),
       phone: filled ? "207 555 0199" : "",
       plate: state === "D3" ? "AB1234" : filled ? "NWF-204" : "",
     }),
