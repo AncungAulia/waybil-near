@@ -1,4 +1,5 @@
 "use client";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { useState } from "react";
 import { BackLink } from "@/components/elements/BackLink";
 import type {
@@ -367,15 +368,9 @@ function ScanAndConfirm({
             }
           />
           {!short && (
-            <label className="flex items-center gap-10 text-label">
-              <input
-                type="checkbox"
-                checked={problem}
-                onChange={(e) => setProblem(e.target.checked)}
-                className="size-18 accent-ds-ink"
-              />
+            <Checkbox checked={problem} onChange={setProblem}>
               Report a problem with the goods
-            </label>
+            </Checkbox>
           )}
           {reporting && (
             <>
