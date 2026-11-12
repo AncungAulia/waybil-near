@@ -1,6 +1,6 @@
 "use client";
-import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useInvalidate } from "@/hooks/useInvalidate";
 import { qk } from "@/lib/queryKeys";
@@ -19,6 +19,7 @@ import { ActionSheet } from "@/components/layout/ActionSheet";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Money } from "@/components/elements/Money";
+import { ResultDialog } from "@/components/elements/ResultDialog";
 import { StatusPill } from "@/components/elements/StatusPill";
 import { TripMap } from "@/components/elements/TripMap";
 import { TimelineStep } from "@/components/elements/TimelineStep";
@@ -33,7 +34,8 @@ import { api } from "@/lib/api";
 import { CONTRACT_RECORD_URL, USDC_CONTRACT, WAYBIL_CONTRACT } from "@/lib/env";
 import { statusChip } from "@/lib/status";
 import { callContract } from "@/lib/wallet";
-import { Alert, DoneNote, failure, type Done } from "./live/shared";
+import { notify } from "@/lib/notify";
+import { Alert, failure } from "./live/shared";
 import { names, repayMessage, shortDay, toRow, type LiveShipperData } from "../data/live";
 
 const REASONS: Record<string, string> = {
@@ -46,12 +48,33 @@ const REASONS: Record<string, string> = {
 /* P3 and P4 for one shipment, with the actions its status allows. */
 export function LiveShipment({ data, id }: { data: LiveShipperData; id: number }) {
   const created = useSearchParams().get("tx");
+  const router = useRouter();
+  const pathname = usePathname();
   const invalidate = useInvalidate();
   const s = data.shipments.find((x) => x.id === id);
   const { trips, data: tripData } = useTrips(s ? [s.id] : []);
-  const [done, setDone] = useState<Done>(
-    created ? { text: "The shipment is approved. The driver can pick it up.", tx: created } : null,
-  );
+  /*
+   * A new shipment arrives here with ?tx=<hash>. It gets one toast, then the hash leaves the
+   * address so a refresh does not show it again.
+   */
+  const announced = useRef(false);
+  useEffect(() => {
+    if (!created || announced.current) return;
+    announced.current = true;
+    notify.success("Shipment approved", {
+      meta: "The driver can pick it up now.",
+      tx: created,
+      id: `approved-${created}`,
+    });
+    router.replace(pathname, { scroll: false });
+  }, [created, pathname, router]);
+  /* Paying or settling moves money, so its result opens a dialog with the record. */
+  const [result, setResult] = useState<{
+    title: string;
+    amount: string;
+    text: string;
+    tx: string;
+  } | null>(null);
   const [sheet, setSheet] = useState<"cancel" | "pay" | "settle" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [amount, setAmount] = useState("");
@@ -71,9 +94,9 @@ export function LiveShipment({ data, id }: { data: LiveShipperData; id: number }
   }, [report, s?.bill, s?.qty]);
 
   const action = useMutation({
-    mutationFn: ({ run }: { run: () => Promise<string>; text: string }) => run(),
-    onSuccess: (tx, { text }) => {
-      setDone({ text, tx });
+    mutationFn: ({ run }: { run: () => Promise<string>; done: (tx: string) => void }) => run(),
+    onSuccess: (tx, { done }) => {
+      done(tx);
       setSheet(null);
       /* Paying moves USDC out of the wallet. Settling also closes the report. */
       void invalidate(qk.shipper(data.account), qk.usdc(data.account), qk.report(id));
@@ -102,14 +125,15 @@ export function LiveShipment({ data, id }: { data: LiveShipperData; id: number }
   const settleOk = driverAmount > 0n && driverAmount <= BigInt(s.advance);
   const short = BigInt(s.bill) > data.wallet;
 
-  function send(run: () => Promise<string>, text: string) {
+  /* Errors stay in the open sheet, next to the button that sent them. */
+  function send(run: () => Promise<string>, done: (tx: string) => void) {
     setError(null);
-    action.mutate({ run, text });
+    action.mutate({ run, done });
   }
   const cancel = () =>
     send(
       () => callContract(WAYBIL_CONTRACT, "cancel_shipment", { id }, { gas: "50000000000000" }),
-      "The shipment is cancelled. Its credit is free again.",
+      (tx) => notify.success("Shipment cancelled", { meta: "Its credit is free again.", tx }),
     );
   const pay = () =>
     send(
@@ -120,7 +144,13 @@ export function LiveShipment({ data, id }: { data: LiveShipperData; id: number }
           { receiver_id: WAYBIL_CONTRACT, amount: s.bill, msg: repayMessage(id) },
           { deposit: "1", gas: "100000000000000" },
         ),
-      `You paid ${formatUsdc(BigInt(s.bill))} USDC. The credit is free again.`,
+      (tx) =>
+        setResult({
+          title: "Bill paid",
+          amount: s.bill,
+          text: `You paid ${formatUsdc(BigInt(s.bill))} USDC. Your credit is free again.`,
+          tx,
+        }),
     );
   const settle = () =>
     send(
@@ -131,7 +161,13 @@ export function LiveShipment({ data, id }: { data: LiveShipperData; id: number }
           { id, driver_amount: String(driverAmount) },
           { gas: "100000000000000" },
         ),
-      `The driver got ${formatUsdc(driverAmount)} USDC. The new bill is ${formatUsdc(billForDriverAmount(driverAmount))} USDC.`,
+      (tx) =>
+        setResult({
+          title: "Report settled",
+          amount: String(driverAmount),
+          text: `The driver got ${formatUsdc(driverAmount)} USDC. Your new bill is ${formatUsdc(billForDriverAmount(driverAmount))} USDC.`,
+          tx,
+        }),
     );
 
   const steps = [
@@ -187,7 +223,6 @@ export function LiveShipment({ data, id }: { data: LiveShipperData; id: number }
         </div>
         <StatusPill status={statusChip(s)} />
       </header>
-      <DoneNote done={done} />
       {/* The map on the left. The bill, progress and trip facts stack on the right. */}
       {/* Both columns fill the window and end level, the last card stretching to the map. */}
       <div className="grid gap-16 lg:min-h-[calc(100dvh-300px)] lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-24">
@@ -353,6 +388,16 @@ export function LiveShipment({ data, id }: { data: LiveShipperData; id: number }
             Pay the driver
           </Button>
         </ActionSheet>
+      )}
+      {result && (
+        <ResultDialog
+          title={result.title}
+          amount={result.amount}
+          tx={result.tx}
+          onClose={() => setResult(null)}
+        >
+          {result.text}
+        </ResultDialog>
       )}
     </>
   );

@@ -6,11 +6,11 @@ import { useInvalidate } from "@/hooks/useInvalidate";
 import { qk } from "@/lib/queryKeys";
 import { ArrowUpRight, Check, Copy, MapTrifold, Plus, UserPlus } from "@phosphor-icons/react";
 import { Panel } from "@/components/layout/Panel";
-import { Button, ButtonLink } from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
 import { NameTag } from "@/components/ui/Tag";
-import { ActionSheet } from "@/components/layout/ActionSheet";
 import { Avatar } from "@/components/elements/Avatar";
 import { nearblocksUrl, WAYBIL_CONTRACT } from "@/lib/env";
+import { notify } from "@/lib/notify";
 import { callContract } from "@/lib/wallet";
 import { names, waitingToAdd, type LiveShipperData } from "../../data/live";
 import { InviteSheet } from "./InviteSheet";
@@ -18,7 +18,7 @@ import { usePlaces } from "@/hooks/useTrips";
 import { NetworkEmpty } from "../ShipperNetwork";
 import { cn } from "@/lib/cn";
 import { useNames } from "@/hooks/useNames";
-import { DoneNote, failure, FULL, GAS, type Done } from "./shared";
+import { failure, FULL, GAS } from "./shared";
 
 /* P5. */
 export function Network({ data }: { data: LiveShipperData }) {
@@ -49,13 +49,6 @@ export function Network({ data }: { data: LiveShipperData }) {
     )?.placeId;
     return (placeList?.places ?? []).find((p) => p.id === id) ?? null;
   };
-  const [done, setDone] = useState<Done>(null);
-  /* A successful add opens a dialog with its record. A failure stays as a note on the page. */
-  const [added, setAdded] = useState<{
-    label: string;
-    type: "driver" | "warehouse";
-    tx: string;
-  } | null>(null);
   const waiting = waitingToAdd(data);
   const open = data.invites.filter((i) => !i.acceptedBy);
   /* A driver's own link (/c/<account>) opens this page with ?driver=<account>. */
@@ -85,16 +78,22 @@ export function Network({ data }: { data: LiveShipperData }) {
         type === "driver" ? { driver: account } : { warehouse: account },
         { gas: GAS },
       ),
+    /* The new name shows in its list at once, so a toast with the record is enough. */
     onSuccess: (tx, { type, label }) => {
-      setAdded({ label, type, tx });
+      notify.success(`${label} is in your network now.`, {
+        meta:
+          type === "driver"
+            ? "You can pick them for a new shipment."
+            : "You can send shipments there now.",
+        tx,
+      });
       void invalidate(qk.shipper(data.account));
     },
-    onError: (e) => setDone({ text: failure(e) }),
+    onError: (e, { label }) => notify.error(`${label} was not added.`, { meta: failure(e) }),
   });
   /* The account being added, while its wallet request is open. */
   const busy = adding.isPending ? adding.variables.account : null;
   function add(type: "driver" | "warehouse", account: string, label: string) {
-    setDone(null);
     adding.mutate({ type, account, label });
   }
 
@@ -128,7 +127,6 @@ export function Network({ data }: { data: LiveShipperData }) {
           </Button>
         </div>
       </header>
-      <DoneNote done={done} />
       {(waiting.length > 0 || sharedDriver) && (
         <Panel title="Ready to add">
           {sharedDriver && (
@@ -224,30 +222,6 @@ export function Network({ data }: { data: LiveShipperData }) {
             </div>
           ))}
         </Panel>
-      )}
-      {added && (
-        <ActionSheet
-          title={added.type === "driver" ? "Driver added" : "Destination added"}
-          onClose={() => setAdded(null)}
-        >
-          <p className="text-label">
-            {added.label} is in your network now.{" "}
-            {added.type === "driver"
-              ? "You can pick them when you make a new shipment."
-              : "You can send shipments there now."}
-          </p>
-          <ButtonLink
-            href={nearblocksUrl(`/txns/${added.tx}`)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full justify-between"
-          >
-            See the record on NearBlocks
-          </ButtonLink>
-          <Button variant="quiet" onClick={() => setAdded(null)}>
-            Close
-          </Button>
-        </ActionSheet>
       )}
       {inviting && <InviteSheet type={inviting} onClose={() => setInviting(null)} />}
     </div>

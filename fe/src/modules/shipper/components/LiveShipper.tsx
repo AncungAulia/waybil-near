@@ -19,7 +19,7 @@ import { NewLiveShipment } from "./live/NewLiveShipment";
 import { Network } from "./live/Network";
 import { Credit } from "./live/Credit";
 
-export { Alert, DoneNote, failure, type Done } from "./live/shared";
+export { Alert, failure } from "./live/shared";
 
 /*
  * The shipper screens on testnet data (#84). Every action is a transaction signed by the

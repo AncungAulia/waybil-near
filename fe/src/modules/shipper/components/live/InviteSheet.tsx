@@ -10,6 +10,7 @@ import { ActionSheet } from "@/components/layout/ActionSheet";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { api } from "@/lib/api";
+import { notify } from "@/lib/notify";
 import { Alert, failure } from "./shared";
 import { PhoneInput } from "@/components/elements/PhoneInput";
 import { movePin, PlacePicker } from "@/components/elements/PlacePicker";
@@ -90,7 +91,12 @@ export function InviteSheet({
       if (account) void invalidate(qk.shipper(account), qk.places(account));
     },
     onSuccess: (code) => {
-      if (code === null) return onClose();
+      if (code === null) {
+        notify.success(`${name.trim()} is saved.`, {
+          meta: "You can pick it for your next shipment.",
+        });
+        return onClose();
+      }
       /* The same app the shipper is using, so a local test gives a local link. */
       setLink(`${window.location.origin}/join/${code}`);
     },
