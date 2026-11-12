@@ -6,6 +6,8 @@ import { MapPin, UserPlus } from "@phosphor-icons/react";
 import { Panel } from "@/components/layout/Panel";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { SearchPicker } from "@/components/ui/SearchPicker";
+import { DatePicker } from "@/components/ui/DatePicker";
 import { Money } from "@/components/elements/Money";
 import { FillEmpty } from "@/components/elements/EmptyState";
 import { RouteMap } from "@/components/elements/RouteMap";
@@ -23,14 +25,13 @@ export function NewLiveShipment({ data, refresh }: { data: LiveShipperData; refr
   const router = useRouter();
   const { people, places } = names(data.invites);
   const shipper = data.shipper!;
-  const [driver, setDriver] = useState(data.network.drivers[0] ?? "");
-  const [destination, setDestination] = useState(
-    data.network.destinations[0] ? String(data.network.destinations[0].id) : "",
-  );
+  /* Nothing is chosen for the shipper. Every field starts empty. */
+  const [driver, setDriver] = useState("");
+  const [destination, setDestination] = useState("");
   const { data: placeList } = usePlaces();
   const pickups = (placeList?.places ?? []).filter((p) => p.kind === "pickup");
   const [pickupChoice, setPickup] = useState("");
-  const pickupId = pickupChoice || pickups[0]?.id || "";
+  const pickupId = pickupChoice;
   const pickup = pickups.find((p) => p.id === pickupId);
   /* The destination's pin is the place on the warehouse invite this destination came from. */
   const chosen = data.network.destinations.find((d) => String(d.id) === destination);
@@ -39,13 +40,16 @@ export function NewLiveShipment({ data, refresh }: { data: LiveShipperData; refr
   )?.placeId;
   const destPlace = (placeList?.places ?? []).find((p) => p.id === destPlaceId);
   const [qty, setQty] = useState("");
-  const [unit, setUnit] = useState("crates");
+  const [unit, setUnit] = useState("");
   const [fee, setFee] = useState("");
   const [due, setDue] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const day = (offset: number) =>
-    new Date(Date.now() + offset * 86400000).toISOString().slice(0, 10);
+  /* A local calendar day, the same way the date picker counts them. */
+  const day = (offset: number) => {
+    const d = new Date(Date.now() + offset * 86400000);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
   let bill = 0n;
   try {
     bill = /^\d+(\.\d{1,2})?$/.test(fee.trim()) ? parseUsdc(fee.trim()) : 0n;
@@ -130,35 +134,31 @@ export function NewLiveShipment({ data, refresh }: { data: LiveShipperData; refr
       ) : (
         <div className="grid items-start gap-24 lg:grid-cols-[minmax(0,1fr)_400px]">
           <Panel title="Trip">
-            <label className="flex flex-col gap-8 text-label">
-              Driver
-              <select
-                className="focus-ring h-48 rounded-[14px] bg-ds-canvas px-12"
-                value={driver}
-                onChange={(e) => setDriver(e.target.value)}
-              >
-                {data.network.drivers.map((d) => (
-                  <option key={d} value={d}>
-                    {people[d] ?? d}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="flex flex-col gap-8 text-label">
-              Pickup from
-              {pickups.length ? (
-                <select
-                  className="focus-ring h-48 rounded-[14px] bg-ds-canvas px-12"
-                  value={pickupId}
-                  onChange={(e) => setPickup(e.target.value)}
-                >
-                  {pickups.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-              ) : (
+            <SearchPicker
+              label="Driver"
+              appearance="company"
+              placeholder="Choose a driver"
+              value={driver}
+              options={data.network.drivers.map((d) => ({
+                value: d,
+                label: people[d] ?? d,
+                detail: d,
+              }))}
+              onChange={setDriver}
+            />
+            {pickups.length || !placeList ? (
+              <SearchPicker
+                label="Pickup from"
+                appearance="company"
+                placeholder="Choose a pickup point"
+                value={pickupId}
+                options={pickups.map((p) => ({ value: p.id, label: p.name, detail: p.address }))}
+                emptyText="Loading your pickup points."
+                onChange={setPickup}
+              />
+            ) : (
+              <div className="flex flex-col gap-8">
+                <p className="text-label font-medium">Pickup from</p>
                 <ButtonLink
                   href="/shipper/network"
                   variant="secondary"
@@ -167,22 +167,20 @@ export function NewLiveShipment({ data, refresh }: { data: LiveShipperData; refr
                 >
                   Add a pickup point first
                 </ButtonLink>
-              )}
-            </label>
-            <label className="flex flex-col gap-8 text-label">
-              Destination
-              <select
-                className="focus-ring h-48 rounded-[14px] bg-ds-canvas px-12"
-                value={destination}
-                onChange={(e) => setDestination(e.target.value)}
-              >
-                {data.network.destinations.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {places[d.warehouse]?.name ?? d.warehouse}
-                  </option>
-                ))}
-              </select>
-            </label>
+              </div>
+            )}
+            <SearchPicker
+              label="Destination"
+              appearance="company"
+              placeholder="Choose a destination"
+              value={destination}
+              options={data.network.destinations.map((d) => ({
+                value: String(d.id),
+                label: places[d.warehouse]?.name ?? d.warehouse,
+                detail: places[d.warehouse]?.address || undefined,
+              }))}
+              onChange={setDestination}
+            />
             <div className="grid grid-cols-2 gap-12">
               <Input
                 label="Quantity"
@@ -193,9 +191,10 @@ export function NewLiveShipment({ data, refresh }: { data: LiveShipperData; refr
               />
               <Input
                 label="Unit"
+                placeholder="crates"
                 value={unit}
                 onChange={(e) => setUnit(e.target.value)}
-                error={!unitOk ? "Use one word, like crates." : undefined}
+                error={unit && !unitOk ? "Use one word, like crates." : undefined}
               />
             </div>
             <Input
@@ -210,13 +209,12 @@ export function NewLiveShipment({ data, refresh }: { data: LiveShipperData; refr
                   : undefined
               }
             />
-            <Input
+            <DatePicker
               label="Due date"
-              type="date"
               min={day(1)}
               max={day(60)}
               value={due}
-              onChange={(e) => setDue(e.target.value)}
+              onChange={setDue}
               hint="Up to 60 days from today."
             />
           </Panel>
