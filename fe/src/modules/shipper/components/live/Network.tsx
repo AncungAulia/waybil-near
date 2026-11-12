@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { ArrowUpRight, Check, Copy, MapPin, Plus, UserPlus } from "@phosphor-icons/react";
+import { ArrowUpRight, Check, Copy, Plus, UserPlus } from "@phosphor-icons/react";
 import { Panel } from "@/components/layout/Panel";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { ActionSheet } from "@/components/layout/ActionSheet";
