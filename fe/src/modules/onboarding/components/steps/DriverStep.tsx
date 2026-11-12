@@ -3,8 +3,9 @@ import { useState, type Dispatch, type SetStateAction } from "react";
 import { LinkSimple, PaperPlaneTilt } from "@phosphor-icons/react";
 import type { Profile } from "@waybil/shared";
 import { useOrigin } from "@/hooks/useOrigin";
+import { useSaveProfile } from "@/hooks/useSaveProfile";
 import { Button, ButtonLink } from "@/components/ui/Button";
-import { api, ApiError, readSession, saveSession } from "@/lib/api";
+import { ApiError } from "@/lib/api";
 import { useAuth } from "@/providers/AuthProvider";
 import { LIVE } from "@/lib/env";
 import type { OnboardingState } from "../../data/fixtures";
@@ -25,17 +26,17 @@ export function DriverFormStep({
 }) {
   /* A driver who signed in with Google starts with that name, and can change it. */
   const { profile } = useAuth();
+  const saveProfile = useSaveProfile();
   async function saveDriver(driver: { name: string; phone: string; plate: string }) {
     setSignInError(null);
     setState("D5");
     try {
-      const updated = await api<Profile>("/me/profile", {
-        method: "PUT",
-        body: { name: driver.name, phone: driver.phone, truckPlate: driver.plate },
-      });
       /* The session keeps the new name and plate, so the invite step knows the driver is set up. */
-      const current = readSession();
-      if (current) saveSession({ ...current, profile: updated });
+      await saveProfile.mutateAsync({
+        name: driver.name,
+        phone: driver.phone,
+        truckPlate: driver.plate,
+      });
       setState("D6");
     } catch (error) {
       setSignInError(

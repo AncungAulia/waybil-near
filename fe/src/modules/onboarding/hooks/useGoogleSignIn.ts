@@ -8,6 +8,8 @@ import {
   type SetStateAction,
 } from "react";
 import { useRouter } from "next/navigation";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { qk } from "@/lib/queryKeys";
 import type { ChallengeResponse, PublicInvite, SessionResponse } from "@waybil/shared";
 import { api, ApiError } from "@/lib/api";
 import { LIVE } from "@/lib/env";
@@ -39,36 +41,55 @@ export function useGoogleSignIn({
   lastFlow: MutableRefObject<SignInFlow>;
 }) {
   const router = useRouter();
+  const client = useQueryClient();
   const { signIn, profile } = useAuth();
   const dashboard = (path: string) => router.push(path);
   const googleSlot = useRef<HTMLDivElement>(null);
   const [googleWaiting, setGoogleWaiting] = useState(false);
-  const [publicInvite, setPublicInvite] = useState<PublicInvite | null>(null);
   const liveInvite = LIVE && !preview && !!inviteCode;
+  /*
+   * The invite is read once per code and not again in the background. A later sign-in moves
+   * on through acceptInvite, so a fresh read would only show the invite as used.
+   */
+  const invite = useQuery({
+    queryKey: qk.invite(inviteCode ?? ""),
+    queryFn: () => api<PublicInvite>(`/invites/${inviteCode}`),
+    enabled: liveInvite,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+  const publicInvite = invite.data ?? null;
   const shipperName = liveInvite ? (publicInvite?.shipperName ?? "the company") : "Northwind";
+  const opened = useRef<string | null>(null);
   useEffect(() => {
-    if (!liveInvite) return;
-    api<PublicInvite>(`/invites/${inviteCode}`)
-      .then((found) => {
-        setPublicInvite(found);
-        setState(
-          found.state !== "open"
-            ? "F4"
-            : found.type === "warehouse"
-              ? "F5"
-              : profile?.role === "driver"
-                ? "F2"
-                : "F1",
-        );
-      })
-      /* Only a missing invite is "used or expired". A dropped connection shows the retry screen. */
-      .catch((error: unknown) =>
-        error instanceof ApiError && error.status === 404 ? setState("F4") : setState("X2"),
+    if (!liveInvite || !inviteCode || opened.current === inviteCode) return;
+    if (invite.data) {
+      opened.current = inviteCode;
+      const found = invite.data;
+      setState(
+        found.state !== "open"
+          ? "F4"
+          : found.type === "warehouse"
+            ? "F5"
+            : profile?.role === "driver"
+              ? "F2"
+              : "F1",
       );
-    // The invite is read once per code. A later sign-in moves on through acceptInvite.
-  }, [liveInvite, inviteCode]);
+    } else if (invite.error) {
+      opened.current = inviteCode;
+      /* Only a missing invite is "used or expired". A dropped connection shows the retry screen. */
+      const error = invite.error;
+      setState(error instanceof ApiError && error.status === 404 ? "F4" : "X2");
+    }
+  }, [liveInvite, inviteCode, invite.data, invite.error, profile?.role, setState]);
+  const accept = useMutation({
+    mutationFn: () => api(`/invites/${inviteCode}/accept`, { body: {} }),
+    /* Accepting links the person to a shipper, so their profile and data change. */
+    onSuccess: () => client.invalidateQueries({ queryKey: qk.me() }),
+  });
   async function acceptInvite() {
-    await api(`/invites/${inviteCode}/accept`, { body: {} });
+    await accept.mutateAsync();
     setState(publicInvite?.type === "warehouse" ? "F6" : "F3");
   }
   async function googleFlow(withInvite = false) {
