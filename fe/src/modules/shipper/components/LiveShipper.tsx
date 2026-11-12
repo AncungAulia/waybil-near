@@ -76,13 +76,13 @@ export function LiveShipper({
         ) : view === "shipments" ? (
           <Shipments data={data} />
         ) : view === "detail" ? (
-          <LiveShipment data={data} id={shipmentId ?? 0} refresh={refresh} />
+          <LiveShipment data={data} id={shipmentId ?? 0} />
         ) : view === "new" ? (
-          <NewLiveShipment data={data} refresh={refresh} />
+          <NewLiveShipment data={data} />
         ) : view === "network" ? (
-          <Network data={data} refresh={refresh} />
+          <Network data={data} />
         ) : (
-          <Credit data={data} refresh={refresh} />
+          <Credit data={data} />
         )}
       </div>
     </RoleShell>

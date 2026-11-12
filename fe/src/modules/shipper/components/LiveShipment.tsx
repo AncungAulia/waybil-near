@@ -1,6 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useInvalidate } from "@/hooks/useInvalidate";
+import { qk } from "@/lib/queryKeys";
 import {
   billForDriverAmount,
   driverAmountForGoodUnits,
@@ -41,37 +44,43 @@ const REASONS: Record<string, string> = {
 };
 
 /* P3 and P4 for one shipment, with the actions its status allows. */
-export function LiveShipment({
-  data,
-  id,
-  refresh,
-}: {
-  data: LiveShipperData;
-  id: number;
-  refresh: () => void;
-}) {
+export function LiveShipment({ data, id }: { data: LiveShipperData; id: number }) {
   const created = useSearchParams().get("tx");
+  const invalidate = useInvalidate();
   const s = data.shipments.find((x) => x.id === id);
-  const { trips, data: tripData, reload: reloadTrips } = useTrips(s ? [s.id] : []);
+  const { trips, data: tripData } = useTrips(s ? [s.id] : []);
   const [done, setDone] = useState<Done>(
     created ? { text: "The shipment is approved. The driver can pick it up.", tx: created } : null,
   );
   const [sheet, setSheet] = useState<"cancel" | "pay" | "settle" | null>(null);
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [report, setReport] = useState<ReportDetail | null>(null);
   const [amount, setAmount] = useState("");
 
+  /* The warehouse's problem report, while it holds the bill. */
+  const reportQuery = useQuery({
+    queryKey: qk.report(id),
+    queryFn: () => api<ReportDetail>(`/reports/${id}`),
+    enabled: s?.status === "Reported",
+  });
+  const report = s?.status === "Reported" ? (reportQuery.data ?? null) : null;
+  /* The amount starts at what the good units are worth. */
   useEffect(() => {
-    if (s?.status !== "Reported") return;
-    api<ReportDetail>(`/reports/${id}`)
-      .then((r) => {
-        setReport(r);
-        const suggested = driverAmountForGoodUnits(BigInt(s.bill), r.goodQty, s.qty);
-        setAmount(String(Number(suggested) / 1000000));
-      })
-      .catch(() => setReport(null));
-  }, [id, s?.status, s?.bill, s?.qty]);
+    if (!report || !s) return;
+    const suggested = driverAmountForGoodUnits(BigInt(s.bill), report.goodQty, s.qty);
+    setAmount(String(Number(suggested) / 1000000));
+  }, [report, s?.bill, s?.qty]);
+
+  const action = useMutation({
+    mutationFn: ({ run }: { run: () => Promise<string>; text: string }) => run(),
+    onSuccess: (tx, { text }) => {
+      setDone({ text, tx });
+      setSheet(null);
+      /* Paying moves USDC out of the wallet. Settling also closes the report. */
+      void invalidate(qk.shipper(data.account), qk.usdc(data.account), qk.report(id));
+    },
+    onError: (e) => setError(failure(e)),
+  });
+  const busy = action.isPending;
 
   if (!s)
     return (
@@ -93,19 +102,9 @@ export function LiveShipment({
   const settleOk = driverAmount > 0n && driverAmount <= BigInt(s.advance);
   const short = BigInt(s.bill) > data.wallet;
 
-  async function send(run: () => Promise<string>, text: string) {
-    setBusy(true);
+  function send(run: () => Promise<string>, text: string) {
     setError(null);
-    try {
-      const tx = await run();
-      setDone({ text, tx });
-      setSheet(null);
-      refresh();
-    } catch (e) {
-      setError(failure(e));
-    } finally {
-      setBusy(false);
-    }
+    action.mutate({ run, text });
   }
   const cancel = () =>
     send(
@@ -204,7 +203,7 @@ export function LiveShipment({
               <RouteNote trip={trip} status={s.status} />
             </>
           ) : s.status === "Approved" || s.status === "PickedUp" ? (
-            <AddTrip shipment={s} onAdded={reloadTrips} />
+            <AddTrip shipment={s} />
           ) : (
             <div className="grid h-200 place-items-center rounded-card bg-ds-bg p-24 text-center text-label text-ds-muted">
               This shipment was recorded without a map.
@@ -362,33 +361,30 @@ export function LiveShipment({
  * A shipment recorded without its trip (an older one, or one whose trip could not be saved
  * in time) gets its map here once the shipper says where the goods are picked up.
  */
-function AddTrip({
-  shipment,
-  onAdded,
-}: {
-  shipment: { id: number; driver: string; destination: number };
-  onAdded: () => void;
-}) {
+function AddTrip({ shipment }: { shipment: { id: number; driver: string; destination: number } }) {
   const shipmentId = shipment.id;
   const { data } = usePlaces();
   const pickups = (data?.places ?? []).filter((p) => p.kind === "pickup");
   const [pickup, setPickup] = useState("");
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const invalidate = useInvalidate();
+  /* Saving the trip draws its map, so every trip read starts again. */
+  const save = useMutation({
+    mutationFn: (pickupPlaceId: string) =>
+      api(`/trips/${shipmentId}`, {
+        method: "PUT",
+        body: { pickupPlaceId } satisfies TripCreate,
+      }),
+    onSuccess: () => invalidate(qk.allTrips()),
+  });
+  const { mutate } = save;
+  const busy = save.isPending;
   /* The pickup chosen when this shipment was approved finishes the trip on its own. */
   const noted = pickupFor(shipment);
   useEffect(() => {
     if (!noted) return;
-    api(`/trips/${shipmentId}`, {
-      method: "PUT",
-      body: { pickupPlaceId: noted } satisfies TripCreate,
-    })
-      .then(() => {
-        forgetPickup();
-        onAdded();
-      })
-      .catch(() => forgetPickup());
-  }, [noted, shipmentId, onAdded]);
+    mutate(noted, { onSettled: () => forgetPickup() });
+  }, [noted, mutate]);
   if (noted) return null;
   if (data && !pickups.length) return null;
   return (
@@ -410,20 +406,9 @@ function AddTrip({
         disabled={!pickup}
         loading={busy}
         loadingLabel="Drawing the route"
-        onClick={async () => {
-          setBusy(true);
+        onClick={() => {
           setError(null);
-          try {
-            await api(`/trips/${shipmentId}`, {
-              method: "PUT",
-              body: { pickupPlaceId: pickup } satisfies TripCreate,
-            });
-            onAdded();
-          } catch (e) {
-            setError(failure(e));
-          } finally {
-            setBusy(false);
-          }
+          save.mutate(pickup, { onError: (e) => setError(failure(e)) });
         }}
       >
         Show the map

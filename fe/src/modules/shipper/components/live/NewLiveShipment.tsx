@@ -2,6 +2,8 @@
 import { qk } from "@/lib/queryKeys";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useMutation } from "@tanstack/react-query";
+import { useInvalidate } from "@/hooks/useInvalidate";
 import {
   advanceFor,
   formatUsdc,
@@ -30,8 +32,9 @@ import { creditUsed, dueAt, names, type LiveShipperData } from "../../data/live"
 import { Alert, failure, GAS, Meter } from "./shared";
 
 /* P2. */
-export function NewLiveShipment({ data, refresh }: { data: LiveShipperData; refresh: () => void }) {
+export function NewLiveShipment({ data }: { data: LiveShipperData }) {
   const router = useRouter();
+  const invalidate = useInvalidate();
   const { people, places } = names(data.invites);
   const shipper = data.shipper!;
   /* Nothing is chosen for the shipper. Every field starts empty. */
@@ -57,7 +60,6 @@ export function NewLiveShipment({ data, refresh }: { data: LiveShipperData; refr
   const [unit, setUnit] = useState("");
   const [fee, setFee] = useState("");
   const [due, setDue] = useState("");
-  const [busy, setBusy] = useState(false);
   /* After the wallet signs, while the new shipment is being read back. */
   const [recording, setRecording] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -89,10 +91,8 @@ export function NewLiveShipment({ data, refresh }: { data: LiveShipperData; refr
     !shipper.paused;
   const empty = data.network.drivers.length === 0 || data.network.destinations.length === 0;
 
-  async function approve() {
-    setBusy(true);
-    setError(null);
-    try {
+  /* Records the shipment, waits for it to show, then saves its trip. */
+  async function record() {
       /*
        * Remember the pickup point before the wallet opens. If the trip can't be saved below,
        * the shipment page finishes it from this note.
@@ -142,13 +142,24 @@ export function NewLiveShipment({ data, refresh }: { data: LiveShipperData; refr
         })
           .then(() => forgetPickup())
           .catch(() => undefined);
-      refresh();
+      return { tx, newest };
+  }
+  const create = useMutation({
+    mutationFn: record,
+    onSuccess: async ({ tx, newest }) => {
+      await invalidate(qk.shipper(data.account), qk.allTrips());
       router.push(newest ? `/shipper/shipments/${newest.id}?tx=${tx}` : "/shipper/shipments");
-    } catch (e) {
+    },
+    onError: (e) => {
       setError(failure(e));
-      setBusy(false);
       setRecording(false);
-    }
+    },
+  });
+  /* The button keeps waiting after success, while the page moves on to the new shipment. */
+  const busy = create.isPending || create.isSuccess;
+  function approve() {
+    setError(null);
+    create.mutate();
   }
 
   return (
@@ -317,7 +328,7 @@ export function NewLiveShipment({ data, refresh }: { data: LiveShipperData; refr
               disabled={!ready}
               loading={busy}
               loadingLabel={recording ? "Recording the shipment" : "Waiting for wallet"}
-              onClick={() => void approve()}
+              onClick={approve}
             >
               Approve shipment
             </Button>

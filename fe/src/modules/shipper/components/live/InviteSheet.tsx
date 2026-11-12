@@ -1,5 +1,9 @@
 "use client";
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useInvalidate } from "@/hooks/useInvalidate";
+import { qk } from "@/lib/queryKeys";
+import { useAuth } from "@/providers/AuthProvider";
 import type { InviteCreatedResponse, Place, PlaceCreate } from "@waybil/shared";
 import { Copy, MapPin } from "@phosphor-icons/react";
 import { ActionSheet } from "@/components/layout/ActionSheet";
@@ -17,12 +21,12 @@ import { dialCode, phoneError, toE164 } from "@/lib/phone";
 export function InviteSheet({
   type,
   onClose,
-  onSent,
 }: {
   type: "driver" | "warehouse";
   onClose: () => void;
-  onSent: () => void;
 }) {
+  const account = useAuth().profile?.accountId;
+  const invalidate = useInvalidate();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   /* Indonesia first, since most demo trucks run there. The picker lists every country. */
@@ -32,7 +36,6 @@ export function InviteSheet({
     lat: null,
     lng: null,
   });
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [link, setLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -48,10 +51,8 @@ export function InviteSheet({
     ? name.trim() && pinned
     : name.trim() && phoneOk && (type === "driver" || pinned);
 
-  async function send() {
-    setBusy(true);
-    setError(null);
-    try {
+  /* Saves the place, then sends the invite. Answers with the invite code, or null for a pickup. */
+  async function save() {
       /* A destination is saved as a place first, so its pin shows on every trip map. */
       const place =
         type === "warehouse"
@@ -68,11 +69,7 @@ export function InviteSheet({
             ).place
           : null;
       /* A pickup point needs no invite. It is ready for the next shipment. */
-      if (pickup) {
-        onSent();
-        onClose();
-        return;
-      }
+      if (pickup) return null;
       const result = await api<InviteCreatedResponse>("/invites", {
         body: {
           type,
@@ -81,14 +78,28 @@ export function InviteSheet({
           ...(place && { address: place.address, placeId: place.id }),
         },
       });
+      return result.invite.code;
+  }
+  const sending = useMutation({
+    mutationFn: save,
+    /*
+     * The new place and invite show on the network page and in the shipment form. A place
+     * can be saved even when its invite then fails, so both outcomes read again.
+     */
+    onSettled: () => {
+      if (account) void invalidate(qk.shipper(account), qk.places(account));
+    },
+    onSuccess: (code) => {
+      if (code === null) return onClose();
       /* The same app the shipper is using, so a local test gives a local link. */
-      setLink(`${window.location.origin}/join/${result.invite.code}`);
-      onSent();
-    } catch (e) {
-      setError(failure(e));
-    } finally {
-      setBusy(false);
-    }
+      setLink(`${window.location.origin}/join/${code}`);
+    },
+    onError: (e) => setError(failure(e)),
+  });
+  const busy = sending.isPending;
+  function send() {
+    setError(null);
+    sending.mutate();
   }
 
   return (
@@ -209,7 +220,7 @@ export function InviteSheet({
             disabled={!ready}
             loading={busy}
             loadingLabel={pickup ? "Saving" : "Sending"}
-            onClick={() => void send()}
+            onClick={send}
           >
             {pickup ? "Save the pickup point" : "Make the invite link"}
           </Button>

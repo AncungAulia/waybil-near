@@ -1,6 +1,9 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { formatUsdc, type CreditReviewInfo, type CreditReviewResponse } from "@waybil/shared";
+import { useInvalidate } from "@/hooks/useInvalidate";
+import { qk } from "@/lib/queryKeys";
 import { Panel } from "@/components/layout/Panel";
 import { Button } from "@/components/ui/Button";
 import { Money } from "@/components/elements/Money";
@@ -10,45 +13,48 @@ import { api } from "@/lib/api";
 import type { LiveShipperData } from "../../data/live";
 import { Alert, failure, Meter } from "./shared";
 
-/* P7. */
-export function Credit({ data, refresh }: { data: LiveShipperData; refresh: () => void }) {
-  const shipper = data.shipper!;
-  const [review, setReview] = useState<CreditReviewInfo | null | undefined>(undefined);
-  const [error, setError] = useState<string | null>(null);
-  const [asking, setAsking] = useState(false);
-  const timer = useRef<number | null>(null);
+const POLL_MS = 3000;
 
-  async function read() {
-    const result = await api<CreditReviewResponse | null>("/credit/reviews/me");
-    setReview(result?.review ?? null);
-    return result?.review ?? null;
-  }
+/* P7. */
+export function Credit({ data }: { data: LiveShipperData }) {
+  const shipper = data.shipper!;
+  const account = data.account;
+  const invalidate = useInvalidate();
+  const [error, setError] = useState<string | null>(null);
+  /* When the review was asked for, while its check is still running. */
+  const [waitingSince, setWaitingSince] = useState<number | null>(null);
+
+  /* The private check runs on the server. Its review is read every 3 seconds until complete. */
+  const reviews = useQuery({
+    queryKey: qk.creditReviews(account),
+    queryFn: () =>
+      api<CreditReviewResponse | null>("/credit/reviews/me").then((r) => r?.review ?? null),
+    refetchInterval: waitingSince ? POLL_MS : false,
+  });
+  /* A failed first read shows that no review was asked for yet. */
+  const review: CreditReviewInfo | null | undefined =
+    reviews.data !== undefined ? reviews.data : reviews.isError ? null : undefined;
+  const { dataUpdatedAt, errorUpdatedAt } = reviews;
   useEffect(() => {
-    read().catch(() => setReview(null));
-    return () => {
-      if (timer.current) window.clearTimeout(timer.current);
-    };
-  }, []);
-  async function ask() {
-    setAsking(true);
+    if (!waitingSince) return;
+    const complete = review?.state === "complete" && dataUpdatedAt > waitingSince;
+    if (!complete && Date.now() - waitingSince < POLL_MS * 60) return;
+    setWaitingSince(null);
+    void invalidate(qk.shipper(account));
+  }, [waitingSince, review, dataUpdatedAt, errorUpdatedAt, account, invalidate]);
+
+  const request = useMutation({
+    mutationFn: () => api("/credit/review", { body: {} }),
+    onSuccess: () => {
+      setWaitingSince(Date.now());
+      void invalidate(qk.creditReviews(account));
+    },
+    onError: (e) => setError(failure(e)),
+  });
+  const asking = request.isPending || waitingSince !== null;
+  function ask() {
     setError(null);
-    try {
-      await api("/credit/review", { body: {} });
-      /* The private check runs on the server. Read it again until it is complete. */
-      const poll = async (tries: number) => {
-        const latest = await read().catch(() => null);
-        if (latest?.state === "complete" || tries <= 0) {
-          setAsking(false);
-          refresh();
-          return;
-        }
-        timer.current = window.setTimeout(() => void poll(tries - 1), 3000);
-      };
-      await poll(60);
-    } catch (e) {
-      setError(failure(e));
-      setAsking(false);
-    }
+    request.mutate();
   }
 
   const running = asking || (review && review.state !== "complete");
@@ -112,12 +118,7 @@ export function Credit({ data, refresh }: { data: LiveShipperData; refresh: () =
             <p className="text-label text-ds-muted">You have not asked for a review yet.</p>
           )}
           {error && <Alert>{error}</Alert>}
-          <Button
-            disabled={!!running}
-            loading={asking}
-            loadingLabel="Checking"
-            onClick={() => void ask()}
-          >
+          <Button disabled={!!running} loading={asking} loadingLabel="Checking" onClick={ask}>
             Ask for a review
           </Button>
         </Panel>

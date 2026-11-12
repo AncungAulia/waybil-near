@@ -1,6 +1,9 @@
 "use client";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useMutation } from "@tanstack/react-query";
+import { useInvalidate } from "@/hooks/useInvalidate";
+import { qk } from "@/lib/queryKeys";
 import { ArrowUpRight, Check, Copy, MapTrifold, Plus, UserPlus } from "@phosphor-icons/react";
 import { Panel } from "@/components/layout/Panel";
 import { Button, ButtonLink } from "@/components/ui/Button";
@@ -18,7 +21,8 @@ import { useNames } from "@/hooks/useNames";
 import { DoneNote, failure, FULL, GAS, type Done } from "./shared";
 
 /* P5. */
-export function Network({ data, refresh }: { data: LiveShipperData; refresh: () => void }) {
+export function Network({ data }: { data: LiveShipperData }) {
+  const invalidate = useInvalidate();
   const { people, places } = names(data.invites);
   /*
    * The shipper's own name for each person leads, the way a phone contact does. When the
@@ -36,7 +40,7 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
       : "";
   };
   const [inviting, setInviting] = useState<"driver" | "warehouse" | null>(null);
-  const { data: placeList, reload: reloadPlaces } = usePlaces();
+  const { data: placeList } = usePlaces();
   const pickups = (placeList?.places ?? []).filter((p) => p.kind === "pickup");
   /* A destination's pin is the place on the warehouse invite it came from. */
   const destinationPlace = (warehouse: string) => {
@@ -45,7 +49,6 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
     )?.placeId;
     return (placeList?.places ?? []).find((p) => p.id === id) ?? null;
   };
-  const [busy, setBusy] = useState<string | null>(null);
   const [done, setDone] = useState<Done>(null);
   /* A successful add opens a dialog with its record. A failure stays as a note on the page. */
   const [added, setAdded] = useState<{
@@ -67,23 +70,25 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
   /* No drivers and no destinations yet. The two empty cards then fill the rest of the window. */
   const bare = !data.network.drivers.length && !data.network.destinations.length && !pickups.length;
 
-  async function add(type: "driver" | "warehouse", account: string, label: string) {
-    setBusy(account);
-    setDone(null);
-    try {
-      const tx = await callContract(
+  const adding = useMutation({
+    mutationFn: ({ type, account }: { type: "driver" | "warehouse"; account: string; label: string }) =>
+      callContract(
         WAYBIL_CONTRACT,
         type === "driver" ? "add_driver" : "add_destination",
         type === "driver" ? { driver: account } : { warehouse: account },
         { gas: GAS },
-      );
+      ),
+    onSuccess: (tx, { type, label }) => {
       setAdded({ label, type, tx });
-      refresh();
-    } catch (e) {
-      setDone({ text: failure(e) });
-    } finally {
-      setBusy(null);
-    }
+      void invalidate(qk.shipper(data.account));
+    },
+    onError: (e) => setDone({ text: failure(e) }),
+  });
+  /* The account being added, while its wallet request is open. */
+  const busy = adding.isPending ? adding.variables.account : null;
+  function add(type: "driver" | "warehouse", account: string, label: string) {
+    setDone(null);
+    adding.mutate({ type, account, label });
   }
 
   return (
@@ -241,10 +246,6 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
         <InviteSheet
           type={inviting}
           onClose={() => setInviting(null)}
-          onSent={() => {
-            refresh();
-            reloadPlaces();
-          }}
         />
       )}
     </div>
