@@ -11,6 +11,7 @@ import { parse } from "../../middlewares/validate";
 import type { Identity } from "../auth/auth.service";
 import { decodeDelegate, pickupArgs, deliveryArgs } from "./relay.schema";
 import type { RelayProvider } from "./relay.provider";
+import { arrivalCodeMatches } from "../arrivals/arrivals.service";
 
 interface RelayRecord extends RelayResponse {
   digest: string;
@@ -28,7 +29,8 @@ export class RelayService {
     private contract: string,
     private report: ReportValidator = async () => unavailable(),
   ) {}
-  async relay(actor: Principal, encoded: string): Promise<RelayResponse> {
+  /** `arrivalCode` is the code the driver showed. A `confirm_delivery` needs the matching one. */
+  async relay(actor: Principal, encoded: string, arrivalCode?: string): Promise<RelayResponse> {
     allowed(actor.authMethod === "google" && ["driver", "warehouse"].includes(actor.role));
     const signed = decodeDelegate(encoded);
     allowed(signed.delegateAction.senderId === actor.accountId);
@@ -38,7 +40,7 @@ export class RelayService {
       const existing = await this.store.get<RelayRecord>("relay_requests", digest);
       if (existing) return this.response(await this.reconcile(existing));
       await this.settlePending();
-      await this.validate(actor, signed);
+      await this.validate(actor, signed, arrivalCode);
       const prepared = await this.provider.prepare(signed);
       const value: RelayRecord = {
         ...prepared,
@@ -101,7 +103,7 @@ export class RelayService {
     if (!signed.delegateAction.publicKey.verify(hash, signed.signature.data))
       throw new ApiException(400, "E_SIGNATURE", "This delivery request could not be verified.");
   }
-  private async validate(actor: Principal, signed: SignedDelegate) {
+  private async validate(actor: Principal, signed: SignedDelegate, arrivalCode?: string) {
     const d = signed.delegateAction;
     allowed(d.receiverId === this.contract);
     const identity = requireValue(
@@ -144,6 +146,8 @@ export class RelayService {
         await this.chain.view<Destination | null>("get_destination", { id: shipment.destination }),
       );
       allowed(destination.warehouse === actor.accountId && shipment.status === "PickedUp");
+      if (!(await arrivalCodeMatches(this.store, args.id, arrivalCode)))
+        throw new ApiException(400, "E_ARRIVAL_CODE", "This code does not match this delivery.");
       const delivery = parse(deliveryArgs, raw);
       if (delivery.good_qty > shipment.qty) throw new ApiException(400, "E_VALIDATION");
       if (delivery.good_qty !== shipment.qty || delivery.report_hash) {

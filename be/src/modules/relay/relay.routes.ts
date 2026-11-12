@@ -19,10 +19,8 @@ export function relayRoutes(deps: AppDeps, service: RelayService) {
       message: { error: { code: "E_RATE_LIMIT", message: "Please wait before trying again." } },
     }),
     async (req, res) => {
-      const result = await service.relay(
-        principal(req),
-        parse(relayRequest, req.body).signedDelegate,
-      );
+      const body = parse(relayRequest, req.body);
+      const result = await service.relay(principal(req), body.signedDelegate, body.arrivalCode);
       res.status(result.status === "pending" ? 202 : 200).json(result);
     },
   );

@@ -11,8 +11,11 @@ import {
 } from "near-api-js";
 import { parse, accountId } from "../../middlewares/validate";
 import { ApiException } from "../../lib/errors";
+import { arrivalCode } from "../arrivals/arrivals.schema";
 
-export const relayRequest = z.object({ signedDelegate: z.string().min(4).max(22000) }).strict();
+export const relayRequest = z
+  .object({ signedDelegate: z.string().min(4).max(22000), arrivalCode: arrivalCode.optional() })
+  .strict();
 const chainId = z.number().int().positive().max(Number.MAX_SAFE_INTEGER);
 export const pickupArgs = z.object({ id: chainId }).strict();
 export const deliveryArgs = z
