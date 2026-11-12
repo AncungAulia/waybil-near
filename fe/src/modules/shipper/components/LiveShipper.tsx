@@ -13,6 +13,7 @@ import { cn } from "@/lib/cn";
 import { LiveShipment } from "./LiveShipment";
 import { useLiveShipper } from "../hooks/useLiveShipper";
 import { FULL, NotApproved } from "./live/shared";
+import { Skeleton, SkeletonTripPage } from "@/components/elements/Skeleton";
 import { Home } from "./live/Home";
 import { Shipments } from "./live/Shipments";
 import { NewLiveShipment } from "./live/NewLiveShipment";
@@ -61,14 +62,7 @@ export function LiveShipper({
             </Button>
           </Panel>
         ) : !data ? (
-          <SkeletonGroup
-            label="Loading your shipments."
-            className={cn("flex flex-col gap-24", FULL)}
-          >
-            <SkeletonHeader />
-            <SkeletonStats />
-            <SkeletonListPanel rows={5} />
-          </SkeletonGroup>
+          <ShipperSkeleton view={view} />
         ) : !data.shipper ? (
           <NotApproved />
         ) : view === "home" ? (
@@ -86,5 +80,57 @@ export function LiveShipper({
         )}
       </div>
     </RoleShell>
+  );
+}
+
+/*
+ * While the shipper's data loads, each page shows a skeleton in its own shape, so the page
+ * that follows takes its place without a second, different skeleton in between.
+ */
+function ShipperSkeleton({ view }: { view: ShipperView }) {
+  if (view === "detail") return <SkeletonTripPage label="Loading this shipment." />;
+  const label = "Loading your shipments.";
+  if (view === "shipments")
+    return (
+      <SkeletonGroup label={label} className={cn("flex flex-col gap-24", FULL)}>
+        <SkeletonHeader />
+        <Skeleton className="h-44 w-full rounded-full md:w-380" />
+        <SkeletonListPanel rows={5} title={false} />
+      </SkeletonGroup>
+    );
+  if (view === "network")
+    return (
+      <SkeletonGroup label="Loading your network." className={cn("flex flex-col gap-24", FULL)}>
+        <SkeletonHeader />
+        <div className="grid flex-1 gap-16 lg:grid-cols-2">
+          <Skeleton className="h-260 w-full rounded-card lg:h-full" />
+          <Skeleton className="h-260 w-full rounded-card lg:h-full" />
+        </div>
+      </SkeletonGroup>
+    );
+  if (view === "new")
+    return (
+      <SkeletonGroup label="Loading the form." className={cn("flex flex-col gap-24", FULL)}>
+        <SkeletonHeader />
+        <div className="grid gap-24 lg:grid-cols-[minmax(0,1fr)_400px]">
+          <Skeleton className="h-560 w-full rounded-card" />
+          <Skeleton className="h-480 w-full rounded-card" />
+        </div>
+      </SkeletonGroup>
+    );
+  if (view === "credit")
+    return (
+      <SkeletonGroup label="Loading your credit." className={cn("flex flex-col gap-24", FULL)}>
+        <SkeletonHeader />
+        <Skeleton className="h-200 w-full rounded-card" />
+        <Skeleton className="h-260 w-full rounded-card" />
+      </SkeletonGroup>
+    );
+  return (
+    <SkeletonGroup label={label} className={cn("flex flex-col gap-24", FULL)}>
+      <SkeletonHeader />
+      <SkeletonStats />
+      <SkeletonListPanel rows={5} />
+    </SkeletonGroup>
   );
 }

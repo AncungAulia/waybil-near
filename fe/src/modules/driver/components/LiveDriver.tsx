@@ -88,6 +88,9 @@ export function LiveDriver({
               Try again
             </Button>
           </Panel>
+        ) : !data && view === "trip" ? (
+          /* A trip page loads in its own shape, the map beside the cards. */
+          <SkeletonTripPage label="Loading this trip." />
         ) : !data ? (
           <SkeletonGroup label="Loading your trips." className="flex flex-col gap-24">
             <SkeletonHeader />
