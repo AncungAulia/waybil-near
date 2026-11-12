@@ -15,7 +15,7 @@ import { BackLink } from "@/components/elements/BackLink";
 import { TripMap } from "@/components/elements/TripMap";
 import { useTrips } from "@/hooks/useTrips";
 import { sharingNote, useShareLocation } from "@/hooks/useShareLocation";
-import { directionsUrl } from "@/lib/route";
+import { directionsUrl, duration } from "@/lib/route";
 import { FILL_UNDER_HEADER, FillEmpty } from "@/components/elements/EmptyState";
 import { SkeletonGroup, SkeletonHeader, SkeletonListPanel } from "@/components/elements/Skeleton";
 import { useLive } from "@/hooks/useLive";
@@ -25,6 +25,7 @@ import { CONTRACT_RECORD_URL } from "@/lib/env";
 import { listShipmentsByDriver, readAll } from "@/lib/near";
 import { arrivalCode, relay } from "@/lib/relay";
 import { statusChip } from "@/lib/status";
+import { cn } from "@/lib/cn";
 
 /*
  * The driver screens on testnet (#85). Pickup is signed by the phone's device key and
@@ -215,117 +216,201 @@ function Trip({
       {back}
       <header className="flex flex-wrap items-center justify-between gap-12">
         <div className="min-w-0">
-          <h1 className="text-title">Trip #{s.id}</h1>
+          <h1 className="text-title break-words">
+            {trip ? `${trip.pickup.name} to ${trip.destination.name}` : `Trip #${s.id}`}
+          </h1>
           <p className="mt-6 text-label break-all text-ds-muted">
-            {s.qty} {s.unit} for {name(s.shipper)}
+            Trip #{s.id} for {name(s.shipper)}.
           </p>
         </div>
         <StatusPill status={statusChip(s)} />
       </header>
-      {trip && (
+      {/* The map on the left, at the full height of the cards on the right. */}
+      <div className="grid gap-16 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-24">
         <div className="flex flex-col gap-10">
-          <TripMap trip={trip} status={s.status} />
-          {s.status === "PickedUp" && (
-            <p className="text-caption text-ds-muted">{sharingNote(sharing.state)}</p>
-          )}
-          {(s.status === "Approved" || s.status === "PickedUp") && (
-            <ButtonLink
-              href={directionsUrl(
-                s.status === "Approved" ? trip.pickup.lat : trip.destination.lat,
-                s.status === "Approved" ? trip.pickup.lng : trip.destination.lng,
-              )}
-              target="_blank"
-              rel="noopener noreferrer"
-              variant="secondary"
-              icon={<NavigationArrow size={17} />}
-              className="w-full justify-between md:w-auto md:self-start"
-            >
-              {s.status === "Approved"
-                ? "Directions to the pickup"
-                : "Directions to the destination"}
-            </ButtonLink>
+          {trip ? (
+            <>
+              <TripMap
+                trip={trip}
+                status={s.status}
+                caption={false}
+                className="h-300 rounded-card lg:h-auto lg:min-h-480 lg:flex-1"
+              />
+              <p className="px-4 text-caption text-ds-muted">
+                {s.status === "PickedUp"
+                  ? sharingNote(sharing.state)
+                  : `${trip.pickup.name} to ${trip.destination.name} is ${Math.round(trip.distanceKm)} km by road${trip.durationMin != null ? `, about ${duration(trip.durationMin)} of driving` : ""}.`}
+              </p>
+            </>
+          ) : (
+            <div className="grid h-200 place-items-center rounded-card bg-ds-bg p-24 text-center text-label text-ds-muted">
+              This trip has no map yet. The company adds the pickup point.
+            </div>
           )}
         </div>
-      )}
-      {tx && (
-        <Panel className="gap-8">
-          <p className="text-label">Recorded.</p>
-          <ProofLink tx={tx} />
-        </Panel>
-      )}
-      {s.status === "Approved" && (
-        <Panel title="Waiting for pickup">
-          <p className="text-label text-ds-muted">
-            Load the goods, then confirm the pickup. You get {formatUsdc(BigInt(s.advance))} USDC
-            the moment the warehouse confirms the delivery.
-          </p>
-          {error && (
-            <p role="alert" className="rounded-row bg-ds-danger-result p-14 text-label">
-              {error}
-            </p>
+        <div className="flex flex-col gap-16">
+          {tx && (
+            <Panel className="gap-8">
+              <p className="text-label">Recorded.</p>
+              <ProofLink tx={tx} />
+            </Panel>
           )}
-          <Button
-            className="h-52 w-full justify-between"
-            icon={<Package size={17} />}
-            loading={busy}
-            loadingLabel="Recording"
-            onClick={() => void pickup(s.id)}
-          >
-            Confirm pickup
-          </Button>
-        </Panel>
-      )}
-      {s.status === "PickedUp" && (
-        <Panel title="Show this at the destination">
-          <p className="text-label text-ds-muted">
-            The warehouse scans this QR or types the code to confirm the delivery.
-          </p>
-          <DeliveryQr code={code} />
-          <p className="text-center font-mono text-[28px] tracking-[0.2em]">{code}</p>
-          <Button
-            variant="secondary"
-            icon={<Copy size={17} />}
-            onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(code);
-                setCopied(true);
-              } catch {
-                setCopied(false);
-              }
-            }}
-          >
-            {copied ? "Code copied" : "Copy the code"}
-          </Button>
-        </Panel>
-      )}
-      {s.status === "Reported" && (
-        <Panel title="Problem reported">
-          <p className="text-label">
-            The warehouse found a problem with the goods. Your payout waits until the company
-            settles it.
-          </p>
-        </Panel>
-      )}
-      {["Paid", "Repaid", "CoveredByReserve"].includes(s.status) && (
-        <Panel title="You got paid">
-          <Money amount={s.advance} className="text-amount" />
-          <p className="text-label text-ds-muted">Paid {day(s.paid_at)} to your account.</p>
-        </Panel>
-      )}
-      {s.status === "Cancelled" && (
-        <Panel title="Trip cancelled">
-          <p className="text-label">The company cancelled this trip. Don’t pick up the goods.</p>
-        </Panel>
-      )}
-      <a
-        className="link focus-ring inline-flex w-fit items-center gap-4 text-[14px] font-medium"
-        href={CONTRACT_RECORD_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        See the record on NearBlocks ↗
-      </a>
+          {s.status === "Approved" && (
+            <Panel title="Waiting for pickup">
+              <p className="text-label text-ds-muted">Load the goods, then confirm the pickup.</p>
+              {error && (
+                <p role="alert" className="rounded-row bg-ds-danger-result p-14 text-label">
+                  {error}
+                </p>
+              )}
+              {trip && (
+                <ButtonLink
+                  href={directionsUrl(trip.pickup.lat, trip.pickup.lng)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="secondary"
+                  icon={<NavigationArrow size={17} />}
+                  className="h-52 w-full justify-between"
+                >
+                  Directions to the pickup
+                </ButtonLink>
+              )}
+              <Button
+                className="h-52 w-full justify-between"
+                icon={<Package size={17} />}
+                loading={busy}
+                loadingLabel="Recording"
+                onClick={() => void pickup(s.id)}
+              >
+                Confirm pickup
+              </Button>
+            </Panel>
+          )}
+          {s.status === "PickedUp" && (
+            <Panel title="Show this at the destination">
+              <p className="text-label text-ds-muted">
+                The warehouse scans this QR or types the code to confirm the delivery.
+              </p>
+              <DeliveryQr code={code} />
+              <p className="text-center font-mono text-[28px] tracking-[0.2em]">{code}</p>
+              <Button
+                variant="secondary"
+                icon={<Copy size={17} />}
+                className="w-full justify-between"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(code);
+                    setCopied(true);
+                  } catch {
+                    setCopied(false);
+                  }
+                }}
+              >
+                {copied ? "Code copied" : "Copy the code"}
+              </Button>
+              {trip && (
+                <ButtonLink
+                  href={directionsUrl(trip.destination.lat, trip.destination.lng)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="secondary"
+                  icon={<NavigationArrow size={17} />}
+                  className="w-full justify-between"
+                >
+                  Directions to the destination
+                </ButtonLink>
+              )}
+            </Panel>
+          )}
+          {s.status === "Reported" && (
+            <Panel title="Problem reported">
+              <p className="text-label">
+                The warehouse found a problem with the goods. Your payout waits until the company
+                settles it.
+              </p>
+            </Panel>
+          )}
+          {s.status === "Cancelled" && (
+            <Panel title="Trip cancelled">
+              <p className="text-label">
+                The company cancelled this trip. Don’t pick up the goods.
+              </p>
+            </Panel>
+          )}
+          <PayCard
+            amount={s.advance}
+            paid={["Paid", "Repaid", "CoveredByReserve"].includes(s.status)}
+            paidOn={s.paid_at ? day(s.paid_at) : ""}
+            destination={trip?.destination.name ?? "the warehouse"}
+          />
+          <Panel title="Trip">
+            <div className="flex flex-col gap-12">
+              <Fact label="Company">{name(s.shipper)}</Fact>
+              <Fact label="Pickup">{trip?.pickup.name ?? "Not set"}</Fact>
+              <Fact label="Drop-off">{trip?.destination.name ?? "Not set"}</Fact>
+              <Fact label="Cargo">
+                {s.qty} {s.unit}
+              </Fact>
+            </div>
+            <a
+              className="link focus-ring inline-flex w-fit items-center gap-4 text-caption"
+              href={CONTRACT_RECORD_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              See the record on NearBlocks ↗
+            </a>
+          </Panel>
+        </div>
+      </div>
     </>
+  );
+}
+
+/* What the driver gets: dark with a large amount until paid, then plain with the day it landed. */
+function PayCard({
+  amount,
+  paid,
+  paidOn,
+  destination,
+}: {
+  amount: string;
+  paid: boolean;
+  paidOn: string;
+  destination: string;
+}) {
+  return (
+    <section
+      className={cn(
+        "flex flex-col gap-8 rounded-card p-24",
+        paid ? "bg-ds-bg" : "bg-ds-ink text-ds-bg",
+      )}
+    >
+      <span
+        className={cn(
+          "w-fit rounded-full px-10 py-2 text-[12px] font-semibold",
+          paid ? "bg-ds-success-soft text-ds-success" : "bg-ds-brand text-ds-ink",
+        )}
+      >
+        {paid ? "You got paid" : "You get on arrival"}
+      </span>
+      <p className="text-[32px] leading-[1.15] font-semibold">{formatUsdc(BigInt(amount))} USDC</p>
+      <p className={cn("text-label", paid ? "text-ds-muted" : "text-ds-bg/70")}>
+        {paid
+          ? `Paid ${paidOn} to your account.`
+          : `Paid the moment ${destination} confirms the delivery.`}
+      </p>
+    </section>
+  );
+}
+
+/* One trip fact, the label on the left and the value on the right. */
+function Fact({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex justify-between gap-12 text-label">
+      <span className="text-ds-muted">{label}</span>
+      <span className="text-right">{children}</span>
+    </div>
   );
 }
 
