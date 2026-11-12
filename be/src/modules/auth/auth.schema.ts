@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isValidPlate, normalizePlate } from "@waybil/shared";
 import { accountId } from "../../middlewares/validate";
 const publicKey = z.string().regex(/^ed25519:[1-9A-HJ-NP-Za-km-z]{32,44}$/);
 const nonce = z.string().regex(/^[A-Za-z0-9+/]{43}=$/);
@@ -41,10 +42,12 @@ export const profileUpdate = z
       .regex(/^\+[1-9]\d{6,14}$/)
       .optional(),
     email: z.email().max(254).optional(),
+    /* Plates differ by country, so the shared rule takes any letters-and-numbers plate. */
     truckPlate: z
       .string()
-      .trim()
-      .regex(/^[A-Z]{1,4}-\d{1,5}$/)
+      .max(40)
+      .transform(normalizePlate)
+      .refine(isValidPlate)
       .nullable()
       .optional(),
   })
