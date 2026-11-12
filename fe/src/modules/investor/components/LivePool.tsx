@@ -1,11 +1,12 @@
 "use client";
 import { qk } from "@/lib/queryKeys";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   FEE_BPS,
   splitBill,
   type PoolHistoryItem,
+  formatUsdc,
   type PoolHistoryResponse,
   type QueueEntry,
   type Shipment,
@@ -22,9 +23,11 @@ import { FILL_UNDER_HEADER, FillEmpty } from "@/components/elements/EmptyState";
 import { Money } from "@/components/elements/Money";
 import { FanMeter } from "@/components/elements/FanMeter";
 import { StatusPill } from "@/components/elements/StatusPill";
+import { TimelineStep } from "@/components/elements/TimelineStep";
 import { Stat } from "@/components/elements/Stat";
 import {
   SkeletonGroup,
+  SkeletonTripPage,
   SkeletonListPanel,
   SkeletonRow,
   SkeletonStats,
@@ -284,6 +287,12 @@ export function LiveDelivery({
   total: string;
 }) {
   const name = useNames([s?.shipper, s?.driver]);
+  /* Names arrive a moment later. Wait up to 3 seconds so raw account ids never flash. */
+  const [waited, setWaited] = useState(false);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setWaited(true), 3000);
+    return () => window.clearTimeout(timer);
+  }, []);
   const back = <BackLink href="/pool/deliveries">Deliveries</BackLink>;
   if (!s)
     return (
@@ -332,7 +341,17 @@ export function LiveDelivery({
     },
     { title: `${name(s.driver)} got paid`, at: s.paid_at, detail: "" },
     { title: "The company paid the bill", at: s.repaid_at, detail: "" },
-  ].filter((step) => step.at);
+  ];
+  /* Every step, done or still to come, so the card reads as the whole journey. */
+  const next = steps.findIndex((step) => !step.at);
+  const named = !!s && (waited || (name(s.shipper) !== s.shipper && name(s.driver) !== s.driver));
+  if (!named)
+    return (
+      <>
+        {back}
+        <SkeletonTripPage label="Loading this delivery." />
+      </>
+    );
   return (
     <>
       {back}
@@ -345,32 +364,48 @@ export function LiveDelivery({
         </div>
         <StatusPill status={statusChip(s)} />
       </header>
-      <div className="grid items-start gap-16 lg:grid-cols-2">
-        <Panel title="Money" gap={4}>
-          {money.map((r) => (
-            <div key={r.label} className="flex flex-wrap justify-between gap-8 py-9 text-label">
-              <span className="break-all text-ds-muted">{r.label}</span>
-              <Money amount={String(r.value)} />
+      {/* Both columns fill the window and end level. */}
+      <div className="grid gap-16 lg:min-h-[calc(100dvh-300px)] lg:grid-cols-2">
+        <div className="flex flex-col gap-16">
+          {/* What this delivery earned the investor, first and large, in its own card. */}
+          {!covered && (
+            <section className="rounded-card bg-ds-ink p-24 text-ds-bg">
+              <p className="text-label text-ds-bg/70">Your part of this delivery</p>
+              <Money amount={String(part)} className="mt-4 block text-amount" />
+              <p className="mt-4 text-caption text-ds-bg/70">
+                {share}% of the {formatUsdc(split.pool)} USDC the pool earns from this bill.
+              </p>
+            </section>
+          )}
+          <Panel title="Money" className="flex-1">
+            {/* The rows spread over the card, so it never ends in a blank space. */}
+            <div className="flex flex-1 flex-col justify-between gap-12">
+              {money.map((r) => (
+                <div key={r.label} className="flex flex-wrap justify-between gap-8 text-label">
+                  <span className="break-words text-ds-muted">{r.label}</span>
+                  <Money amount={String(r.value)} />
+                </div>
+              ))}
             </div>
-          ))}
-        </Panel>
-        <Panel title="Proof it happened" gap={4}>
-          {steps.map((step) => (
-            <div key={step.title} className="flex gap-14 py-12">
-              <span className="mt-2 grid size-26 shrink-0 place-items-center rounded-full bg-ds-ink text-ds-bg">
-                <SealCheck size={14} weight="bold" />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-label break-all">{step.title}</span>
-                <span className="block text-caption text-ds-muted">{day(step.at)}</span>
-                {step.detail && (
-                  <span className="block text-caption text-ds-ink-2">{step.detail}</span>
+          </Panel>
+        </div>
+        <Panel title="Proof it happened" className="h-full">
+          <div className="flex flex-1 flex-col justify-between gap-16">
+            {steps.map((step, i) => (
+              <div key={step.title}>
+                <TimelineStep
+                  state={step.at ? "done" : i === next ? "current" : "next"}
+                  title={step.title}
+                  time={step.at ? day(step.at) : i === next ? "Happening next." : "Still to come."}
+                />
+                {step.at && step.detail && (
+                  <p className="mt-4 pl-38 text-caption text-ds-ink-2">{step.detail}</p>
                 )}
-              </span>
-            </div>
-          ))}
+              </div>
+            ))}
+          </div>
           <a
-            className="link focus-ring mt-4 inline-block text-caption"
+            className="link focus-ring inline-block pt-8 text-caption"
             href={CONTRACT_RECORD_URL}
             target="_blank"
             rel="noreferrer"
