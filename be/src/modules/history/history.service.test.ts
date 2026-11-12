@@ -167,3 +167,40 @@ it("reads a few transactions per scan and picks up the rest later, even after a 
   expect((await history.history(investor)).items).toHaveLength(6);
   expect(source.logs).toHaveBeenCalledTimes(7);
 });
+
+it("reads a new withdrawal before older history still waiting to be read", async () => {
+  const { source, history, advance } = setup();
+  /* Ten old deposits, more than one scan reads. */
+  source.pages = [
+    Array.from({ length: 10 }, (_, i) => ({
+      receiptId: `old${i}`,
+      txHash: `old${i}`,
+      methods: ["ft_on_transfer"],
+    })),
+  ];
+  for (let i = 0; i < 10; i++)
+    source.txs[`old${i}`] = [
+      {
+        receiptId: `x-old${i}`,
+        executor: CONTRACT,
+        at: ns("2026-11-09T10:00:00Z"),
+        logs: [event("deposited", { investor: "bob.testnet", amount: "1", shares: "1" })],
+      },
+    ];
+  await history.history(investor);
+  /* A withdrawal arrives. It is listed first by the indexer and must be read on the next scan. */
+  source.pages = [
+    [{ receiptId: "new", txHash: "fresh", methods: ["withdraw"] }, ...source.pages[0]!],
+  ];
+  source.txs.fresh = [
+    {
+      receiptId: "x-new",
+      executor: CONTRACT,
+      at: ns("2026-11-12T10:00:00Z"),
+      logs: [event("withdraw_paid", { investor: "ana.testnet", amount: "100" })],
+    },
+  ];
+  advance(10 * 60_000);
+  const { items } = await history.history(investor);
+  expect(items.map((i) => [i.kind, i.txHash])).toEqual([["withdraw_paid", "fresh"]]);
+});
