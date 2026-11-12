@@ -78,7 +78,13 @@ export function RouteMap({
           attributionControl: { compact: true },
         });
         m.addControl(new maplibre.NavigationControl({ showCompass: false }), "top-right");
-        m.on("load", () => !cancelled && setReady(true));
+        let loaded = false;
+        m.on("load", () => {
+          loaded = true;
+          if (!cancelled) setReady(true);
+        });
+        /* Logged for debugging only. No coordinates are written. */
+        m.on("error", (e) => console.warn("[RouteMap]", e.error?.message ?? e));
         m.on("click", (e) => pick.current?.(e.lngLat.lat, e.lngLat.lng));
         map.current = m;
         /* A map opened inside a sheet starts while the sheet still moves. Follow its real size. */
@@ -86,9 +92,16 @@ export function RouteMap({
         fit.observe(box.current);
         m.once("remove", () => fit.disconnect());
         /* A style that never loads leaves an empty box. Say so instead. */
-        window.setTimeout(() => !cancelled && !m.isStyleLoaded() && setFailed(true), 15000);
+        window.setTimeout(() => {
+          if (cancelled || loaded) return;
+          console.warn("[RouteMap] the map did not finish loading in 20 seconds");
+          setFailed(true);
+        }, 20000);
       })
-      .catch(() => setFailed(true));
+      .catch((e: unknown) => {
+        console.warn("[RouteMap] could not load the map library", e);
+        setFailed(true);
+      });
     return () => {
       cancelled = true;
       all.clear();
@@ -175,7 +188,8 @@ export function RouteMap({
 
   return (
     <div className={cn("wb-map relative isolate overflow-hidden rounded-row", className)}>
-      <div ref={box} className={cn("absolute inset-0", dim && "opacity-30")} />
+      {/* MapLibre makes this box position relative, so it takes its size from the parent. */}
+      <div ref={box} className={cn("h-full w-full", dim && "opacity-30")} />
       {(chip || failed) && (
         <span className="pointer-events-none absolute top-12 left-12 z-10 max-w-[calc(100%-80px)] rounded-full bg-ds-bg px-12 py-6 text-caption font-medium">
           {failed ? "The map could not load. The trip details are still here." : chip}
