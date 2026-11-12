@@ -31,7 +31,7 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
     if (!account) return "";
     const own = name(account);
     return own !== account && own.trim().toLowerCase() !== label.trim().toLowerCase()
-      ? ` · Signed up as ${own}`
+      ? `Signed up as ${own}.`
       : "";
   };
   const [inviting, setInviting] = useState<"driver" | "warehouse" | null>(null);
@@ -121,8 +121,8 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
           {sharedDriver && (
             <div className="flex flex-wrap items-center justify-between gap-12 py-8">
               <div className="min-w-0">
-                <p className="text-label break-all">{people[sharedDriver] ?? sharedDriver}</p>
-                <p className="text-caption text-ds-muted">Driver · shared their link with you</p>
+                <NameTag name={people[sharedDriver] ?? sharedDriver} tag="Driver" />
+                <p className="text-caption text-ds-muted">They shared their link with you.</p>
               </div>
               <Button
                 loading={busy === sharedDriver}
@@ -138,10 +138,9 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
           {waiting.map((i) => (
             <div key={i.code} className="flex flex-wrap items-center justify-between gap-12 py-8">
               <div className="min-w-0">
-                <p className="text-label">{i.name}</p>
+                <NameTag name={i.name} tag={i.type === "driver" ? "Driver" : "Destination"} />
                 <p className="text-caption break-all text-ds-muted">
-                  {i.type === "driver" ? "Driver" : "Destination"} · accepted your invite
-                  {signedUpAs(i.acceptedBy, i.name)}
+                  They accepted your invite. {signedUpAs(i.acceptedBy, i.name)}
                 </p>
               </div>
               <Button
@@ -163,12 +162,12 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
           {data.network.drivers.length === 0 && <NetworkEmpty kind="driver" />}
           {data.network.drivers.map((d) => {
             const label = people[d] ?? name(d);
-            const signedUp = signedUpAs(d, label).replace(/^ · /, "");
             return (
               <Member
                 key={d}
                 name={label}
-                facts={["Driver", "Ready for trips", ...(signedUp ? [signedUp] : [])]}
+                tag="Driver"
+                lines={[signedUpAs(d, label) || "Ready for trips."]}
                 account={d}
               />
             );
@@ -179,16 +178,14 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
             <NetworkEmpty kind="warehouse" />
           )}
           {pickups.map((p) => (
-            <Member key={p.id} name={p.name} facts={["Pickup point", p.address]} place={p} />
+            <Member key={p.id} name={p.name} tag="Pickup point" lines={[p.address]} place={p} />
           ))}
           {data.network.destinations.map((d) => (
             <Member
               key={d.id}
               name={places[d.warehouse]?.name ?? name(d.warehouse)}
-              facts={[
-                "Destination",
-                ...(places[d.warehouse]?.address ? [places[d.warehouse]!.address] : []),
-              ]}
+              tag="Destination"
+              lines={places[d.warehouse]?.address ? [places[d.warehouse]!.address] : []}
               account={d.warehouse}
               place={destinationPlace(d.warehouse)}
             />
@@ -200,9 +197,7 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
           {open.map((i) => (
             <div key={i.code} className="flex items-center gap-12 py-8">
               <div className="min-w-0 flex-1">
-                <p className="text-label">
-                  {i.name} · {i.type === "driver" ? "Driver" : "Destination"}
-                </p>
+                <NameTag name={i.name} tag={i.type === "driver" ? "Driver" : "Destination"} />
                 <p className="text-caption text-ds-muted">
                   Sent to {i.phone}. The link works until{" "}
                   {new Date(i.expiresAt).toLocaleDateString("en-US", {
@@ -258,12 +253,16 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
 /* One person or place in the network: who it is, short facts, and their account on NearBlocks. */
 function Member({
   name,
-  facts,
+  tag,
+  lines,
   account,
   place,
 }: {
   name: string;
-  facts: string[];
+  /** What it is, shown as a small label next to the name. */
+  tag: string;
+  /** Short sentences under the name, one per line. */
+  lines: string[];
   /** The NEAR account, linked to NearBlocks. */
   account?: string;
   /** The pin, linked to Google Maps. */
@@ -295,8 +294,12 @@ function Member({
     <div className="flex items-center gap-12 py-10">
       <Avatar name={name} />
       <div className="min-w-0 flex-1">
-        <p className="text-label font-semibold break-words">{name}</p>
-        <p className="text-caption text-ds-muted">{facts.join(" · ")}</p>
+        <NameTag name={name} tag={tag} bold />
+        {lines.map((line) => (
+          <p key={line} className="text-caption text-ds-muted">
+            {line}
+          </p>
+        ))}
         {account && <p className="text-caption break-all text-ds-muted">{account}</p>}
       </div>
       <div className="flex shrink-0 items-center gap-8 sm:gap-16">
@@ -343,5 +346,17 @@ function CopyInvite({ code, name }: { code: string; name: string }) {
       {copied ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />}
       <span className="hidden sm:inline">{copied ? "Copied" : "Copy link"}</span>
     </button>
+  );
+}
+
+/* A name with a small grey label for what it is, instead of joining the two with a dot. */
+function NameTag({ name, tag, bold = false }: { name: string; tag: string; bold?: boolean }) {
+  return (
+    <p className="flex flex-wrap items-center gap-x-8 gap-y-2">
+      <span className={cn("text-label break-words", bold && "font-semibold")}>{name}</span>
+      <span className="rounded-full bg-ds-canvas px-8 py-2 text-[12px] font-medium text-ds-ink-2">
+        {tag}
+      </span>
+    </p>
   );
 }
