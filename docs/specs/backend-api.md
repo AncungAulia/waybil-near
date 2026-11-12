@@ -149,6 +149,7 @@ them, and holds the newest truck location the driver's phone sent. Types are in
 | Method | Path | Who | What |
 |---|---|---|---|
 | GET | `/v1/places/search?q=` | Shipper | `q` is 3 to 200 characters. 30 requests a minute. Returns `PlaceSearchResponse` `{ results: [{ label, lat, lng }] }`, at most 5. The label joins name, street, city, state and country without repeats. Provider failure is 503 `E_UNAVAILABLE`. |
+| GET | `/v1/places/reverse?lat=&lng=` | Shipper | The address at a pin the shipper moved, through Photon's reverse search. 30 requests a minute. Returns `PlaceReverseResponse` `{ result: { label, lat, lng } \| null }`. `lat` and `lng` are the pin's own, not the matched address's. Provider failure is 503 `E_UNAVAILABLE`. |
 | GET | `/v1/places` | Shipper, warehouse | `PlacesResponse`. A shipper gets its own places. A warehouse gets the destination places of the invites it accepted. |
 | POST | `/v1/places` | Shipper | Body `PlaceCreate`: kind, name (1 to 120), address (1 to 300), lat (-90 to 90), lng (-180 to 180). Returns 201 `{ place }`. |
 | PUT | `/v1/trips/:shipmentId` | Shipper of the shipment | Body `TripCreate { pickupPlaceId }`. The pickup place must be the shipper's own `pickup` place. Works out the route and stores the trip. Repeating it with the same pickup returns the same trip. A different pickup on an existing trip is 409 `E_CONFLICT`. A destination with no place is 409 `E_NO_PLACE`. Returns `{ trip }`. |

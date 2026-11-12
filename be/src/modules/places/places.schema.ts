@@ -1,6 +1,10 @@
 import { z } from "zod";
 
 export const placeSearch = z.object({ q: z.string().trim().min(3).max(200) });
+export const placeReverse = z.object({
+  lat: z.coerce.number().finite().min(-90).max(90),
+  lng: z.coerce.number().finite().min(-180).max(180),
+});
 export const placeCreate = z
   .object({
     kind: z.enum(["pickup", "destination"]),
