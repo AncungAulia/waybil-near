@@ -1,4 +1,5 @@
 "use client";
+import { SkeletonGroup, SkeletonRow } from "@/components/elements/Skeleton";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Package, Plus } from "@phosphor-icons/react";
@@ -18,7 +19,9 @@ export function Shipments({ data }: { data: LiveShipperData }) {
     (filter === "Bills to pay" && status === "Paid") ||
     (filter === "On the road" && ["Approved", "PickedUp", "Reported"].includes(status)) ||
     (filter === "Done" && ["Repaid", "Cancelled", "CoveredByReserve"].includes(status));
-  const { trips } = useTrips(data.shipments.map((s) => s.id));
+  const { trips, data: tripData } = useTrips(data.shipments.map((s) => s.id));
+  /* Rows wait for their trips, so a title never changes from "To X" to "A to X". */
+  const loadingTrips = data.shipments.length > 0 && !tripData;
   const rows = withTrips(
     data.shipments.filter((s) => match(s.status)).map((s) => toRow(s, data)),
     trips,
@@ -73,6 +76,15 @@ export function Shipments({ data }: { data: LiveShipperData }) {
             </ButtonLink>
           )}
         </section>
+      ) : loadingTrips ? (
+        <SkeletonGroup
+          label="Loading your shipments."
+          className="flex flex-col rounded-card bg-ds-bg px-20 py-8"
+        >
+          {rows.map((r) => (
+            <SkeletonRow key={r.shipment.id} />
+          ))}
+        </SkeletonGroup>
       ) : (
         <ShipmentList rows={rows} onOpen={(id) => router.push(`/shipper/shipments/${id}`)} />
       )}

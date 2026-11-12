@@ -1,4 +1,5 @@
 "use client";
+import { SkeletonGroup, SkeletonRow } from "@/components/elements/Skeleton";
 import { Greeting } from "@/components/elements/Greeting";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -19,7 +20,9 @@ export function Home({ data, name }: { data: LiveShipperData; name: string }) {
   const shipper = data.shipper!;
   const bills = billsToPay(data.shipments);
   const recent = data.shipments.slice(0, 5);
-  const { trips } = useTrips(recent.map((s) => s.id));
+  const { trips, data: tripData } = useTrips(recent.map((s) => s.id));
+  /* Rows wait for their trips, so a title never changes from "To X" to "A to X". */
+  const loadingTrips = recent.length > 0 && !tripData;
   const rows = withTrips(
     recent.map((s) => toRow(s, data)),
     trips,
@@ -124,6 +127,12 @@ export function Home({ data, name }: { data: LiveShipperData; name: string }) {
               {ready ? "New shipment" : "Open your network"}
             </ButtonLink>
           </div>
+        ) : loadingTrips ? (
+          <SkeletonGroup label="Loading your shipments." className="flex flex-col">
+            {rows.map((r) => (
+              <SkeletonRow key={r.shipment.id} />
+            ))}
+          </SkeletonGroup>
         ) : (
           <ShipmentList
             rows={rows}
