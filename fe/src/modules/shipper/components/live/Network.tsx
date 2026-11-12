@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { ArrowUpRight, Check, Copy, Plus, UserPlus } from "@phosphor-icons/react";
+import { ArrowUpRight, Check, Copy, MapTrifold, Plus, UserPlus } from "@phosphor-icons/react";
 import { Panel } from "@/components/layout/Panel";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { ActionSheet } from "@/components/layout/ActionSheet";
@@ -37,6 +37,13 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
   const [inviting, setInviting] = useState<"driver" | "warehouse" | null>(null);
   const { data: placeList, reload: reloadPlaces } = usePlaces();
   const pickups = (placeList?.places ?? []).filter((p) => p.kind === "pickup");
+  /* A destination's pin is the place on the warehouse invite it came from. */
+  const destinationPlace = (warehouse: string) => {
+    const id = data.invites.find(
+      (i) => i.type === "warehouse" && i.acceptedBy === warehouse && i.placeId,
+    )?.placeId;
+    return (placeList?.places ?? []).find((p) => p.id === id) ?? null;
+  };
   const [busy, setBusy] = useState<string | null>(null);
   const [done, setDone] = useState<Done>(null);
   /* A successful add opens a dialog with its record. A failure stays as a note on the page. */
@@ -172,13 +179,7 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
             <NetworkEmpty kind="warehouse" />
           )}
           {pickups.map((p) => (
-            <Member
-              key={p.id}
-              name={p.name}
-              facts={["Pickup point", p.address]}
-              href={`https://www.openstreetmap.org/?mlat=${p.lat}&mlon=${p.lng}#map=16/${p.lat}/${p.lng}`}
-              linkLabel="Map"
-            />
+            <Member key={p.id} name={p.name} facts={["Pickup point", p.address]} place={p} />
           ))}
           {data.network.destinations.map((d) => (
             <Member
@@ -189,6 +190,7 @@ export function Network({ data, refresh }: { data: LiveShipperData; refresh: () 
                 ...(places[d.warehouse]?.address ? [places[d.warehouse]!.address] : []),
               ]}
               account={d.warehouse}
+              place={destinationPlace(d.warehouse)}
             />
           ))}
         </Panel>
@@ -258,36 +260,61 @@ function Member({
   name,
   facts,
   account,
-  href = account ? nearblocksUrl(`/address/${account}`) : undefined,
-  linkLabel = "NearBlocks",
+  place,
 }: {
   name: string;
   facts: string[];
+  /** The NEAR account, linked to NearBlocks. */
   account?: string;
-  href?: string;
-  linkLabel?: string;
+  /** The pin, linked to Google Maps. */
+  place?: { lat: number; lng: number } | null;
 }) {
+  const links = [
+    ...(place
+      ? [
+          {
+            label: "Map",
+            aria: `Open ${name} in Google Maps`,
+            href: `https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lng}`,
+            icon: <MapTrifold size={17} aria-hidden />,
+          },
+        ]
+      : []),
+    ...(account
+      ? [
+          {
+            label: "NearBlocks",
+            aria: `See ${name} on NearBlocks`,
+            href: nearblocksUrl(`/address/${account}`),
+            icon: <ArrowUpRight size={17} aria-hidden />,
+          },
+        ]
+      : []),
+  ];
   return (
-    <div className="flex items-center gap-12 border-b border-ds-line py-12 last:border-b-0">
+    <div className="flex items-center gap-12 py-10">
       <Avatar name={name} />
       <div className="min-w-0 flex-1">
         <p className="text-label font-semibold break-words">{name}</p>
         <p className="text-caption text-ds-muted">{facts.join(" · ")}</p>
         {account && <p className="text-caption break-all text-ds-muted">{account}</p>}
       </div>
-      {href && (
-        <a
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={`See ${name} on ${linkLabel === "Map" ? "the map" : linkLabel}`}
-          className="link focus-ring tap grid size-40 shrink-0 place-items-center rounded-full bg-ds-canvas text-[14px] font-medium sm:flex sm:size-auto sm:bg-transparent"
-        >
-          {/* A short label on wider screens, the arrow alone on a phone. */}
-          <span className="hidden sm:inline">{linkLabel} ↗</span>
-          <ArrowUpRight size={17} className="sm:hidden" aria-hidden />
-        </a>
-      )}
+      <div className="flex shrink-0 items-center gap-8 sm:gap-16">
+        {links.map((l) => (
+          <a
+            key={l.label}
+            href={l.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={l.aria}
+            className="link focus-ring tap grid size-40 place-items-center rounded-full bg-ds-canvas text-[14px] font-medium sm:flex sm:size-auto sm:bg-transparent"
+          >
+            {/* A short label on wider screens, an icon alone on a phone. */}
+            <span className="hidden sm:inline">{l.label} ↗</span>
+            <span className="sm:hidden">{l.icon}</span>
+          </a>
+        ))}
+      </div>
     </div>
   );
 }
