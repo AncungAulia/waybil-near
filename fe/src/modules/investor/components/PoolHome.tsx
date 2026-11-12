@@ -170,8 +170,9 @@ export function PoolHome({
                     Number((BigInt(balance.total) * BigInt(i)) / 5000000n),
                   )
                 : [0, 5000, 10000, 15000, 20000, 25000]
-              ).map((n) => (
-                <span key={n}>{formatNumber(n)}</span>
+              ).map((n, i) => (
+                /* A small pool can repeat a value, so the mark's place is the key. */
+                <span key={i}>{formatNumber(n)}</span>
               ))}
             </div>
             <MeterLegend value={utilization} className="mt-10" />
