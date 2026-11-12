@@ -190,7 +190,14 @@ function ScanAndConfirm({
   const [code, setCode] = useState("");
   const [camera, setCamera] = useState(true);
   const [found, setFound] = useState<Shipment | null>(null);
-  const [notFound, setNotFound] = useState(false);
+  /* Why a code did not open a delivery, so the message can say what really happened. */
+  const [miss, setMiss] = useState<
+    | { kind: "unknown" }
+    | { kind: "done"; id: number; at: string | null }
+    | { kind: "early"; id: number }
+    | null
+  >(null);
+  const setNotFound = (value: boolean) => !value && setMiss(null);
   const [good, setGood] = useState("");
   const [problem, setProblem] = useState(false);
   const [reasons, setReasons] = useState<ReportReason[]>([]);
@@ -211,8 +218,17 @@ function ScanAndConfirm({
       id = await api<ArrivalLookupResponse>("/arrivals/lookup", { body: { code } })
         .then((r) => r.shipmentId)
         .catch(() => null);
-    const shipment = shipments.find((s) => s.id === id && s.status === "PickedUp" && !s.arrived_at);
-    setNotFound(!shipment);
+    const known = shipments.find((s) => s.id === id);
+    const shipment = known && known.status === "PickedUp" && !known.arrived_at ? known : undefined;
+    setMiss(
+      shipment
+        ? null
+        : !known
+          ? { kind: "unknown" }
+          : known.status === "Approved"
+            ? { kind: "early", id: known.id }
+            : { kind: "done", id: known.id, at: known.arrived_at },
+    );
     if (shipment) {
       setArrivalCode(code);
       setFound(shipment);
@@ -372,11 +388,23 @@ function ScanAndConfirm({
                 setNotFound(false);
                 if (value.length === 8) void lookUp(value);
               }}
-              invalid={notFound}
+              invalid={miss?.kind === "unknown"}
             />
-            {notFound ? (
+            {miss?.kind === "unknown" ? (
               <p role="alert" className="text-center text-label text-ds-danger">
                 This code is not a truck on its way to you. Check it with the driver.
+              </p>
+            ) : miss?.kind === "done" ? (
+              <p role="status" className="text-center text-label">
+                Delivery #{miss.id} was already confirmed
+                {miss.at
+                  ? ` on ${new Date(Number(BigInt(miss.at) / 1_000_000n)).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
+                  : ""}
+                . You can find it in History.
+              </p>
+            ) : miss?.kind === "early" ? (
+              <p role="status" className="text-center text-label">
+                Delivery #{miss.id} isn’t picked up yet. The driver confirms the pickup first.
               </p>
             ) : (
               <p className="max-w-320 text-center text-caption text-ds-muted">
