@@ -6,6 +6,8 @@ import {
   driverAmountForGoodUnits,
   formatUsdc,
   parseUsdc,
+  type Shipment,
+  type Trip,
   type TripCreate,
   type ReportDetail,
 } from "@waybil/shared";
@@ -17,11 +19,11 @@ import { Money } from "@/components/elements/Money";
 import { StatusPill } from "@/components/elements/StatusPill";
 import { TripMap } from "@/components/elements/TripMap";
 import { TimelineStep } from "@/components/elements/TimelineStep";
-import { duration } from "@/lib/route";
+import { duration, remaining, truckNow } from "@/lib/route";
 import { Skeleton } from "@/components/elements/Skeleton";
-import { NameTag } from "@/components/ui/Tag";
+import { Tag } from "@/components/ui/Tag";
 import { cn } from "@/lib/cn";
-import { usePlaces, useTrips } from "@/hooks/useTrips";
+import { useClock, usePlaces, useTrips } from "@/hooks/useTrips";
 import { forgetPickup, pickupFor } from "../data/pendingTrip";
 import { SearchPicker } from "@/components/ui/SearchPicker";
 import { api } from "@/lib/api";
@@ -178,124 +180,84 @@ export function LiveShipment({
             {trips[0] ? `${trips[0].pickup.name} to ${trips[0].destination.name}` : row.route}
           </h1>
           <p className="mt-6 text-label break-all text-ds-muted">
-            {row.driver} carries {row.cargo} on #{s.id}.
+            Shipment #{s.id}. {row.driver} carries {row.cargo}.
           </p>
         </div>
         <StatusPill status={statusChip(s)} />
       </header>
       <DoneNote done={done} />
-      {/* The route and the bill side by side, the same height. */}
-      <div className="grid items-stretch gap-24 lg:grid-cols-[minmax(0,1fr)_400px]">
-        {!tripData ? (
-          /* The map's place is held while the trip loads, so nothing jumps in later. */
-          <Skeleton className="h-320 w-full rounded-card md:h-420" />
-        ) : trips[0] ? (
-          <Panel title="Route">
-            <div className="grid grid-cols-3 gap-12">
-              <Fact label="Distance" value={`${Math.round(trips[0].distanceKm)} km`} />
-              <Fact
-                label="Drive time"
-                value={trips[0].durationMin == null ? "Not known" : duration(trips[0].durationMin)}
+      {/* The map on the left. The bill, progress and trip facts stack on the right. */}
+      <div className="grid items-start gap-16 lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-24">
+        <div className="flex flex-col gap-10 lg:sticky lg:top-104">
+          {!tripData ? (
+            /* The map's place is held while the trip loads, so nothing jumps in later. */
+            <Skeleton className="h-340 w-full rounded-card lg:h-560" />
+          ) : trip ? (
+            <>
+              <TripMap
+                trip={trip}
+                status={s.status}
+                caption={false}
+                className="h-340 rounded-card lg:h-560"
               />
-              <Fact
-                label="Truck"
-                value={
-                  s.status === "Approved"
-                    ? "Not left yet"
-                    : s.status === "PickedUp"
-                      ? "On the road"
-                      : s.status === "Cancelled"
-                        ? "Cancelled"
-                        : "Arrived"
-                }
-              />
+              <RouteNote trip={trip} status={s.status} />
+            </>
+          ) : s.status === "Approved" || s.status === "PickedUp" ? (
+            <AddTrip shipment={s} onAdded={reloadTrips} />
+          ) : (
+            <div className="grid h-200 place-items-center rounded-card bg-ds-bg p-24 text-center text-label text-ds-muted">
+              This shipment was recorded without a map.
             </div>
-            <TripMap trip={trips[0]} status={s.status} caption={false} className="md:h-420" />
+          )}
+        </div>
+        <div className="flex flex-col gap-16">
+          <BillCard
+            status={s.status}
+            bill={s.bill}
+            due={shortDay(s.due_at)}
+            days={days}
+            onCancel={() => setSheet("cancel")}
+            onPay={() => setSheet("pay")}
+            onSettle={report ? () => setSheet("settle") : undefined}
+          />
+          <Panel title="Progress">
+            <div className="flex flex-col gap-16">
+              {timeline.map((step) => (
+                <div key={step.title}>
+                  <TimelineStep state={step.state} title={step.title} time={step.time} />
+                  {step.detail && (
+                    <p className="mt-4 pl-38 text-caption text-ds-ink-2">{step.detail}</p>
+                  )}
+                </div>
+              ))}
+            </div>
           </Panel>
-        ) : s.status === "Approved" || s.status === "PickedUp" ? (
-          <AddTrip shipment={s} onAdded={reloadTrips} />
-        ) : null}
-        <Panel title="Bill" className={cn("h-full", tripData && !trips[0] && "lg:col-start-2")}>
-          <BillRow label="Driver">{row.driver}</BillRow>
-          <BillRow label="Cargo">{row.cargo}</BillRow>
-          <BillRow label="The driver gets on arrival">
-            <Money amount={s.advance} />
-          </BillRow>
-          <BillRow label="Waybil fee">
-            <Money amount={String(BigInt(s.bill) - BigInt(s.advance))} />
-          </BillRow>
-          <BillRow label="You pay" strong>
-            <Money amount={s.bill} />
-          </BillRow>
-          <BillRow label="Due">
-            {shortDay(s.due_at)}
-            {s.status !== "Repaid" && s.status !== "Cancelled" && days >= 0
-              ? `, in ${days} ${days === 1 ? "day" : "days"}`
-              : ""}
-          </BillRow>
-          {/* The actions sit at the bottom of the card. */}
-          <div className="flex-1" />
-          {s.status === "Approved" && (
-            <Button variant="danger" onClick={() => setSheet("cancel")}>
-              Cancel shipment
-            </Button>
-          )}
-          {s.status === "Paid" && (
-            <Button onClick={() => setSheet("pay")}>Pay {formatUsdc(BigInt(s.bill))} USDC</Button>
-          )}
-          {s.status === "Reported" && (
-            <Button disabled={!report} onClick={() => setSheet("settle")}>
-              Settle the report
-            </Button>
-          )}
-        </Panel>
-      </div>
-      <Panel title="Trip">
-        <div className="grid gap-28 md:grid-cols-2">
-          <div className="flex flex-col gap-18">
-            {timeline.map((step) => (
-              <div key={step.title}>
-                <TimelineStep state={step.state} title={step.title} time={step.time} />
-                {step.detail && (
-                  <p className="mt-4 pl-38 text-caption text-ds-ink-2">{step.detail}</p>
-                )}
-              </div>
-            ))}
-          </div>
-          <div className="flex flex-col gap-16 rounded-row bg-ds-canvas p-20">
-            {trip && (
-              <Stop
-                kind="pickup"
-                label="Pickup"
-                name={trip.pickup.name}
-                address={trip.pickup.address}
-              />
-            )}
-            {trip && (
-              <p className="ml-6 border-l-2 border-dashed border-ds-line-strong py-4 pl-18 text-caption text-ds-muted">
-                {Math.round(trip.distanceKm)} km by road
-                {trip.durationMin != null ? `, about ${duration(trip.durationMin)}` : ""}.
-              </p>
-            )}
-            {warehouse && (
-              <Stop
-                kind="destination"
-                label="Destination"
-                name={trip?.destination.name ?? places[warehouse]?.name ?? warehouse}
-                address={trip?.destination.address ?? places[warehouse]?.address ?? ""}
-              />
-            )}
+          <Panel title="Trip">
+            <div className="flex flex-col gap-12">
+              <BillRow label="Driver">{row.driver}</BillRow>
+              <BillRow label="Cargo">{row.cargo}</BillRow>
+              <BillRow label="From">{trip ? trip.pickup.name : "Not set"}</BillRow>
+              <BillRow label="To">
+                {trip?.destination.name ?? (warehouse && places[warehouse]?.name) ?? "Not set"}
+              </BillRow>
+              <BillRow label="The driver gets">
+                <Money amount={s.advance} />
+              </BillRow>
+              <BillRow label="Waybil fee">
+                <Money amount={String(BigInt(s.bill) - BigInt(s.advance))} />
+              </BillRow>
+            </div>
             <a
-              className="link focus-ring mt-auto inline-block text-caption"
+              className="link focus-ring inline-block text-caption"
               href={CONTRACT_RECORD_URL}
               target="_blank"
               rel="noreferrer"
             >
               See the record on NearBlocks ↗
             </a>
-          </div>
+          </Panel>
         </div>
-      </Panel>
+      </div>
       {s.status === "Reported" && report && (
         <Panel title="Problem report">
           <p className="text-label">
@@ -469,46 +431,112 @@ function AddTrip({
   );
 }
 
-/* One end of the trip, a dot for the pickup and a square for the destination, as on the map. */
-function Stop({
-  kind,
-  label,
-  name,
-  address,
-}: {
-  kind: "pickup" | "destination";
-  label: string;
-  name: string;
-  address: string;
-}) {
-  return (
-    <div className="flex items-start gap-12">
-      <span
-        aria-hidden
-        className={cn(
-          "mt-3 grid shrink-0 place-items-center bg-ds-ink",
-          kind === "pickup"
-            ? "size-14 rounded-full border-[3px] border-ds-bg"
-            : "size-16 rounded-[4px]",
-        )}
-      >
-        {kind === "destination" && <span className="size-6 rounded-[1px] bg-ds-brand" />}
-      </span>
-      <div className="min-w-0">
-        <NameTag name={name} tag={label} bold />
-        {address && <p className="text-caption text-ds-muted">{address}</p>}
+/* One short line under the map: the road, or how much is left while the truck drives. */
+function RouteNote({ trip, status }: { trip: Trip; status: Shipment["status"] }) {
+  const now = useClock(status === "PickedUp" && !!trip.simulation);
+  if (status === "PickedUp") {
+    const truck = truckNow(trip, now);
+    const left = remaining(trip, truck);
+    const at =
+      left.minutesLeft == null
+        ? null
+        : new Date(now + left.minutesLeft * 60000).toLocaleTimeString("en-GB", {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+    return (
+      <div className="flex justify-between gap-12 px-4 text-label">
+        <span>{at ? `Arriving around ${at}` : "On the road"}</span>
+        <span className="text-ds-muted">{Math.round(left.kmLeft)} km left to go</span>
       </div>
-    </div>
+    );
+  }
+  return (
+    <p className="px-4 text-caption text-ds-muted">
+      {trip.pickup.name} to {trip.destination.name} is {Math.round(trip.distanceKm)} km by road
+      {trip.durationMin != null ? `, about ${duration(trip.durationMin)} of driving` : ""}.
+    </p>
   );
 }
 
-/* A small number with its label, for the route card. */
-function Fact({ label, value }: { label: string; value: string }) {
+/*
+ * The bill as the card that matters most. Dark with a large amount while it is open, red while
+ * a report holds it, and plain once it is paid or the shipment is cancelled. Its one action
+ * sits at the bottom.
+ */
+function BillCard({
+  status,
+  bill,
+  due,
+  days,
+  onCancel,
+  onPay,
+  onSettle,
+}: {
+  status: Shipment["status"];
+  bill: string;
+  due: string;
+  days: number;
+  onCancel: () => void;
+  onPay: () => void;
+  onSettle?: () => void;
+}) {
+  const amount = `${formatUsdc(BigInt(bill))} USDC`;
+  if (status === "Repaid" || status === "Cancelled" || status === "CoveredByReserve")
+    return (
+      <section className="flex flex-col gap-8 rounded-card bg-ds-bg p-24">
+        <Tag className="w-fit">{status === "Cancelled" ? "Cancelled" : "Bill repaid"}</Tag>
+        <p className="text-[28px] leading-[1.15] font-semibold">{amount}</p>
+        <p className="text-label text-ds-muted">
+          {status === "Cancelled"
+            ? "Nothing is owed. The credit is free again."
+            : "Your payment is complete."}
+        </p>
+      </section>
+    );
+  const held = status === "Reported";
+  const late = days < 0;
   return (
-    <div className="rounded-row bg-ds-canvas px-14 py-10">
-      <p className="text-caption text-ds-muted">{label}</p>
-      <p className="text-label font-semibold">{value}</p>
-    </div>
+    <section
+      className={cn(
+        "flex flex-col gap-8 rounded-card p-24",
+        held || late ? "bg-ds-danger-soft text-ds-ink" : "bg-ds-ink text-ds-bg",
+      )}
+    >
+      <span
+        className={cn(
+          "w-fit rounded-full px-10 py-2 text-[12px] font-semibold",
+          held || late ? "bg-ds-danger text-ds-bg" : "bg-ds-brand text-ds-ink",
+        )}
+      >
+        {held ? "Bill on hold" : "Your bill"}
+      </span>
+      <p className="text-[32px] leading-[1.15] font-semibold">{amount}</p>
+      <p className={cn("text-label", held || late ? "text-ds-ink-2" : "text-ds-bg/70")}>
+        {held
+          ? "Nothing is due while the problem is open."
+          : late
+            ? `It was due ${due}, ${-days} ${days === -1 ? "day" : "days"} ago.`
+            : status === "Paid"
+              ? `The driver is paid. Pay by ${due}, in ${days} ${days === 1 ? "day" : "days"}.`
+              : `Due ${due}, in ${days} ${days === 1 ? "day" : "days"}. You pay once the driver is paid.`}
+      </p>
+      {status === "Approved" && (
+        <Button variant="secondary" className="mt-8 w-full justify-between" onClick={onCancel}>
+          Cancel shipment
+        </Button>
+      )}
+      {status === "Paid" && (
+        <Button variant="moment" className="mt-8 w-full justify-between" onClick={onPay}>
+          Pay {amount}
+        </Button>
+      )}
+      {held && (
+        <Button className="mt-8 w-full justify-between" disabled={!onSettle} onClick={onSettle}>
+          Settle the report
+        </Button>
+      )}
+    </section>
   );
 }
 
