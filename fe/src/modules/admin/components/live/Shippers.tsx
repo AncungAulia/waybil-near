@@ -18,6 +18,7 @@ import { cn } from "@/lib/cn";
 import { getShipper, listProposals } from "@/lib/near";
 import { AdminBadge, Empty } from "../AdminParts";
 import { DecideSheet } from "./DecideSheet";
+import { findingsOf, MonthBars } from "./AssistantFindings";
 import { day, Failed, Header, Loading, useLoad } from "./shared";
 
 /* M2. Applications waiting for review, and the companies already shipping. */
@@ -154,6 +155,7 @@ function ApplicationCard({
   onDecide: () => void;
 }) {
   const closer = a.review?.needsCloserLook;
+  const findings = findingsOf(a.review);
   return (
     <Panel className="admin-application-card">
       <div className="flex flex-col items-start justify-between gap-10 md:flex-row md:items-center">
@@ -173,15 +175,38 @@ function ApplicationCard({
                 : "Private check"}
         </AdminBadge>
       </div>
-      <p className="flex gap-10 rounded-[14px] bg-ds-brand-soft p-14 text-[14px] leading-17 text-ds-brand-deep">
-        {a.proposalId !== null
-          ? `Proposal #${a.proposalId} is with the team.`
-          : a.review?.suggestedLimit
-            ? `The assistant suggests a starting limit of ${formatUsdc(BigInt(a.review.suggestedLimit))} USDC.`
+      {a.review?.suggestedLimit ? (
+        /* The suggestion leads, with the three months of money out it came from beside it. */
+        <div className="flex items-end justify-between gap-16 rounded-[14px] bg-ds-brand-soft p-16 text-ds-brand-deep">
+          <div className="flex min-w-0 flex-col gap-4">
+            <p className="text-[13px] leading-16">
+              {a.proposalId !== null
+                ? `Proposal #${a.proposalId} is with the team.`
+                : "The assistant suggests a starting limit of"}
+            </p>
+            <p className="text-[26px] leading-30 font-semibold tracking-[-0.01em] text-ds-brand-ink tabular-nums">
+              {formatUsdc(BigInt(a.review.suggestedLimit))}{" "}
+              <span className="text-[15px] font-medium">USDC</span>
+            </p>
+            {findings && (
+              <p className="text-[13px] leading-16">
+                {findings.namesMatch && findings.registrationMatches && findings.monthsRecent
+                  ? "Names, registration and recent months all match."
+                  : "Some details do not match. Open the details."}
+              </p>
+            )}
+          </div>
+          {findings && <MonthBars findings={findings} className="max-md:hidden" />}
+        </div>
+      ) : (
+        <p className="flex gap-10 rounded-[14px] bg-ds-brand-soft p-14 text-[14px] leading-17 text-ds-brand-deep">
+          {a.proposalId !== null
+            ? `Proposal #${a.proposalId} is with the team.`
             : a.review?.state === "complete"
               ? "The assistant gives no limit. Check the papers."
               : "The private check is still running."}
-      </p>
+        </p>
+      )}
       {/* On a phone the actions share the full width, half each when there are two. */}
       <div
         className={cn(

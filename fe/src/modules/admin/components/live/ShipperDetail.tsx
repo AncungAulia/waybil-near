@@ -23,6 +23,7 @@ import {
   Warning,
 } from "@phosphor-icons/react";
 import { accountLabel } from "@/lib/accountLabel";
+import { cn } from "@/lib/cn";
 import { FanMeter } from "@/components/elements/FanMeter";
 import { Panel } from "@/components/layout/Panel";
 import { ActionSheet } from "@/components/layout/ActionSheet";
@@ -40,6 +41,7 @@ import { notify } from "@/lib/notify";
 import { AdminActionFields } from "../AdminActionFields";
 import { AdminBadge, AdminTiles, Empty, Fact } from "../AdminParts";
 import { DecideSheet } from "./DecideSheet";
+import { FindingChecks, findingsOf, forTeam, MonthTable } from "./AssistantFindings";
 import {
   asInput,
   day,
@@ -192,6 +194,7 @@ export function ShipperDetail({ account }: { account: string }) {
   const units = toUnits(limit);
   const invalidLimit = units <= 0n || units > 10000000000n;
 
+  const findings = findingsOf(review);
   const reviewPanel = review && (
     <Panel
       title="Assistant’s view"
@@ -202,22 +205,30 @@ export function ShipperDetail({ account }: { account: string }) {
         </AdminBadge>
       }
     >
-      <Fact
-        label="Suggested limit"
-        value={
-          review.suggestedLimit ? <Money amount={review.suggestedLimit} /> : "No limit suggested"
-        }
-      />
-      <Fact label="Checked" value={day(review.completedAt ?? review.createdAt)} />
+      <div>
+        <p className="text-label text-ds-muted">
+          {shipper ? "Suggested limit" : "Suggested starting limit"}
+        </p>
+        {review.suggestedLimit ? (
+          <Money amount={review.suggestedLimit} className="mt-4 block text-amount" />
+        ) : (
+          <p className="mt-4 text-[20px] leading-24 font-medium">No limit suggested</p>
+        )}
+      </div>
+      {findings && <FindingChecks findings={findings} />}
+      {findings && <MonthTable findings={findings} />}
       {review.reasons.map((r) => (
         <p key={r} className="text-label text-ds-ink-2">
-          {r}
+          {forTeam(r)}
         </p>
       ))}
+      <p className="text-caption text-ds-muted">
+        Checked {day(review.completedAt ?? review.createdAt)}.
+      </p>
       {review.proof && (
         <button
           type="button"
-          className="link focus-ring w-fit text-caption"
+          className="link focus-ring -mt-8 w-fit text-caption"
           onClick={async () => {
             setSheet("proof");
             setProof(null);
@@ -230,7 +241,7 @@ export function ShipperDetail({ account }: { account: string }) {
             );
           }}
         >
-          Open the private check proof
+          Open the private check proof ↗
         </button>
       )}
     </Panel>
@@ -480,7 +491,13 @@ export function ShipperDetail({ account }: { account: string }) {
             )
           )}
         </div>
-        <div className="flex min-w-0 flex-col gap-24">
+        {/* A new company's column is just the assistant's card, so it stays in view. */}
+        <div
+          className={cn(
+            "flex min-w-0 flex-col gap-24",
+            !shipper && "lg:sticky lg:top-104 lg:self-start",
+          )}
+        >
           {reviewPanel}
           {shipper && (
             <Panel title="Pauses" className="flex-1">
