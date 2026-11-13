@@ -72,14 +72,14 @@ export function StepHeading({
               {state === "F5"
                 ? "Receive goods"
                 : state === "F4"
-                  ? "This link"
+                  ? "This link has expired"
                   : `${shipperName} wants`}
             </span>
             <span>
               {state === "F5"
                 ? `for ${shipperName}`
                 : state === "F4"
-                  ? "has expired or was used"
+                  ? "or was already used"
                   : "to work with you"}
             </span>
           </span>

@@ -51,7 +51,7 @@ export function InviteStep({
           state === "F3"
             ? "You’re connected"
             : state === "F4"
-              ? "This link has expired or was used"
+              ? "This link has expired or was already used"
               : state === "F6"
                 ? "You’re all set"
                 : state === "F5"
