@@ -55,8 +55,11 @@ included, can change its code alone. Code changes go only through a 2-of-3 team 
 
 ## Prior work
 
-- The idea was first built as TIBA Protocol on Monad, which won 1st place at Monad Blitz
-  Hackathon Vol 2: [github.com/AncungAulia/tibaprotocol-monad](https://github.com/AncungAulia/tibaprotocol-monad).
+- The idea was first built as TIBA Protocol on Monad, which won 1st place ($500) at
+  [Monad Blitz Jogja Vol. 2](https://luma.com/blitz-jogja-okt-2026) on 24 October 2026:
+  [github.com/AncungAulia/tibaprotocol-monad](https://github.com/AncungAulia/tibaprotocol-monad).
+  [Photo of the award](docs/prior-work/monad-blitz-jogja-vol2-1st-place.jpg), as posted by UGM
+  Blockchain Club on 31 October 2026.
 - Waybil is a new codebase written from scratch for NEAR during this hackathon. The first
   commit is from 2026-11-02, after the 2026-10-19 announcement. No code was copied from the
   earlier project. The contract is Rust on NEAR instead of Solidity.
