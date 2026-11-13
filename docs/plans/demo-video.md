@@ -20,7 +20,7 @@ screen.
 | Shipper | NEAR wallet (Meteor, testnet) | `harborline-freight.testnet` | Harborline Freight, Rotterdam, Netherlands |
 | Warehouse | Google | a Google account named **Scheldt Retail** | Scheldt Retail DC, Antwerp, Belgium |
 | Driver | Google | a Google account named **Mateo Alvarez** | Mateo Alvarez, truck plate `RT-482-K`, phone +31 6 1234 5678 |
-| Team | NEAR wallet | `risk.waybil.testnet`, `ops.waybil.testnet` | Recorded by Ancung, who holds the team keys |
+| Team | NEAR wallet | `risk.waybil.testnet`, `ops.waybil.testnet` | Two Chrome profiles, Team Risk and Team Ops |
 
 If an account name is taken, add a short suffix (`harborline-freight-demo.testnet`). Create a
 wallet account with Meteor, or with the CLI faucet if Meteor's sponsor is empty:
@@ -30,6 +30,10 @@ near account create-account sponsor-by-faucet-service harborline-freight.testnet
 ```
 
 Then import it into Meteor yourself. Keys never go into an issue, a PR, chat or the video.
+
+**Team access.** Ancung adds one temporary key to `risk.waybil.testnet` and `ops.waybil.testnet`
+and sends you its private key directly. Import it in Meteor ("Import with private key") once in
+each team profile. Ancung removes the key after the video is done.
 
 **Company application** (shipper): use the Harborline Freight papers in
 [`docs/samples/`](../samples/README.md).
@@ -61,9 +65,9 @@ August 21,400.00, September 23,150.50, October 24,880.75, average 23,143.75 USD.
 
 ## 2. Recording setup
 
-- One **Chrome profile per role** (Investor, Shipper, Warehouse, Driver). The app keeps one
-  session per browser profile.
-- Meteor wallet extension in the Investor and Shipper profiles, set to **testnet**.
+- One **Chrome profile per role** (Investor, Shipper, Warehouse, Driver, Team Risk, Team Ops).
+  The app keeps one session per browser profile.
+- Meteor wallet extension in the Investor, Shipper and both Team profiles, set to **testnet**.
 - USDC for tests comes from the app's own faucet button in the wallet menu (once an hour per
   account). NEAR for gas comes from the faucet linked in the footer.
 - Window 1920×1080, browser zoom 100%, bookmarks bar hidden, other extensions' popups off,
@@ -83,7 +87,7 @@ Recording order follows what the app needs, not the video order.
    pool balance and the "See the record on NearBlocks ↗" link.
 2. **Shipper**: sign in, apply as Harborline Freight with the papers. Show "We're checking your
    company".
-3. **Team (Ancung)**: as risk, open Shippers, show the Harborline card (amount and month bars),
+3. **Team**: as risk, open Shippers, show the Harborline card (amount and month bars),
    open View details (the three checks, money out each month, "Open the private check proof ↗"),
    then Decide and approve. As ops, approve in Approvals. Show the limit now active.
 4. **Shipper**: see the new limit. Save the pickup point. Invite the warehouse with the Antwerp
@@ -149,4 +153,5 @@ Keep the problem scene short and visual. The judges care most about scenes 2 to 
 - [ ] Voice over generated and the video edited to it, under 3 minutes.
 - [ ] No keys, seed phrases, private emails or personal data on screen.
 - [ ] Video uploaded where the team can reach it, link posted in the issue.
+- [ ] Ancung removes the temporary team key.
 - [ ] Ancung posts it on X from @waybilxyz, tagging @NEARProtocol with #NEARHackathon.
