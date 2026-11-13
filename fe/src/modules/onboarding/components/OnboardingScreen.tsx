@@ -289,8 +289,11 @@ export function OnboardingScreen({
             />
           ) : null}
         </div>
-        {/* Live sign-in, driver details and invites are real, so the demo note stays off them. */}
-        {!(LIVE && ["A", "B", "D", "F"].includes(group)) && (
+        {/*
+         * Live sign-in, driver details, invites and a signed-in shipper's application are real,
+         * so the demo note stays off them.
+         */}
+        {!(LIVE && (["A", "B", "D", "F"].includes(group) || liveCompany)) && (
           <p className="mt-4 text-center text-caption text-ds-muted">
             This is a local demo. No sign-in, wallet connection or application is submitted.
           </p>
