@@ -98,7 +98,7 @@ export function TripsList({
             </Button>
           </Panel>
         ) : onHold ? (
-          <Panel title="On hold · #1041" className="bg-ds-danger-soft">
+          <Panel title="Trip #1041 is on hold" className="bg-ds-danger-soft">
             <p className="flex items-center gap-8 text-label">
               <WarningCircle size={18} className="shrink-0 text-ds-danger" />
               Harbor Hub reported a problem
@@ -116,7 +116,7 @@ export function TripsList({
           </Panel>
         ) : (
           <Panel
-            title="On the road · #1041"
+            title="Trip #1041 is on the road"
             action={
               <button
                 className="link focus-ring relative text-caption before:absolute before:-inset-x-8 before:-inset-y-12"
@@ -149,7 +149,7 @@ export function TripsList({
           title={`${westfieldTrip.from} to ${westfieldTrip.to}`}
           action={<StatusPill status={westfieldCancelled ? "cancelled" : "approved"} />}
         >
-          <p className="text-caption text-ds-muted">#1044 · {westfieldTrip.company}</p>
+          <p className="text-caption text-ds-muted">#1044 for {westfieldTrip.company}</p>
           {westfieldCancelled ? (
             <>
               <p className="text-label text-ds-muted">

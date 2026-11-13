@@ -13,14 +13,17 @@
     "@hot-labs/near-connect": "^0.12.0",
     "@phosphor-icons/react": "^2.1.10",
     "@radix-ui/react-dialog": "^1.1.15",
+    "@tanstack/react-query": "^5.107.1",
     "@waybil/shared": "workspace:*",
     "clsx": "^2.1.1",
     "jsqr": "^1.4.0",
     "libphonenumber-js": "^1.13.16",
+    "maplibre-gl": "5.15.0",
     "next": "16.4.5",
     "qrcode.react": "^4.2.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "sonner": "^2.0.8",
     "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {

@@ -74,20 +74,20 @@ export function ShipperProgress({
                   : "current"
                 : "next";
         const times = cancelled
-          ? ["Nov 12 · 08:02", cancelledAt ? demoMoment(cancelledAt) : "Nov 12 · 09:40"]
+          ? ["Nov 12, 08:02", cancelledAt ? demoMoment(cancelledAt) : "Nov 12, 09:40"]
           : [
-              "Nov 12 · 08:02",
-              approved ? "Waiting for pickup" : "Nov 12 · 09:14",
-              road ? "About 1 h 20 min to go" : "Nov 12 · 15:36",
+              "Nov 12, 08:02",
+              approved ? "Waiting for pickup" : "Nov 12, 09:14",
+              road ? "About 1 h 20 min to go" : "Nov 12, 15:36",
               held
                 ? "On hold"
                 : settled
-                  ? "Nov 13 · 10:20"
-                  : `Nov 12 · 15:37 · ${formatUsdc(BigInt(shipment.advance))} USDC`,
+                  ? "Nov 13, 10:20"
+                  : `Sent ${formatUsdc(BigInt(shipment.advance))} USDC on Nov 12, 15:37`,
               covered
-                ? `${shortDate(coveredAt)} · team approval`
+                ? `Team approval on ${shortDate(coveredAt)}`
                 : repaid
-                  ? `${shortDate(repaidAt ?? due)} · ${formatUsdc(BigInt(bill))} USDC`
+                  ? `Paid ${formatUsdc(BigInt(bill))} USDC on ${shortDate(repaidAt ?? due)}`
                   : `Due ${shortDate(due)}`,
             ];
         return (

@@ -32,8 +32,8 @@ motion rules), `be/AGENTS.md` (API, data and key rules) and `landing-page/AGENTS
   avoid "on-chain", "multisig", "contract", "agent", "TEE", "attestation", "gasless".
   Say "recorded", "team approval", "credit assistant", "private check", "proof".
 - Full, simple sentences (subject, verb, object). No colons or semicolons in UI text.
-- The middle dot (·) only joins short facts, for example "#1041 · Sam · due Dec 11".
-  Anything with a verb or a money outcome is written as full sentences instead.
+- Avoid the middle dot (·) in UI text. Show a kind, role or status as a `Tag` next to the
+  name (`NameTag`), and put other facts on their own lines or in a short sentence.
 - Links to the blockchain explorer read "See the record on NearBlocks ↗".
 - Use one arrow per link. Plain text links end with "↗". Buttons and cards that already
   show an arrow icon drop the "↗" from their label.

@@ -1,5 +1,10 @@
 "use client";
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useInvalidate } from "@/hooks/useInvalidate";
+import { qk } from "@/lib/queryKeys";
+import { accountLabel } from "@/lib/accountLabel";
+import { cn } from "@/lib/cn";
 import {
   formatUsdc,
   type Proposal,
@@ -12,18 +17,20 @@ import { ArrowRight, Check, X } from "@phosphor-icons/react";
 import { Panel } from "@/components/layout/Panel";
 import { ActionSheet } from "@/components/layout/ActionSheet";
 import { Button } from "@/components/ui/Button";
+import { Tag } from "@/components/ui/Tag";
 import { Money } from "@/components/elements/Money";
 import { api } from "@/lib/api";
 import { useNames } from "@/hooks/useNames";
-import { getShipper, getTeam, listProposals } from "@/lib/near";
+import { getProposal, getShipper, getTeam, listProposals } from "@/lib/near";
 import { WAYBIL_CONTRACT } from "@/lib/env";
 import { callContract } from "@/lib/wallet";
+import { notify } from "@/lib/notify";
+import { ResultDialog } from "@/components/elements/ResultDialog";
 import { AdminActionFields } from "../AdminActionFields";
-import { AdminBadge, Empty, Fact } from "../AdminParts";
+import { AdminBadge, Empty } from "../AdminParts";
 import {
   day,
   describe,
-  DoneNote,
   failure,
   Failed,
   GAS,
@@ -32,7 +39,6 @@ import {
   REASON_WORDS,
   shipperOf,
   useLoad,
-  type Done,
 } from "./shared";
 
 const VOTE_REASONS: Record<string, ProposalReasonInput["reason"]> = {
@@ -66,48 +72,79 @@ export function Approvals({ me }: { me: string }) {
       reasons: reasons.flat(),
     };
   }, "approvals");
-  const [done, setDone] = useState<Done>(null);
-  const [busy, setBusy] = useState<number | null>(null);
   const [rejecting, setRejecting] = useState<Proposal | null>(null);
   const [reason, setReason] = useState("");
   const [note, setNote] = useState("");
+  const [rejectError, setRejectError] = useState<string | null>(null);
+  /* A vote that makes a change go through opens a dialog. Other votes end with a toast. */
+  const [passed, setPassed] = useState<{
+    title: string;
+    amount?: string;
+    text: string;
+    tx: string;
+  } | null>(null);
+  const invalidate = useInvalidate();
+  const known = useNames(data?.proposals.map((p) => shipperOf(p.kind)) ?? []);
+  /* A profile name when there is one, otherwise the account without ".testnet". */
+  const name = (id: string) => (known(id) === id ? accountLabel(id) : known(id));
 
-  async function vote(p: Proposal, approve: boolean) {
-    setBusy(p.id);
-    setDone(null);
-    try {
-      const tx = await callContract(WAYBIL_CONTRACT, "vote", { id: p.id, approve }, { gas: GAS });
-      let text = approve ? "Your approval is recorded." : "Your rejection is recorded.";
-      if (!approve) {
-        const body = { reason: VOTE_REASONS[reason] ?? "other", note: note.trim() };
-        /* The vote must be final before the backend sees it, so try once more after a moment. */
-        await api(`/admin/proposals/${p.id}/reasons`, { body }).catch(async () => {
-          await new Promise((wait) => setTimeout(wait, 2500));
-          await api(`/admin/proposals/${p.id}/reasons`, { body }).catch(() => {
-            text = "Your rejection is recorded. The reason could not be saved.";
-          });
+  /* Records the vote, then saves the reason for a rejection with the backend. */
+  async function record({ p, approve }: { p: Proposal; approve: boolean }) {
+    const tx = await callContract(WAYBIL_CONTRACT, "vote", { id: p.id, approve }, { gas: GAS });
+    /* Two approvals carry it out. Read it back to know, since a late vote can expire it. */
+    const after = approve ? await getProposal(p.id).catch(() => null) : null;
+    const approved = approve && (after ? after.status === "Approved" : p.approvals.length >= 1);
+    let text = !approve
+      ? "The reason is saved with it."
+      : after?.status === "Expired"
+        ? "It had expired, so nothing changed."
+        : "It goes through when one more member approves it.";
+    if (!approve) {
+      const body = { reason: VOTE_REASONS[reason] ?? "other", note: note.trim() };
+      /* The vote must be final before the backend sees it, so try once more after a moment. */
+      await api(`/admin/proposals/${p.id}/reasons`, { body }).catch(async () => {
+        await new Promise((wait) => setTimeout(wait, 2500));
+        await api(`/admin/proposals/${p.id}/reasons`, { body }).catch(() => {
+          text = "The reason could not be saved.";
         });
-      }
-      setDone({ text, tx });
-      setRejecting(null);
-      reload();
-    } catch (e) {
-      setDone({ text: failure(e) });
-    } finally {
-      setBusy(null);
+      });
     }
+    return { text, tx, approved };
+  }
+  const voting = useMutation({
+    mutationFn: record,
+    onSuccess: ({ text, tx, approved }, { p, approve }) => {
+      if (approved) setPassed({ ...outcome(p, name), tx });
+      else
+        notify.success(approve ? "Your approval is recorded" : "Your rejection is recorded", {
+          meta: text,
+          tx,
+        });
+      setRejecting(null);
+      /* A vote can start a shipper or change a limit, which other team pages show too. */
+      void invalidate(qk.allAdmin());
+    },
+    /* A rejection keeps its error in the open sheet. An approval shows a toast. */
+    onError: (e, { approve }) =>
+      approve
+        ? notify.error("Your approval was not sent", { meta: failure(e) })
+        : setRejectError(failure(e)),
+  });
+  /* The proposal being voted on, while its wallet request is open. */
+  const busy = voting.isPending ? voting.variables.p.id : null;
+  function vote(p: Proposal, approve: boolean) {
+    setRejectError(null);
+    voting.mutate({ p, approve });
   }
 
-  const name = useNames(data?.proposals.map((p) => shipperOf(p.kind)) ?? []);
   if (error) return <Failed error={error} reload={reload} />;
   const open = data?.proposals.filter((p) => p.status === "Open") ?? [];
   const closed = data?.proposals.filter((p) => p.status !== "Open").slice(0, 6) ?? [];
   return (
     <>
       <Header title="Approvals" note="Changes that need the team" />
-      <DoneNote done={done} />
       {!data ? (
-        <Loading />
+        <Loading label="Loading the approvals." />
       ) : (
         <div className="grid items-start gap-24 lg:grid-cols-[1fr_420px]">
           <div className="flex flex-col gap-24">
@@ -127,48 +164,88 @@ export function Approvals({ me }: { me: string }) {
                   reasons={data.reasons.filter((r) => r.proposalId === p.id)}
                   me={me}
                   busy={busy === p.id}
-                  onApprove={() => void vote(p, true)}
+                  onApprove={() => vote(p, true)}
                   onReject={() => {
                     setReason("");
                     setNote("");
+                    setRejectError(null);
                     setRejecting(p);
                   }}
                 />
               ))
             )}
           </div>
-          <div className="flex flex-col gap-24">
-            <Panel className="approval-team">
+          {/*
+           * The whole column stays in view while the proposals scroll. The decided list shows the
+           * latest five, so the column fits the window without a scroll of its own.
+           */}
+          <div className="flex flex-col gap-24 lg:sticky lg:top-104">
+            {/* The team as an ink card with the dotted glow, one tile per member. */}
+            <section className="approval-team relative isolate flex shrink-0 flex-col gap-20 overflow-hidden rounded-card bg-ds-ink p-24 text-ds-bg">
+              <img
+                src="/illustrations/investor-glow.png"
+                alt=""
+                className="pointer-events-none absolute inset-0 -z-10 size-full object-cover"
+              />
               <div className="flex flex-col gap-4">
                 <h2 className="text-[17px] leading-21 font-semibold">Team approval</h2>
-                <p className="text-label text-ds-muted">
+                <p className="text-label text-ds-bg/70">
                   A change goes through when 2 of the {data.team.length} team members approve it.
                 </p>
               </div>
-              <div>
+              <div className="grid grid-cols-3 gap-8">
                 {data.team.map((member) => (
-                  <Fact key={member} label={member === me ? "You" : "Member"} value={member} />
+                  <div
+                    key={member}
+                    title={member}
+                    className={cn(
+                      "flex min-w-0 flex-col items-center gap-8 rounded-row p-12 text-center",
+                      member === me ? "bg-ds-bg/14" : "bg-ds-bg/6",
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "grid size-44 place-items-center rounded-full text-[15px] font-semibold",
+                        member === me ? "bg-ds-brand text-ds-ink" : "bg-ds-bg/12 text-ds-bg",
+                      )}
+                    >
+                      {accountLabel(member).slice(0, 1)}
+                    </span>
+                    <div className="w-full min-w-0">
+                      <p className="truncate text-label font-medium">{accountLabel(member)}</p>
+                      <p className="text-caption text-ds-bg/60">
+                        {member === me ? "You" : "Member"}
+                      </p>
+                    </div>
+                  </div>
                 ))}
               </div>
-            </Panel>
+            </section>
             <Panel title="Recently decided" className="approval-recent">
               {closed.length === 0 && (
                 <p className="text-label text-ds-muted">Nothing has been decided yet.</p>
               )}
-              {closed.map((p) => (
+              {closed.slice(0, 5).map((p) => (
                 <div key={p.id} className="approval-recent-row py-12">
-                  <p className="text-label font-medium break-all">
-                    {describe(p.kind, data.shippers, name).title}
-                  </p>
+                  {/* The title gives way with an ellipsis, so it never runs into the tag. */}
+                  <div className="flex min-w-0 items-center justify-between gap-12">
+                    <p
+                      className="min-w-0 truncate text-label font-medium"
+                      title={describe(p.kind, data.shippers, name).title}
+                    >
+                      {describe(p.kind, data.shippers, name).title}
+                    </p>
+                    <Tag className="shrink-0">{p.status}</Tag>
+                  </div>
                   <p className="text-caption text-ds-muted">
-                    {p.status} · {p.approvals.length} approved · {p.rejections.length} rejected ·{" "}
-                    {day(p.created_at)}
+                    Proposed {day(p.created_at)}. {p.approvals.length} approved and{" "}
+                    {p.rejections.length} rejected.
                   </p>
                   {data.reasons
                     .filter((r) => r.proposalId === p.id)
                     .map((r) => (
                       <p key={r.id} className="mt-2 text-caption text-ds-ink-2 break-all">
-                        {r.actor} said no because of {REASON_WORDS[r.reason]}.{" "}
+                        {accountLabel(r.actor)} said no because of {REASON_WORDS[r.reason]}.{" "}
                         {r.note && `“${r.note}”`}
                       </p>
                     ))}
@@ -198,6 +275,11 @@ export function Approvals({ me }: { me: string }) {
             invalidLimit={false}
             subtitle={describe(rejecting.kind, data.shippers, name).title}
           />
+          {rejectError && (
+            <p role="alert" className="rounded-row bg-ds-danger-result p-14 text-label">
+              {rejectError}
+            </p>
+          )}
           <div className="admin-sheet-actions flex justify-end gap-10">
             <Button variant="quiet" onClick={() => setRejecting(null)}>
               Cancel
@@ -208,15 +290,60 @@ export function Approvals({ me }: { me: string }) {
               disabled={!reason}
               loading={busy === rejecting.id}
               loadingLabel="Waiting for wallet"
-              onClick={() => void vote(rejecting, false)}
+              onClick={() => vote(rejecting, false)}
             >
               Reject
             </Button>
           </div>
         </ActionSheet>
       )}
+      {passed && (
+        <ResultDialog
+          title={passed.title}
+          amount={passed.amount}
+          tx={passed.tx}
+          onClose={() => setPassed(null)}
+        >
+          {passed.text}
+        </ResultDialog>
+      )}
     </>
   );
+}
+
+/** What a change that just went through did, in a short title and a sentence. */
+function outcome(
+  p: Proposal,
+  name: (accountId: string) => string,
+): { title: string; amount?: string; text: string } {
+  const k = p.kind;
+  if ("StartShipper" in k) {
+    const company = name(k.StartShipper.shipper);
+    return {
+      title: `${company} is live`,
+      amount: k.StartShipper.limit,
+      text: `The team approved it. ${company} can send shipments up to this limit now.`,
+    };
+  }
+  if ("SetLimit" in k)
+    return {
+      title: "Limit changed",
+      amount: k.SetLimit.limit,
+      text: `The team approved it. This is ${name(k.SetLimit.shipper)}’s new limit.`,
+    };
+  if ("Unpause" in k)
+    return {
+      title: `${name(k.Unpause.shipper)} is back on`,
+      text: "The team approved it. The company can send new shipments again.",
+    };
+  if ("CoverFromReserve" in k)
+    return {
+      title: "Bill covered",
+      text: `The team approved it. The reserve paid bill #${k.CoverFromReserve.shipment_id}.`,
+    };
+  if ("Upgrade" in k)
+    return { title: "New version approved", text: "The team approved the new version of Waybil." };
+  return { title: "Setting changed", text: "The team approved it. The new setting is in use now." };
 }
 
 function ProposalCard({
@@ -236,7 +363,8 @@ function ProposalCard({
   onApprove: () => void;
   onReject: () => void;
 }) {
-  const name = useNames([shipperOf(p.kind)]);
+  const known = useNames([shipperOf(p.kind)]);
+  const name = (id: string) => (known(id) === id ? accountLabel(id) : known(id));
   const change = describe(p.kind, shippers, name);
   const voted = p.approvals.includes(me) || p.rejections.includes(me);
   return (
@@ -245,8 +373,10 @@ function ProposalCard({
         <div className="flex min-w-0 flex-col gap-4">
           <h2 className="text-[17px] leading-21 font-semibold break-all">{change.title}</h2>
           <p className="text-[13px] leading-16 text-ds-muted break-all">
-            {p.from_assistant ? "Suggested by the credit assistant" : `Proposed by ${p.by}`} ·{" "}
-            {day(p.created_at)} · #{p.id}
+            {p.from_assistant
+              ? "Suggested by the credit assistant"
+              : `Proposed by ${accountLabel(p.by)}`}{" "}
+            on {day(p.created_at)}. This is proposal #{p.id}.
           </p>
         </div>
         <AdminBadge tone="brand">Waiting for the team</AdminBadge>
@@ -268,23 +398,30 @@ function ProposalCard({
           key={r.id}
           className="rounded-[14px] bg-ds-danger-stamp p-14 text-[13px] leading-16 text-ds-report-ink break-all"
         >
-          {r.actor} said no because of {REASON_WORDS[r.reason]}. {r.note && `“${r.note}”`}
+          {accountLabel(r.actor)} said no because of {REASON_WORDS[r.reason]}.{" "}
+          {r.note && `“${r.note}”`}
         </p>
       ))}
       <div className="flex flex-wrap items-center justify-between gap-16 pt-16">
         <p className="text-[14px] leading-17">
           {p.approvals.length} of 2 approved
-          {p.rejections.length > 0 && ` · ${p.rejections.length} rejected`}
+          {p.rejections.length > 0 && ` and ${p.rejections.length} rejected`}
         </p>
         {voted ? (
           <p className="text-[13px] leading-16 text-ds-ink-2">Your vote is recorded.</p>
         ) : (
-          <div className="flex w-full flex-col-reverse gap-10 md:w-auto md:flex-row md:gap-12">
-            <Button variant="quiet" className="justify-center" disabled={busy} onClick={onReject}>
+          <div className="grid w-full grid-cols-2 gap-10 md:flex md:w-auto md:gap-12">
+            <Button
+              variant="quiet"
+              className="w-full min-w-0 justify-center md:w-auto"
+              disabled={busy}
+              onClick={onReject}
+            >
               Reject
             </Button>
             <Button
               icon={<Check size={17} weight="bold" />}
+              className="w-full min-w-0 md:w-auto"
               loading={busy}
               loadingLabel="Waiting for wallet"
               onClick={onApprove}

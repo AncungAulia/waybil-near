@@ -17,7 +17,7 @@ export function BalanceCard({
   status,
   /** The amount, already formatted, for example "292.50". */
   amount,
-  /** The line underneath, for example "97.5% of 300 USDC · Eastport to Harbor City". */
+  /** The line underneath, for example "97.5% of 300 USDC for Eastport to Harbor City". */
   meta,
   /** Nothing to cash out yet, so the amount is greyed. */
   empty = false,

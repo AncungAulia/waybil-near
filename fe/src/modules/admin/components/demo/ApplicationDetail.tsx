@@ -1,6 +1,7 @@
 import { CheckCircle, Eye, FileText, Scales, Warning } from "@phosphor-icons/react";
 import { Panel } from "@/components/layout/Panel";
 import { Button } from "@/components/ui/Button";
+import { Tag } from "@/components/ui/Tag";
 import { Money } from "@/components/elements/Money";
 import { cn } from "@/lib/cn";
 import { CONTRACT_RECORD_URL } from "@/lib/env";
@@ -42,7 +43,15 @@ export function ApplicationDetail({
                 label: "Address",
                 value: coast ? "88 Coast Road, Northgate" : "12 Harbor Way, Port Ellis",
               },
-              { label: "Contact", value: coast ? "Marcus Reid · Owner" : "Priya Shah · Finance" },
+              {
+                label: "Contact",
+                value: (
+                  <span className="inline-flex flex-wrap items-center gap-8">
+                    {coast ? "Marcus Reid" : "Priya Shah"}
+                    <Tag>{coast ? "Owner" : "Finance"}</Tag>
+                  </span>
+                ),
+              },
               { label: "Phone", value: coast ? "+1 207 555 0187" : "+1 207 555 0142" },
               {
                 label: "Email",

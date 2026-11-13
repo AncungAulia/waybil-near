@@ -258,7 +258,7 @@ export function ShipperDetail({
                   : state === "P3.3"
                     ? "Driver's location is paused"
                     : road
-                      ? "Live · updated 30 s ago"
+                      ? "Live location, updated 30 s ago"
                       : "Trip finished"
             }
           />
@@ -403,7 +403,7 @@ export function ShipperDetail({
             <div className="divide-y divide-ds-line [&>div>span]:leading-[1.2]">
               <KeyValue
                 label="Driver"
-                value={PLATES[driver] ? `${driver} · ${PLATES[driver]}` : driver}
+                value={PLATES[driver] ? `${driver}, truck ${PLATES[driver]}` : driver}
               />
               <KeyValue label="Cargo" value={trip?.cargo ?? "120 crates of coffee"} />
               <KeyValue label="From" value="Main warehouse, Eastport" />

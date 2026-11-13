@@ -1,24 +1,44 @@
 "use client";
-import { useState } from "react";
+import { useAuth } from "@/providers/AuthProvider";
+import { Greeting } from "@/components/elements/Greeting";
+import { qk } from "@/lib/queryKeys";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useMutation } from "@tanstack/react-query";
+import { useInvalidate } from "@/hooks/useInvalidate";
 import { formatUsdc, type Shipment } from "@waybil/shared";
-import { Copy, Package, Truck } from "@phosphor-icons/react";
+import { ArrowDown, Buildings, Copy, NavigationArrow, Package, Truck } from "@phosphor-icons/react";
 import { RoleShell } from "@/components/layout/RoleShell";
 import { Panel } from "@/components/layout/Panel";
-import { Button } from "@/components/ui/Button";
+import { Button, ButtonLink } from "@/components/ui/Button";
 import { Money } from "@/components/elements/Money";
 import { StatusPill } from "@/components/elements/StatusPill";
 import { DeliveryQr } from "@/components/elements/DeliveryQr";
-import { ProofLink } from "@/components/elements/ProofLink";
 import { BackLink } from "@/components/elements/BackLink";
+import { TripMap } from "@/components/elements/TripMap";
+import { TimelineRail, TimelineStep } from "@/components/elements/TimelineStep";
+import { useTrips } from "@/hooks/useTrips";
+import { sharingNote, useShareLocation } from "@/hooks/useShareLocation";
+import { directionsUrl, duration } from "@/lib/route";
+import { FILL_UNDER_HEADER, FillEmpty } from "@/components/elements/EmptyState";
+import {
+  Skeleton,
+  SkeletonGroup,
+  SkeletonHeader,
+  SkeletonListPanel,
+  SkeletonTripPage,
+} from "@/components/elements/Skeleton";
 import { useLive } from "@/hooks/useLive";
 import { useNames } from "@/hooks/useNames";
-import { ApiError } from "@/lib/api";
+import { api as apiCall, ApiError } from "@/lib/api";
 import { CONTRACT_RECORD_URL } from "@/lib/env";
 import { listShipmentsByDriver, readAll } from "@/lib/near";
-import { arrivalCode, relay } from "@/lib/relay";
+import { relay } from "@/lib/relay";
+import { notify } from "@/lib/notify";
+import type { ArrivalCodeResponse } from "@waybil/shared";
 import { statusChip } from "@/lib/status";
+import { cn } from "@/lib/cn";
 
 /*
  * The driver screens on testnet (#85). Pickup is signed by the phone's device key and
@@ -44,14 +64,15 @@ export function LiveDriver({
   account: string;
   shipmentId?: number;
 }) {
-  /* An open trip reads again every 6 seconds, so the payout shows up on its own. */
+  /* Trips read again every 10 seconds while the tab is in view, so a new trip, a pickup and
+   * the payout show up on their own. */
   const { data, failed, reload } = useLive(
     () =>
       readAll((from, limit) => listShipmentsByDriver(account, { from, limit })).then((list) =>
         list.sort((a, b) => b.id - a.id),
       ),
-    account,
-    view === "trip" ? 6000 : 0,
+    qk.driverTrips(account),
+    10000,
   );
   const current =
     view === "payouts" ? "/driver/payouts" : view === "companies" ? "/driver/companies" : "/driver";
@@ -67,16 +88,16 @@ export function LiveDriver({
               Try again
             </Button>
           </Panel>
+        ) : !data && view === "trip" ? (
+          /* A trip page loads in its own shape, the map beside the cards. */
+          <SkeletonTripPage label="Loading this trip." />
         ) : !data ? (
-          <Panel className="grid min-h-240 place-content-center">
-            <p className="text-label text-ds-muted">Loading your trips.</p>
-          </Panel>
+          <SkeletonGroup label="Loading your trips." className="flex flex-col gap-24">
+            <SkeletonHeader />
+            <SkeletonListPanel rows={4} />
+          </SkeletonGroup>
         ) : view === "trip" ? (
-          <Trip
-            account={account}
-            shipment={data.find((s) => s.id === shipmentId)}
-            reload={reload}
-          />
+          <Trip account={account} shipment={data.find((s) => s.id === shipmentId)} />
         ) : view === "payouts" ? (
           <Payouts trips={data} />
         ) : view === "companies" ? (
@@ -104,7 +125,7 @@ function Row({ s }: { s: Shipment }) {
       <span className="min-w-0 flex-1">
         <span className="block text-body font-medium">Trip #{s.id}</span>
         <span className="mt-4 block text-[12.5px] break-all text-ds-muted">
-          {s.qty} {s.unit} · {name(s.shipper)}
+          {s.qty} {s.unit} for {name(s.shipper)}
         </span>
       </span>
       <span className="flex flex-col items-end gap-6">
@@ -117,24 +138,24 @@ function Row({ s }: { s: Shipment }) {
 
 /* K1. */
 function Trips({ trips }: { trips: Shipment[] }) {
+  const { profile } = useAuth();
   const open = trips.filter((s) => ["Approved", "PickedUp", "Reported"].includes(s.status));
   const done = trips.filter((s) => !open.includes(s));
   return (
     <>
       <header>
-        <h1 className="text-title">Trips</h1>
+        <Greeting name={profile?.name || undefined} />
         <p className="mt-6 text-label text-ds-muted">
           Confirm pickup, show your QR at the destination, and get paid on arrival.
         </p>
       </header>
       {trips.length === 0 ? (
-        <Panel className="grid min-h-320 place-content-center gap-12 text-center">
-          <img src="/illustrations/driver.svg" alt="" className="mx-auto h-96" />
-          <h2 className="text-heading">No trips yet</h2>
-          <p className="mx-auto max-w-340 text-label text-ds-muted">
-            When a company sends you a trip, it shows up here.
-          </p>
-        </Panel>
+        <FillEmpty
+          image="/illustrations/driver.svg"
+          title="No trips yet"
+          body="When a company sends you a trip, it shows up here."
+          className={FILL_UNDER_HEADER}
+        />
       ) : (
         <>
           <Panel title="Open trips" gap={4}>
@@ -157,20 +178,45 @@ function Trips({ trips }: { trips: Shipment[] }) {
 }
 
 /* K2 for one trip. */
-function Trip({
-  account,
-  shipment: s,
-  reload,
-}: {
-  account: string;
-  shipment: Shipment | undefined;
-  reload: () => void;
-}) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [tx, setTx] = useState<string | null>(null);
+function Trip({ account, shipment: s }: { account: string; shipment: Shipment | undefined }) {
+  const invalidate = useInvalidate();
+  /* The relayer records the pickup. Its retries live in relay(). The result is a toast. */
+  const confirm = useMutation({
+    mutationFn: (id: number) => relay(account, "confirm_pickup", { id }),
+    onSuccess: (result) => {
+      if (result.status === "failed")
+        notify.error("Pickup not recorded", { meta: "Try again in a moment.", tx: result.txHash });
+      else
+        notify.success("Pickup recorded", {
+          meta: "Show the QR code at the destination.",
+          tx: result.txHash,
+        });
+      /* The trip is on the road now, so its status and its truck on the map change. */
+      void invalidate(qk.driverTrips(account), qk.allTrips());
+    },
+    onError: (e) =>
+      notify.error("Pickup not sent", {
+        meta: e instanceof ApiError ? e.message : "Check your signal and try again.",
+      }),
+  });
+  const busy = confirm.isPending;
   const [copied, setCopied] = useState(false);
   const name = useNames([s?.shipper]);
+  const { trips, data: tripData } = useTrips(s ? [s.id] : []);
+  const trip = trips[0];
+  const sharing = useShareLocation(s?.id, s?.status === "PickedUp");
+  /* The random code the warehouse needs, from the backend, once the goods are on the truck. */
+  const arrival = useLive(
+    () => apiCall<ArrivalCodeResponse>(`/trips/${s!.id}/code`),
+    s?.status === "PickedUp" ? qk.arrivalCode(s.id) : null,
+  );
+  const code = arrival.data?.code ?? null;
+  /* A company with no name set would keep the page waiting, so stop waiting after 3 seconds. */
+  const [waited, setWaited] = useState(false);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setWaited(true), 3000);
+    return () => window.clearTimeout(timer);
+  }, []);
   const back = <BackLink href="/driver">Trips</BackLink>;
   if (!s)
     return (
@@ -183,114 +229,260 @@ function Trip({
       </>
     );
 
-  async function pickup(id: number) {
-    setBusy(true);
-    setError(null);
-    try {
-      const result = await relay(account, "confirm_pickup", { id });
-      setTx(result.txHash);
-      if (result.status === "failed") setError("The pickup was not recorded. Try again.");
-      reload();
-    } catch (e) {
-      setError(
-        e instanceof ApiError ? e.message : "The pickup could not be sent. Check your signal.",
-      );
-    } finally {
-      setBusy(false);
-    }
+  function pickup(id: number) {
+    confirm.mutate(id);
   }
-  const code = arrivalCode(s.id);
+  /* The page shows once the trip and the company name are in, so nothing changes under the reader. */
+  if (!tripData || (name(s.shipper) === s.shipper && !waited))
+    return (
+      <>
+        {back}
+        <SkeletonTripPage label="Loading this trip." />
+      </>
+    );
   return (
     <>
       {back}
       <header className="flex flex-wrap items-center justify-between gap-12">
         <div className="min-w-0">
-          <h1 className="text-title">Trip #{s.id}</h1>
+          {/* The title waits for the trip and the company name, so it never flashes raw ids. */}
+          <h1 className="text-title break-words">
+            {trip ? `${trip.pickup.name} to ${trip.destination.name}` : `Trip #${s.id}`}
+          </h1>
           <p className="mt-6 text-label break-all text-ds-muted">
-            {s.qty} {s.unit} · {name(s.shipper)}
+            Trip #{s.id} for {name(s.shipper)}.
           </p>
         </div>
         <StatusPill status={statusChip(s)} />
       </header>
-      {tx && (
-        <Panel className="gap-8">
-          <p className="text-label">Recorded.</p>
-          <ProofLink tx={tx} />
-        </Panel>
-      )}
-      {s.status === "Approved" && (
-        <Panel title="Waiting for pickup">
-          <p className="text-label text-ds-muted">
-            Load the goods, then confirm the pickup. You get {formatUsdc(BigInt(s.advance))} USDC
-            the moment the warehouse confirms the delivery.
-          </p>
-          {error && (
-            <p role="alert" className="rounded-row bg-ds-danger-result p-14 text-label">
-              {error}
-            </p>
+      {/* The map on the left, at the full height of the cards on the right. */}
+      {/* Both columns fill the window and end level, the last card stretching to the map. */}
+      <div className="grid gap-16 lg:min-h-[calc(100dvh-300px)] lg:grid-cols-[minmax(0,1fr)_400px] lg:gap-24">
+        <div className="flex flex-col gap-10">
+          {trip ? (
+            <>
+              <TripMap
+                trip={trip}
+                status={s.status}
+                caption={false}
+                className="h-300 rounded-card lg:h-auto lg:min-h-480 lg:flex-1"
+              />
+              <p className="px-4 text-caption text-ds-muted">
+                {s.status === "PickedUp"
+                  ? sharingNote(sharing.state)
+                  : `${trip.pickup.name} to ${trip.destination.name} is ${Math.round(trip.distanceKm)} km by road${trip.durationMin != null ? `, about ${duration(trip.durationMin)} of driving` : ""}.`}
+              </p>
+            </>
+          ) : (
+            <div className="grid h-200 place-items-center rounded-card bg-ds-bg p-24 text-center text-label text-ds-muted">
+              This trip has no map yet. The company adds the pickup point.
+            </div>
           )}
-          <Button
-            className="h-52 w-full justify-between"
-            icon={<Package size={17} />}
-            loading={busy}
-            loadingLabel="Recording"
-            onClick={() => void pickup(s.id)}
-          >
-            Confirm pickup
-          </Button>
-        </Panel>
-      )}
-      {s.status === "PickedUp" && (
-        <Panel title="Show this at the destination">
-          <p className="text-label text-ds-muted">
-            The warehouse scans this QR or types the code to confirm the delivery.
-          </p>
-          <DeliveryQr code={code} />
-          <p className="text-center font-mono text-[28px] tracking-[0.2em]">{code}</p>
-          <Button
-            variant="secondary"
-            icon={<Copy size={17} />}
-            onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(code);
-                setCopied(true);
-              } catch {
-                setCopied(false);
-              }
-            }}
-          >
-            {copied ? "Code copied" : "Copy the code"}
-          </Button>
-        </Panel>
-      )}
-      {s.status === "Reported" && (
-        <Panel title="Problem reported">
-          <p className="text-label">
-            The warehouse found a problem with the goods. Your payout waits until the company
-            settles it.
-          </p>
-        </Panel>
-      )}
-      {["Paid", "Repaid", "CoveredByReserve"].includes(s.status) && (
-        <Panel title="You got paid">
-          <Money amount={s.advance} className="text-amount" />
-          <p className="text-label text-ds-muted">Paid {day(s.paid_at)} to your account.</p>
-        </Panel>
-      )}
-      {s.status === "Cancelled" && (
-        <Panel title="Trip cancelled">
-          <p className="text-label">The company cancelled this trip. Don’t pick up the goods.</p>
-        </Panel>
-      )}
-      <a
-        className="link focus-ring inline-flex w-fit items-center gap-4 text-[14px] font-medium"
-        href={CONTRACT_RECORD_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        See the record on NearBlocks ↗
-      </a>
+        </div>
+        <div className="flex flex-col gap-16">
+          {s.status === "Approved" && (
+            <Panel title="Waiting for pickup">
+              <p className="text-label text-ds-muted">Load the goods, then confirm the pickup.</p>
+              {trip && (
+                <ButtonLink
+                  href={directionsUrl(trip.pickup.lat, trip.pickup.lng)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="secondary"
+                  icon={<NavigationArrow size={17} />}
+                  className="h-52 w-full justify-between"
+                >
+                  Directions to the pickup
+                </ButtonLink>
+              )}
+              <Button
+                className="h-52 w-full justify-between"
+                icon={<Package size={17} />}
+                loading={busy}
+                loadingLabel="Recording"
+                onClick={() => pickup(s.id)}
+              >
+                Confirm pickup
+              </Button>
+            </Panel>
+          )}
+          {s.status === "PickedUp" && (
+            <Panel title="Show this at the destination">
+              <p className="text-label text-ds-muted">
+                The warehouse scans this QR or types the code to confirm the delivery.
+              </p>
+              {code ? (
+                <>
+                  <DeliveryQr code={code} />
+                  <p className="text-center font-mono text-[28px] tracking-[0.2em]">{code}</p>
+                </>
+              ) : arrival.failed ? (
+                <p role="alert" className="rounded-row bg-ds-danger-result p-14 text-label">
+                  The code could not load. Check your signal and open this trip again.
+                </p>
+              ) : (
+                <Skeleton className="mx-auto h-260 w-220 rounded-row" />
+              )}
+              <Button
+                variant="secondary"
+                icon={<Copy size={17} />}
+                className="w-full justify-between"
+                disabled={!code}
+                onClick={async () => {
+                  if (!code) return;
+                  try {
+                    await navigator.clipboard.writeText(code);
+                    setCopied(true);
+                  } catch {
+                    setCopied(false);
+                  }
+                }}
+              >
+                {copied ? "Code copied" : "Copy the code"}
+              </Button>
+              {trip && (
+                <ButtonLink
+                  href={directionsUrl(trip.destination.lat, trip.destination.lng)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="secondary"
+                  icon={<NavigationArrow size={17} />}
+                  className="w-full justify-between"
+                >
+                  Directions to the destination
+                </ButtonLink>
+              )}
+            </Panel>
+          )}
+          {s.status === "Reported" && (
+            <Panel title="Problem reported">
+              <p className="text-label">
+                The warehouse found a problem with the goods. Your payout waits until the company
+                settles it.
+              </p>
+            </Panel>
+          )}
+          {s.status === "Cancelled" && (
+            <Panel title="Trip cancelled">
+              <p className="text-label">
+                The company cancelled this trip. Don’t pick up the goods.
+              </p>
+            </Panel>
+          )}
+          <PayCard
+            amount={s.advance}
+            paid={["Paid", "Repaid", "CoveredByReserve"].includes(s.status)}
+            paidOn={s.paid_at ? day(s.paid_at) : ""}
+            destination={trip?.destination.name ?? "the warehouse"}
+          />
+          <Panel title="Progress">
+            <TimelineRail>
+              {driverSteps(s, trip?.destination.name ?? "the warehouse").map((step) => (
+                <TimelineStep key={step.title} {...step} />
+              ))}
+            </TimelineRail>
+          </Panel>
+          <Panel title="Trip" className="lg:flex-1">
+            <div className="flex flex-col gap-12">
+              <Fact label="Company">{name(s.shipper)}</Fact>
+              <Fact label="Pickup">{trip?.pickup.name ?? "Not set"}</Fact>
+              <Fact label="Drop-off">{trip?.destination.name ?? "Not set"}</Fact>
+              <Fact label="Cargo">
+                {s.qty} {s.unit}
+              </Fact>
+            </div>
+            <a
+              className="link focus-ring mt-auto inline-flex w-fit items-center gap-4 text-caption"
+              href={CONTRACT_RECORD_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              See the record on NearBlocks ↗
+            </a>
+          </Panel>
+        </div>
+      </div>
     </>
+  );
+}
+
+/* The driver's side of the journey, done or still to come. The first open step is next. */
+function driverSteps(s: Shipment, destination: string) {
+  const steps = [
+    { title: "Trip assigned", at: s.approved_at },
+    { title: "You picked it up", at: s.picked_up_at },
+    { title: `Arrived at ${destination}`, at: s.arrived_at },
+    { title: "You got paid", at: s.paid_at },
+  ];
+  const next = steps.findIndex((step) => !step.at);
+  return steps.map((step, i) => ({
+    title: step.title,
+    state:
+      s.status === "Cancelled" && !step.at
+        ? ("next" as const)
+        : s.status === "Reported" && i === 3
+          ? ("paused" as const)
+          : step.at
+            ? ("done" as const)
+            : i === next
+              ? ("current" as const)
+              : ("next" as const),
+    time: step.at
+      ? day(step.at)
+      : s.status === "Cancelled"
+        ? "Cancelled."
+        : s.status === "Reported" && i === 3
+          ? "Waiting for the report to be settled."
+          : i === next
+            ? "Happening next."
+            : "Still to come.",
+  }));
+}
+
+/* What the driver gets: dark with a large amount until paid, then plain with the day it landed. */
+function PayCard({
+  amount,
+  paid,
+  paidOn,
+  destination,
+}: {
+  amount: string;
+  paid: boolean;
+  paidOn: string;
+  destination: string;
+}) {
+  return (
+    <section
+      className={cn(
+        "flex flex-col gap-8 rounded-card p-24",
+        paid ? "bg-ds-bg" : "bg-ds-ink text-ds-bg",
+      )}
+    >
+      <span
+        className={cn(
+          "w-fit rounded-full px-10 py-2 text-[12px] font-semibold",
+          paid ? "bg-ds-success-soft text-ds-success" : "bg-ds-brand text-ds-ink",
+        )}
+      >
+        {paid ? "You got paid" : "You get on arrival"}
+      </span>
+      <p className="text-[32px] leading-[1.15] font-semibold">{formatUsdc(BigInt(amount))} USDC</p>
+      <p className={cn("text-label", paid ? "text-ds-muted" : "text-ds-bg/70")}>
+        {paid
+          ? `Paid ${paidOn} to your account.`
+          : `Paid the moment ${destination} confirms the delivery.`}
+      </p>
+    </section>
+  );
+}
+
+/* One trip fact, the label on the left and the value on the right. */
+function Fact({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex justify-between gap-12 text-label">
+      <span className="text-ds-muted">{label}</span>
+      <span className="text-right">{children}</span>
+    </div>
   );
 }
 
@@ -305,32 +497,37 @@ function Payouts({ trips }: { trips: Shipment[] }) {
         <h1 className="text-title">Payouts</h1>
         <p className="mt-6 text-label text-ds-muted">Money you got the moment goods arrived.</p>
       </header>
-      <Panel title="Total paid">
-        <Money amount={String(total)} className="text-amount" />
-      </Panel>
-      <Panel gap={4}>
-        {paid.length === 0 ? (
-          <p className="py-12 text-label text-ds-muted">
-            No payouts yet. You get paid when a warehouse confirms your delivery.
-          </p>
-        ) : (
-          paid.map((s) => (
-            <Link
-              key={s.id}
-              href={`/driver/trips/${s.id}`}
-              className="tap focus-ring -mx-12 flex items-center justify-between gap-12 rounded-row px-12 py-12 hover:bg-ds-canvas"
-            >
-              <span className="min-w-0">
-                <span className="block text-label">Trip #{s.id}</span>
-                <span className="block text-caption break-all text-ds-muted">
-                  {day(s.paid_at)} · {name(s.shipper)}
+      {paid.length === 0 ? (
+        <FillEmpty
+          icon={<ArrowDown size={26} />}
+          title="No payouts yet"
+          body="You get paid the moment a warehouse confirms your delivery."
+          className={FILL_UNDER_HEADER}
+        />
+      ) : (
+        <>
+          <Panel title="Total paid">
+            <Money amount={String(total)} className="text-amount" />
+          </Panel>
+          <Panel gap={4}>
+            {paid.map((s) => (
+              <Link
+                key={s.id}
+                href={`/driver/trips/${s.id}`}
+                className="tap focus-ring -mx-12 flex items-center justify-between gap-12 rounded-row px-12 py-12 hover:bg-ds-canvas"
+              >
+                <span className="min-w-0">
+                  <span className="block text-label">Trip #{s.id}</span>
+                  <span className="block text-caption break-all text-ds-muted">
+                    Paid {day(s.paid_at)} for {name(s.shipper)}
+                  </span>
                 </span>
-              </span>
-              <Money amount={s.advance} className="shrink-0 text-label" />
-            </Link>
-          ))
-        )}
-      </Panel>
+                <Money amount={s.advance} className="shrink-0 text-label" />
+              </Link>
+            ))}
+          </Panel>
+        </>
+      )}
     </>
   );
 }
@@ -345,22 +542,25 @@ function Companies({ trips }: { trips: Shipment[] }) {
         <h1 className="text-title">Companies</h1>
         <p className="mt-6 text-label text-ds-muted">The companies that send you trips.</p>
       </header>
-      <Panel gap={4}>
-        {companies.length === 0 ? (
-          <p className="py-12 text-label text-ds-muted">
-            No company has sent you a trip yet. Accept an invite link to work with one.
-          </p>
-        ) : (
-          companies.map((c) => (
+      {companies.length === 0 ? (
+        <FillEmpty
+          icon={<Buildings size={26} />}
+          title="No companies yet"
+          body="Accept an invite link from a company to start getting trips from it."
+          className={FILL_UNDER_HEADER}
+        />
+      ) : (
+        <Panel gap={4}>
+          {companies.map((c) => (
             <div key={c} className="py-12">
               <p className="text-label break-all">{name(c)}</p>
               <p className="text-caption text-ds-muted">
                 {trips.filter((s) => s.shipper === c).length} trips
               </p>
             </div>
-          ))
-        )}
-      </Panel>
+          ))}
+        </Panel>
+      )}
     </>
   );
 }

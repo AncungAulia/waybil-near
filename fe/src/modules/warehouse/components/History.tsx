@@ -40,7 +40,7 @@ export function History() {
               <span>
                 <h2 className="text-body">{from} to Harbor City</h2>
                 <p className="mt-4 text-caption text-ds-muted">
-                  #{id} · {driver} · {cargo}
+                  {driver} brought {cargo} on #{id}.
                 </p>
               </span>
             </div>

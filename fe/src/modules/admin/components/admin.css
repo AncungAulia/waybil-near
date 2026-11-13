@@ -375,10 +375,17 @@
   .admin-ui .admin-fact > span:last-child {
     text-align: left;
   }
+  /* The badge stays top right. The title gives way with an ellipsis, so they never overlap. */
   .admin-ui .admin-assessment > div:first-child {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 10px;
+    gap: 12px;
+  }
+  .admin-ui .admin-assessment > div:first-child > span {
+    min-width: 0;
+  }
+  .admin-ui .admin-assessment > div:first-child h2 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .admin-ui .admin-application-decision {
     display: none;

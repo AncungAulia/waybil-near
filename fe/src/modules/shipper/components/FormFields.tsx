@@ -55,7 +55,7 @@ export function FieldButton({
         type="button"
         disabled={disabled}
         onClick={onClick}
-        /* Read as the label and the chosen value, for example "Driver, Sam · NWF-204". */
+        /* Read as the label and the chosen value, for example "Driver, Sam, truck NWF-204". */
         aria-labelledby={`${id}-label ${id}-value`}
         aria-describedby={hint ? `${id}-hint` : undefined}
         aria-expanded={onClick ? open : undefined}

@@ -102,7 +102,7 @@ export function ShipperHome({
             : `Due in ${nextDays} ${nextDays === 1 ? "day" : "days"}`}
       </p>
       <p className={cn("text-[14px]", late ? "text-ds-ink-2" : "text-ds-on-night")}>
-        Bill for #{next.shipment.id} · Eastport to {next.city}
+        Bill for #{next.shipment.id} from Eastport to {next.city}
       </p>
       <Money
         amount={next.shipment.bill}
@@ -123,7 +123,7 @@ export function ShipperHome({
         <div className="flex justify-between gap-12">
           <dt>Delivered</dt>
           <dd className={cn("font-medium", !late && "text-ds-bg")}>
-            {DELIVERED[next.shipment.id]} · {next.city}
+            {DELIVERED[next.shipment.id]} in {next.city}
           </dd>
         </div>
         <div className="flex justify-between gap-12">

@@ -1,9 +1,13 @@
 "use client";
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useInvalidate } from "@/hooks/useInvalidate";
+import { qk } from "@/lib/queryKeys";
 import { formatUsdc, parseUsdc } from "@waybil/shared";
 import { RoleShell } from "@/components/layout/RoleShell";
 import { Panel } from "@/components/layout/Panel";
 import { Button } from "@/components/ui/Button";
+import { SkeletonGroup, SkeletonHeader, SkeletonListPanel } from "@/components/elements/Skeleton";
 import { LIVE, USDC_CONTRACT, WAYBIL_CONTRACT } from "@/lib/env";
 import { callContract, ensureUsdcStorage } from "@/lib/wallet";
 import { useAuth } from "@/providers/AuthProvider";
@@ -47,13 +51,51 @@ export function InvestorScreen({
     [filter, setFilter] = useState("All"),
     [risks, setRisks] = useState(false),
     [receipt, setReceipt] = useState<TransferReceipt | null>(null),
-    [pending, setPending] = useState(false),
     [txError, setTxError] = useState<string | null>(null);
   const saved = useDemoPool();
   /* The live path reads testnet for the signed-in investor. The gallery keeps its fixtures. */
   const { profile } = useAuth();
   const live = LIVE && !preview && profile?.role === "investor" ? profile : null;
   const { data, failed, refresh } = useLivePool(live?.accountId);
+  const invalidate = useInvalidate();
+  /* Moving money changes the pool, the investor's history and the wallet balance. */
+  const moved = (accountId: string) =>
+    invalidate(qk.pool(accountId), qk.poolHistory(accountId), qk.usdc(accountId));
+  const sendMoney = useMutation({
+    mutationFn: ({
+      accountId,
+      deposit,
+      units,
+    }: {
+      accountId: string;
+      deposit: boolean;
+      units: bigint;
+      paid: bigint;
+      queued: bigint;
+    }) =>
+      deposit
+        ? ensureUsdcStorage(accountId).then(() =>
+            callContract(
+              USDC_CONTRACT,
+              "ft_transfer_call",
+              { receiver_id: WAYBIL_CONTRACT, amount: String(units), msg: "deposit" },
+              { deposit: "1", gas: TX_GAS },
+            ),
+          )
+        : callContract(WAYBIL_CONTRACT, "withdraw", { amount: String(units) }, { gas: TX_GAS }),
+    onSuccess: (tx, { accountId, deposit, units, paid, queued }) => {
+      setReceipt({ amount: String(units), paid: String(paid), queued: String(queued), tx });
+      void moved(accountId);
+      setState(deposit ? "I2.4" : "I2.7");
+    },
+    onError: (failure) => setTxError(wallError(failure)),
+  });
+  const pending = sendMoney.isPending;
+  const payOut = useMutation({
+    mutationFn: () => callContract(WAYBIL_CONTRACT, "process_queue", {}, { gas: TX_GAS }),
+    onSuccess: () => (live ? moved(live.accountId) : undefined),
+    onError: (failure) => setTxError(wallError(failure)),
+  });
   const fixture = INVESTOR_FIXTURES[initialState];
   const [previewBalance, setPreviewBalance] = useState<DemoPoolBalance | null>(null);
   const balance = live
@@ -109,41 +151,12 @@ export function InvestorScreen({
     preview && !receipt ? (deposit ? "26000000000" : "24000000000") : balance.total;
   const settledShare =
     Number(settledTotal) > 0 ? Math.round((Number(settledValue) / Number(settledTotal)) * 100) : 0;
-  async function submitLive(accountId: string) {
+  function submitLive(accountId: string) {
     setTxError(null);
-    setPending(true);
-    try {
-      const tx = deposit
-        ? await ensureUsdcStorage(accountId).then(() =>
-            callContract(
-              USDC_CONTRACT,
-              "ft_transfer_call",
-              { receiver_id: WAYBIL_CONTRACT, amount: String(units), msg: "deposit" },
-              { deposit: "1", gas: TX_GAS },
-            ),
-          )
-        : await callContract(
-            WAYBIL_CONTRACT,
-            "withdraw",
-            { amount: String(units) },
-            { gas: TX_GAS },
-          );
-      setReceipt({ amount: String(units), paid: String(paid), queued: String(queued), tx });
-      refresh();
-      setState(deposit ? "I2.4" : "I2.7");
-    } catch (failure) {
-      setTxError(wallError(failure));
-    } finally {
-      setPending(false);
-    }
+    sendMoney.mutate({ accountId, deposit, units, paid, queued });
   }
-  async function payQueue() {
-    try {
-      await callContract(WAYBIL_CONTRACT, "process_queue", {}, { gas: TX_GAS });
-      refresh();
-    } catch (failure) {
-      setTxError(wallError(failure));
-    }
+  function payQueue() {
+    payOut.mutate();
   }
   function submit() {
     if (units <= 0n || error) return;
@@ -162,7 +175,9 @@ export function InvestorScreen({
           : BigInt(balance.cash)
         : ceiling;
     const value = (base * BigInt(percent)) / 100n;
-    setAmount(`${value / 1000000n}.${(value % 1000000n).toString().padStart(6, "0")}`);
+    /* Whole units and only the decimals it needs, so 50% of 1,000 reads "500". */
+    const cents = (value % 1000000n).toString().padStart(6, "0").replace(/0+$/, "");
+    setAmount(cents ? `${value / 1000000n}.${cents}` : `${value / 1000000n}`);
   }
   const close = () => {
     setTxError(null);
@@ -173,6 +188,7 @@ export function InvestorScreen({
     <PoolHome
       liveAccount={live ? live.accountId : null}
       data={data}
+      failed={failed}
       balance={balance}
       firstVisit={firstVisit}
       name={name}
@@ -188,7 +204,7 @@ export function InvestorScreen({
         setAmount("1000");
         setState(busy ? "I2.6" : "I2.5");
       }}
-      onPayQueue={() => void payQueue()}
+      onPayQueue={payQueue}
     />
   );
   return (
@@ -196,17 +212,20 @@ export function InvestorScreen({
       <div className="flex flex-col gap-24">
         {!state.startsWith("I3") ? (
           home
-        ) : live && !data ? (
+        ) : live && !data && failed ? (
           <Panel className="grid min-h-240 place-content-center text-center">
             <p className="text-label text-ds-muted">
-              {failed ? "We could not load the pool. Try again in a moment." : "Loading the pool."}
+              We could not load the pool. Try again in a moment.
             </p>
-            {failed && (
-              <Button variant="secondary" className="mx-auto mt-12" onClick={refresh}>
-                Try again
-              </Button>
-            )}
+            <Button variant="secondary" className="mx-auto mt-12" onClick={refresh}>
+              Try again
+            </Button>
           </Panel>
+        ) : live && !data ? (
+          <SkeletonGroup label="Loading the pool." className="flex flex-col gap-24">
+            <SkeletonHeader />
+            <SkeletonListPanel rows={5} title={false} className="px-20 py-8" />
+          </SkeletonGroup>
         ) : live && data && state === "I3.3" ? (
           <LiveHistory accountId={live.accountId} queue={data.queue} />
         ) : state === "I3.3" ? (
@@ -236,7 +255,8 @@ export function InvestorScreen({
           </p>
         )}
       </div>
-      {transfer && (
+      {/* The risks open in place of the transfer sheet, which comes back as it was on close. */}
+      {transfer && !risks && (
         <TransferSheet
           deposit={deposit}
           success={success}

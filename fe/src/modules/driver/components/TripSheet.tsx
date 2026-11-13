@@ -7,6 +7,7 @@ import {
   Warning,
   Wrench,
 } from "@phosphor-icons/react";
+import { Checkbox } from "@/components/ui/Checkbox";
 import { ActionSheet } from "@/components/layout/ActionSheet";
 import { Button, ButtonLink } from "@/components/ui/Button";
 import { DemoRecord } from "@/components/elements/DemoRecord";
@@ -69,15 +70,9 @@ export function TripSheet({
     >
       {state === "K2.2" ? (
         <>
-          <label className="flex items-center gap-12 rounded-row bg-ds-canvas p-16 text-label">
-            <input
-              type="checkbox"
-              checked={loaded}
-              onChange={(e) => setLoaded(e.target.checked)}
-              className="size-20 shrink-0 accent-ds-ink"
-            />
+          <Checkbox checked={loaded} onChange={setLoaded} className="rounded-row bg-ds-canvas p-16">
             All {westfield ? "60 boxes of oil" : "120 crates of coffee"} are loaded
-          </label>
+          </Checkbox>
           <div className="flex items-center gap-12 rounded-row bg-ds-canvas p-16">
             <span className="text-label">
               Share my location during this trip
@@ -130,7 +125,7 @@ export function TripSheet({
         </>
       ) : state === "K2.10" ? (
         <>
-          <p className="text-caption text-ds-muted">From Lena at Harbor Hub · Nov 12, 15:31</p>
+          <p className="text-caption text-ds-muted">Sent by Lena at Harbor Hub on Nov 12, 15:31.</p>
           <div className="grid grid-cols-3 gap-8">
             {report.photos.length
               ? report.photos.map((photo, i) => (

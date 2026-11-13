@@ -34,7 +34,7 @@ export function ReportSheet({
   return (
     <ActionSheet
       title="Problem report"
-      subtitle={`From ${receiver ? `${receiver} at ` : ""}${place} · Nov 12, 15:31`}
+      subtitle={`Sent by ${receiver ? `${receiver} at ` : ""}${place} on Nov 12, 15:31.`}
       appearance="shipment"
       wide
       className="gap-18 [&_h2]:text-[22px]"

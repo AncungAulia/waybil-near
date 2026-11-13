@@ -1,5 +1,8 @@
 "use client";
 import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { useInvalidate } from "@/hooks/useInvalidate";
+import { qk } from "@/lib/queryKeys";
 import {
   formatUsdc,
   type ApplicationListItem,
@@ -12,8 +15,9 @@ import { api } from "@/lib/api";
 import { listProposals } from "@/lib/near";
 import { WAYBIL_CONTRACT } from "@/lib/env";
 import { callContract } from "@/lib/wallet";
+import { notify } from "@/lib/notify";
 import { AdminActionFields } from "../AdminActionFields";
-import { asInput, day, failure, GAS, toUnits, type Done } from "./shared";
+import { asInput, day, failure, GAS, toUnits } from "./shared";
 
 const APPLICATION_REASONS: Record<string, ApplicationRejectionReason> = {
   "Documents do not match": "unclear_documents",
@@ -30,50 +34,63 @@ export function DecideSheet({
 }: {
   application: ApplicationListItem;
   onClose: () => void;
-  onDone: (done: Done) => void;
+  /** Called once the decision is sent. Its toast is already showing. */
+  onDone: () => void;
 }) {
   const suggested = a.review?.suggestedLimit ? BigInt(a.review.suggestedLimit) : null;
   const [rejection, setRejection] = useState(false);
   const [reason, setReason] = useState("");
   const [note, setNote] = useState("");
   const [limit, setLimit] = useState(suggested ? asInput(suggested) : "");
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const units = toUnits(limit);
   const invalidLimit = units <= 0n || units > 10000000000n;
+  const invalidate = useInvalidate();
 
-  async function submit() {
-    setBusy(true);
-    setError(null);
-    try {
-      if (rejection) {
-        await api(`/admin/applications/${a.id}/reject`, {
-          body: { reason: APPLICATION_REASONS[reason] ?? "other", note: note.trim() },
-        });
-        onDone({ text: `${a.company.name} was told why it was not approved.` });
-        return;
-      }
-      const tx = await callContract(
-        WAYBIL_CONTRACT,
-        "propose",
-        { kind: { StartShipper: { shipper: a.shipperId, limit: String(units) } } },
-        { gas: GAS },
-      );
-      /* `propose` returns the id, but the wallet only gives the hash, so find it by its shape. */
-      const proposal = (await listProposals(undefined, 20)).find(
-        (p) => "StartShipper" in p.kind && p.kind.StartShipper.shipper === a.shipperId,
-      );
-      if (proposal)
-        await api(`/admin/applications/${a.id}/proposal`, { body: { proposalId: proposal.id } });
-      onDone({
-        text: `You approved a ${formatUsdc(units)} USDC starting limit for ${a.company.name}. It goes live when one more team member approves it.`,
-        tx,
+  /* Rejects the application, or proposes its starting limit and links the proposal to it. */
+  async function decide(): Promise<{ title: string; meta: string; tx?: string }> {
+    if (rejection) {
+      await api(`/admin/applications/${a.id}/reject`, {
+        body: { reason: APPLICATION_REASONS[reason] ?? "other", note: note.trim() },
       });
-    } catch (e) {
-      setError(failure(e));
-    } finally {
-      setBusy(false);
+      return {
+        title: "Application rejected",
+        meta: `${a.company.name} was told why it was not approved.`,
+      };
     }
+    const tx = await callContract(
+      WAYBIL_CONTRACT,
+      "propose",
+      { kind: { StartShipper: { shipper: a.shipperId, limit: String(units) } } },
+      { gas: GAS },
+    );
+    /* `propose` returns the id, but the wallet only gives the hash, so find it by its shape. */
+    const proposal = (await listProposals(undefined, 20)).find(
+      (p) => "StartShipper" in p.kind && p.kind.StartShipper.shipper === a.shipperId,
+    );
+    if (proposal)
+      await api(`/admin/applications/${a.id}/proposal`, { body: { proposalId: proposal.id } });
+    return {
+      title: `${formatUsdc(units)} USDC limit proposed`,
+      meta: "It goes live when one more member approves it.",
+      tx,
+    };
+  }
+  const decision = useMutation({
+    mutationFn: decide,
+    onSuccess: ({ title, meta, tx }) => {
+      notify.success(title, { meta, tx });
+      /* Every team page can show this application or its proposal. */
+      void invalidate(qk.allAdmin());
+      onDone();
+    },
+    /* Errors stay in the open sheet, next to the button. */
+    onError: (e) => setError(failure(e)),
+  });
+  const busy = decision.isPending;
+  function submit() {
+    setError(null);
+    decision.mutate();
   }
 
   return (
@@ -94,7 +111,7 @@ export function DecideSheet({
         limit={limit}
         onLimit={setLimit}
         invalidLimit={invalidLimit}
-        subtitle={`Applied ${day(a.createdAt)} · ${a.company.trips} trips a month`}
+        subtitle={`They applied ${day(a.createdAt)} and ship ${a.company.trips} trips a month.`}
         hint={
           suggested
             ? `The assistant suggests ${formatUsdc(suggested)} USDC. You can change it.`
@@ -116,7 +133,7 @@ export function DecideSheet({
           disabled={rejection ? !reason : invalidLimit}
           loading={busy}
           loadingLabel={rejection ? "Sending" : "Waiting for wallet"}
-          onClick={() => void submit()}
+          onClick={submit}
         >
           {rejection ? "Reject" : "Approve"}
         </Button>

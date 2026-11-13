@@ -20,8 +20,7 @@ export interface NavLink {
 /*
  * Once the page scrolls, the pill gets a little shorter and lifts off the content. It is a
  * layout change seen many times a day, so it is small and quick: 72 to 60 px over 200 ms
- * with the ease-in-out token, and no movement at all with reduced motion. Two thresholds
- * stop it from flickering when the page rests near the top.
+ * with the ease-in-out token, and no movement at all with reduced motion. Two thresholds stop it from flickering when the page rests near the top.
  */
 function useScrolled(on: boolean) {
   const [scrolled, setScrolled] = useState(false);
@@ -57,7 +56,7 @@ export function Navbar({
       className={cn(
         "flex h-72 w-full items-center justify-between rounded-full border border-ds-line bg-ds-bg px-20",
         sticky &&
-          "bg-ds-bg/80 backdrop-blur-xl backdrop-saturate-150 transition-[height,box-shadow] duration-200 ease-in-out motion-reduce:transition-none",
+          "transition-[height,box-shadow] duration-200 ease-in-out motion-reduce:transition-none",
         compact && "h-60 shadow-float",
         !sticky && className,
       )}
@@ -98,7 +97,17 @@ export function Navbar({
   if (!sticky) return nav;
   /*
    * The sticky box keeps the full 72 px, so the page under it never jumps. Only the pill
-   * inside it gets shorter.
+   * inside it gets shorter. Behind the pill the page colour is solid at the top and fades out
+   * just below it, so content scrolling up disappears softly instead of showing around the
+   * pill's round ends or being cut by a hard line.
    */
-  return <div className={cn("sticky top-16 z-30 h-72", className)}>{nav}</div>;
+  return (
+    <div className={cn("sticky top-0 z-30 -mt-20 h-92 pt-20", className)}>
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -inset-x-32 top-0 -bottom-16 -z-10 lg:-inset-x-40 bg-linear-to-b from-ds-canvas from-60% to-transparent"
+      />
+      {nav}
+    </div>
+  );
 }

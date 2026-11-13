@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { cn } from "@/lib/cn";
 import { CaretDown, CaretUpDown, Check, MagnifyingGlass } from "@phosphor-icons/react";
 
@@ -14,6 +14,12 @@ import { CaretDown, CaretUpDown, Check, MagnifyingGlass } from "@phosphor-icons/
  */
 /** Long lists (cities) draw this many matches. Typing narrows the rest. */
 const MAX_SHOWN = 300;
+/* About the height of the open list (search box plus the scrolling rows). */
+const LIST_ROOM = 360;
+/* The search box, the gaps around the list and a little air from the edge. */
+const SEARCH_ROOM = 84;
+/* About one row of the list, with its detail line. */
+const ROW = 52;
 type Option = { value: string; label: string; flag?: string; detail?: string };
 /** A flag is an image path, or an emoji drawn from the ISO2 code when no image exists. */
 function Flag({ flag }: { flag: string }) {
@@ -21,6 +27,8 @@ function Flag({ flag }: { flag: string }) {
     <img
       src={flag}
       alt=""
+      loading="lazy"
+      decoding="async"
       width={22}
       height={15}
       className="h-15 w-22 shrink-0 rounded-[3px] object-cover ring-1 ring-ds-ink/10"
@@ -87,6 +95,35 @@ export function SearchPicker({
       focusSearch.current = false;
       input.current?.focus();
     }
+  }, [open]);
+  /*
+   * The list opens upward when there is too little room below, inside the nearest box that
+   * clips its content (a sheet that scrolls, for example) or the window. A sheet can't let the
+   * list spill out, because its focus trap would close the sheet or block the search box.
+   */
+  const [up, setUp] = useState(false);
+  /* The rows get only the room there is, so the search box always stays in view. */
+  const [room, setRoom] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    if (!open || !trigger.current) return;
+    const rect = trigger.current.getBoundingClientRect();
+    let top = 0;
+    let bottom = window.innerHeight;
+    for (let el = ref.current?.parentElement; el; el = el.parentElement) {
+      if (getComputedStyle(el).overflowY === "visible") continue;
+      const box = el.getBoundingClientRect();
+      top = Math.max(top, box.top);
+      bottom = Math.min(bottom, box.bottom);
+      break;
+    }
+    const below = bottom - rect.bottom;
+    const above = rect.top - top;
+    /* A short list needs only its own rows. Only a list that can't fit below opens upward. */
+    const need = Math.min(LIST_ROOM, SEARCH_ROOM + Math.max(1, options.length) * ROW);
+    const flip = below < need && above > below;
+    setUp(flip);
+    /* The space in that direction, less the search box, the gaps and a little air. */
+    setRoom(Math.max(120, Math.floor((flip ? above : below) - SEARCH_ROOM)));
   }, [open]);
   const needle = query.trim().toLowerCase();
   const matches = options.filter((o) =>
@@ -184,6 +221,7 @@ export function SearchPicker({
           className={cn(
             `absolute top-full left-0 z-30 mt-4 rounded-row border border-ds-line bg-ds-bg p-8 shadow-lg ${label === "Phone code" ? "w-280 max-w-[calc(100vw-64px)] md:left-1/2 md:-translate-x-1/2" : "right-0"}`,
             appearance === "company" && "mt-8 rounded-[18px] border-ds-line-strong p-6",
+            up && "top-auto bottom-full mt-0 mb-8",
             appearance === "company" &&
               label === "Phone code" &&
               "w-320 md:left-0 md:translate-x-0",
@@ -247,6 +285,11 @@ export function SearchPicker({
             role="listbox"
             aria-label={label}
             className={cn("max-h-220 overflow-y-auto", appearance === "company" && "max-h-300")}
+            style={
+              room
+                ? { maxHeight: `${Math.min(room, appearance === "company" ? 300 : 220)}px` }
+                : undefined
+            }
           >
             {filtered.length ? (
               filtered.map((o, i) => (

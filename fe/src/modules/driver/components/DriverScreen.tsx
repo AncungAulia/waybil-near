@@ -1,5 +1,6 @@
 "use client";
 
+import { greeting } from "@/components/elements/Greeting";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { WifiSlash } from "@phosphor-icons/react";
@@ -121,7 +122,7 @@ export function DriverScreen({
     state === "K1.2"
       ? "You got paid"
       : state.startsWith("K1")
-        ? "Hi, Sam"
+        ? `${greeting()}, Sam`
         : state.startsWith("K3")
           ? ["K3.1", "K3.2"].includes(state)
             ? "Payouts"
@@ -160,10 +161,12 @@ export function DriverScreen({
       )}
       <div className="mb-20 flex flex-wrap items-end justify-between gap-12 md:mb-24">
         <div>
-          <h1 className="text-title md:text-amount">{title}</h1>
+          <h1 suppressHydrationWarning className="text-title break-words md:text-amount">
+            {title}
+          </h1>
           <p className="mt-4 text-label text-ds-muted">
             {detail
-              ? `#${shipmentId} · ${trip.company}`
+              ? `#${shipmentId} for ${trip.company}`
               : state.startsWith("K1")
                 ? state === "K1.2"
                   ? "The money is already in your account"

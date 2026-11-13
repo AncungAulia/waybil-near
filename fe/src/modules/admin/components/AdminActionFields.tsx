@@ -124,15 +124,15 @@ export function AdminActionFields({
         {subtitle ??
           (kind === "vote"
             ? selected === "Meridian Shipping"
-              ? "Start Meridian Shipping · 2,000.00 USDC"
-              : "Raise Northwind’s limit · 3,000.00 → 5,000.00 USDC"
+              ? "Start Meridian Shipping with 2,000.00 USDC."
+              : "Raise Northwind’s limit from 3,000.00 to 5,000.00 USDC."
             : kind === "limit"
-              ? "Now 3,000.00 USDC · 2,400.00 in use"
+              ? "The limit is 3,000.00 USDC now, and 2,400.00 is in use."
               : kind === "pause"
                 ? "They cannot approve new trips until the team turns it back on."
                 : coast
-                  ? "Applied yesterday · 25 trips a month"
-                  : "Applied today · 40 trips a month")}
+                  ? "They applied yesterday and ship 25 trips a month."
+                  : "They applied today and ship 40 trips a month.")}
       </p>
       {kind === "decision" ? (
         <div className="flex flex-col gap-10">
@@ -153,7 +153,7 @@ export function AdminActionFields({
               Approve
               {rejection && (
                 <span className="text-[13px] font-normal text-ds-muted">
-                  · {displayedLimit || "0"} USDC starting limit
+                  with a {displayedLimit || "0"} USDC starting limit
                 </span>
               )}
             </label>

@@ -23,7 +23,7 @@ export function PoolView() {
     <>
       <Header title="Pool" note="Where the investors’ money is right now" />
       {!p || !data ? (
-        <Loading />
+        <Loading label="Loading the pool." />
       ) : (
         <>
           {value > 0n && free * 10n < value && (
@@ -56,7 +56,7 @@ export function PoolView() {
               data.queue.map((q, i) => (
                 <Fact
                   key={`${q.investor}-${q.requested_at}`}
-                  label={`${i + 1}. ${q.investor} · ${day(q.requested_at)}`}
+                  label={`${i + 1}. ${q.investor} asked ${day(q.requested_at)}`}
                   value={<Money amount={q.amount} />}
                 />
               ))

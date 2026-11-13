@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { arrivalCode, encodeDelegateAction, shipmentFromCode, toBase58 } from "./relay";
+import { cleanArrivalCode, encodeDelegateAction, toBase58 } from "./relay";
 
 test("encodeDelegateAction matches near-api-js byte for byte", () => {
   /* near-api-js' encodeDelegateAction for the same fields, which starts with the NEP-461
@@ -30,8 +30,8 @@ test("toBase58 keeps leading zeros and matches the wallet's decoder", () => {
 });
 
 test("the arrival code is the shipment id in base 36 and reads back", () => {
-  expect(arrivalCode(1041)).toBe("000000SX");
-  expect(shipmentFromCode(" 000000sx ")).toBe(1041);
-  expect(shipmentFromCode("7K2Q9F4")).toBeNull();
-  expect(shipmentFromCode("00000000")).toBeNull();
+  expect(cleanArrivalCode(" 7k2q 9xma ")).toBe("7K2Q9XMA");
+  expect(cleanArrivalCode("00000001")).toBeNull();
+  expect(cleanArrivalCode("7K2Q9XM")).toBeNull();
+  expect(cleanArrivalCode("7K2Q9XMI")).toBeNull();
 });

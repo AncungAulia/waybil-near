@@ -45,8 +45,8 @@ export function Applications({
                     <h2 className="text-[17px] leading-21 font-semibold">{name}</h2>
                     <p className="text-[13px] leading-16 text-ds-muted">
                       {closer
-                        ? "Applied yesterday · Northgate · 25 trips a month"
-                        : "Applied today · Port Ellis · 40 trips a month"}
+                        ? "Applied yesterday from Northgate. 25 trips a month."
+                        : "Applied today from Port Ellis. 40 trips a month."}
                     </p>
                   </div>
                   <AdminBadge tone={approved ? "brand" : closer ? "warning" : "success"}>

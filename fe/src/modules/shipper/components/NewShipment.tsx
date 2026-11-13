@@ -21,7 +21,7 @@ import { DRIVERS, PLACES } from "../data/choices";
 import { FieldButton, SearchRow } from "./FormFields";
 import { DuePopup } from "./DueGrid";
 
-/* The board writes the chosen date and how far off it is: "Dec 11, 2026 · in 29 days". */
+/* The chosen date and how far off it is, for example "Dec 11, 2026, in 29 days". */
 function dueLabel(due: string) {
   const date = new Intl.DateTimeFormat("en-US", {
     month: "short",
@@ -30,7 +30,7 @@ function dueLabel(due: string) {
     timeZone: "UTC",
   }).format(new Date(due));
   const days = Math.round((Date.parse(due) - Date.parse(DEMO_TODAY)) / 86400000);
-  return `${date} · in ${days} days`;
+  return `${date}, in ${days} days`;
 }
 
 export function NewShipment({
@@ -155,7 +155,7 @@ export function NewShipment({
             empty={!draft.driver}
             value={
               draft.driver
-                ? `${draft.driver} · ${DRIVERS.find((d) => d.name === draft.driver)?.plate ?? ""}`
+                ? `${draft.driver}, truck ${DRIVERS.find((d) => d.name === draft.driver)?.plate ?? ""}`
                 : "Choose a driver"
             }
             hint="Only drivers in your network"
@@ -186,7 +186,7 @@ export function NewShipment({
                       <span className="truncate text-[15px] font-medium">{d.name}</span>
                       <span className="truncate text-[12.5px] text-ds-muted">
                         {d.plate
-                          ? `${d.plate} · ${d.trips} trips with you`
+                          ? `Truck ${d.plate}. ${d.trips} trips with you.`
                           : "Invite sent, not joined yet"}
                       </span>
                     </span>
@@ -204,7 +204,7 @@ export function NewShipment({
             )}
           </FieldButton>
           <div className="grid grid-cols-[minmax(0,1fr)] gap-20 md:grid-cols-2 md:gap-16">
-            <FieldButton label="Pickup" value="Main warehouse · 21 Dock Road" disabled />
+            <FieldButton label="Pickup" value="Main warehouse, 21 Dock Road" disabled />
             <FieldButton
               disabled={state === "P2.7"}
               label="Destination"
@@ -212,7 +212,7 @@ export function NewShipment({
               empty={!draft.destination}
               value={
                 draft.destination
-                  ? `${draft.destination} · ${PLACES.find((p) => p.name === draft.destination)?.street ?? ""}`
+                  ? `${draft.destination}, ${PLACES.find((p) => p.name === draft.destination)?.street ?? ""}`
                   : "Choose a destination"
               }
               onClick={() => {

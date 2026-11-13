@@ -26,7 +26,7 @@ export function PayoutRows({
           <div className="min-w-120 flex-1">
             <p className="text-label">Eastport to {city}</p>
             <p className="text-caption text-ds-muted">
-              #{id} · {company} · {date}
+              #{id} for {company}. Paid {date}.
             </p>
           </div>
           <span className="text-label text-ds-success">

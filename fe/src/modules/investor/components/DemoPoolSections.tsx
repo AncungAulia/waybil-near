@@ -77,14 +77,14 @@ export function DemoPoolSections() {
               icon: <ArrowLineDown size={16} />,
               title: "Paid Sam early",
               amount: "292500000",
-              note: "#1041 · Eastport to Harbor City",
+              note: "for #1041 from Eastport to Harbor City",
               when: "Today",
             },
             {
               icon: <SealCheck size={16} />,
               title: "Northwind paid a bill",
               amount: "300000000",
-              note: "#1032 · 1 day early",
+              note: "on #1032, 1 day early",
               when: "Yesterday",
             },
             {
@@ -98,7 +98,7 @@ export function DemoPoolSections() {
             <Link
               key={h.title}
               href="/pool/history"
-              className="tap focus-ring flex items-center gap-12 py-12 hover:bg-ds-canvas"
+              className="tap focus-ring -mx-12 flex items-center gap-12 rounded-[16px] px-12 py-12 hover:bg-ds-canvas"
             >
               <span className="grid size-36 shrink-0 place-items-center rounded-full bg-ds-canvas">
                 {h.icon}
@@ -107,7 +107,7 @@ export function DemoPoolSections() {
                 <span className="block text-label">{h.title}</span>
                 <span className="block text-caption text-ds-muted">
                   <Money amount={h.amount} />
-                  {h.note && ` · ${h.note}`}
+                  {h.note && ` ${h.note}`}
                 </span>
               </span>
               <span className="shrink-0 text-caption text-ds-muted">{h.when}</span>

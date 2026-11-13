@@ -1,17 +1,23 @@
 "use client";
 import { formatUsdc } from "@waybil/shared";
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { useMutation, useQuery, type QueryKey } from "@tanstack/react-query";
+import { useInvalidate } from "@/hooks/useInvalidate";
+import { qk } from "@/lib/queryKeys";
 import { useRouter } from "next/navigation";
 import { Plus, Copy, Check, SignOut, GasPump, Clock, SealCheck } from "@phosphor-icons/react";
 import { ActionSheet } from "@/components/layout/ActionSheet";
 import { Button } from "@/components/ui/Button";
+import { Tag } from "@/components/ui/Tag";
 import { Money } from "./Money";
 import { ArrowUpRightGlyph, SystemGlyph } from "./icons";
 import { cn } from "@/lib/cn";
+import { notify } from "@/lib/notify";
 import { USDC_CONTRACT } from "@/lib/env";
 import { usdcBalance, view } from "@/lib/near";
 import { callContract, disconnectWallet } from "@/lib/wallet";
 import { useAuth } from "@/providers/AuthProvider";
+import { Skeleton } from "./Skeleton";
 export type DemoWalletState = "G1" | "G2" | "G3" | "G4" | "G5" | "X6" | "X7";
 
 /*
@@ -59,21 +65,22 @@ function minutes(n: number) {
   return n === 1 ? "1 minute" : `${n} minutes`;
 }
 
-/** The real USDC balance. `refresh` reads it again after a transaction. */
+/** The real USDC balance, from the shared cache. */
 function useUsdcBalance(accountId: string | undefined) {
-  const [balance, setBalance] = useState<bigint | null>(null);
-  const [version, setVersion] = useState(0);
-  useEffect(() => {
-    if (!accountId) return;
-    let stale = false;
-    usdcBalance(accountId)
-      .then((value) => !stale && setBalance(BigInt(value)))
-      .catch(() => !stale && setBalance(null));
-    return () => {
-      stale = true;
-    };
-  }, [accountId, version]);
-  return { balance, refresh: () => setVersion((v) => v + 1) };
+  const query = useQuery({
+    queryKey: qk.usdc(accountId ?? ""),
+    queryFn: () => usdcBalance(accountId!).then((value) => BigInt(value)),
+    enabled: !!accountId,
+  });
+  return { balance: query.data ?? null };
+}
+
+/* The reads that hold this role's balance, so they show the test USDC at once. */
+function balanceKeys(role: "shipper" | "investor" | "admin", accountId: string) {
+  const keys: QueryKey[] = [qk.usdc(accountId)];
+  if (role === "shipper") keys.push(qk.shipper(accountId));
+  if (role === "investor") keys.push(qk.pool(accountId));
+  return keys;
 }
 export function DemoWallet({
   initialState = "G1",
@@ -90,6 +97,21 @@ export function DemoWallet({
   const router = useRouter();
   const { signOut } = useAuth();
   const real = useUsdcBalance(live?.accountId);
+  const invalidate = useInvalidate();
+  /* The new balance shows in the menu, so the result is a toast and the sheet closes. */
+  const added = (tx?: string) => {
+    notify.success("1,000.00 test USDC added", { meta: "Test money has no real value.", tx });
+    onClose();
+  };
+  const faucet = useMutation({
+    mutationFn: () => callContract(USDC_CONTRACT, "faucet", {}),
+    onSuccess: (tx) => {
+      if (live) void invalidate(...balanceKeys(role, live.accountId));
+      added(tx);
+    },
+    /* Errors stay in the open sheet, next to the Try again button. */
+    onError: (error) => setState(/reject|cancel|denied|closed/i.test(String(error)) ? "X6" : "X7"),
+  });
   const [state, setState] = useState(initialState),
     [copied, setCopied] = useState(false),
     [retryMinutes, setRetryMinutes] = useState(48),
@@ -112,7 +134,7 @@ export function DemoWallet({
     if (live || state !== "G3" || initialState === "G3") return;
     const timer = window.setTimeout(() => {
       saveClaim(Date.now());
-      setState("G4");
+      added();
     }, 750);
     return () => window.clearTimeout(timer);
   }, [state, initialState]);
@@ -130,9 +152,7 @@ export function DemoWallet({
         return;
       }
       setState("G3");
-      await callContract(USDC_CONTRACT, "faucet", {});
-      real.refresh();
-      setState("G4");
+      faucet.mutate();
     } catch (error) {
       setState(/reject|cancel|denied|closed/i.test(String(error)) ? "X6" : "X7");
     }
@@ -160,19 +180,19 @@ export function DemoWallet({
       >
         <div className="flex items-center gap-12 p-4">
           <div className="min-w-0 flex-1">
-            <p className="text-body font-medium">
-              {live
-                ? live.name || live.accountId
-                : role === "investor"
-                  ? "Maya Harper"
-                  : role === "admin"
-                    ? "Risk lead"
-                    : "Northwind Freight Co."}
+            <p className="flex flex-wrap items-center gap-x-8 gap-y-2 text-body font-medium">
+              <span className="break-words">
+                {live
+                  ? live.name || live.accountId
+                  : role === "investor"
+                    ? "Maya Harper"
+                    : role === "admin"
+                      ? "Risk lead"
+                      : "Northwind Freight Co."}
+              </span>
+              <Tag>{role === "admin" ? "Admin" : role === "investor" ? "Investor" : "Shipper"}</Tag>
             </p>
-            <p className="mt-2 break-words text-[12.5px] leading-[1.45] text-ds-muted">
-              {role === "admin" ? "Admin" : role === "investor" ? "Investor" : "Shipper"} ·{" "}
-              {account}
-            </p>
+            <p className="mt-2 break-words text-[12.5px] leading-[1.45] text-ds-muted">{account}</p>
           </div>
           <button
             type="button"
@@ -197,7 +217,18 @@ export function DemoWallet({
         </div>
         <div className="flex flex-col gap-4 rounded-[16px] bg-ds-canvas px-16 py-14">
           <p className="text-[12.5px] leading-[1.45] text-ds-muted">USDC</p>
-          <Money amount={String(shownBalance)} className="text-[22px] leading-[1.2] font-medium" />
+          {/* Until the real balance arrives, a shimmer holds its place instead of a false 0.00. */}
+          {live && real.balance === null ? (
+            <span role="status" aria-busy="true" className="flex h-[26.4px] items-center">
+              <Skeleton className="h-20 w-160 bg-ds-surface-3" />
+              <span className="sr-only">Loading your USDC balance.</span>
+            </span>
+          ) : (
+            <Money
+              amount={String(shownBalance)}
+              className="text-[22px] leading-[1.2] font-medium"
+            />
+          )}
           <p className="text-[11.5px] leading-[1.45] text-ds-muted">For bills and deposits</p>
         </div>
         <div className="h-1 bg-ds-line" />

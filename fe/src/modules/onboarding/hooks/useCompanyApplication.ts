@@ -7,9 +7,12 @@ import {
   type MutableRefObject,
   type SetStateAction,
 } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Application, ApplicationResponse, Profile } from "@waybil/shared";
-import { api, ApiError, readSession, saveSession } from "@/lib/api";
+import { api, ApiError } from "@/lib/api";
+import { useSaveProfile } from "@/hooks/useSaveProfile";
 import { getShipper } from "@/lib/near";
+import { qk } from "@/lib/queryKeys";
 import { fromCompanyInput, LIVE_STATE, saveApplication, sendPapers } from "../data/application";
 import type { CompanyDraft, OnboardingState } from "../data/fixtures";
 import type { CompanyFiles } from "../components/CompanySetup";
@@ -41,62 +44,90 @@ export function useCompanyApplication({
   draftKey: string | null;
   hasLocalDraft: MutableRefObject<boolean>;
 }) {
+  const client = useQueryClient();
+  const saveProfile = useSaveProfile();
+  const account = profile?.accountId;
   const [application, setApplication] = useState<Application | null>(null);
   const [applicationError, setApplicationError] = useState<string | null>(null);
-  const [startLimit, setStartLimit] = useState<string | null>(null);
-  const loadedApplication = useRef(false);
+
+  /*
+   * The saved application, read once. It is not read again in the background, since the
+   * form below holds the person's edits and moves the screen on by itself.
+   */
+  const saved = useQuery({
+    queryKey: qk.application(account ?? ""),
+    queryFn: () => api<ApplicationResponse | null>("/applications/me"),
+    enabled: liveCompany && group === "C" && !!account,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+  const applied = useRef(false);
   useEffect(() => {
-    if (!liveCompany || group !== "C" || loadedApplication.current) return;
-    loadedApplication.current = true;
-    api<ApplicationResponse | null>("/applications/me")
-      .then((found) => {
-        if (!found) return;
-        setApplication(found.application);
-        /* Edits kept in this browser are newer than the saved application. */
-        if (!hasLocalDraft.current) setCompany(fromCompanyInput(found.application.company));
-        setState(LIVE_STATE[found.application.state]);
-      })
-      .catch((e: unknown) => setApplicationError(e instanceof ApiError ? e.message : null));
-  }, [liveCompany, group]);
+    if (applied.current || saved.data === undefined) return;
+    applied.current = true;
+    const found = saved.data;
+    if (!found) return;
+    setApplication(found.application);
+    /* Edits kept in this browser are newer than the saved application. */
+    if (!hasLocalDraft.current) setCompany(fromCompanyInput(found.application.company));
+    setState(LIVE_STATE[found.application.state]);
+  }, [saved.data, hasLocalDraft, setCompany, setState]);
   useEffect(() => {
-    if (!liveCompany || state !== "C8" || !profile) return;
-    getShipper(profile.accountId)
-      .then((s) => setStartLimit(s?.limit ?? null))
-      .catch(() => setStartLimit(null));
-  }, [liveCompany, state, profile]);
-  const [savingDetails, setSavingDetails] = useState(false);
-  async function saveDetails() {
-    if (savingDetails) return;
-    setApplicationError(null);
-    setSavingDetails(true);
-    try {
-      setApplication(await saveApplication(application, company));
+    if (saved.error)
+      setApplicationError(saved.error instanceof ApiError ? saved.error.message : null);
+  }, [saved.error]);
+
+  /* The starting limit shows once the team has approved the company. */
+  const record = useQuery({
+    queryKey: qk.shipperRecord(account ?? ""),
+    queryFn: () => getShipper(account!),
+    enabled: liveCompany && state === "C8" && !!account,
+  });
+  const startLimit = record.data?.limit ?? null;
+
+  /* Keeps the cached application in step with what the backend answered. */
+  function remember(next: Application) {
+    setApplication(next);
+    if (account)
+      client.setQueryData<ApplicationResponse>(qk.application(account), { application: next });
+  }
+
+  const details = useMutation({
+    mutationFn: async () => {
+      const next = await saveApplication(application, company);
       /*
        * A wallet profile starts without a name. The contact person becomes the name the
        * navbar shows, and the company name stays what other people see.
        */
       const contact = company.contact.trim();
       if (contact && profile && profile.name !== contact) {
-        const updated = await api<Profile>("/me/profile", {
-          method: "PUT",
-          body: { name: contact.slice(0, 120) },
-        }).catch(() => null);
-        const current = readSession();
-        if (updated && current) saveSession({ ...current, profile: updated });
+        await saveProfile.mutateAsync({ name: contact.slice(0, 120) }).catch(() => null);
       }
+      return next;
+    },
+  });
+  const savingDetails = details.isPending;
+  async function saveDetails() {
+    if (savingDetails) return;
+    setApplicationError(null);
+    try {
+      remember(await details.mutateAsync());
       setState("C5.1");
     } catch (e) {
       setApplicationError(e instanceof ApiError ? e.message : "Your details could not be saved.");
-    } finally {
-      setSavingDetails(false);
     }
   }
+
+  const papers = useMutation({
+    mutationFn: (id: string) => sendPapers(id, files),
+  });
   async function submitPapers() {
     if (!application) return;
     setApplicationError(null);
     setState("C6");
     try {
-      setApplication(await sendPapers(application.id, files));
+      remember(await papers.mutateAsync(application.id));
       if (draftKey)
         try {
           localStorage.removeItem(draftKey);

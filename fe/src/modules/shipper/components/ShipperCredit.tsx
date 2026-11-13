@@ -256,10 +256,14 @@ export function ShipperCredit({
               )}
               <HistoryRow
                 amount="2,500 → 3,000 USDC"
-                reason="Assistant · within the weekly limit"
+                reason="The assistant raised it within the weekly limit."
                 date="Nov 9"
               />
-              <HistoryRow amount="0 → 2,500 USDC" reason="Team · 2 of 3 approved" date="Oct 21" />
+              <HistoryRow
+                amount="0 → 2,500 USDC"
+                reason="2 of 3 team members approved it."
+                date="Oct 21"
+              />
             </div>
           </Panel>
         </div>

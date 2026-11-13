@@ -1,27 +1,44 @@
 "use client";
-import { useState } from "react";
+import { qk } from "@/lib/queryKeys";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   FEE_BPS,
   splitBill,
   type PoolHistoryItem,
+  formatUsdc,
   type PoolHistoryResponse,
   type QueueEntry,
   type Shipment,
 } from "@waybil/shared";
-import { ArrowLineDown, Clock, Package, SealCheck } from "@phosphor-icons/react";
+import {
+  ArrowLineDown,
+  ArrowUpRight,
+  Clock,
+  ClockCounterClockwise,
+  Package,
+  SealCheck,
+} from "@phosphor-icons/react";
 import { Panel } from "@/components/layout/Panel";
+import { FILL_UNDER_HEADER, FillEmpty } from "@/components/elements/EmptyState";
 import { Money } from "@/components/elements/Money";
 import { FanMeter } from "@/components/elements/FanMeter";
 import { StatusPill } from "@/components/elements/StatusPill";
+import { TimelineRail, TimelineStep } from "@/components/elements/TimelineStep";
 import { Stat } from "@/components/elements/Stat";
+import {
+  SkeletonGroup,
+  SkeletonTripPage,
+  SkeletonListPanel,
+  SkeletonRow,
+  SkeletonStats,
+} from "@/components/elements/Skeleton";
 import { cn } from "@/lib/cn";
 import { api } from "@/lib/api";
 import { useLive } from "@/hooks/useLive";
 import { useNames } from "@/hooks/useNames";
-import { CONTRACT_RECORD_URL } from "@/lib/env";
+import { CONTRACT_RECORD_URL, nearblocksUrl } from "@/lib/env";
 import { BackLink } from "@/components/elements/BackLink";
-import { ProofLink } from "@/components/elements/ProofLink";
 import { statusChip } from "@/lib/status";
 import { latestEvents, poolStats, type LivePool } from "../data/live";
 
@@ -41,13 +58,28 @@ const percent = (part: bigint, whole: bigint) =>
   whole > 0n ? Number((part * 100n) / whole) / 100 : 0;
 
 /** Stats, credit per company and the latest money moments on the pool page. */
-export function LiveSections({ data }: { data: LivePool | null }) {
+export function LiveSections({
+  data,
+  failed = false,
+}: {
+  data: LivePool | null;
+  failed?: boolean;
+}) {
   const name = useNames(
     data
       ? [...Object.keys(data.shippers), ...data.deliveries.flatMap((s) => [s.shipper, s.driver])]
       : [],
   );
-  if (!data) return null;
+  if (!data)
+    return failed ? null : (
+      <SkeletonGroup label="Loading the pool." className="flex flex-col gap-16 md:gap-24">
+        <SkeletonStats />
+        <div className="grid items-start gap-16 lg:grid-cols-2">
+          <SkeletonListPanel rows={3} />
+          <SkeletonListPanel rows={3} />
+        </div>
+      </SkeletonGroup>
+    );
   const stats = poolStats(data.deliveries);
   const companies = Object.entries(data.shippers).filter(
     (entry): entry is [string, NonNullable<(typeof entry)[1]>] => entry[1] !== null,
@@ -89,7 +121,15 @@ export function LiveSections({ data }: { data: LivePool | null }) {
                   <span className="min-w-0 break-all">{name(account)}</span>
                   <span className="text-ds-muted">{Math.round(pct * 100)}%</span>
                 </div>
-                <FanMeter value={pct} label={`${account} credit used`} className="w-full" />
+                <FanMeter
+                  value={pct}
+                  label={`${account} credit used`}
+                  describe={(at, inUse) => {
+                    const mark = (BigInt(shipper.limit) * BigInt(Math.round(at * 1000))) / 1000n;
+                    return `The ${formatUsdc(mark)} USDC mark of the limit is ${inUse ? "in use" : "free"}.`;
+                  }}
+                  className="w-full"
+                />
                 <p className="text-caption text-ds-muted">
                   <Money amount={String(used)} /> of <Money amount={shipper.limit} />.{" "}
                   {shipper.paused
@@ -119,7 +159,7 @@ export function LiveSections({ data }: { data: LivePool | null }) {
             <Link
               key={`${kind}-${s.id}`}
               href={`/pool/deliveries/${s.id}`}
-              className="tap focus-ring flex items-center gap-12 py-12 hover:bg-ds-canvas"
+              className="tap focus-ring -mx-12 flex items-center gap-12 rounded-[16px] px-12 py-12 hover:bg-ds-canvas"
             >
               <span className="grid size-36 shrink-0 place-items-center rounded-full bg-ds-canvas">
                 {kind === "paid" ? <ArrowLineDown size={16} /> : <SealCheck size={16} />}
@@ -131,7 +171,7 @@ export function LiveSections({ data }: { data: LivePool | null }) {
                     : `${name(s.shipper)} paid a bill`}
                 </span>
                 <span className="block text-caption text-ds-muted">
-                  <Money amount={kind === "paid" ? s.advance : s.bill} /> · #{s.id}
+                  <Money amount={kind === "paid" ? s.advance : s.bill} /> for #{s.id}
                 </span>
               </span>
               <span className="shrink-0 text-caption text-ds-muted">
@@ -190,62 +230,56 @@ export function LiveDeliveries({ deliveries }: { deliveries: Shipment[] }) {
           ))}
         </div>
       )}
-      <Panel
-        gap={4}
-        className={cn(
-          "px-20 py-8",
-          deliveries.length === 0 && "min-h-[calc(100dvh-330px)] md:min-h-[calc(100dvh-290px)]",
-        )}
-      >
-        {deliveries.length === 0 ? (
-          <div className="grid min-h-360 flex-1 place-content-center gap-16 text-center">
-            <img src="/illustrations/investor.svg" alt="" className="mx-auto h-96" />
-            <h2 className="text-heading">No deliveries yet</h2>
-            <p className="max-w-340 text-label text-ds-muted">
-              When the pool pays a driver early, the delivery shows up here with its proof.
-            </p>
+      {deliveries.length === 0 ? (
+        <FillEmpty
+          image="/illustrations/investor.svg"
+          title="No deliveries yet"
+          body="When the pool pays a driver early, the delivery shows up here with its proof."
+          className={FILL_UNDER_HEADER}
+        />
+      ) : (
+        <Panel gap={4} className="px-20 py-8">
+          <div className="hidden gap-16 py-12 text-caption text-ds-muted md:grid md:grid-cols-[1fr_140px_150px_170px]">
+            <span>Delivery</span>
+            <span>Paid early</span>
+            <span>Status</span>
+            <span>Bill</span>
           </div>
-        ) : (
-          <>
-            <div className="hidden gap-16 py-12 text-caption text-ds-muted md:grid md:grid-cols-[1fr_140px_150px_170px]">
-              <span>Delivery</span>
-              <span>Paid early</span>
-              <span>Status</span>
-              <span>Bill</span>
-            </div>
-            {shown.map((s) => (
-              <Link
-                href={`/pool/deliveries/${s.id}`}
-                key={s.id}
-                className="tap focus-ring grid items-center gap-10 py-14 hover:bg-ds-canvas md:grid-cols-[1fr_140px_150px_170px] md:gap-16"
-              >
-                <span className="flex min-w-0 items-center gap-12">
-                  <span className="grid size-40 shrink-0 place-items-center rounded-full bg-ds-canvas">
-                    <Package size={17} />
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-body break-all">{name(s.shipper)}</span>
-                    <span className="block text-caption break-all text-ds-muted">
-                      #{s.id} · {name(s.driver)}
-                    </span>
+          {shown.length === 0 && (
+            <p className="py-14 text-label text-ds-muted">No delivery fits this filter yet.</p>
+          )}
+          {shown.map((s) => (
+            <Link
+              href={`/pool/deliveries/${s.id}`}
+              key={s.id}
+              className="tap focus-ring -mx-12 grid items-center gap-10 rounded-[16px] px-12 py-14 hover:bg-ds-canvas md:grid-cols-[1fr_140px_150px_170px] md:gap-16"
+            >
+              <span className="flex min-w-0 items-center gap-12">
+                <span className="grid size-40 shrink-0 place-items-center rounded-full bg-ds-canvas">
+                  <Package size={17} />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-body break-all">{name(s.shipper)}</span>
+                  <span className="block text-caption break-all text-ds-muted">
+                    {name(s.driver)} drives #{s.id}.
                   </span>
                 </span>
-                <Money amount={s.advance} className="text-label" />
-                <span className="justify-self-start">
-                  <StatusPill status={statusChip(s)} />
-                </span>
-                <p className="text-label text-ds-ink-2">
-                  {s.status === "Repaid"
-                    ? `Paid back ${day(s.repaid_at)}`
-                    : s.status === "CoveredByReserve"
-                      ? "Covered by the reserve"
-                      : `Bill due ${day(s.due_at)}`}
-                </p>
-              </Link>
-            ))}
-          </>
-        )}
-      </Panel>
+              </span>
+              <Money amount={s.advance} className="text-label" />
+              <span className="justify-self-start">
+                <StatusPill status={statusChip(s)} />
+              </span>
+              <p className="text-label text-ds-ink-2">
+                {s.status === "Repaid"
+                  ? `Paid back ${day(s.repaid_at)}`
+                  : s.status === "CoveredByReserve"
+                    ? "Covered by the reserve"
+                    : `Bill due ${day(s.due_at)}`}
+              </p>
+            </Link>
+          ))}
+        </Panel>
+      )}
     </>
   );
 }
@@ -261,6 +295,12 @@ export function LiveDelivery({
   total: string;
 }) {
   const name = useNames([s?.shipper, s?.driver]);
+  /* Names arrive a moment later. Wait up to 3 seconds so raw account ids never flash. */
+  const [waited, setWaited] = useState(false);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setWaited(true), 3000);
+    return () => window.clearTimeout(timer);
+  }, []);
   const back = <BackLink href="/pool/deliveries">Deliveries</BackLink>;
   if (!s)
     return (
@@ -309,7 +349,17 @@ export function LiveDelivery({
     },
     { title: `${name(s.driver)} got paid`, at: s.paid_at, detail: "" },
     { title: "The company paid the bill", at: s.repaid_at, detail: "" },
-  ].filter((step) => step.at);
+  ];
+  /* Every step, done or still to come, so the card reads as the whole journey. */
+  const next = steps.findIndex((step) => !step.at);
+  const named = !!s && (waited || (name(s.shipper) !== s.shipper && name(s.driver) !== s.driver));
+  if (!named)
+    return (
+      <>
+        {back}
+        <SkeletonTripPage label="Loading this delivery." />
+      </>
+    );
   return (
     <>
       {back}
@@ -317,37 +367,59 @@ export function LiveDelivery({
         <div className="min-w-0">
           <h1 className="text-title break-all">Delivery #{s.id}</h1>
           <p className="mt-6 text-label break-all text-ds-muted">
-            {name(s.shipper)} · {name(s.driver)}
+            {name(s.driver)} drives for {name(s.shipper)}.
           </p>
         </div>
         <StatusPill status={statusChip(s)} />
       </header>
-      <div className="grid items-start gap-16 lg:grid-cols-2">
-        <Panel title="Money" gap={4}>
-          {money.map((r) => (
-            <div key={r.label} className="flex flex-wrap justify-between gap-8 py-9 text-label">
-              <span className="break-all text-ds-muted">{r.label}</span>
-              <Money amount={String(r.value)} />
+      {/* Both columns fill the window and end level. */}
+      <div className="grid gap-16 lg:min-h-[calc(100dvh-300px)] lg:grid-cols-2">
+        <div className="flex flex-col gap-16">
+          {/* What this delivery earned the investor, first and large, in its own card. */}
+          {!covered && (
+            /* The same dotted glow as the pool card, so money cards look alike. */
+            <section className="relative isolate overflow-hidden rounded-card bg-ds-ink p-24 text-ds-bg">
+              <img
+                src="/illustrations/investor-glow.png"
+                alt=""
+                className="pointer-events-none absolute inset-0 -z-10 size-full object-cover"
+              />
+              <p className="text-label text-ds-bg/70">Your part of this delivery</p>
+              <Money amount={String(part)} className="mt-4 block text-amount" />
+              <p className="mt-4 text-caption text-ds-bg/70">
+                {share}% of the {formatUsdc(split.pool)} USDC the pool earns from this bill.
+              </p>
+            </section>
+          )}
+          <Panel title="Money" className="flex-1">
+            {/* The rows spread over the card, so it never ends in a blank space. */}
+            <div className="flex flex-1 flex-col justify-between gap-12">
+              {money.map((r) => (
+                <div key={r.label} className="flex flex-wrap justify-between gap-8 text-label">
+                  <span className="break-words text-ds-muted">{r.label}</span>
+                  <Money amount={String(r.value)} />
+                </div>
+              ))}
             </div>
-          ))}
-        </Panel>
-        <Panel title="Proof it happened" gap={4}>
-          {steps.map((step) => (
-            <div key={step.title} className="flex gap-14 py-12">
-              <span className="mt-2 grid size-26 shrink-0 place-items-center rounded-full bg-ds-ink text-ds-bg">
-                <SealCheck size={14} weight="bold" />
-              </span>
-              <span className="min-w-0">
-                <span className="block text-label break-all">{step.title}</span>
-                <span className="block text-caption text-ds-muted">{day(step.at)}</span>
-                {step.detail && (
-                  <span className="block text-caption text-ds-ink-2">{step.detail}</span>
+          </Panel>
+        </div>
+        <Panel title="Proof it happened" className="h-full">
+          <TimelineRail spread>
+            {steps.map((step, i) => (
+              <div key={step.title}>
+                <TimelineStep
+                  state={step.at ? "done" : i === next ? "current" : "next"}
+                  title={step.title}
+                  time={step.at ? day(step.at) : i === next ? "Happening next." : "Still to come."}
+                />
+                {step.at && step.detail && (
+                  <p className="mt-4 pl-38 text-caption text-ds-ink-2">{step.detail}</p>
                 )}
-              </span>
-            </div>
-          ))}
+              </div>
+            ))}
+          </TimelineRail>
           <a
-            className="link focus-ring mt-4 inline-block text-caption"
+            className="link focus-ring inline-block pt-8 text-caption"
             href={CONTRACT_RECORD_URL}
             target="_blank"
             rel="noreferrer"
@@ -375,7 +447,7 @@ export function LiveHistory({ accountId, queue }: { accountId: string; queue: Qu
   const mine = queue.filter((entry) => entry.investor === accountId);
   const { data, failed, reload } = useLive(
     () => api<PoolHistoryResponse>("/me/history"),
-    accountId,
+    qk.poolHistory(accountId),
   );
   return (
     <>
@@ -393,7 +465,7 @@ export function LiveHistory({ accountId, queue }: { accountId: string; queue: Qu
               <span className="min-w-0 flex-1">
                 <span className="block text-body">Withdrawal waiting</span>
                 <span className="block text-caption text-ds-muted">
-                  Asked {day(entry.requested_at)} · paid as bills are repaid
+                  Asked {day(entry.requested_at)}. It is paid as bills are repaid.
                 </span>
               </span>
               <Money amount={entry.amount} className="shrink-0 text-label" />
@@ -401,44 +473,69 @@ export function LiveHistory({ accountId, queue }: { accountId: string; queue: Qu
           ))}
         </Panel>
       )}
-      <Panel gap={4} className="px-20 py-8">
-        {failed && !data ? (
-          <div className="flex flex-col items-start gap-12 py-14">
-            <p className="text-label text-ds-muted">
-              We could not load your history right now. Try again in a minute.
-            </p>
-            <button className="link focus-ring text-label" onClick={reload}>
-              Try again
-            </button>
-          </div>
-        ) : !data ? (
-          <p className="py-14 text-label text-ds-muted">Loading your history.</p>
-        ) : data.items.length === 0 ? (
-          <p className="py-14 text-label text-ds-muted">
-            Nothing yet. Your first deposit shows up here.
-          </p>
-        ) : (
-          data.items.map((item) => (
-            <div
-              key={`${item.txHash}-${item.kind}-${item.at}`}
-              className="flex items-center gap-12 py-14"
-            >
-              <span className="grid size-38 shrink-0 place-items-center rounded-full bg-ds-canvas">
-                {item.kind === "deposit" ? <ArrowLineDown size={16} /> : <Clock size={16} />}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-body">{KIND[item.kind].label}</span>
-                <span className="block text-caption text-ds-muted">{isoDay(item.at)}</span>
-                <ProofLink tx={item.txHash} className="text-caption" />
-              </span>
-              <span className="shrink-0 text-label tabular-nums">
-                {KIND[item.kind].sign}
-                <Money amount={item.amount} />
-              </span>
+      {data && data.items.length === 0 && mine.length === 0 ? (
+        <FillEmpty
+          icon={<ClockCounterClockwise size={26} />}
+          title="Nothing here yet"
+          body="Your first deposit shows up here, with its proof."
+          className={FILL_UNDER_HEADER}
+        />
+      ) : (
+        <Panel gap={4} className="px-20 py-8">
+          {failed && !data ? (
+            <div className="flex flex-col items-start gap-12 py-14">
+              <p className="text-label text-ds-muted">
+                We could not load your history right now. Try again in a minute.
+              </p>
+              <button className="link focus-ring text-label" onClick={reload}>
+                Try again
+              </button>
             </div>
-          ))
-        )}
-      </Panel>
+          ) : !data ? (
+            <SkeletonGroup label="Loading your history.">
+              <SkeletonRow />
+              <SkeletonRow />
+              <SkeletonRow />
+              <SkeletonRow />
+            </SkeletonGroup>
+          ) : data.items.length === 0 ? (
+            <p className="py-14 text-label text-ds-muted">
+              Nothing yet. Your first deposit shows up here.
+            </p>
+          ) : (
+            data.items.map((item) => (
+              <div
+                key={`${item.txHash}-${item.kind}-${item.at}`}
+                className="flex items-center gap-12 py-14"
+              >
+                <span className="grid size-38 shrink-0 place-items-center rounded-full bg-ds-canvas">
+                  {item.kind === "deposit" ? <ArrowLineDown size={16} /> : <Clock size={16} />}
+                </span>
+                {/* What happened, its day, then the amount, all on the left. */}
+                <span className="min-w-0 flex-1">
+                  <span className="block text-body">{KIND[item.kind].label}</span>
+                  <span className="block text-caption text-ds-muted">{isoDay(item.at)}</span>
+                  <span className="mt-4 block text-label font-semibold tabular-nums">
+                    {KIND[item.kind].sign}
+                    <Money amount={item.amount} />
+                  </span>
+                </span>
+                {/* The record on the right. A short label on a computer, the arrow alone on a phone. */}
+                <a
+                  href={nearblocksUrl(`/txns/${item.txHash}`)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`See this ${KIND[item.kind].label.toLowerCase()} on NearBlocks`}
+                  className="link focus-ring tap grid size-40 shrink-0 place-items-center rounded-full bg-ds-canvas text-[14px] font-medium sm:flex sm:size-auto sm:bg-transparent"
+                >
+                  <span className="hidden sm:inline">NearBlocks ↗</span>
+                  <ArrowUpRight size={17} className="sm:hidden" aria-hidden />
+                </a>
+              </div>
+            ))
+          )}
+        </Panel>
+      )}
     </>
   );
 }

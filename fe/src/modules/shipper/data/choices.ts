@@ -10,7 +10,7 @@ export const PLACES = [
     name: "Harbor Hub",
     street: "9 Pier Street",
     address: "9 Pier Street, Harbor City",
-    meta: "Lena receives here · 8 trips",
+    meta: "Lena receives here. 8 trips so far.",
     linked: true,
   },
   {
@@ -24,7 +24,7 @@ export const PLACES = [
     name: "Millbrook depot",
     street: "12 Mill Lane",
     address: "12 Mill Lane, Millbrook",
-    meta: "Chris receives here · 3 trips",
+    meta: "Chris receives here. 3 trips so far.",
     linked: true,
   },
 ];

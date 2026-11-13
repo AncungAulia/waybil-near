@@ -20,6 +20,7 @@ export function CreditMeter({
   left,
   className,
   rulerTone = "ink",
+  describe,
 }: {
   label: string;
   used: string;
@@ -28,6 +29,8 @@ export function CreditMeter({
   left: string;
   className?: string;
   rulerTone?: "ink" | "auto";
+  /** A tooltip for the point under the pointer, passed on to FanMeter. */
+  describe?: (at: number, inUse: boolean) => string;
 }) {
   const over = value > 1;
   /*
@@ -54,6 +57,7 @@ export function CreditMeter({
         value={value}
         label={label}
         tone={rulerTone === "ink" ? "ink" : undefined}
+        describe={describe}
         className="h-18 w-full"
       />
 

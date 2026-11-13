@@ -3,8 +3,10 @@ import { useState, type Dispatch, type SetStateAction } from "react";
 import { LinkSimple, PaperPlaneTilt } from "@phosphor-icons/react";
 import type { Profile } from "@waybil/shared";
 import { useOrigin } from "@/hooks/useOrigin";
+import { useSaveProfile } from "@/hooks/useSaveProfile";
 import { Button, ButtonLink } from "@/components/ui/Button";
-import { api, ApiError } from "@/lib/api";
+import { ApiError } from "@/lib/api";
+import { useAuth } from "@/providers/AuthProvider";
 import { LIVE } from "@/lib/env";
 import type { OnboardingState } from "../../data/fixtures";
 import { DriverSetup } from "../DriverSetup";
@@ -22,13 +24,18 @@ export function DriverFormStep({
   signInError: string | null;
   setSignInError: Dispatch<SetStateAction<string | null>>;
 }) {
+  /* A driver who signed in with Google starts with that name, and can change it. */
+  const { profile } = useAuth();
+  const saveProfile = useSaveProfile();
   async function saveDriver(driver: { name: string; phone: string; plate: string }) {
     setSignInError(null);
     setState("D5");
     try {
-      await api("/me/profile", {
-        method: "PUT",
-        body: { name: driver.name, phone: driver.phone, truckPlate: driver.plate },
+      /* The session keeps the new name and plate, so the invite step knows the driver is set up. */
+      await saveProfile.mutateAsync({
+        name: driver.name,
+        phone: driver.phone,
+        truckPlate: driver.plate,
       });
       setState("D6");
     } catch (error) {
@@ -38,6 +45,20 @@ export function DriverFormStep({
       setState("D2");
     }
   }
+  /* Truck details belong to a driver account. Another role would save them to its own profile. */
+  if (LIVE && profile && profile.role !== "driver")
+    return (
+      <>
+        <StepHeading
+          state={state}
+          title="This page is for drivers"
+          note="You are signed in with another role. Drivers sign in with Google to add their truck."
+        />
+        <ButtonLink href="/start" variant="secondary" className="w-full justify-between">
+          Go to sign in
+        </ButtonLink>
+      </>
+    );
   return (
     <>
       {LIVE && signInError && (
@@ -47,6 +68,8 @@ export function DriverFormStep({
       )}
       <DriverSetup
         state={state}
+        initialName={LIVE && profile?.role === "driver" ? profile.name : undefined}
+        payoutAccount={LIVE && profile?.role === "driver" ? profile.accountId : undefined}
         onFinish={(driver) => (LIVE ? void saveDriver(driver) : setState("D5"))}
       />
     </>

@@ -4,9 +4,9 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { type CompanyDraft, type OnboardingState } from "../data/fixtures";
 import { companyErrors, countryForName, dialCode, documentError } from "../data/validation";
-import { useRegions } from "../data/regions";
-import { PhoneInput } from "./PhoneInput";
-import { SearchPicker } from "./SearchPicker";
+import { shortPlace, useRegions } from "../data/regions";
+import { PhoneInput } from "@/components/elements/PhoneInput";
+import { SearchPicker } from "@/components/ui/SearchPicker";
 import { cn } from "@/lib/cn";
 import { UploadSimple, FileX, FileText, Check } from "@phosphor-icons/react";
 import { BackLink } from "@/components/elements/BackLink";
@@ -122,7 +122,7 @@ export function CompanySetup({
                   : "Select province"
                 : "Pick a country first"
             }
-            options={regions.provinces.map((p) => ({ value: p.name, label: p.name }))}
+            options={regions.provinces.map((p) => ({ value: p.name, label: shortPlace(p.name) }))}
             allowCustom={!regions.loadingCountries}
             emptyText={
               regions.loadingCountries
@@ -139,7 +139,7 @@ export function CompanySetup({
             value={draft.city}
             disabled={!draft.province}
             placeholder={draft.province ? "Select city" : "Pick a province first"}
-            options={regions.cities.map((c) => ({ value: c, label: c }))}
+            options={regions.cities.map((c) => ({ value: c, label: shortPlace(c) }))}
             allowCustom={!regions.loadingCities}
             emptyText={regions.loadingCities ? "Loading cities." : "Type the name of your city."}
             onChange={(value) => edit("city", value)}
@@ -317,7 +317,7 @@ export function CompanyDocuments({
               >
                 {errors[slot.key] ??
                   (files[slot.key]
-                    ? `${files[slot.key]?.name} · ${((files[slot.key]?.size ?? 0) / 1024 / 1024).toFixed(1)} MB`
+                    ? `${files[slot.key]?.name}, ${((files[slot.key]?.size ?? 0) / 1024 / 1024).toFixed(1)} MB`
                     : slot.hint)}
               </p>
             </div>
@@ -353,14 +353,14 @@ export function CompanyDocuments({
       <div className="flex flex-col gap-14 pt-8 md:flex-row md:items-center md:justify-between">
         <p className="order-2 text-center text-[13px] leading-[1.45] text-ds-muted md:order-none md:flex-1 md:text-left">
           {waiting
-            ? "Approve the request in your wallet to send your application."
+            ? "Sending your papers. This takes a few seconds."
             : "Your papers stay private. Investors never see them."}
         </p>
         <Button
           className="h-52 w-full justify-between md:w-240 md:shrink-0"
           disabled={!files.registration || !files.bank}
           loading={waiting}
-          loadingLabel="Waiting for wallet"
+          loadingLabel="Sending"
           onClick={onSubmit}
         >
           Send for review
