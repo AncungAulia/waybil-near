@@ -207,10 +207,10 @@ function ApplicationCard({
               : "The private check is still running."}
         </p>
       )}
-      {/* On a phone the actions share the full width, half each when there are two. */}
+      {/* On a phone the actions share the full width. On wider screens they sit together on the right. */}
       <div
         className={cn(
-          "admin-card-actions grid gap-10 md:flex md:items-center md:justify-between",
+          "admin-card-actions grid gap-10 md:flex md:items-center md:justify-end",
           a.proposalId === null && "grid-cols-2",
         )}
       >
