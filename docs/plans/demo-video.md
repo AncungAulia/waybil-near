@@ -109,6 +109,24 @@ Recording order follows what the app needs, not the video order.
 Write the narration in the same plain words as the app (see AGENTS.md "Writing UI copy").
 Generate the voice with ElevenLabs, one file per scene, then edit to it.
 
+**ElevenLabs settings**
+
+- **Voice:** one voice for the whole video. Calm, warm, clear, a neutral English accent, not a
+  hyped advert voice. Try two or three library voices on scene 2 and pick one.
+- **Model:** the most natural English text to speech model on the account.
+- **Settings:** stability about 50%, similarity about 75%, style low (0 to 20%), speed 1.0. Keep
+  the same settings for every scene.
+- **Pronunciation:** write "Waybil" as "Way-bill" and "USDC" as "U S D C" in the text you paste
+  into ElevenLabs. Write numbers the way they are said ("four thousand six hundred twenty-eight
+  dollars"). Keep the subtitles in normal spelling.
+- **Pacing:** add a short pause between sentences with a line break, so the edit has room for
+  zooms and freeze frames.
+- **Files:** MP3 at 44.1 kHz or WAV, named `scene-0.mp3` to `scene-7.mp3`. Generate each scene
+  two or three times and keep the best take.
+- **Plan:** the free plan has a monthly character limit and asks for credit to ElevenLabs. The
+  script is about 1,200 characters, so a few takes per scene still fit. If the account uses the
+  free plan, add "Voice by ElevenLabs" to the end card.
+
 | # | Time | Picture | Voice over |
 |---|---|---|---|
 | 0 | 0:00–0:20 | Motion graphic. A truck on a long road, an invoice with "Net 60" ticking, a fuel gauge dropping. Kinetic type. | "A truck owner delivers the goods today. The invoice gets paid in sixty days. Meanwhile fuel, tolls and wages are due this week." |
