@@ -353,14 +353,14 @@ export function CompanyDocuments({
       <div className="flex flex-col gap-14 pt-8 md:flex-row md:items-center md:justify-between">
         <p className="order-2 text-center text-[13px] leading-[1.45] text-ds-muted md:order-none md:flex-1 md:text-left">
           {waiting
-            ? "Approve the request in your wallet to send your application."
+            ? "Sending your papers. This takes a few seconds."
             : "Your papers stay private. Investors never see them."}
         </p>
         <Button
           className="h-52 w-full justify-between md:w-240 md:shrink-0"
           disabled={!files.registration || !files.bank}
           loading={waiting}
-          loadingLabel="Waiting for wallet"
+          loadingLabel="Sending"
           onClick={onSubmit}
         >
           Send for review
