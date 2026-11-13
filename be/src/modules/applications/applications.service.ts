@@ -2,7 +2,6 @@ import { publicReview } from "../../lib/public-review";
 import { randomUUID } from "node:crypto";
 import type {
   Application,
-  CreditReviewInfo,
   ApplicationListItem,
   ApplicationDetail,
   CompanyInput,
@@ -17,6 +16,7 @@ import type { Leases } from "../../lib/leases";
 import type { Emails } from "../../lib/email";
 import { inspectFile, sha256, type FileStore, type StoredFile } from "../../lib/storage";
 import { allowed, ApiException, conflict, requireValue, unavailable } from "../../lib/errors";
+import type { CreditRow } from "../credit/credit.service";
 
 export interface ApplicationDocument extends StoredFile {
   id: string;
@@ -94,11 +94,11 @@ export class Applications {
           async (r): Promise<ApplicationListItem> => {
             const application = await this.refresh(r.value.id);
             const row = (
-              await this.store.list<CreditReviewInfo>("credit_reviews", {
+              await this.store.list<CreditRow>("credit_reviews", {
                 applicationId: application.id,
               })
             ).sort((a, b) => b.value.createdAt.localeCompare(a.value.createdAt))[0];
-            const review = row ? publicReview(row.value) : null;
+            const review = row ? publicReview(row.value, this.now()) : null;
             return { ...application, review };
           },
         ),

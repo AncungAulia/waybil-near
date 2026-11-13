@@ -231,6 +231,38 @@ it("raises exactly at the weekly cap and proposes above it", async () => {
     "assistant_propose",
   );
 });
+it("shows what the credit assistant read from the papers", async () => {
+  const deps = await setup();
+  const review = await deps.credit.request(profile());
+  expect(review.findings).toBeNull();
+  const done = await deps.credit.work(review.id);
+  expect(done.findings).toEqual({
+    currency: "USD",
+    monthlyOutgoing: papers.monthlyOutgoing,
+    namesMatch: true,
+    registrationMatches: true,
+    monthsRecent: true,
+    outgoingShareBps: 2500,
+  });
+  expect(done.findings).not.toHaveProperty("attestation");
+  expect(done.findings).not.toHaveProperty("nonce");
+  expect((await deps.credit.latest(profile("admin"), "shipper.testnet")).findings).toEqual(
+    done.findings,
+  );
+  const mismatch = await setup();
+  vi.mocked(mismatch.reader.check).mockResolvedValue({
+    papers: { ...papers, bankCompany: "Other Company" },
+    proof,
+  });
+  const other = await mismatch.credit.request(profile());
+  const result = await mismatch.credit.work(other.id);
+  expect(result.needsCloserLook).toBe(true);
+  expect(result.findings).toMatchObject({
+    namesMatch: false,
+    registrationMatches: true,
+    monthsRecent: true,
+  });
+});
 it("keeps ambiguous writes durable and never prepares a replacement transaction", async () => {
   const deps = await setup();
   vi.mocked(deps.writer.check).mockRejectedValueOnce(new Error("RPC timeout"));
@@ -421,4 +453,10 @@ it("returns authorized credit results over HTTP and includes the public review i
   const list = await applications.adminList(profile("admin"));
   expect(list.applications[0]!.review!.id).toBe(response.body.review.id);
   expect(list.applications[0]!.review).not.toHaveProperty("evidence");
+  expect(list.applications[0]!.review!.findings).toMatchObject({
+    currency: "USD",
+    namesMatch: true,
+    registrationMatches: true,
+    monthsRecent: true,
+  });
 });

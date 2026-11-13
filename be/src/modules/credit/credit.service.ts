@@ -1,6 +1,7 @@
 import { readProposals, readShipperShipments } from "../../lib/contract-reads";
 import { DefinitiveTransactionError } from "../../lib/near-sdk";
 import { logError } from "../../lib/logger";
+import { publicReview } from "../../lib/public-review";
 import { randomUUID } from "node:crypto";
 import type {
   Application,
@@ -24,11 +25,12 @@ import {
   policyFrom,
   targetLimit,
   amount,
+  paperChecks,
   type CreditPolicy,
   type ExtractedPapers,
 } from "./credit.schema";
 
-export interface CreditRow extends CreditReviewInfo {
+export interface CreditRow extends Omit<CreditReviewInfo, "findings"> {
   applicationId: string;
   submissionNumber: number;
   company: CompanyInput;
@@ -48,11 +50,6 @@ const configSchema = z.object({
   assistant_raise_bps: z.number().int().min(0).max(10000),
   proposal_ttl_days: z.number().int().positive().max(365),
 });
-const normalized = (v: string) =>
-  v
-    .normalize("NFKC")
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}]/gu, "");
 export class Credit {
   constructor(
     private store: Store,
@@ -491,24 +488,9 @@ export class Credit {
     return docs;
   }
   private clear(company: CompanyInput, papers: ExtractedPapers) {
-    const months = papers.monthlyOutgoing
-      .map((m) => {
-        const [year, month] = m.month.split("-").map(Number);
-        return year! * 12 + month! - 1;
-      })
-      .sort((a, b) => a - b);
-    const current = new Date(this.now());
-    const currentMonth = current.getUTCFullYear() * 12 + current.getUTCMonth();
+    const checks = paperChecks(company, papers, this.now());
     return (
-      papers.readable &&
-      normalized(papers.registrationCompany) === normalized(company.name) &&
-      normalized(papers.bankCompany) === normalized(company.name) &&
-      papers.registrationNumber.replace(/\D/g, "") === company.registration &&
-      months.length === 3 &&
-      months[1] === months[0]! + 1 &&
-      months[2] === months[1]! + 1 &&
-      months[2]! >= currentMonth - 1 &&
-      months[2]! <= currentMonth
+      papers.readable && checks.namesMatch && checks.registrationMatches && checks.monthsRecent
     );
   }
   private newRow(
@@ -548,20 +530,6 @@ export class Credit {
     };
   }
   private info(row: CreditRow): CreditReviewInfo {
-    return {
-      id: row.id,
-      shipperId: row.shipperId,
-      kind: row.kind,
-      state: row.state,
-      result: row.result,
-      suggestedLimit: row.suggestedLimit,
-      needsCloserLook: row.needsCloserLook,
-      reasons: row.reasons,
-      proposalId: row.proposalId,
-      txHash: row.txHash,
-      proof: row.proof,
-      createdAt: row.createdAt,
-      completedAt: row.completedAt,
-    };
+    return publicReview(row, this.now());
   }
 }

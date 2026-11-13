@@ -451,6 +451,18 @@ application in_review for team handling, rather than silently returning it to dr
 The admin applications list adds `review: CreditReviewInfo | null` to each application;
 private raw model evidence is available only through its existing authorized proof route.
 
+Every `CreditReviewInfo` (the review routes and the admin list) carries
+`findings: CreditFindings | null`, what the credit assistant read from the papers. It is
+null until the papers are read. It holds `currency` (null when none was read),
+`monthlyOutgoing` as read (`{ month: "YYYY-MM", amount: "decimal" }`), `outgoingShareBps`
+(the policy's `outgoingFractionBps`, null without a policy) and the three checks the
+decision uses: `namesMatch` (registration and bank holder names equal the company name
+after normalizing), `registrationMatches` (registration number digits equal the
+application's) and `monthsRecent` (three months in a row ending in the month the review
+finished or the month before). A review is clear only when the papers are readable and all
+three checks pass. Findings never include the attestation, nonce or documents, and are seen
+only by the shipper itself and team members.
+
 Shutdown stops new scheduler ticks and HTTP accepts, then awaits current HTTP requests and
 worker promises for up to 25 seconds. Lease release runs before a normal process exit. A
 drain timeout is logged and remaining HTTP connections are closed. Expired auth challenges
