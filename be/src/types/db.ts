@@ -12,7 +12,12 @@ export type Table =
   | "credit_reviews"
   | "proposal_reasons"
   | "pause_notes"
-  | "job_runs";
+  | "job_runs"
+  | "places"
+  | "trips"
+  | "arrival_codes"
+  | "pool_events"
+  | "pool_scan";
 export interface Snapshot<T> {
   value: T;
   version: number;

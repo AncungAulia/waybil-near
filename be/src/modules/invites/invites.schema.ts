@@ -6,7 +6,14 @@ const common = {
 export const inviteCreate = z.discriminatedUnion("type", [
   z.object({ ...common, type: z.literal("driver") }).strict(),
   z
-    .object({ ...common, type: z.literal("warehouse"), address: z.string().trim().min(1).max(500) })
-    .strict(),
+    .object({
+      ...common,
+      type: z.literal("warehouse"),
+      address: z.string().trim().min(1).max(500).optional(),
+      /* A destination place the shipper saved. Its address replaces the typed one. */
+      placeId: z.uuid().optional(),
+    })
+    .strict()
+    .refine((v) => v.address !== undefined || v.placeId !== undefined),
 ]);
 export const codeParam = z.object({ code: z.string().regex(/^[a-f0-9]{24}$/) });

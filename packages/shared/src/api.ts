@@ -46,8 +46,25 @@ export interface CreditReviewInfo {
   proposalId: number | null;
   txHash: string | null;
   proof: CreditProof | null;
+  /** What the credit assistant read from the papers. Null until the papers are read. */
+  findings: CreditFindings | null;
   createdAt: string;
   completedAt: string | null;
+}
+/** Facts read from a company's papers, and how they compare with the application. */
+export interface CreditFindings {
+  /** What the bank statement is in, for example "USD". */
+  currency: string | null;
+  /** Money going out each month as read. Month is YYYY-MM, amount is a decimal string. */
+  monthlyOutgoing: Array<{ month: string; amount: string }>;
+  /** The registration and bank holder names both equal the company name. */
+  namesMatch: boolean;
+  /** The registration number digits equal the company registration number. */
+  registrationMatches: boolean;
+  /** Three months in a row, ending this month or last month. */
+  monthsRecent: boolean;
+  /** The policy's share of monthly outgoing in basis points. Null without a policy. */
+  outgoingShareBps: number | null;
 }
 
 export type ReportReason = "damaged" | "missing" | "wrong_goods" | "other";

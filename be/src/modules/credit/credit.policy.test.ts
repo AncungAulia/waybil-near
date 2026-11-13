@@ -1,6 +1,6 @@
 import { expect, it } from "vitest";
 import preset from "../../config/credit-policy.testnet.json";
-import { creditPolicy, targetLimit, type ExtractedPapers } from "./credit.schema";
+import { creditPolicy, extractedPapers, targetLimit, type ExtractedPapers } from "./credit.schema";
 
 const policy = creditPolicy.parse(preset);
 function statements(amounts: string[], currency = "USD"): ExtractedPapers {
@@ -33,4 +33,24 @@ it.each([
 it("rejects missing months and other currencies instead of assuming a conversion", () => {
   expect(() => targetLimit(policy, statements(["12000", "12000"]))).toThrow();
   expect(() => targetLimit(policy, statements(["12000", "12000", "12000"], "IDR"))).toThrow();
+});
+
+it("reads null fields from a model as empty, so a photo that is not a paper is not an error", () => {
+  const papers = extractedPapers.parse({
+    readable: false,
+    registrationCompany: null,
+    registrationNumber: null,
+    bankCompany: null,
+    currency: null,
+    monthlyOutgoing: null,
+    reasons: ["The documents are a picture, not company papers."],
+  });
+  expect(papers).toMatchObject({
+    readable: false,
+    registrationCompany: "",
+    registrationNumber: "",
+    bankCompany: "",
+    currency: "",
+    monthlyOutgoing: [],
+  });
 });

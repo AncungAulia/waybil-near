@@ -27,6 +27,15 @@ it("applies migrations with private domain tables and concurrent-update protecti
     );
     expect(first.rows).toHaveLength(1);
     expect(stale.rows).toHaveLength(0);
+    const arrival = (id: string, code: string) =>
+      db.query("insert into arrival_codes(id,data) values ($1,$2)", [
+        id,
+        { shipmentId: Number(id), code, createdAt: "2026-11-12T00:00:00Z" },
+      ]);
+    await arrival("1", "ABCD2345");
+    await expect(arrival("2", "ABCD2345")).rejects.toThrow();
+    await expect(arrival("3", "abcd2345")).rejects.toThrow();
+    await expect(arrival("4", "ABCD0345")).rejects.toThrow();
     const owner = "00000000-0000-4000-8000-000000000001";
     const other = "00000000-0000-4000-8000-000000000002";
     expect(
@@ -65,6 +74,11 @@ it("applies migrations with private domain tables and concurrent-update protecti
       "proposal_reasons",
       "pause_notes",
       "job_runs",
+      "places",
+      "trips",
+      "arrival_codes",
+      "pool_events",
+      "pool_scan",
     ])
       await expect(db.query(`select * from ${table}`)).rejects.toThrow();
     await expect(db.query("select claim_work_lease('sample',$1,300)", [owner])).rejects.toThrow();

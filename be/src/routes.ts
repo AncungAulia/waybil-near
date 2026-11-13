@@ -28,9 +28,15 @@ import { adminRoutes } from "./modules/admin/admin.routes";
 import { Jobs } from "./modules/jobs/jobs.service";
 import { Profiles } from "./modules/profiles/profiles.service";
 import { profileRoutes } from "./modules/profiles/profiles.routes";
-import { PoolHistory } from "./modules/history/history.service";
+import { PoolHistory, txBudget } from "./modules/history/history.service";
 import { NearBlocksEvents } from "./modules/history/history.source";
 import { historyRoutes } from "./modules/history/history.routes";
+import { Places } from "./modules/places/places.service";
+import { placeRoutes } from "./modules/places/places.routes";
+import { Trips } from "./modules/trips/trips.service";
+import { tripRoutes } from "./modules/trips/trips.routes";
+import { Arrivals } from "./modules/arrivals/arrivals.service";
+import { arrivalRoutes } from "./modules/arrivals/arrivals.routes";
 
 export function createRuntime(deps: AppDeps) {
   const router = Router();
@@ -67,18 +73,28 @@ export function createRuntime(deps: AppDeps) {
   router.use(creditRoutes(deps, credit));
   router.use(applicationRoutes(deps, applications));
   router.use(reportRoutes(deps, reports));
+  router.use(
+    placeRoutes(
+      deps,
+      new Places(deps.store, deps.env.PHOTON_URL, fetch, Date.now, deps.env.ORS_API_KEY),
+    ),
+  );
+  router.use(tripRoutes(deps, new Trips(deps.store, deps.chain, deps.env)));
+  router.use(arrivalRoutes(deps, new Arrivals(deps.store, deps.chain)));
   router.use(inviteRoutes(deps, invites, (accountId) => auth.subjectFor(accountId)));
   router.use(profileRoutes(deps, new Profiles(deps.store, deps.chain)));
   router.use(
     historyRoutes(
       deps,
       new PoolHistory(
+        deps.store,
         new NearBlocksEvents(
           deps.env.NEARBLOCKS_API_URL,
           deps.env.WAYBIL_CONTRACT,
           deps.env.NEARBLOCKS_API_KEY,
         ),
         deps.env.WAYBIL_CONTRACT,
+        txBudget(deps.env.NEARBLOCKS_API_KEY),
       ),
     ),
   );

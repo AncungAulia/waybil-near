@@ -16,14 +16,14 @@ const extraction = {
   })),
   reasons: [],
 };
-function setup(tamper = false, gatewayOnly = false) {
+function setup(tamper = false, gatewayOnly = false, model = "sample-private-model") {
   const env = testEnv();
   const key = generateKeyPairSync("ed25519");
   const publicKey = key.publicKey
     .export({ type: "spki", format: "der" })
     .subarray(-32)
     .toString("hex");
-  env.NEAR_AI_MODEL = "sample-private-model";
+  env.NEAR_AI_MODEL = model;
   env.NEAR_AI_API_KEY = "sample-test-key";
   env.NEAR_AI_TRUSTED_SIGNERS_JSON = JSON.stringify([
     {
@@ -156,4 +156,37 @@ it("rejects changed file bytes and unreadable PDF input without inventing extrac
     ]),
   ).rejects.toBeInstanceOf(UnreadablePapers);
   expect(request).not.toHaveBeenCalled();
+});
+const chatBody = (request: ReturnType<typeof setup>["request"]) =>
+  JSON.parse(
+    String(request.mock.calls.find(([url]) => String(url).endsWith("/chat/completions"))![1]!.body),
+  ) as Record<string, unknown> & { messages: Array<{ role: string; content: unknown }> };
+it("turns thinking off for Qwen models through the chat template", async () => {
+  const { reader, request } = setup(false, false, "Qwen/Qwen3.8-27B");
+  await reader.check(pngDocument());
+  const body = chatBody(request);
+  expect(body.chat_template_kwargs).toEqual({ enable_thinking: false });
+  expect(body).not.toHaveProperty("reasoning_effort");
+});
+it("asks other models for low reasoning effort instead", async () => {
+  const { reader, request } = setup(false, false, "z-ai/glm-5.3-flash");
+  await reader.check(pngDocument());
+  const body = chatBody(request);
+  expect(body.reasoning_effort).toBe("low");
+  expect(body).not.toHaveProperty("chat_template_kwargs");
+});
+it("asks for the bank account holder, not the bank, and waits up to two minutes", async () => {
+  const timeout = vi.spyOn(AbortSignal, "timeout");
+  try {
+    const { reader, request } = setup();
+    await reader.check(pngDocument());
+    const system = chatBody(request).messages.find((m) => m.role === "system")!.content;
+    expect(system).toContain(
+      "bankCompany (the account holder name printed on the bank statement, not the name of the bank)",
+    );
+    expect(timeout).toHaveBeenCalledWith(120000);
+    expect(timeout).not.toHaveBeenCalledWith(45000);
+  } finally {
+    timeout.mockRestore();
+  }
 });

@@ -159,11 +159,17 @@ it("connects a stored report to an actual signed warehouse delegate", async () =
     actions: [actions.functionCall("confirm_delivery", saved.confirmArgs, 50000000000000n, 0n)],
   });
   const signed = await new KeyPairSigner(key).signDelegateAction(delegate);
+  await deps.store.insert("arrival_codes", "1", {
+    shipmentId: 1,
+    code: "ABCD2345",
+    createdAt: "2026-11-12T00:00:00Z",
+  });
   expect(
     (
       await relay.relay(
         profile("warehouse"),
         Buffer.from(encodeSignedDelegate(signed.signedDelegate)).toString("base64"),
+        "ABCD2345",
       )
     ).status,
   ).toBe("confirmed");

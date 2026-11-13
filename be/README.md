@@ -125,6 +125,11 @@ verifies exact-byte Ed25519 provider_tee signatures against that pin and retains
 preflight evidence. It labels the result pinned_model_signer and does not claim to perform
 fresh Intel/NVIDIA quote verification. Missing, ambiguous or gateway-only evidence fails closed.
 
+Use `NEAR_AI_MODEL=Qwen/Qwen3.8-27B`. The adapter sends it with thinking off
+(`enable_thinking: false`); without that it spends every token thinking and returns no JSON.
+`z-ai/glm-5.3-flash` is the fallback and gets `reasoning_effort: "low"` instead. Requests to
+NEAR AI time out after 120 seconds because the fallback can take about 40 seconds.
+
 Application submission is now connected to the durable evaluator. Searchable PDFs are parsed
 locally; JPG/PNG require an image-capable configured model. Unreadable/scanned PDFs ask for a
 clear photo or searchable PDF rather than guessing. Company/registration and three recent

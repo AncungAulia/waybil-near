@@ -88,3 +88,47 @@ it("validates warehouse addresses and guards HTTP creation/listing", async () =>
     (await request(app).get("/v1/invites").auth(token, { type: "bearer" })).body.invites,
   ).toHaveLength(1);
 });
+it("copies the address of the shipper's own destination place onto a warehouse invite", async () => {
+  const { deps, invites } = setup();
+  const place = (id: string, patch: object = {}) =>
+    deps.store.insert("places", id, {
+      id,
+      shipperId: "shipper.testnet",
+      kind: "destination",
+      name: "Dock",
+      address: "12 Pinned Road",
+      lat: -6.9,
+      lng: 107.6,
+      createdAt: "2026-11-09T00:00:00Z",
+      ...patch,
+    });
+  const dock = "00000000-0000-4000-8000-000000000001";
+  const yard = "00000000-0000-4000-8000-000000000002";
+  const theirs = "00000000-0000-4000-8000-000000000003";
+  await place(dock);
+  await place(yard, { kind: "pickup" });
+  await place(theirs, { shipperId: "second.testnet" });
+  const { address, ...typed } = input;
+  void address;
+  const made = await invites.create(profile(), parse(inviteCreate, { ...typed, placeId: dock }));
+  expect(made.invite).toMatchObject({ placeId: dock, address: "12 Pinned Road" });
+  const replaced = await invites.create(profile(), { ...input, placeId: dock });
+  expect(replaced.invite.address).toBe("12 Pinned Road");
+  await expect(invites.create(profile(), { ...input, placeId: theirs })).rejects.toMatchObject({
+    status: 403,
+  });
+  await expect(invites.create(profile(), { ...input, placeId: yard })).rejects.toMatchObject({
+    status: 400,
+  });
+  await expect(
+    invites.create(profile(), { ...input, placeId: "00000000-0000-4000-8000-000000000009" }),
+  ).rejects.toMatchObject({ status: 404 });
+  expect(() => parse(inviteCreate, typed)).toThrow();
+  expect(() => parse(inviteCreate, { ...input, placeId: "not-a-uuid" })).toThrow();
+  expect(() =>
+    parse(inviteCreate, { type: "driver", name: "Sam", phone: "+12075550142", placeId: dock }),
+  ).toThrow();
+  const plain = await invites.create(profile(), input);
+  expect(plain.invite).not.toHaveProperty("placeId");
+  expect(plain.invite.address).toBe("9 Sample Road");
+});

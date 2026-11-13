@@ -70,6 +70,13 @@ export const envSchema = z
       .transform((v) => v === "true"),
     EMAIL_API_KEY: secret,
     EMAIL_FROM: optional(z.email()),
+    PHOTON_URL: z.preprocess(
+      (v) => (v === "" ? undefined : v),
+      z.url().default("https://photon.komoot.io"),
+    ),
+    ORS_API_KEY: secret,
+    DEMO_LOCATION_SIMULATION: z.enum(["on", "off"]).default("off"),
+    DEMO_TRIP_SECONDS: z.coerce.number().int().min(10).max(86400).default(180),
   })
   .superRefine((v, ctx) => {
     if (Boolean(v.SUPABASE_URL) !== Boolean(v.SUPABASE_SERVICE_ROLE_KEY))

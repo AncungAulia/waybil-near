@@ -215,6 +215,75 @@ it("allows a fresh late-mark attempt only after a definitive failure and retains
   ).toEqual([{ txHash: "sample-late-hash", bytes: "sample-late-transaction" }]);
 });
 
+it("confirms a delivery only with the shipment's arrival code", async () => {
+  const deps = await setup();
+  const key = (await deps.store.list<{ devicePublicKey: string }>("auth_identities"))[0]!;
+  await deps.store.insert("auth_identities", "b".repeat(64), {
+    accountId: "warehouse.testnet",
+    ready: true,
+    devicePublicKey: key.value.devicePublicKey,
+  });
+  deps.chain.view = vi
+    .fn()
+    .mockImplementation(async (method: string) =>
+      method === "get_shipment"
+        ? { ...shipment, status: "PickedUp" }
+        : { warehouse: "warehouse.testnet" },
+    );
+  vi.mocked(deps.provider.access).mockResolvedValue({
+    nonce: 0n,
+    height: 100n,
+    receiver: deps.env.WAYBIL_CONTRACT,
+    methods: ["confirm_delivery"],
+  });
+  await deps.store.insert("arrival_codes", "1", {
+    shipmentId: 1,
+    code: "ABCD2345",
+    createdAt: "2026-11-12T00:00:00Z",
+  });
+  const p = profile("warehouse");
+  await deps.store.insert("profiles", p.accountId, p);
+  const { token } = await deps.sessions.issue(p);
+  const app = createApp(deps, relayRoutes(deps, deps.service));
+  const signedDelegate = await deps.sign({
+    sender: "warehouse.testnet",
+    calls: [
+      actions.functionCall(
+        "confirm_delivery",
+        { id: 1, good_qty: 120, report_hash: null },
+        50000000000000n,
+        0n,
+      ),
+    ],
+  });
+  const post = (body: object) =>
+    request(app)
+      .post("/v1/relay")
+      .auth(token, { type: "bearer" })
+      .send({ signedDelegate, ...body });
+  for (const body of [{}, { arrivalCode: "ABCD2346" }]) {
+    const res = await post(body);
+    expect(res.status).toBe(400);
+    expect(res.body.error).toEqual({
+      code: "E_ARRIVAL_CODE",
+      message: "This code does not match this delivery.",
+    });
+  }
+  expect((await post({ arrivalCode: "abcd-2345" })).status).toBe(400);
+  expect(deps.provider.prepare).not.toHaveBeenCalled();
+  const ok = await post({ arrivalCode: " abcd 2345 " });
+  expect(ok.status).toBe(200);
+  expect(ok.body.status).toBe("confirmed");
+  expect(deps.provider.prepare).toHaveBeenCalledTimes(1);
+});
+
+it("ignores the arrival code on a pickup", async () => {
+  const { service, sign } = await setup();
+  expect((await service.relay(profile("driver"), await sign(), "WXYZ2345")).status).toBe(
+    "confirmed",
+  );
+});
+
 it("releases the signer queue after a definite transaction rejection", async () => {
   const { DefinitiveTransactionError } = await import("../../lib/near-sdk");
   const { service, sign, provider } = await setup();

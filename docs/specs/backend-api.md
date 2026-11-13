@@ -149,6 +149,8 @@ them, and holds the newest truck location the driver's phone sent. Types are in
 | Method | Path | Who | What |
 |---|---|---|---|
 | GET | `/v1/places/search?q=` | Shipper | `q` is 3 to 200 characters. 30 requests a minute. Returns `PlaceSearchResponse` `{ results: [{ label, lat, lng }] }`, at most 5. The label joins name, street, city, state and country without repeats. Provider failure is 503 `E_UNAVAILABLE`. |
+| GET | `/v1/places/reverse?lat=&lng=` | Shipper | The address at a pin the shipper moved, through Photon's reverse search. 30 requests a minute. Returns `PlaceReverseResponse` `{ result: { label, lat, lng } \| null }`. `lat` and `lng` are the pin's own, not the matched address's. Provider failure is 503 `E_UNAVAILABLE`. |
+| GET | `/v1/places/route?from=&to=` | Shipper | The road between two of the shipper's own places, for the new shipment preview before a trip exists. Same routing and fallback as a trip. A road route is kept in memory per place pair. 30 requests a minute. Returns `RoutePreview` `{ route, routeSource, distanceKm, durationMin }`. Another shipper's place is 403. |
 | GET | `/v1/places` | Shipper, warehouse | `PlacesResponse`. A shipper gets its own places. A warehouse gets the destination places of the invites it accepted. |
 | POST | `/v1/places` | Shipper | Body `PlaceCreate`: kind, name (1 to 120), address (1 to 300), lat (-90 to 90), lng (-180 to 180). Returns 201 `{ place }`. |
 | PUT | `/v1/trips/:shipmentId` | Shipper of the shipment | Body `TripCreate { pickupPlaceId }`. The pickup place must be the shipper's own `pickup` place. Works out the route and stores the trip. Repeating it with the same pickup returns the same trip. A different pickup on an existing trip is 409 `E_CONFLICT`. A destination with no place is 409 `E_NO_PLACE`. Returns `{ trip }`. |
@@ -156,15 +158,39 @@ them, and holds the newest truck location the driver's phone sent. Types are in
 | GET | `/v1/trips?ids=1,2` | Shipper, driver, warehouse | `TripsResponse` for up to 50 shipment IDs. Trips the caller may not see, or that don't exist, are left out. |
 | POST | `/v1/trips/:shipmentId/location` | Driver of the shipment | Body `LocationUpdate { lat, lng, recordedAt? }`. 409 `E_NOT_ON_ROAD` unless the shipment is `PickedUp`. Returns `{ location }`. |
 
+## Arrival codes
+
+The driver shows a code at the destination and the warehouse types or scans it. The code is
+random and kept by the backend, so a warehouse confirms a delivery only after seeing the
+driver's screen. Types are in `packages/shared/src/places.ts`. Decision record 0015.
+
+- A code is 8 characters from `23456789ABCDEFGHJKMNPQRSTUVWXYZ` (no 0, 1, I, L or O), made with
+  a secure random source, one per shipment, unique across shipments. It is stored in the
+  `arrival_codes` table with the shipment id and never logged.
+- The contract does not check the code. The backend relay does, which covers every
+  confirmation sent through the app.
+
+| Method | Path | Who | What |
+|---|---|---|---|
+| GET | `/v1/trips/:shipmentId/code` | Driver of the shipment | `ArrivalCodeResponse` `{ code }`. Made on the first call and the same after that. 409 `E_NOT_ON_ROAD` unless the shipment is `PickedUp`. |
+| POST | `/v1/arrivals/lookup` | Warehouse | Body `ArrivalLookup` `{ code }`, case and spaces ignored. 20 requests a minute per account. Returns `ArrivalLookupResponse` `{ shipmentId }` when the code belongs to a shipment whose destination is this warehouse. Any other code is 404 `E_NOT_FOUND`, the same answer whether the code is unknown or belongs to another warehouse. |
+
+`POST /v1/relay` takes an optional `arrivalCode`. A `confirm_delivery` request must carry the
+arrival code of the shipment in its arguments, otherwise 400 `E_ARRIVAL_CODE`.
+
 ## Pool history
 
 The contract keeps no list of an investor's past deposits and withdrawals, only its events
 (`deposited`, `withdraw_paid`, `withdraw_queued`, `withdraw_failed`). The backend reads them from
-the NearBlocks indexer (`NEARBLOCKS_API_URL`, v3) and keeps them in memory. A restart reads them
-again. The free indexer plan allows a few calls a minute, so one scan runs at most once a minute
-and opens at most 4 transactions. Older events fill in on later scans. Set `NEARBLOCKS_API_KEY`
-for a higher limit. If the indexer fails before anything was loaded, the route returns 503
-`E_UNAVAILABLE`. After that it serves what it has.
+the NearBlocks indexer (`NEARBLOCKS_API_URL`, v3) and keeps them in `pool_events`, one row per
+event line (id `<receiptId>:<logIndex>`, saved once). Where reading got to lives in `pool_scan`,
+one row per contract with the newest receipt already listed and the transactions still to read,
+so a restart or deploy keeps the history. A scan lists the contract's receipts until it reaches
+the stored newest receipt, puts the transactions it found in front of the waiting ones (newest
+first), and opens at most 4 of them, or 40 with `NEARBLOCKS_API_KEY`. Older events fill in on
+later scans. One scan runs at most once a minute per process, and a scan whose saved position
+changed meanwhile is skipped. If the indexer fails before anything was stored, the route returns
+503 `E_UNAVAILABLE`. After that it serves what is stored.
 
 | Method | Path | Who | What |
 |---|---|---|---|
@@ -250,6 +276,12 @@ records preflight evidence and verifies exact-byte provider_tee signatures again
 unexpired pins. Its proof mode is explicitly `pinned_model_signer`; it does not claim to
 perform fresh Intel/NVIDIA hardware quote verification. Gateway-only/missing/invalid proofs
 cannot authorize a limit write. Pin changes require operational review; there is no TOFU.
+
+The chosen model is `Qwen/Qwen3.8-27B`, with `z-ai/glm-5.3-flash` as the fallback. The
+adapter turns model thinking off so the 2048-token budget goes to the JSON answer: model IDs
+starting with `Qwen/` get `chat_template_kwargs: {enable_thinking: false}`, every other model
+gets `reasoning_effort: "low"`. The prompt asks for `bankCompany` as the account holder on the
+bank statement, not the bank's name. Each NEAR AI request times out after 120 seconds.
 
 One active review per shipper is enforced. No-change decisions under a configured policy
 require three additional Repaid shipment IDs before another review. Configuration-only
@@ -354,7 +386,7 @@ as an executed transaction or a sent email. Live deployment/scheduler setup rema
 
 `profiles`, `invites`, `applications`, `application_documents`, `credit_reviews`,
 `reports`, `report_photos`, `proposal_reasons`, `pause_notes`, `email_log`,
-`auth_challenges`, `auth_identities`, `relay_requests`, `work_leases`, `job_runs`, `places`, `trips`.
+`auth_challenges`, `auth_identities`, `relay_requests`, `work_leases`, `job_runs`, `places`, `trips`, `arrival_codes`, `pool_events`, `pool_scan`.
 Storage buckets `documents` and `report-photos` are private. Links are signed and short-lived.
 
 ## Env (`be/.env.example`)
@@ -419,6 +451,18 @@ application in_review for team handling, rather than silently returning it to dr
 The admin applications list adds `review: CreditReviewInfo | null` to each application;
 private raw model evidence is available only through its existing authorized proof route.
 
+Every `CreditReviewInfo` (the review routes and the admin list) carries
+`findings: CreditFindings | null`, what the credit assistant read from the papers. It is
+null until the papers are read. It holds `currency` (null when none was read),
+`monthlyOutgoing` as read (`{ month: "YYYY-MM", amount: "decimal" }`), `outgoingShareBps`
+(the policy's `outgoingFractionBps`, null without a policy) and the three checks the
+decision uses: `namesMatch` (registration and bank holder names equal the company name
+after normalizing), `registrationMatches` (registration number digits equal the
+application's) and `monthsRecent` (three months in a row ending in the month the review
+finished or the month before). A review is clear only when the papers are readable and all
+three checks pass. Findings never include the attestation, nonce or documents, and are seen
+only by the shipper itself and team members.
+
 Shutdown stops new scheduler ticks and HTTP accepts, then awaits current HTTP requests and
 worker promises for up to 25 seconds. Lease release runs before a normal process exit. A
 drain timeout is logged and remaining HTTP connections are closed. Expired auth challenges
@@ -444,6 +488,7 @@ with no provider payload. Default messages are listed below.
 | `E_RATE_LIMIT` | Please wait before trying again. |
 | `E_NO_PLACE` | Pick this destination on the map first. |
 | `E_NOT_ON_ROAD` | Location is shared only while the truck is on the road. |
+| `E_ARRIVAL_CODE` | This code does not match this delivery. |
 | `E_ACCOUNT_CONFIG` | Account setup is unavailable. Please try again later. |
 | `E_AI` | The private check could not finish. Please try again later. |
 | `E_AI_PROOF` | The private check could not be verified. |
