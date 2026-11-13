@@ -31,9 +31,10 @@ near account create-account sponsor-by-faucet-service harborline-freight.testnet
 
 Then import it into Meteor yourself. Keys never go into an issue, a PR, chat or the video.
 
-**Team access.** Ancung adds one temporary key to `risk.waybil.testnet` and `ops.waybil.testnet`
-and sends you its private key directly. Import it in Meteor ("Import with private key") once in
-each team profile. Ancung removes the key after the video is done.
+**Team access.** Ancung sends you the keys for `risk.waybil.testnet` and `ops.waybil.testnet`
+directly, never in an issue, a PR or a group chat. Import each in Meteor ("Import with private
+key") in its own team profile. These keys can approve contract upgrades, so keep them off screen
+and delete them from Meteor after the video.
 
 **Company application** (shipper): use the Harborline Freight papers in
 [`docs/samples/`](../samples/README.md).
@@ -153,5 +154,5 @@ Keep the problem scene short and visual. The judges care most about scenes 2 to 
 - [ ] Voice over generated and the video edited to it, under 3 minutes.
 - [ ] No keys, seed phrases, private emails or personal data on screen.
 - [ ] Video uploaded where the team can reach it, link posted in the issue.
-- [ ] Ancung removes the temporary team key.
+- [ ] The team keys are removed from Meteor on the recording laptop.
 - [ ] Ancung posts it on X from @waybilxyz, tagging @NEARProtocol with #NEARHackathon.
