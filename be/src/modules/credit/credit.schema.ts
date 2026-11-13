@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { ApiException } from "../../lib/errors";
-import { parseUsdc } from "@waybil/shared";
+import { parseUsdc, type CompanyInput, type CreditFindings } from "@waybil/shared";
 export const reviewRequest = z.object({}).strict();
 export const amount = z
   .string()
@@ -64,4 +64,54 @@ export function targetLimit(policy: CreditPolicy, papers: ExtractedPapers): stri
     (average * BigInt(policy.usdcNumerator) * BigInt(policy.outgoingFractionBps)) /
     (BigInt(policy.usdcDenominator) * 10000n);
   return (target > BigInt(policy.maxLimit) ? BigInt(policy.maxLimit) : target).toString();
+}
+const normalized = (v: string) =>
+  v
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]/gu, "");
+/** How the papers compare with the application. Shared by the review decision and its findings. */
+export function paperChecks(company: CompanyInput, papers: ExtractedPapers, now: number) {
+  const months = papers.monthlyOutgoing
+    .map((m) => {
+      const [year, month] = m.month.split("-").map(Number);
+      return year! * 12 + month! - 1;
+    })
+    .sort((a, b) => a - b);
+  const current = new Date(now);
+  const currentMonth = current.getUTCFullYear() * 12 + current.getUTCMonth();
+  return {
+    namesMatch:
+      normalized(papers.registrationCompany) === normalized(company.name) &&
+      normalized(papers.bankCompany) === normalized(company.name),
+    registrationMatches: papers.registrationNumber.replace(/\D/g, "") === company.registration,
+    monthsRecent:
+      months.length === 3 &&
+      months[1] === months[0]! + 1 &&
+      months[2] === months[1]! + 1 &&
+      months[2]! >= currentMonth - 1 &&
+      months[2]! <= currentMonth,
+  };
+}
+/**
+ * Only facts read from the papers, never the raw documents or the proof's attestation.
+ * Months are judged at the time the review finished, like the decision was.
+ */
+export function creditFindings(
+  review: {
+    company: CompanyInput;
+    papers: ExtractedPapers | null;
+    policy: CreditPolicy | null;
+    completedAt: string | null;
+  },
+  now: number,
+): CreditFindings | null {
+  const { company, papers, policy, completedAt } = review;
+  if (!papers) return null;
+  return {
+    currency: papers.currency || null,
+    monthlyOutgoing: papers.monthlyOutgoing.map(({ month, amount }) => ({ month, amount })),
+    ...paperChecks(company, papers, completedAt ? Date.parse(completedAt) : now),
+    outgoingShareBps: policy?.outgoingFractionBps ?? null,
+  };
 }
