@@ -286,9 +286,10 @@ sequenceDiagram
   stops the check. Nothing is written.
 - **Humans approve every starting limit.** A fake or edited paper can at most produce a
   suggestion that two team members then read with the papers next to it.
-- **Raises are capped in the contract.** The server can raise an existing limit within the caps
-  when `CREDIT_AUTO_LIMITS` is on. It is off on the public deployment, so every limit change
-  there goes through the team.
+- **Raises are capped in the contract.** With `CREDIT_AUTO_LIMITS` on, as on the public
+  deployment, the assistant raises an existing limit by itself only within the contract's caps
+  (at most 20% over 7 days). A bigger change becomes a proposal that two team members must
+  approve, and a starting limit always does.
 
 **Limits we know about.** The assistant cannot prove a paper is authentic, and three months of
 money out is a rough proxy, not income or repayment capacity. That is why starting limits always
