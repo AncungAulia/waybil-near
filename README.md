@@ -118,8 +118,7 @@ paid in the same transaction that records the arrival.
 |---|---|---|
 | `realworld` | Main | Freight payments, credit lines and invoices for truck owners |
 | `privacy` | Main | Company papers are read in a private check on NEAR AI Cloud, and only facts and a proof leave it |
-| `open` | Main | Open source under MIT, public repo, every interface documented in `docs/specs/` |
-| `defi` | Secondary | A lending pool with shares, deposits, withdrawals and a queue. It does not use NEAR Intents. |
+| `defi` | Secondary | A lending pool with shares, deposits, withdrawals and a queue. NEAR Intents comes with the mainnet launch ([after the hackathon](#after-the-hackathon-mainnet-and-near-intents)). |
 
 ### `realworld`: Real-World Money
 
@@ -139,12 +138,6 @@ paid in the same transaction that records the arrival.
 | Every response must carry an Ed25519 signature over `model:sha256(request):sha256(response)` from a pinned signer, or it is thrown away | the `/signature/` call and `verify(...)` in `near-ai.ts` |
 | Only extracted facts and the proof leave the check. The papers stay in a private storage bucket, and the chain gets no personal data. | `creditFindings` in [`be/src/modules/credit/credit.schema.ts`](be/src/modules/credit/credit.schema.ts), [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) |
 
-### `open`: Open Innovation
-
-The whole product is in this public repo under the MIT license: contracts, backend, frontend,
-landing page, deploy and seed scripts, specs and decision records. Each contract's ABI is
-committed at `contracts/<name>/abi/<name>.json`, and CI fails when it is out of date.
-
 ---
 
 ## Receipts: check them yourself
@@ -157,6 +150,8 @@ testnet archival RPC node and succeeded.
 | Contract code deployed by the deployer key, with `migrate`, before the keys were removed | [59Pur6w9…](https://testnet.nearblocks.io/txns/59Pur6w9MoB6Sna1w92HVL98hoJfFvmqAyqG41XMFb6S) | `DeployContract` and `migrate` |
 | Team upgrade, step 1: `risk` proposes the code hash | [HzwYRq2B…](https://testnet.nearblocks.io/txns/HzwYRq2ByJcgKD1MN5ah5C5gBCvPsrnFfUCT2UZ8oidB) | `proposal_created` #6, `Upgrade` |
 | Team upgrade, step 2: `ops` approves and sends the code | [9sKe7iAz…](https://testnet.nearblocks.io/txns/9sKe7iAzGt6u7r852twST8hTs3UjuTMZRh8UcQXGzXL4) | `upgrade_approved`, `contract_upgraded` |
+| Latest team upgrade, step 1: `risk` proposes the code hash `DouMyHYv…` | [HRUKKogg…](https://testnet.nearblocks.io/txns/HRUKKoggCcrveLWBcYt6rR4umkRuizQc4GiLaz15Fbj1) | `proposal_created` #12, `Upgrade` |
+| Latest team upgrade, step 2: `ops` approves and sends the code | [Dqef35Re…](https://testnet.nearblocks.io/txns/Dqef35ReGeDHF5Jz2qJV8kQikazfnxTWYdAbgyrmAQ7J) | `upgrade_approved`, `contract_upgraded` from `Ge9yEkqP…` to `DouMyHYv…` |
 | The contract's last access key is deleted | [G8xd1kXG…](https://testnet.nearblocks.io/txns/G8xd1kXGbXZpPEmZ5VbG4HdtyPVyXQ7aAYa9PgdZdiNi) | `DeleteKey` |
 | Pickup confirmed by a driver, relayed, no gas for the driver | [HjL4NQCh…](https://testnet.nearblocks.io/txns/HjL4NQChSvuh5GRYvEkJRr4xcWe9ijiQeVAmLkXpKMZ4) | delegate action, `confirm_pickup` |
 | Delivery confirmed and driver paid in one transaction | [5mvATcDg…](https://testnet.nearblocks.io/txns/5mvATcDgqZKwuKQpY1f1x7FrDJ3WvLftqFJsA2eHCo2c) | `delivery_confirmed`, `ft_transfer` 97.50 USDC, `driver_paid` |
@@ -172,8 +167,8 @@ testnet archival RPC node and succeeded.
 Check the live state without a wallet. Each call is a free contract view over public RPC:
 
 ```sh
-# Code version and hash. Expect {"version":1,"code_hash":"Ge9yEkqPo97Ydk8KX3Vj19qxUPAc6eyPsM4fQo7bpAPE"}
-# (the same hash the team upgrade above approved).
+# Code version and hash. Expect {"version":1,"code_hash":"DouMyHYv6wXr4kAtmWyKyx7AMixTzYHbV2YVWcjoVoLv"}
+# (the same hash the latest team upgrade above approved, proposal #12).
 curl -s https://rpc.testnet.fastnear.com -H 'content-type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"query","params":{"request_type":"call_function","finality":"final","account_id":"app.waybil.testnet","method_name":"get_code_info","args_base64":"e30="}}'
 
 # The contract account has no keys. Expect "keys":[]
@@ -509,6 +504,20 @@ The team built Waybil with AI coding assistants (Claude Code) for code, tests an
 directed the product design and the decisions in [`docs/decisions/`](docs/decisions), reviewed
 the work, and tested it on testnet. Each pull request notes its AI-generated code.
 
+## If a shipper doesn't pay
+
+1. **The due date passes.** Anyone can call `mark_late`, and the backend does it every hour. The
+   bill is now late, and the shipper can't create new shipments (`E_LATE_BILL`).
+2. **The team can pause the shipper at once.** One member is enough. Unpausing needs 2 of 3.
+3. **14 days after the due date**, the team can vote (2 of 3) to cover the bill from the safety
+   reserve (`CoverFromReserve` in [`team.rs`](contracts/waybil/src/team.rs)). The reserve pays the
+   advance back into the pool as far as it can. Anything it can't cover is a loss shared by every
+   investor through the share price. The shipper stays paused.
+4. **The driver keeps the money.** The driver was paid on arrival, and nothing is taken back.
+
+The `reserve_cover` event logs both the covered amount and the loss, so investors can see each
+write-off.
+
 ## Now and after the hackathon
 
 - **Testnet only.** USDC is a test token with a faucet. Pool balances are demo funding.
@@ -516,9 +525,28 @@ the work, and tested it on testnet. Each pull request notes its AI-generated cod
   those steps.
 - **Arrival code on chain.** Putting the code's hash in the contract needs a team upgrade, and is
   planned for after the hackathon.
+- **Arrival code checked by the backend.** Today the backend checks the arrival code before it
+  relays the warehouse's confirmation. A warehouse that pays its own gas can call
+  `confirm_delivery` directly, so a warehouse and driver working together could confirm a fake
+  delivery. The on-chain hash above closes this.
+- **Late bills need a caller.** A bill only blocks new shipments after someone calls `mark_late`.
+  The backend does it every hour. If that job stops, the block comes late until anyone calls it.
 - **Credit policy.** The 20% rule is a testnet choice, not a calibrated risk model. Real money
   needs repayment-capacity evidence and an audit.
+- **Reserve size.** The reserve gets 0.4% of each repaid bill, while an advance is 97.5% of a
+  bill. It takes about 244 repaid bills of the same size to fill one full advance. The rate is a
+  demo choice, and the pool carries most of the default risk today.
 - **Pool scans.** The pool page reads shipments in order. At scale it needs an indexer.
+
+### After the hackathon: mainnet and NEAR Intents
+
+- **Mainnet launch.** Move `app.waybil.testnet` to mainnet with real USDC instead of the test
+  token, after a contract audit and with the arrival code hash in the contract.
+- **NEAR Intents for money in and out.** Investors can fund the pool from other chains and tokens,
+  and shippers can repay a bill in the token they hold. Intents swaps it into USDC before it
+  reaches the contract. Drivers can cash out to the token or chain they use.
+- **Pilots.** Start with a small group of truck owners and shipping companies, with low credit
+  limits, before the pool opens to outside investors.
 
 ## Repo map
 
