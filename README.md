@@ -30,6 +30,7 @@ Built for NEAR HACKATHON 2026. Everything runs on NEAR testnet with test USDC.
 
 | What | Link |
 |---|---|
+| Demo video (2:19) | [x.com/waybilxyz/status/2121492124453789792](https://x.com/waybilxyz/status/2121492124453789792) |
 | App (testnet, live mode) | [app.waybil.xyz](https://app.waybil.xyz/start) |
 | API health | [api.waybil.xyz/health](https://api.waybil.xyz/health) answers `{"status":"ok"}` |
 | Landing page | [waybil.xyz](https://www.waybil.xyz) |
@@ -105,10 +106,48 @@ paid in the same transaction that records the arrival.
 | Pickup and arrival | The driver confirms pickup from the phone and shows a QR and an 8-character arrival code at the destination. The warehouse scans the QR or types the code and confirms the count. |
 | Instant payout | A clean confirmation sends the driver 97.5% of the fee in the same transaction. |
 | Problem reports | The warehouse reports short or damaged goods with reasons, a note and up to 5 photos. The payout waits until the shipper settles it, and the bill changes to match. |
-| Repayment | The shipper pays the bill with `ft_transfer_call`. It splits into 1.6% for the pool, 0.4% for the safety reserve and 0.5% for Waybil. A late bill blocks new shipments. |
+| Repayment | The shipper pays the bill with `ft_transfer_call`. It splits into 1.6% for the pool, 0.4% for the safety reserve and 0.5% for Waybil. A late bill blocks new shipments. If a bill is never paid, see [If a shipper doesn't pay](#if-a-shipper-doesnt-pay). |
 | Lending pool | Investors deposit test USDC for pool shares and withdraw. What is free is paid now, and the rest is queued and paid as bills are repaid. |
 | Team | Members vote on proposals, approve shippers, change limits, and pause a shipper. One member can pause. Turning it back on needs two. |
 | Receipts | Every recorded action links to its transaction with "See the record on NearBlocks ↗". |
+
+---
+
+## Screenshots
+
+Taken from the [demo video](https://x.com/waybilxyz/status/2121492124453789792): one real
+delivery on testnet, 40 pallets from Rotterdam to Antwerp for Harborline Freight.
+
+### Landing page
+
+![Landing page: Invoices take weeks. Waybil takes seconds.](docs/screenshots/landing.jpg)
+
+<table>
+  <tr>
+    <th width="50%">Team: the credit assistant's suggestion</th>
+    <th width="50%">Shipper: the shipment and its bill</th>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/team.jpg" alt="Harborline Freight's application with the assistant's 4,628.75 USDC suggestion, three checks and money out each month" /></td>
+    <td><img src="docs/screenshots/shipper.jpg" alt="Shipment from Harborline Waalhaven Depot to Scheldt Retail DC with a 1,200.00 USDC bill" /></td>
+  </tr>
+  <tr>
+    <th>Driver: on the road with the arrival code</th>
+    <th>Warehouse: confirming the goods</th>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/driver-trip.jpg" alt="Driver's trip with the truck on the map, a QR and the arrival code" /></td>
+    <td><img src="docs/screenshots/warehouse.jpg" alt="Warehouse confirms delivery 5, 40 pallets in good shape" /></td>
+  </tr>
+  <tr>
+    <th>Driver: paid on arrival</th>
+    <th>Investor: its part of the delivery</th>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/driver.jpg" alt="You got paid 1,170.00 USDC, with every step checked" /></td>
+    <td><img src="docs/screenshots/investor.jpg" alt="Delivery 5 for the investor: 0.71 USDC share and the proof it happened" /></td>
+  </tr>
+</table>
 
 ---
 
@@ -137,6 +176,7 @@ paid in the same transaction that records the arrival.
 | Before each check the backend fetches a fresh attestation report with its own nonce and accepts only signers that the operator pinned for that exact model, with an expiry | `reportSchema`, `pinSchema` and the nonce check in `near-ai.ts` |
 | Every response must carry an Ed25519 signature over `model:sha256(request):sha256(response)` from a pinned signer, or it is thrown away | the `/signature/` call and `verify(...)` in `near-ai.ts` |
 | Only extracted facts and the proof leave the check. The papers stay in a private storage bucket, and the chain gets no personal data. | `creditFindings` in [`be/src/modules/credit/credit.schema.ts`](be/src/modules/credit/credit.schema.ts), [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) |
+| The trust boundary is the inference, not the whole path. The backend itself reads the papers and extracts a PDF's text before the TEE call. | `unpdf` in `near-ai.ts`, and [limits we know about](#the-credit-assistants-defences) |
 
 ---
 
@@ -162,6 +202,8 @@ testnet archival RPC node and succeeded.
 | One member pauses a shipper | [EauZtYGd…](https://testnet.nearblocks.io/txns/EauZtYGdwPw3gaamBcvS5Rz1ju1KmycbFUqfrhLeGary) | `shipper_paused` |
 | Unpause, 2 of 3: proposal, then second vote | [3dGRLYZx…](https://testnet.nearblocks.io/txns/3dGRLYZxdB5ZcPo2cytDL6aaEyMnf2hbrwB1EkVr8grR), [48dK2VaV…](https://testnet.nearblocks.io/txns/48dK2VaVWiBjSfX3HWFXmEYbGQw4tEE4owzPXSPPgHQa) | `proposal_created` #9, then `shipper_unpaused` |
 | Merapi Cargo's starting limit from the sample papers, 2 of 3: proposal, then second vote | [62B5HA8a…](https://testnet.nearblocks.io/txns/62B5HA8aBuUUZssf5CFKQPgssGFKy7GKXEW6NPJ4wcoa), [AFzVeNgF…](https://testnet.nearblocks.io/txns/AFzVeNgFH5kFq9vqjPZia2ERPJNaJR8nRFs7eTFeS49P) | `StartShipper` #10, then `shipper_started` with limit `3084750000` (3,084.75 USDC) |
+| Harborline Freight's starting limit from the sample papers, second vote by `ops` (the one in the demo video) | [DTNvbtC1…](https://testnet.nearblocks.io/txns/DTNvbtC1hWoVvMu5gdkcpwixL6m2rFqA3NTUFA2DEvAR) | `vote_cast` #13, then `shipper_started` with limit `4628750000` (4,628.75 USDC) |
+| Test USDC redeployed from the reproducible build, no init call, balances kept | [GhELuEF4…](https://testnet.nearblocks.io/txns/GhELuEF4UuCJKjgqfwRoTxsLYjGmSMfXosmkKewmKnoK) | `DeployContract` |
 | Credit assistant sets a limit within its caps | [DAb8Dq8o…](https://testnet.nearblocks.io/txns/DAb8Dq8ockmnaSzefrSMAGtvdTR5PU1JKaDNdJVPZC6Z) | `limit_changed` by `assistant` |
 
 Check the live state without a wallet. Each call is a free contract view over public RPC:
@@ -174,6 +216,20 @@ curl -s https://rpc.testnet.fastnear.com -H 'content-type: application/json' -d 
 # The contract account has no keys. Expect "keys":[]
 curl -s https://rpc.testnet.fastnear.com -H 'content-type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"query","params":{"request_type":"view_access_key_list","finality":"final","account_id":"app.waybil.testnet"}}'
 ```
+
+**Rebuild the deployed code yourself.** Both contracts run a reproducible build. Their
+`contract_source_metadata` (NEP-330) names the Docker image and the source commit
+[`176b27b`](https://github.com/AncungAulia/waybil-near/tree/176b27b914bc68b274c06b7123a86d50b085d5a7),
+so anyone can check that the code on chain is the code in this repo:
+
+```sh
+git checkout 176b27b && cd contracts/waybil
+cargo near build reproducible-wasm   # needs Docker. The sha256 (base58) is DouMyHYv6wXr4kAtmWyKyx7AMixTzYHbV2YVWcjoVoLv,
+                                     # the same code_hash get_code_info returns.
+near contract call-function as-read-only app.waybil.testnet contract_source_metadata json-args '{}' network-config testnet now
+```
+
+`contracts/mock-usdc` gives `pWjkKhRHLskoG2En8bcmeQSkPH2Jn6Wx2ryusW8boC9` the same way.
 
 The `result.result` field of a view is the JSON answer as a byte array. With near-cli-rs,
 `near contract call-function as-read-only app.waybil.testnet get_team json-args '{}' network-config testnet now`
@@ -291,7 +347,11 @@ sequenceDiagram
 
 **Limits we know about.** The assistant cannot prove a paper is authentic, and three months of
 money out is a rough proxy, not income or repayment capacity. That is why starting limits always
-need two people. The signer pins are checked by an operator with NEAR's hardware-verification
+need two people. The privacy boundary is the inference, not the whole path: the backend receives
+the papers, keeps them in a private bucket, and extracts a PDF's text itself (`unpdf` in
+[`near-ai.ts`](be/src/lib/near-ai.ts)) before it calls the TEE, so the backend operator can read
+the papers. The TEE keeps them from the model host and proves which model answered.
+The signer pins are checked by an operator with NEAR's hardware-verification
 tools and then pinned. The backend does not verify the full TEE hardware quote on each call
 (decision [0010](docs/decisions/0010-credit-policy-and-model-trust.md)). The arrival code is
 checked by the backend. A warehouse account that pays its own gas could still call
@@ -307,10 +367,29 @@ little testnet NEAR for gas from [near-faucet.io](https://near-faucet.io). Drive
 warehouses need only a Google account. Use a separate browser profile for each role, because
 each account has one role.
 
-**Team steps need a team member's key.** The team holds the keys for `risk.`, `ops.` and
-`finance.waybil.testnet`. Demo team access is available on request through
-[@waybilxyz](https://x.com/waybilxyz). Without it, you can check every team action in the
-[receipts](#receipts-check-them-yourself).
+**Skip the team approval with the judges' shipper.** A new shipper needs two team members to
+approve it, so we approved one for you. `judge-shipper.waybil.testnet` is a live shipper with a
+500 USDC limit and 1,000 test USDC. Import it in Meteor (**Import account**, then **Private
+key**) with this key:
+
+```
+ed25519:Z4EfEP8pdEeUWWhAQNW1SChg52GpgJaDhtzWU8ta3icdsQcQHzFsQ3NaR6m1dar8Xiq5tRxKX7xtbysA5KHMZWt
+```
+
+Then open [app.waybil.xyz/start](https://app.waybil.xyz/start), choose **I ship goods** and
+approve the sign-in. The first sign-in of a new account opens the company form. Skip it and go to
+[app.waybil.xyz/shipper](https://app.waybil.xyz/shipper): you see the dashboard with the
+500.00 USDC limit. Later sign-ins go there directly.
+
+This key is public on purpose. It belongs to a testnet shipper only, not to the team, so it
+can't approve anything, change limits or touch the contract code. The worst misuse is spending
+its own 500 USDC limit of test money. With it you can run steps 3 to 5 below without asking
+anyone. To go through the credit assistant from a fresh application (step 2), DM
+[@waybilxyz](https://x.com/waybilxyz) and we approve it while judging runs.
+
+**Team steps need a team member's key.** The team keeps the keys for `risk.`, `ops.` and
+`finance.waybil.testnet` private, because two of them can upgrade the contract. You can check
+every team action in the [receipts](#receipts-check-them-yourself).
 
 ### 1. Investor (no help needed, about 2 minutes)
 
@@ -329,20 +408,21 @@ each account has one role.
 
 1. In a new profile choose **I ship goods** and connect a different wallet.
 2. Fill in the form with the values on the sample papers in [`docs/samples/`](docs/samples):
-   **Company name** `Merapi Cargo`, **Business registration number** `9120304855712`, and the
-   address `Jl. Kaliurang Km 7 No. 21, Sinduharjo, Ngaglik`, Sleman, Daerah Istimewa Yogyakarta,
-   postal code `55581`. Other fields can be anything.
-3. Upload `merapi-cargo-registration.pdf` as the business registration and
-   `merapi-cargo-bank-statement.pdf` as the bank statement. The tax ID is optional. Send it.
+   **Company name** `Harborline Freight`, **Business registration number** `4401772093158`,
+   Netherlands, South Holland, Rotterdam, address `Waalhaven Oostzijde 84, Port 2215`, postal
+   code `3087 BM`. Other fields can be anything.
+3. Upload `harborline-freight-registration.pdf` as the business registration and
+   `harborline-freight-bank-statement.pdf` as the bank statement. The tax ID is optional. Send it.
    You see "We're checking your company".
 4. A team member opens `/admin`, then the application.
-   They see a suggested starting limit of **3,084.75 USDC**, three green checks (company name,
-   registration number, recent months), and money out for Aug, Sep and Oct 2026: 14,250.00,
-   15,900.50 and 16,120.75.
+   They see a suggested starting limit of **4,628.75 USDC**, three green checks (company name,
+   registration number, recent months), and money out for Aug, Sep and Oct 2026: 21,400.00,
+   23,150.50 and 24,880.75.
 5. One member approves with that limit, and a second member approves the proposal.
    The second approval records `shipper_started` on chain. Reload `/onboarding/shipper` and you
-   see "You're approved" with 3,084.75 USDC.
-   [This is what it looked like on testnet.](https://testnet.nearblocks.io/txns/AFzVeNgFH5kFq9vqjPZia2ERPJNaJR8nRFs7eTFeS49P)
+   see "You're approved" with 4,628.75 USDC.
+   [This is what it looked like on testnet.](https://testnet.nearblocks.io/txns/DTNvbtC1hWoVvMu5gdkcpwixL6m2rFqA3NTUFA2DEvAR)
+   The [Merapi Cargo papers](docs/samples) work the same way and suggest 3,084.75 USDC.
 6. To see a refusal, apply from another wallet with a different company name or registration
    number but the same papers.
    No limit is suggested. The team sees "Needs a closer look", and the shipper sees "We need one
@@ -353,7 +433,9 @@ until the end of November 2026.
 
 ### 3. Happy path: shipment, pickup, arrival, payout
 
-1. **Invite people.** As the approved shipper, open **Network**, choose **Invite a driver**, and
+1. **Invite people.** As the approved shipper (`judge-shipper.waybil.testnet` works), open
+   [app.waybil.xyz/start](https://app.waybil.xyz/start), choose **I ship goods**, then open
+   **Network**, choose **Invite a driver**, and
    copy the link. Open it in another profile and choose **Continue with Google**.
    You see "You're connected". Do the same with **Add a destination** for the warehouse.
 2. **Add them on chain.** As the shipper, both people show under **Ready to add**. Choose **Add to
@@ -467,7 +549,8 @@ Contracts, from `contracts/waybil/` or `contracts/mock-usdc/`:
 ```sh
 cargo test                                             # unit tests, plus sandbox tests on Linux and macOS
 cargo clippy --target wasm32-unknown-unknown --lib -- -D warnings
-cargo near build non-reproducible-wasm --no-abi
+cargo near build non-reproducible-wasm --no-abi       # quick local build (--no-abi on Windows)
+cargo near build reproducible-wasm                     # the build that runs on testnet, needs Docker
 ```
 
 near-sandbox has no Windows build, so CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml))
@@ -528,7 +611,12 @@ write-off.
 - **Arrival code checked by the backend.** Today the backend checks the arrival code before it
   relays the warehouse's confirmation. A warehouse that pays its own gas can call
   `confirm_delivery` directly, so a warehouse and driver working together could confirm a fake
-  delivery. The on-chain hash above closes this.
+  delivery. Two things bound the damage today. Both sides are the shipper's own picks: the
+  driver must be in the shipper's network (`E_DRIVER_NOT_IN_NETWORK`) and the destination must
+  be the shipper's (`E_NOT_YOUR_DESTINATION`), and only that destination's warehouse can confirm
+  (`E_NOT_WAREHOUSE`). And the bill stays the shipper's debt, so a fake delivery is a loss for
+  the shipper who picked them, and reaches the pool only if that shipper then
+  [doesn't pay](#if-a-shipper-doesnt-pay). The on-chain hash above closes the gap.
 - **Late bills need a caller.** A bill only blocks new shipments after someone calls `mark_late`.
   The backend does it every hour. If that job stops, the block comes late until anyone calls it.
 - **Credit policy.** The 20% rule is a testnet choice, not a calibrated risk model. Real money
