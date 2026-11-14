@@ -30,6 +30,7 @@ Built for NEAR HACKATHON 2026. Everything runs on NEAR testnet with test USDC.
 
 | What | Link |
 |---|---|
+| Guide for judges (3 minutes) | [JUDGE.md](JUDGE.md) |
 | Demo video (2:19) | [x.com/waybilxyz/status/2121492124453789792](https://x.com/waybilxyz/status/2121492124453789792) |
 | App (testnet, live mode) | [app.waybil.xyz](https://app.waybil.xyz/start) |
 | API health | [api.waybil.xyz/health](https://api.waybil.xyz/health) answers `{"status":"ok"}` |
