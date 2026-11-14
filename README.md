@@ -227,6 +227,10 @@ curl -s https://rpc.testnet.fastnear.com -H 'content-type: application/json' -d 
 curl -s https://rpc.testnet.fastnear.com -H 'content-type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"query","params":{"request_type":"view_access_key_list","finality":"final","account_id":"app.waybil.testnet"}}'
 ```
 
+**Both contracts are source verified** on NearBlocks through SourceScan: see the contract tab of
+[`app.waybil.testnet`](https://testnet.nearblocks.io/address/app.waybil.testnet?tab=contract)
+and [`usdc.waybil.testnet`](https://testnet.nearblocks.io/address/usdc.waybil.testnet?tab=contract).
+
 **Rebuild the deployed code yourself.** Both contracts run a reproducible build. Their
 `contract_source_metadata` (NEP-330) names the Docker image and the source commit
 [`176b27b`](https://github.com/AncungAulia/waybil-near/tree/176b27b914bc68b274c06b7123a86d50b085d5a7),
