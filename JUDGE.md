@@ -52,7 +52,9 @@ README under [Try it in 5 minutes](README.md#try-it-in-5-minutes). Import it in 
 (**Import account**, then **Private key**), choose **I ship goods** at
 [app.waybil.xyz/start](https://app.waybil.xyz/start), then go to
 [app.waybil.xyz/shipper](https://app.waybil.xyz/shipper). It is a shipper only, not a team key,
-so it can't approve anything or touch the contract.
+so it can't approve anything or touch the contract. Every judge shares it, so please don't change
+its keys, pay the bills you create, and keep them small. If it stops working, DM
+[@waybilxyz](https://x.com/waybilxyz): we keep approved backup shippers and swap the key.
 
 **The credit assistant from scratch.** Apply as a new shipper with the
 [Harborline Freight sample papers](docs/samples) and the values in the

@@ -395,10 +395,16 @@ approve the sign-in. The first sign-in of a new account opens the company form. 
 [app.waybil.xyz/shipper](https://app.waybil.xyz/shipper): you see the dashboard with the
 500.00 USDC limit. Later sign-ins go there directly.
 
-This key is public on purpose. It belongs to a testnet shipper only, not to the team, so it
-can't approve anything, change limits or touch the contract code. The worst misuse is spending
-its own 500 USDC limit of test money. With it you can run steps 3 to 5 below without asking
-anyone. To go through the credit assistant from a fresh application (step 2), DM
+This key is public on purpose. It is the account's full access key, so whoever holds it controls
+this testnet account. It is not a team key: it can't approve shippers, change limits or touch
+the contract code, and the account only ever holds test money. All judges share it, so please:
+
+- don't add, remove or change its keys,
+- pay the bills you create, and keep due dates at least a few days out,
+- keep bills small, because the 500 USDC limit is shared.
+
+If it stops working, DM [@waybilxyz](https://x.com/waybilxyz). We keep approved backup shippers
+and swap the key here. With it you can run steps 3 to 5 below without asking anyone. To go through the credit assistant from a fresh application (step 2), DM
 [@waybilxyz](https://x.com/waybilxyz) and we approve it while judging runs.
 
 **Team steps need a team member's key.** The team keeps the keys for `risk.`, `ops.` and
