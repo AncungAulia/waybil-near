@@ -31,8 +31,9 @@ NEAR covers the bill until the shipping company pays it back.
    model, suggests a starting limit. Two of three team members approve it on chain.
 3. **No wallet for drivers and warehouses.** They sign in with Google and a relayer pays their
    gas.
-4. **Nobody can change the code alone.** `app.waybil.testnet` has no access keys. Code changes
-   and big limit changes need two of three team members.
+4. **Nobody can change the code alone, and anyone can check it.** `app.waybil.testnet` has no access keys. Code changes
+   and big limit changes need two of three team members. Both contracts are source verified on
+   NearBlocks (SourceScan), so the code on chain is the code in this repo.
 
 ## Things to try on the live site
 
@@ -82,7 +83,7 @@ The full list, with what each log shows, is in
 |---|---|
 | Main contract: shipments, bills, payouts, credit, the pool and team votes | [`app.waybil.testnet`](https://testnet.nearblocks.io/address/app.waybil.testnet) |
 | Test USDC (NEP-141, with a faucet) | [`usdc.waybil.testnet`](https://testnet.nearblocks.io/address/usdc.waybil.testnet) |
-| Reproducible build (NEP-330): source commit `176b27b`, code hash `DouMyHYv…` | [README: Rebuild the deployed code yourself](README.md#receipts-check-them-yourself) |
+| **Both contracts are source verified** on NearBlocks through SourceScan, from a reproducible build (NEP-330) of commit `176b27b`, code hash `DouMyHYv…` | [`app.waybil.testnet` contract tab](https://testnet.nearblocks.io/address/app.waybil.testnet?tab=contract), [`usdc.waybil.testnet` contract tab](https://testnet.nearblocks.io/address/usdc.waybil.testnet?tab=contract), [how to rebuild it yourself](README.md#receipts-check-them-yourself) |
 | How each track is met, with where to check | [README: Tracks](README.md#tracks) |
 | Every security layer and its limits | [README: Security model](README.md#security-model) |
 | What happens if a shipper doesn't pay | [README: If a shipper doesn't pay](README.md#if-a-shipper-doesnt-pay) |
