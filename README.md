@@ -30,6 +30,7 @@ Built for NEAR HACKATHON 2026. Everything runs on NEAR testnet with test USDC.
 
 | What | Link |
 |---|---|
+| Guide for judges (3 minutes) | [JUDGE.md](JUDGE.md) |
 | Demo video (2:19) | [x.com/waybilxyz/status/2121492124453789792](https://x.com/waybilxyz/status/2121492124453789792) |
 | App (testnet, live mode) | [app.waybil.xyz](https://app.waybil.xyz/start) |
 | API health | [api.waybil.xyz/health](https://api.waybil.xyz/health) answers `{"status":"ok"}` |
@@ -92,6 +93,15 @@ included, can change its code alone. Code changes go only through a 2-of-3 team 
 Small truck owners pay for fuel, tolls and crew before every trip. The shipping company pays
 the invoice weeks later. To keep driving, truck owners borrow at high rates or turn loads down.
 Lenders could fund them, but they can't see whether a delivery really happened.
+
+This is not a niche problem:
+
+| Where | What the numbers say | Source |
+|---|---|---|
+| Spain | Hauliers waited **52 days** on average to be paid in August 2026, the best on record. In 2021 it was **83 days**, and 38% of customers still paid late. | Fenadismer's payment observatory, via [Trans.info, Sep 2026](https://trans.info/en/spanish-carriers-reach-record-payment-speed-as-eu-reform-stalls-504039) |
+| Europe | The road transport union IRU asks for a hard **30-day** payment rule, because fuel, wages, tolls, leasing and insurance are due whatever the customer's schedule, and small firms are hit hardest. | [Trans.info, Oct 2026](https://trans.info/en/european-hauliers-call-for-a-30-day-payment-deadline-with-no-exceptions-or-extensions-508019) |
+| United States | Terms run **30, 60 or 90 days**, and a small carrier can have **$40,000 to $100,000** of delivered but unpaid work at any time. Getting paid early costs a **1% to 5%** fee. | [FreightWaves, Apr 2026](https://www.freightwaves.com/news/you-delivered-that-load-three-weeks-ago-here-is-why-you-still-do-not-have-the-money-and-what-to-do-about-it) |
+| South Africa | Payment delays squeeze road freight SMEs. | [Freight News](https://freightnews.co.za/article/payment-delays-squeeze-road-freight-smes) |
 
 Waybil records the three confirmations on NEAR, so the pool lends against proof. The driver is
 paid in the same transaction that records the arrival.
